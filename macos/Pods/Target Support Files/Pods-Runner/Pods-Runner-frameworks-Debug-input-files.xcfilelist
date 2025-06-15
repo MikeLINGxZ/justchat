@@ -1,0 +1,7 @@
+${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh
+${BUILT_PRODUCTS_DIR}/flutter_localization/flutter_localization.framework
+${PODS_ROOT}/../Flutter/ephemeral/.symlinks/plugins/realm/macos/librealm_dart.dylib
+${BUILT_PRODUCTS_DIR}/realm/realm.framework
+${BUILT_PRODUCTS_DIR}/screen_retriever_macos/screen_retriever_macos.framework
+${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework
+${BUILT_PRODUCTS_DIR}/window_manager/window_manager.framework

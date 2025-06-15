@@ -1,0 +1,6 @@
+framework module flutter_localization {
+  umbrella header "flutter_localization-umbrella.h"
+
+  export *
+  module * { export * }
+}

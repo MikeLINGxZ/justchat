@@ -1,0 +1,47 @@
+PODS:
+  - flutter_localization (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+  - realm (20.1.1):
+    - FlutterMacOS
+  - screen_retriever_macos (0.0.1):
+    - FlutterMacOS
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - window_manager (0.2.0):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - flutter_localization (from `Flutter/ephemeral/.symlinks/plugins/flutter_localization/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - realm (from `Flutter/ephemeral/.symlinks/plugins/realm/macos`)
+  - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
+  - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
+
+EXTERNAL SOURCES:
+  flutter_localization:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_localization/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  realm:
+    :path: Flutter/ephemeral/.symlinks/plugins/realm/macos
+  screen_retriever_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
+  shared_preferences_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
+  window_manager:
+    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
+
+SPEC CHECKSUMS:
+  flutter_localization: 3cda759884c7dab4466fe963d97fba723a492666
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+  realm: 5d70db58e130b16a378fd909109ceed24e9e6995
+  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
+
+PODFILE CHECKSUM: 7eb978b976557c8c1cd717d8185ec483fd090a82
+
+COCOAPODS: 1.16.2
