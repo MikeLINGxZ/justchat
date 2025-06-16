@@ -21,8 +21,8 @@ class Input extends StatefulWidget {
     this.focusNode,
     this.keyboardType,
     this.inputFormatters,
-    this.maxLines = 1,  // 默认1行
-    this.minLines = 1,  // 默认最小1行
+    this.maxLines = 3,  // 默认2行
+    this.minLines = 1,  // 默认最小2行
   });
 
   final TextStyle? style;
@@ -111,7 +111,8 @@ class _Input extends State<Input> {
         obscureText: widget.obscureText,
         obscuringCharacter: widget.obscuringCharacter,
         controller: _controller,
-        style: textStyle,
+        style: textStyle.copyWith(height: 1.5),
+        cursorWidth: 1.0,  // 设置光标宽度为1.0
         enabled: widget.enable ?? true,
         maxLines: widget.maxLines,  // 控制最大行数
         minLines: widget.minLines,  // 控制最小行数
@@ -124,11 +125,11 @@ class _Input extends State<Input> {
           contentPadding: widget.contentPadding ?? const EdgeInsets.all(12),
           constraints: widget.constraints,
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: widget.hasError ? Colors.red : Colors.grey),
+            borderSide: BorderSide(color: widget.hasError ? Colors.red : Colors.grey, width: 0.5),
           ),
-          errorBorder: widget.hasError ? const OutlineInputBorder(borderSide: BorderSide(color: Colors.red)) : null,
+          errorBorder: widget.hasError ? const OutlineInputBorder(borderSide: BorderSide(color: Colors.red, width: 0.5)) : null,
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: widget.hasError ? Colors.red : Colors.blue, width: 2.0),
+            borderSide: BorderSide(color: widget.hasError ? Colors.red : Colors.blue, width: 0.5),
           ),
         ),
         onChanged: (value) {
