@@ -3,13 +3,18 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  file_selector_windows
+  firebase_auth
+  firebase_core
   flutter_localization
   realm
+  record_windows
   screen_retriever_windows
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  llama_sdk
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

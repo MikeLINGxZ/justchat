@@ -57,21 +57,14 @@ class LemonTea extends ConsumerWidget {
 
   Widget _content() {
     return System.isDesktop
-        ? Column(
-      children: [
-        // if (System.isDesktop && Service().getAccountCount() == 0) ...[SizedBox(height: 30, child: WindowTitleBar(title: "Teamail"))],
-        Expanded(
-          child: Navigator(
-            onGenerateRoute: (settings) {
-              return MaterialPageRoute(
-                builder: (_) => HomePage(),
-                settings: settings,
-              );
-            },
-          ),
-        ),
-      ],
-    )
+        ? Navigator(
+          onGenerateRoute: (settings) {
+            return MaterialPageRoute(
+              builder: (_) => HomePage(),
+              settings: settings,
+            );
+          },
+        )
         : HomePage();
   }
 }
