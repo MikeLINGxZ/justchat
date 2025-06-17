@@ -17,7 +17,7 @@ class ChatView extends StatefulWidget {
 }
 
 class _ChatView extends State<ChatView> {
-  final double _defaultChatView = 400;
+  final double _defaultChatView = 600;
 
   @override
   Widget build(BuildContext context) {
