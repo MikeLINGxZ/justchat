@@ -12,9 +12,42 @@ class MessageView extends StatefulWidget {
 }
 
 class _MessageViewState extends State<MessageView> {
+  final ScrollController _scrollController = ScrollController();
+  List<Message> _previousMessages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _previousMessages = List.from(widget.historyMessages);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(MessageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.historyMessages != _previousMessages) {
+      _previousMessages = List.from(widget.historyMessages);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: _scrollController,
       itemCount: widget.historyMessages.length,
       itemBuilder: (context, index) {
         final message = widget.historyMessages[index];

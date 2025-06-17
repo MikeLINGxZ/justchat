@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ai_providers/flutter_ai_providers.dart';
-import 'package:flutter_ai_toolkit/flutter_ai_toolkit.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/input_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
@@ -31,7 +29,9 @@ class _ChatView extends State<ChatView> {
           Expanded(child: MessageView(widget.historyMessages)),
 
           // 底部部件
-          SizedBox(child: InputView(onFileSelected: widget.onFileSelected, onSend: widget.onSend)),
+          SizedBox(child: InputView(onFileSelected: widget.onFileSelected, onSend: (msg) {
+            widget.onSend?.call(msg);
+          })),
         ],
       ),
     );

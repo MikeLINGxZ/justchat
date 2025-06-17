@@ -13,13 +13,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePage extends State<HomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: ,
-      body: Center(
-        child: ChatView(historyMessages: [
-          Message(role: MessageRole.assistant, content: """# 欢迎使用 Markdown
+  List<Message> historyMessages = [
+    Message(
+      role: MessageRole.assistant,
+      content: """# 欢迎使用 Markdown
 
 这是一个简单的 Markdown 示例文档，展示常用语法：
 
@@ -50,9 +47,18 @@ class _HomePage extends State<HomePage> {
 ## 代码块
 ```python
 def hello():
-    print("代码高亮示例")""")
-        ],),
-      ),
+    print("代码高亮示例")""",
+    ),
+  ];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // appBar: ,
+      body: Center(child: ChatView(historyMessages: historyMessages, onSend: (msg) {
+        setState(() {
+          historyMessages.add(Message(role: MessageRole.user, content: msg));
+        });
+      })),
     );
   }
 }
