@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_ai_providers/flutter_ai_providers.dart';
 import 'package:flutter_ai_toolkit/flutter_ai_toolkit.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/input_view.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
+import 'package:lemon_tea/utils/llm/models/message.dart';
 
 class ChatView extends StatefulWidget {
-  const ChatView({super.key, this.onFileSelected, this.onSend});
+  const ChatView({super.key, this.onFileSelected, this.onSend, required this.historyMessages});
 
   final Function(String)? onFileSelected;
   final Function(String)? onSend;
+  final List<Message> historyMessages;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -25,7 +28,7 @@ class _ChatView extends State<ChatView> {
           // 顶部部件
           Container(height: 50, color: Colors.red),
 
-          Expanded(child: Container(color: Colors.green)),
+          Expanded(child: MessageView(widget.historyMessages)),
 
           // 底部部件
           SizedBox(child: InputView(onFileSelected: widget.onFileSelected, onSend: widget.onSend)),

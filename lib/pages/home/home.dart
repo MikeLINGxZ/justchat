@@ -17,7 +17,7 @@ class _HomePage extends State<HomePage> {
     return Scaffold(
       // appBar: ,
       body: Center(
-        child: ChatView(),
+        child: ChatView(historyMessages: [],),
       ),
     );
   }
