@@ -4,7 +4,6 @@ import 'package:markdown_widget/markdown_widget.dart';
 
 class MessageView extends StatefulWidget {
   final List<Message> historyMessages;
-
   const MessageView(this.historyMessages, {super.key});
 
   @override
@@ -13,12 +12,15 @@ class MessageView extends StatefulWidget {
 
 class _MessageViewState extends State<MessageView> {
   final ScrollController _scrollController = ScrollController();
-  List<Message> _previousMessages = [];
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _previousMessages = List.from(widget.historyMessages);
+    _lastMessageCount = widget.historyMessages.length;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
   }
 
   @override
@@ -30,16 +32,12 @@ class _MessageViewState extends State<MessageView> {
   @override
   void didUpdateWidget(MessageView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.historyMessages != _previousMessages) {
-      _previousMessages = List.from(widget.historyMessages);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
+
+    // 当有新消息到达时滚动到底部
+    if (widget.historyMessages.length > _lastMessageCount) {
+      _lastMessageCount = widget.historyMessages.length;
+      Future.delayed(Duration(milliseconds: 300), () {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       });
     }
   }
@@ -55,27 +53,29 @@ class _MessageViewState extends State<MessageView> {
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
+            // mainAxisAlignment: message.role == MessageRole.user ? MainAxisAlignment.start : MainAxisAlignment.end,
             children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor:
-                    message.role == 'user' ? Colors.blue : Colors.green,
-                child: Text(
-                  message.role == 'user' ? 'U' : 'A',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+              if (message.role != MessageRole.user) ...[
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.green,
+                  child: const Text(
+                    'A',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color:
-                        message.role == 'user'
+                        message.role == MessageRole.user
                             ? Colors.blue.withOpacity(0.1)
                             : Colors.green.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -89,6 +89,21 @@ class _MessageViewState extends State<MessageView> {
                   ),
                 ),
               ),
+              if (message.role == MessageRole.user) ...[
+                const SizedBox(width: 12),
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.blue,
+                  child: const Text(
+                    'U',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
