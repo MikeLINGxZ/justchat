@@ -197,6 +197,7 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/record_macos/record_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/screen_retriever_macos/screen_retriever_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/url_launcher_macos/url_launcher_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/window_manager/window_manager.framework"
 fi
 if [[ "$CONFIGURATION" == "Profile" ]]; then
@@ -221,6 +222,7 @@ if [[ "$CONFIGURATION" == "Profile" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/record_macos/record_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/screen_retriever_macos/screen_retriever_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/url_launcher_macos/url_launcher_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/window_manager/window_manager.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
@@ -245,6 +247,7 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/record_macos/record_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/screen_retriever_macos/screen_retriever_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/url_launcher_macos/url_launcher_macos.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/window_manager/window_manager.framework"
 fi
 if [ "${COCOAPODS_PARALLEL_CODE_SIGN}" == "true" ]; then

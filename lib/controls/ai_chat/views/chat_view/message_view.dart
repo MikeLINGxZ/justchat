@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ai_providers/flutter_ai_providers.dart';
-import 'package:flutter_ai_toolkit/flutter_ai_toolkit.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown_widget/markdown_widget.dart';
 
 class MessageView extends StatefulWidget {
   final List<Message> historyMessages;
-  
+
   const MessageView(this.historyMessages, {super.key});
 
   @override
@@ -27,7 +25,8 @@ class _MessageViewState extends State<MessageView> {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: message.role == 'user' ? Colors.blue : Colors.green,
+                backgroundColor:
+                    message.role == 'user' ? Colors.blue : Colors.green,
                 child: Text(
                   message.role == 'user' ? 'U' : 'A',
                   style: const TextStyle(
@@ -42,26 +41,18 @@ class _MessageViewState extends State<MessageView> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: message.role == 'user' 
-                        ? Colors.blue.withOpacity(0.1)
-                        : Colors.green.withOpacity(0.1),
+                    color:
+                        message.role == 'user'
+                            ? Colors.blue.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: MarkdownBody(
+                  child: MarkdownBlock(
                     data: message.content,
-                    selectable: true,
-                    styleSheet: MarkdownStyleSheet(
-                      p: const TextStyle(fontSize: 14),
-                      code: const TextStyle(
-                        backgroundColor: Colors.black12,
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                      ),
-                      codeblockDecoration: BoxDecoration(
-                        color: Colors.black12,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
+                    config:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? MarkdownConfig.darkConfig
+                            : MarkdownConfig.defaultConfig,
                   ),
                 ),
               ),
