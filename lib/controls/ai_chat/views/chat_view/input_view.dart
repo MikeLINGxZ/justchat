@@ -2,37 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:lemon_tea/controls/input.dart';
 
 class InputView extends StatefulWidget {
+  final Function(String)? onFileSelected;
+  final Function(String)? onSend;
+
+  const InputView({
+    super.key,
+    this.onFileSelected,
+    this.onSend,
+  });
+
   @override
   State<StatefulWidget> createState() => _InputView();
 }
 
 class _InputView extends State<InputView> {
   final GlobalKey _inputViewKey = GlobalKey();
-  double _inputViewHeight = 0;
   final MenuController _menuController = MenuController();
+  final TextEditingController _textController = TextEditingController();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final RenderBox? renderBox = _inputViewKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        setState(() {
-          _inputViewHeight = renderBox.size.height;
-          print('InputView height: $_inputViewHeight');
-        });
-      }
-    });
   }
 
   void _handleFileSelection(String type) {
-    // TODO: 实现文件选择逻辑
-    print('Selected file type: $type');
+    widget.onFileSelected?.call(type);
   }
 
   void _handleSend() {
-    // TODO: 实现发送逻辑
-    print('Send message');
+    final text = _textController.text.trim();
+    if (text.isNotEmpty) {
+      widget.onSend?.call(text);
+      _textController.clear();
+    }
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4.0),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Icon(icon, size: 20, color: color),
+        ),
+      ),
+    );
   }
 
   @override
@@ -44,6 +70,7 @@ class _InputView extends State<InputView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Input(
+            controller: _textController,
             minLines: 2,
             maxLines: 4,
             hintText: '输入消息...',
@@ -83,7 +110,8 @@ class _InputView extends State<InputView> {
                   ),
                 ],
                 builder: (context, controller, child) {
-                  return InkWell(
+                  return _buildIconButton(
+                    icon: Icons.add,
                     onTap: () {
                       if (controller.isOpen) {
                         controller.close();
@@ -91,19 +119,12 @@ class _InputView extends State<InputView> {
                         controller.open();
                       }
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.all(4.0),
-                      child: Icon(Icons.add, size: 20),
-                    ),
                   );
                 },
               ),
-              InkWell(
+              _buildIconButton(
+                icon: Icons.arrow_forward,
                 onTap: _handleSend,
-                child: const Padding(
-                  padding: EdgeInsets.all(4.0),
-                  child: Icon(Icons.send, size: 20),
-                ),
               ),
             ],
           ),

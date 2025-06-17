@@ -2,11 +2,10 @@
 FLUTTER_ROOT=/Users/linhuafeng/Program/flutter
 FLUTTER_APPLICATION_PATH=/Users/linhuafeng/Work/lemon_tea
 COCOAPODS_PARALLEL_CODE_SIGN=true
-FLUTTER_TARGET=/Users/linhuafeng/Work/lemon_tea/lib/main.dart
 FLUTTER_BUILD_DIR=build
 FLUTTER_BUILD_NAME=1.0.0
 FLUTTER_BUILD_NUMBER=1
 DART_OBFUSCATION=false
 TRACK_WIDGET_CREATION=true
 TREE_SHAKE_ICONS=false
-PACKAGE_CONFIG=/Users/linhuafeng/Work/lemon_tea/.dart_tool/package_config.json
+PACKAGE_CONFIG=.dart_tool/package_config.json
