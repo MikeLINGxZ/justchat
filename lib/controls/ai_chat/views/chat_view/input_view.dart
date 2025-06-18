@@ -111,7 +111,7 @@ class _InputView extends State<InputView> {
                 ],
                 builder: (context, controller, child) {
                   return _buildIconButton(
-                    icon: Icons.add,
+                    icon: Icons.file_upload,
                     onTap: () {
                       if (controller.isOpen) {
                         controller.close();
