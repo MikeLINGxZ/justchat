@@ -9,20 +9,23 @@ part of 'message.dart';
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(
   role: $enumDecode(_$MessageRoleEnumMap, json['role']),
   content: json['content'] as String,
-  name: json['name'] as String?,
-  functionCall: json['functionCall'] as Map<String, dynamic>?,
+  toolCalls:
+      (json['toolCalls'] as List<dynamic>?)
+          ?.map((e) => ToolCall.fromJson(e as Map<String, dynamic>))
+          .toList(),
+  toolCallId: json['toolCallId'] as String?,
 );
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'role': _$MessageRoleEnumMap[instance.role]!,
   'content': instance.content,
-  'name': instance.name,
-  'functionCall': instance.functionCall,
+  'toolCalls': instance.toolCalls,
+  'toolCallId': instance.toolCallId,
 };
 
 const _$MessageRoleEnumMap = {
   MessageRole.system: 'system',
   MessageRole.user: 'user',
   MessageRole.assistant: 'assistant',
-  MessageRole.function: 'function',
+  MessageRole.tool: 'tool',
 };
