@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lemon_tea/controls/input.dart';
 
 class InputView extends StatefulWidget {
@@ -74,6 +75,20 @@ class _InputView extends State<InputView> {
             minLines: 2,
             maxLines: 4,
             hintText: '输入消息...',
+            onChanged: (value) {
+              if (value.endsWith('\n')) {
+                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+                
+                if (!isShiftPressed) {
+                  final text = value.substring(0, value.length - 1);
+                  _textController.text = text;
+                  _textController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: text.length),
+                  );
+                  _handleSend();
+                }
+              }
+            },
           ),
           const SizedBox(height: 8),
           Row(

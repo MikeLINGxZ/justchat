@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/input_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 
 class ChatView extends StatefulWidget {
@@ -24,7 +25,7 @@ class _ChatView extends State<ChatView> {
       child: Column(
         children: [
           // 顶部部件
-          Container(height: 50, color: Colors.red),
+          SizedBox(child: TitleBarView()),
 
           Expanded(child: MessageView(widget.historyMessages)),
 
