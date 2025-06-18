@@ -69,15 +69,29 @@ class _MessageViewState extends State<MessageView> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: MarkdownBlock(
+                      data: message.content,
+                      config:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? MarkdownConfig.darkConfig
+                              : MarkdownConfig.defaultConfig,
+                    ),
+                  ),
+                ),
               ],
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
+              if (message.role == MessageRole.user) ...[
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color:
-                        message.role == MessageRole.user
-                            ? Colors.blue.withOpacity(0.1)
-                            : Colors.green.withOpacity(0.1),
+                    color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: MarkdownBlock(
@@ -88,8 +102,6 @@ class _MessageViewState extends State<MessageView> {
                             : MarkdownConfig.defaultConfig,
                   ),
                 ),
-              ),
-              if (message.role == MessageRole.user) ...[
                 const SizedBox(width: 12),
                 CircleAvatar(
                   radius: 20,
