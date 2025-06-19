@@ -10,7 +10,6 @@ class WindowTitleBar extends StatefulWidget {
 }
 
 class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
-
   final double _titleBarHeight = 30;
 
   @override
@@ -46,9 +45,7 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(widget.title)
-            ],
+            children: [Text(widget.title)],
           ),
         ),
       ),
@@ -57,12 +54,9 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          _buildTitleBar(),
-        ],
-      ),
+    return SizedBox(
+      height: _titleBarHeight,
+      child: Scaffold(body: Column(children: [_buildTitleBar()])),
     );
   }
 }

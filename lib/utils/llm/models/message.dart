@@ -25,8 +25,11 @@ class Message {
   /// 函数调用信息（role为assistant时可能存在）
   final List<ToolCall>? toolCalls;
 
-  //
+  // 工具调用结果id
   String? toolCallId;
+
+  // todo visible
+  
 
   Message({
     required this.role,

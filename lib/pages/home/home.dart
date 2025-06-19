@@ -54,11 +54,32 @@ def hello():
   Widget build(BuildContext context) {
     return Scaffold(
       // appBar: ,
-      body: Center(child: ChatView(historyMessages: historyMessages, onSend: (msg) {
-        setState(() {
-          historyMessages.add(Message(role: MessageRole.user, content: msg));
-        });
-      })),
+      body: Container(
+        child: Column(
+          children: [
+            WindowTitleBar(title: "title"),
+            Expanded(
+              child: Row(
+                children: [
+                  Center(
+                    child: ChatView(
+                      historyMessages: historyMessages,
+                      onSend: (msg) {
+                        setState(() {
+                          historyMessages.add(
+                            Message(role: MessageRole.user, content: msg),
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                  Text("data"),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
