@@ -14,10 +14,64 @@ class _MessageViewState extends State<MessageView> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0;
 
+  // 自定义 Markdown 配置，所有文字大小减少2
+  late final MarkdownConfig _customLightConfig;
+  late final MarkdownConfig _customDarkConfig;
+
   @override
   void initState() {
     super.initState();
     _lastMessageCount = widget.historyMessages.length;
+
+    // 创建自定义配置
+    _customLightConfig = MarkdownConfig(
+      configs: [
+        PConfig(textStyle: const TextStyle(fontSize: 14)), // 13 -> 14
+        H1Config(
+          style: const TextStyle(fontSize: 30, height: 38 / 30),
+        ), // 29 -> 30
+        H2Config(
+          style: const TextStyle(fontSize: 22, height: 28 / 22),
+        ), // 21 -> 22
+        H3Config(
+          style: const TextStyle(fontSize: 18, height: 23 / 18),
+        ), // 17 -> 18
+        H4Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+        H5Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+        H6Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+      ],
+    );
+
+    _customDarkConfig = MarkdownConfig(
+      configs: [
+        PConfig(textStyle: const TextStyle(fontSize: 14)), // 13 -> 14
+        H1Config(
+          style: const TextStyle(fontSize: 30, height: 38 / 30),
+        ), // 29 -> 30
+        H2Config(
+          style: const TextStyle(fontSize: 22, height: 28 / 22),
+        ), // 21 -> 22
+        H3Config(
+          style: const TextStyle(fontSize: 18, height: 23 / 18),
+        ), // 17 -> 18
+        H4Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+        H5Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+        H6Config(
+          style: const TextStyle(fontSize: 14, height: 18 / 14),
+        ), // 13 -> 14
+      ],
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     });
@@ -63,7 +117,7 @@ class _MessageViewState extends State<MessageView> {
                     'A',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -71,7 +125,10 @@ class _MessageViewState extends State<MessageView> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -80,8 +137,8 @@ class _MessageViewState extends State<MessageView> {
                       data: message.content,
                       config:
                           Theme.of(context).brightness == Brightness.dark
-                              ? MarkdownConfig.darkConfig
-                              : MarkdownConfig.defaultConfig,
+                              ? _customDarkConfig
+                              : _customLightConfig,
                     ),
                   ),
                 ),
@@ -89,7 +146,10 @@ class _MessageViewState extends State<MessageView> {
               if (message.role == MessageRole.user) ...[
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -98,8 +158,8 @@ class _MessageViewState extends State<MessageView> {
                     data: message.content,
                     config:
                         Theme.of(context).brightness == Brightness.dark
-                            ? MarkdownConfig.darkConfig
-                            : MarkdownConfig.defaultConfig,
+                            ? _customDarkConfig
+                            : _customLightConfig,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -110,7 +170,7 @@ class _MessageViewState extends State<MessageView> {
                     'U',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
