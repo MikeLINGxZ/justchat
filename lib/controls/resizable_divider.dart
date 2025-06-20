@@ -29,6 +29,7 @@ class ResizableDivider extends StatefulWidget {
 class _ResizableDividerState extends State<ResizableDivider> {
   late double _leftWidth;
   bool _isDragging = false;
+  bool _isHovering = false;
 
   @override
   void initState() {
@@ -73,18 +74,44 @@ class _ResizableDividerState extends State<ResizableDivider> {
               },
               child: MouseRegion(
                 cursor: SystemMouseCursors.resizeLeftRight,
-                child: Container(
-                  width: widget.dividerWidth,
-                  color: _isDragging
-                      ? (widget.dividerColor ?? Theme.of(context).dividerColor).withOpacity(0.8)
-                      : widget.dividerColor ?? Theme.of(context).dividerColor,
-                  child: _isDragging
-                      ? Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          ),
-                        )
-                      : null,
+                onEnter: (event) {
+                  setState(() {
+                    _isHovering = true;
+                  });
+                },
+                onExit: (event) {
+                  setState(() {
+                    _isHovering = false;
+                  });
+                },
+                child: Stack(
+                  children: [
+                    // 基础分割线（保持布局不变）
+                    Container(
+                      width: widget.dividerWidth,
+                      color: _isDragging
+                          ? (widget.dividerColor ?? Theme.of(context).dividerColor).withOpacity(0.8)
+                          : widget.dividerColor ?? Theme.of(context).dividerColor,
+                      child: _isDragging
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              ),
+                            )
+                          : null,
+                    ),
+                    // 悬停时的视觉效果（不影响布局）
+                    if (_isHovering)
+                      Positioned(
+                        left: -(widget.dividerWidth / 2),
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: widget.dividerWidth * 2,
+                          color: Colors.blue,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
