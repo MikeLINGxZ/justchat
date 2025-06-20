@@ -26,7 +26,7 @@ class TitleBarView extends StatelessWidget {
         borderRadius: BorderRadius.circular(4.0),
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: Icon(icon, size: 22, color: color),
+          child: Icon(icon, size: 21, color: color),
         ),
       ),
     );
