@@ -5,11 +5,22 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 
 class ChatView extends StatefulWidget {
-  const ChatView({super.key, this.onFileSelected, this.onSend, required this.historyMessages});
+  const ChatView({
+    super.key, 
+    this.onFileSelected, 
+    this.onSend, 
+    required this.historyMessages,
+    this.onNewConversation,
+    this.onHistoryTap,
+    this.currentTitle = 'AI 助手',
+  });
 
   final Function(String)? onFileSelected;
   final Function(String)? onSend;
   final List<Message> historyMessages;
+  final VoidCallback? onNewConversation;
+  final VoidCallback? onHistoryTap;
+  final String currentTitle;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -25,7 +36,13 @@ class _ChatView extends State<ChatView> {
       child: Column(
         children: [
           // 顶部部件
-          SizedBox(child: TitleBarView()),
+          SizedBox(
+            child: TitleBarView(
+              title: widget.currentTitle,
+              onAddTap: widget.onNewConversation,
+              onHistoryTap: widget.onHistoryTap,
+            ),
+          ),
 
           Expanded(child: MessageView(widget.historyMessages)),
 
