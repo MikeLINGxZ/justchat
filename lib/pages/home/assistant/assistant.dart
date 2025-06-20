@@ -252,7 +252,7 @@ def hello():
           : ChatView(
               historyMessages: _historyMessages,
               onSend: _handleSendMessage,
-              onNewConversation: _handleNewConversation,
+              onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
               onHistoryTap: _showHistoryDialog,
               currentTitle: _currentTitle,
             ),

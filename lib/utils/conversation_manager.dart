@@ -47,10 +47,13 @@ class ConversationManager extends ChangeNotifier {
       messages: initialMessages,
     );
     
-    await _storage.saveConversation(conversation);
-    _conversations.insert(0, conversation);
-    _currentConversation = conversation;
+    // 只有当有初始消息时才保存到存储
+    if (initialMessages.isNotEmpty) {
+      await _storage.saveConversation(conversation);
+      _conversations.insert(0, conversation);
+    }
     
+    _currentConversation = conversation;
     notifyListeners();
     return conversation;
   }
@@ -73,18 +76,24 @@ class ConversationManager extends ChangeNotifier {
     }
 
     final updatedConversation = _currentConversation!.addMessage(message);
-    await _storage.saveConversation(updatedConversation);
     
-    // 更新当前对话和列表中的对话
-    _currentConversation = updatedConversation;
-    final index = _conversations.indexWhere((c) => c.id == updatedConversation.id);
-    if (index != -1) {
-      _conversations[index] = updatedConversation;
-      // 将更新的对话移到列表顶部
-      _conversations.removeAt(index);
+    // 如果这是第一条消息，需要保存对话到存储
+    if (_currentConversation!.messages.isEmpty) {
+      await _storage.saveConversation(updatedConversation);
       _conversations.insert(0, updatedConversation);
+    } else {
+      // 如果已经有消息，更新存储
+      await _storage.saveConversation(updatedConversation);
+      // 将更新的对话移到列表顶部
+      final index = _conversations.indexWhere((c) => c.id == updatedConversation.id);
+      if (index != -1) {
+        _conversations.removeAt(index);
+        _conversations.insert(0, updatedConversation);
+      }
     }
     
+    // 更新当前对话
+    _currentConversation = updatedConversation;
     notifyListeners();
   }
 

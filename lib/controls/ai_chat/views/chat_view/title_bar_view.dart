@@ -73,11 +73,13 @@ class TitleBarView extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          _buildIconButton(
-            icon: Icons.add_circle_outline,
-            onTap: onAddTap ?? () {},
-          ),
-          const SizedBox(width: 16),
+          if (onAddTap != null) ...[
+            _buildIconButton(
+              icon: Icons.add_circle_outline,
+              onTap: onAddTap!,
+            ),
+            const SizedBox(width: 16),
+          ],
           _buildIconButton(
             icon: Icons.history,
             onTap: onHistoryTap ?? () {},
