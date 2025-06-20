@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/pages/home/assistant/assistant.dart';
 import 'package:lemon_tea/pages/home/home.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:window_manager/window_manager.dart';

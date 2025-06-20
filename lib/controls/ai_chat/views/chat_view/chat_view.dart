@@ -16,12 +16,12 @@ class ChatView extends StatefulWidget {
 }
 
 class _ChatView extends State<ChatView> {
-  final double _defaultChatView = 600;
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: _defaultChatView,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: 400.0,
+      ),
       child: Column(
         children: [
           // 顶部部件
