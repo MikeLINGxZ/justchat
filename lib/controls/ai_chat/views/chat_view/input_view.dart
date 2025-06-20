@@ -56,7 +56,7 @@ class _InputView extends State<InputView> {
         borderRadius: BorderRadius.circular(4.0),
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: Icon(icon, size: 20, color: color),
+          child: Icon(icon, size: 22, color: color),
         ),
       ),
     );
