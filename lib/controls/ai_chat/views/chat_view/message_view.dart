@@ -123,8 +123,12 @@ class _MessageViewState extends State<MessageView> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 0,
+                      maxWidth: 400, // 限制最大宽度，避免过宽
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -146,6 +150,10 @@ class _MessageViewState extends State<MessageView> {
               if (message.role == MessageRole.user) ...[
                 const Spacer(),
                 Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 0,
+                    maxWidth: 300, // 限制最大宽度，避免过宽
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
