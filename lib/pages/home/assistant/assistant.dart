@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/chat_view.dart';
-import 'package:lemon_tea/controls/ai_chat/views/chat_view/history_dialog.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
 
 class AssistantPage extends StatefulWidget {
-  const AssistantPage({super.key});
+  final ConversationManager? conversationManager;
+  
+  const AssistantPage({super.key, this.conversationManager});
 
   @override
   State<StatefulWidget> createState() => _AssistantPage();
@@ -22,7 +23,7 @@ class _AssistantPage extends State<AssistantPage> {
   @override
   void initState() {
     super.initState();
-    _conversationManager = ConversationManager();
+    _conversationManager = widget.conversationManager ?? ConversationManager();
     // 监听 ConversationManager 的变化
     _conversationManager.addListener(_onConversationManagerChanged);
     _initializeConversation();
@@ -183,67 +184,6 @@ def hello():
     await _conversationManager.createConversation(title: '新对话');
   }
 
-  Future<void> _handleLoadConversation(Conversation conversation) async {
-    await _conversationManager.loadConversation(conversation.id);
-  }
-
-  Future<void> _handleDeleteConversation(String conversationId) async {
-    // 保存context引用
-    final currentContext = context;
-    
-    // 显示确认对话框
-    final shouldDelete = await showDialog<bool>(
-      context: currentContext,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个对话吗？删除后无法恢复。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldDelete != true) return;
-
-    await _conversationManager.deleteConversation(conversationId);
-    
-    // 如果删除的是当前对话，加载最新的对话或创建新对话
-    if (_conversationManager.currentConversation?.id == conversationId) {
-      if (_conversationManager.conversations.isNotEmpty) {
-        await _handleLoadConversation(_conversationManager.conversations.first);
-      } else {
-        await _handleNewConversation();
-      }
-    }
-    
-    // 关闭对话框，让用户重新打开以查看更新后的列表
-    if (Navigator.of(currentContext).canPop()) {
-      Navigator.of(currentContext).pop();
-    }
-  }
-
-  void _showHistoryDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => HistoryDialog(
-        conversationManager: _conversationManager,
-        onConversationSelected: _handleLoadConversation,
-        onConversationDeleted: _handleDeleteConversation,
-        onNewConversation: _handleNewConversation,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ResizableDivider(
@@ -253,7 +193,6 @@ def hello():
               historyMessages: _historyMessages,
               onSend: _handleSendMessage,
               onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
-              onHistoryTap: _showHistoryDialog,
               currentTitle: _currentTitle,
             ),
       rightChild: Text("data"),

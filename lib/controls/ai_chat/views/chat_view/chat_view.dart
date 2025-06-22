@@ -11,7 +11,6 @@ class ChatView extends StatefulWidget {
     this.onSend, 
     required this.historyMessages,
     this.onNewConversation,
-    this.onHistoryTap,
     this.currentTitle = 'AI 助手',
   });
 
@@ -19,7 +18,6 @@ class ChatView extends StatefulWidget {
   final Function(String)? onSend;
   final List<Message> historyMessages;
   final VoidCallback? onNewConversation;
-  final VoidCallback? onHistoryTap;
   final String currentTitle;
 
   @override
@@ -40,7 +38,6 @@ class _ChatView extends State<ChatView> {
             child: TitleBarView(
               title: widget.currentTitle,
               onAddTap: widget.onNewConversation,
-              onHistoryTap: widget.onHistoryTap,
             ),
           ),
 

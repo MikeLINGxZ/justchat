@@ -4,14 +4,12 @@ class TitleBarView extends StatelessWidget {
   final String tag;
   final String title;
   final VoidCallback? onAddTap;
-  final VoidCallback? onHistoryTap;
 
   const TitleBarView({
     super.key,
     this.tag = '对话',
     this.title = 'AI 助手',
     this.onAddTap,
-    this.onHistoryTap,
   });
 
   Widget _buildIconButton({
@@ -78,12 +76,7 @@ class TitleBarView extends StatelessWidget {
               icon: Icons.add_circle_outline,
               onTap: onAddTap!,
             ),
-            const SizedBox(width: 16),
           ],
-          _buildIconButton(
-            icon: Icons.history,
-            onTap: onHistoryTap ?? () {},
-          ),
         ],
       ),
     );
