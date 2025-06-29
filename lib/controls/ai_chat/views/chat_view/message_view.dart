@@ -127,7 +127,7 @@ class _MessageViewState extends State<MessageView> {
                   child: Container(
                     constraints: const BoxConstraints(
                       minWidth: 0,
-                      maxWidth: 400, // 限制最大宽度，避免过宽
+                      // maxWidth: 400, // 限制最大宽度，避免过宽
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
