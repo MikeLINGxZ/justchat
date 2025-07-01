@@ -464,6 +464,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     setState(() {
                       _selectedLanguage = value!;
                     });
+                    S.load(const Locale('zh', 'CN'));
                     Navigator.of(context).pop();
                   },
                 ),
@@ -475,6 +476,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     setState(() {
                       _selectedLanguage = value!;
                     });
+                    S.load(const Locale('en', 'US'));
                     Navigator.of(context).pop();
                   },
                 ),
