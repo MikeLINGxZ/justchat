@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -12,7 +13,6 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _autoSave = true;
   String _selectedLanguage = '中文';
-  double _fontSize = 14.0;
   int _selectedMenuIndex = 0;
 
   final List<Map<String, dynamic>> _menuItems = [
@@ -48,7 +48,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   '设置',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getHeadingSize(ref),
+                    fontWeight: FontWeight.bold
+                  ),
                 ),
               ),
               Expanded(
@@ -73,7 +76,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               isSelected
                                   ? Theme.of(context).primaryColor
                                   : null,
-                          fontSize: 14,
+                          fontSize: FontSizeUtils.getBodySize(ref),
                         ),
                       ),
                       selected: isSelected,
@@ -114,15 +117,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildGeneralSettings() {
     final themeMode = ref.watch(app_theme.themeManagerProvider);
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
+    final fontSizeMode = ref.watch(app_theme.fontSizeModeProvider);
+    final fontSizeManager = ref.read(app_theme.fontSizeModeProvider.notifier);
+    
+    // 基础字体大小为14
+    final double baseFontSize = 14.0;
+    final double currentFontSize = app_theme.calculateFontSize(baseFontSize, fontSizeMode);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '通用设置',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: FontSizeUtils.getHeadingSize(ref),
+              fontWeight: FontWeight.bold
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -159,7 +171,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             }
                             return DropdownMenuItem<app_theme.ThemeMode>(
                               value: mode,
-                              child: Text(modeName),
+                              child: Text(modeName,style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
                             );
                           })
                           .toList(),
@@ -175,20 +187,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: const Text('界面字体'),
-                subtitle: Text('${_fontSize.toInt()}px'),
-                trailing: SizedBox(
-                  width: 200,
-                  child: Slider(
-                    value: _fontSize,
-                    min: 12.0,
-                    max: 20.0,
-                    divisions: 8,
-                    onChanged: (value) {
-                      setState(() {
-                        _fontSize = value;
-                      });
-                    },
-                  ),
+                subtitle: Text('${app_theme.getFontSizeModeName(fontSizeMode)} (${currentFontSize.toInt()}px)'),
+                trailing: DropdownButton<app_theme.FontSizeMode>(
+                  value: fontSizeMode,
+                  underline: Container(),
+                  onChanged: (app_theme.FontSizeMode? newValue) {
+                    if (newValue != null) {
+                      fontSizeManager.setFontSizeMode(newValue);
+                    }
+                  },
+                  items: app_theme.FontSizeMode.values
+                      .map<DropdownMenuItem<app_theme.FontSizeMode>>((
+                        app_theme.FontSizeMode mode,
+                      ) {
+                        return DropdownMenuItem<app_theme.FontSizeMode>(
+                          value: mode,
+                          child: Text(app_theme.getFontSizeModeName(mode),style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
+                        );
+                      })
+                      .toList(),
                 ),
               ),
             ],
@@ -220,9 +237,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '模型设置',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: FontSizeUtils.getHeadingSize(ref),
+              fontWeight: FontWeight.bold
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -274,9 +294,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '数据设置',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: FontSizeUtils.getHeadingSize(ref),
+              fontWeight: FontWeight.bold
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -322,9 +345,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '关于',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: FontSizeUtils.getHeadingSize(ref),
+              fontWeight: FontWeight.bold
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -379,7 +405,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.w600
+          ),
         ),
         const SizedBox(height: 8),
         Container(
