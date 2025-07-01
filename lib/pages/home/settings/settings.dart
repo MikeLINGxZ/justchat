@@ -218,7 +218,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(8),
+            // borderRadius: BorderRadius.circular(3),
             border: Border.all(color: Colors.grey.withOpacity(0.2)),
           ),
           child: Column(children: children),
