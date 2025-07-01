@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
-class TitleBarView extends StatelessWidget {
+class TitleBarView extends ConsumerWidget {
   final String tag;
   final String title;
   final VoidCallback? onAddTap;
@@ -31,7 +33,7 @@ class TitleBarView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -55,7 +57,7 @@ class TitleBarView extends StatelessWidget {
             child: Text(
               tag,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: FontSizeUtils.getSmallSize(ref),
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -64,8 +66,8 @@ class TitleBarView extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.bold,
               ),
               overflow: TextOverflow.ellipsis,

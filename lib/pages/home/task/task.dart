@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
-class TaskPage extends StatefulWidget {
+class TaskPage extends ConsumerStatefulWidget {
   const TaskPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _TaskPage();
+  ConsumerState<TaskPage> createState() => _TaskPage();
 }
 
-class _TaskPage extends State<TaskPage> {
+class _TaskPage extends ConsumerState<TaskPage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -15,10 +17,10 @@ class _TaskPage extends State<TaskPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '任务管理',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: FontSizeUtils.getHeadingSize(ref),
               fontWeight: FontWeight.bold,
             ),
           ),

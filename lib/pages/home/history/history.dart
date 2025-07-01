@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 
-class HistoryPage extends StatefulWidget {
+class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
   final Function(Conversation) onConversationSelected;
   final Function(String) onConversationDeleted;
@@ -18,10 +20,10 @@ class HistoryPage extends StatefulWidget {
   });
 
   @override
-  State<HistoryPage> createState() => _HistoryPageState();
+  ConsumerState<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends ConsumerState<HistoryPage> {
   String _searchQuery = '';
   List<Conversation> _filteredConversations = [];
 
@@ -97,10 +99,10 @@ class _HistoryPageState extends State<HistoryPage> {
           // 标题栏
           Row(
             children: [
-              const Text(
+              Text(
                 '对话历史',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: FontSizeUtils.getHeadingSize(ref),
                   fontWeight: FontWeight.bold,
                 ),
               ),
