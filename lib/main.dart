@@ -141,7 +141,7 @@ class LemonTea extends ConsumerWidget {
       ],
       supportedLocales: S.delegate.supportedLocales,
       title: "Lemon Tea",
-      locale: Locale("zh"),
+      locale: Locale('zh', 'CN'),
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: flutterThemeMode,
