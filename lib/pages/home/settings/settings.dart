@@ -14,7 +14,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _selectedLanguage = '中文';
   double _fontSize = 14.0;
   int _selectedMenuIndex = 0;
-  
+
   final List<Map<String, dynamic>> _menuItems = [
     {'title': '通用', 'icon': Icons.settings_outlined},
     {'title': '模型', 'icon': Icons.model_training_outlined},
@@ -26,8 +26,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final themeMode = ref.watch(app_theme.themeManagerProvider);
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
-    
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 左侧菜单
         Container(
@@ -56,17 +57,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   itemBuilder: (context, index) {
                     final item = _menuItems[index];
                     final isSelected = _selectedMenuIndex == index;
-                    
+
                     return ListTile(
                       leading: Icon(
                         item['icon'],
-                        color: isSelected ? Theme.of(context).primaryColor : null,
+                        color:
+                            isSelected ? Theme.of(context).primaryColor : null,
                       ),
                       title: Text(
                         item['title'],
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Theme.of(context).primaryColor : null,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color:
+                              isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : null,
+                          fontSize: 14,
                         ),
                       ),
                       selected: isSelected,
@@ -82,15 +89,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ],
           ),
         ),
-        
+
         // 右侧内容区
-        Expanded(
-          child: _buildContent(),
-        ),
+        Expanded(child: _buildContent()),
       ],
     );
   }
-  
+
   Widget _buildContent() {
     switch (_selectedMenuIndex) {
       case 0:
@@ -105,11 +110,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         return _buildGeneralSettings();
     }
   }
-  
+
   Widget _buildGeneralSettings() {
     final themeMode = ref.watch(app_theme.themeManagerProvider);
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -117,10 +122,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           const Text(
             '通用设置',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '主题',
             children: [
@@ -135,35 +140,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       themeManager.setThemeMode(newValue);
                     }
                   },
-                  items: app_theme.ThemeMode.values
-                      .map<DropdownMenuItem<app_theme.ThemeMode>>((
-                        app_theme.ThemeMode mode,
-                      ) {
-                        String modeName = '';
-                        switch (mode) {
-                          case app_theme.ThemeMode.light:
-                            modeName = '浅色模式';
-                            break;
-                          case app_theme.ThemeMode.dark:
-                            modeName = '深色模式';
-                            break;
-                          case app_theme.ThemeMode.system:
-                            modeName = '跟随系统';
-                            break;
-                        }
-                        return DropdownMenuItem<app_theme.ThemeMode>(
-                          value: mode,
-                          child: Text(modeName),
-                        );
-                      })
-                      .toList(),
+                  items:
+                      app_theme.ThemeMode.values
+                          .map<DropdownMenuItem<app_theme.ThemeMode>>((
+                            app_theme.ThemeMode mode,
+                          ) {
+                            String modeName = '';
+                            switch (mode) {
+                              case app_theme.ThemeMode.light:
+                                modeName = '浅色模式';
+                                break;
+                              case app_theme.ThemeMode.dark:
+                                modeName = '深色模式';
+                                break;
+                              case app_theme.ThemeMode.system:
+                                modeName = '跟随系统';
+                                break;
+                            }
+                            return DropdownMenuItem<app_theme.ThemeMode>(
+                              value: mode,
+                              child: Text(modeName),
+                            );
+                          })
+                          .toList(),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '字体大小',
             children: [
@@ -187,9 +193,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '语言',
             children: [
@@ -207,7 +213,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
   }
-  
+
   Widget _buildModelSettings() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -216,10 +222,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           const Text(
             '模型设置',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '添加模型',
             children: [
@@ -232,9 +238,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '模型列表',
             children: [
@@ -261,7 +267,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
   }
-  
+
   Widget _buildDataSettings() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -270,10 +276,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           const Text(
             '数据设置',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '数据存储',
             children: [
@@ -289,19 +295,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '数据管理',
             children: [
               ListTile(
                 title: const Text('清空所有数据'),
                 subtitle: const Text('删除所有对话和设置'),
-                trailing: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                ),
+                trailing: const Icon(Icons.delete_outline, color: Colors.red),
                 onTap: () {
                   _showClearDataDialog();
                 },
@@ -312,7 +315,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
   }
-  
+
   Widget _buildAboutSettings() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -321,10 +324,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           const Text(
             '关于',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '应用信息',
             children: [
@@ -339,9 +342,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildSection(
             title: '帮助',
             children: [
@@ -382,8 +385,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.withOpacity(0.2),
+                width: 1.0, // 可以自定义宽度
+              ),
+            ),
           ),
           child: Column(children: children),
         ),
