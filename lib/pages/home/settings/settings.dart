@@ -13,212 +13,376 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _autoSave = true;
   String _selectedLanguage = '中文';
   double _fontSize = 14.0;
-  double lrPadding = 16.0;
+  int _selectedMenuIndex = 0;
+  
+  final List<Map<String, dynamic>> _menuItems = [
+    {'title': '通用', 'icon': Icons.settings_outlined},
+    {'title': '模型', 'icon': Icons.model_training_outlined},
+    {'title': '数据', 'icon': Icons.storage_outlined},
+    {'title': '关于', 'icon': Icons.info_outline},
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // 获取当前主题模式
     final themeMode = ref.watch(app_theme.themeManagerProvider);
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    
+    return Row(
       children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            lrPadding,
-            lrPadding,
-            lrPadding,
-            lrPadding / 3,
-          ),
-          child: const Text(
-            '设置',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              lrPadding,
-              lrPadding,
-              lrPadding,
-              lrPadding / 3,
+        // 左侧菜单
+        Container(
+          width: 200,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.2),
+                width: 1,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 外观设置
-                _buildSection(
-                  title: '外观',
-                  icon: Icons.palette_outlined,
-                  children: [
-                    ListTile(
-                      title: const Text('主题模式'),
-                      subtitle: Text(themeManager.getThemeModeName()),
-                      trailing: DropdownButton<app_theme.ThemeMode>(
-                        value: themeMode,
-                        underline: Container(),
-                        onChanged: (app_theme.ThemeMode? newValue) {
-                          if (newValue != null) {
-                            themeManager.setThemeMode(newValue);
-                          }
-                        },
-                        items:
-                            app_theme.ThemeMode.values
-                                .map<DropdownMenuItem<app_theme.ThemeMode>>((
-                                  app_theme.ThemeMode mode,
-                                ) {
-                                  String modeName = '';
-                                  switch (mode) {
-                                    case app_theme.ThemeMode.light:
-                                      modeName = '浅色模式';
-                                      break;
-                                    case app_theme.ThemeMode.dark:
-                                      modeName = '深色模式';
-                                      break;
-                                    case app_theme.ThemeMode.system:
-                                      modeName = '跟随系统';
-                                      break;
-                                  }
-                                  return DropdownMenuItem<app_theme.ThemeMode>(
-                                    value: mode,
-                                    child: Text(modeName),
-                                  );
-                                })
-                                .toList(),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  '设置',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _menuItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _menuItems[index];
+                    final isSelected = _selectedMenuIndex == index;
+                    
+                    return ListTile(
+                      leading: Icon(
+                        item['icon'],
+                        color: isSelected ? Theme.of(context).primaryColor : null,
                       ),
-                    ),
-                    const Divider(),
-                    ListTile(
-                      title: const Text('字体大小'),
-                      subtitle: Text('${_fontSize.toInt()}px'),
-                      trailing: SizedBox(
-                        width: 200,
-                        child: Slider(
-                          value: _fontSize,
-                          min: 12.0,
-                          max: 20.0,
-                          divisions: 8,
-                          onChanged: (value) {
-                            setState(() {
-                              _fontSize = value;
-                            });
-                          },
+                      title: Text(
+                        item['title'],
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Theme.of(context).primaryColor : null,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // 语言设置
-                _buildSection(
-                  title: '语言',
-                  icon: Icons.language_outlined,
-                  children: [
-                    ListTile(
-                      title: const Text('界面语言'),
-                      subtitle: Text(_selectedLanguage),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      selected: isSelected,
                       onTap: () {
-                        _showLanguageDialog();
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // 数据设置
-                _buildSection(
-                  title: '数据',
-                  icon: Icons.storage_outlined,
-                  children: [
-                    SwitchListTile(
-                      title: const Text('自动保存'),
-                      subtitle: const Text('自动保存对话内容'),
-                      value: _autoSave,
-                      onChanged: (value) {
                         setState(() {
-                          _autoSave = value;
+                          _selectedMenuIndex = index;
                         });
                       },
-                    ),
-                    const Divider(),
-                    ListTile(
-                      title: const Text('清除所有数据'),
-                      subtitle: const Text('删除所有对话和设置'),
-                      trailing: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.red,
-                      ),
-                      onTap: () {
-                        _showClearDataDialog();
-                      },
-                    ),
-                  ],
+                    );
+                  },
                 ),
-
-                const SizedBox(height: 24),
-
-                // 关于
-                _buildSection(
-                  title: '关于',
-                  icon: Icons.info_outline,
-                  children: [
-                    ListTile(
-                      title: const Text('版本信息'),
-                      subtitle: const Text('Lemon Tea v1.0.0'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        _showAboutDialog();
-                      },
-                    ),
-                    const Divider(),
-                    ListTile(
-                      title: const Text('帮助文档'),
-                      subtitle: const Text('查看使用说明'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        // TODO: 打开帮助文档
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+        
+        // 右侧内容区
+        Expanded(
+          child: _buildContent(),
+        ),
       ],
+    );
+  }
+  
+  Widget _buildContent() {
+    switch (_selectedMenuIndex) {
+      case 0:
+        return _buildGeneralSettings();
+      case 1:
+        return _buildModelSettings();
+      case 2:
+        return _buildDataSettings();
+      case 3:
+        return _buildAboutSettings();
+      default:
+        return _buildGeneralSettings();
+    }
+  }
+  
+  Widget _buildGeneralSettings() {
+    final themeMode = ref.watch(app_theme.themeManagerProvider);
+    final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '通用设置',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '主题',
+            children: [
+              ListTile(
+                title: const Text('主题模式'),
+                subtitle: Text(themeManager.getThemeModeName()),
+                trailing: DropdownButton<app_theme.ThemeMode>(
+                  value: themeMode,
+                  underline: Container(),
+                  onChanged: (app_theme.ThemeMode? newValue) {
+                    if (newValue != null) {
+                      themeManager.setThemeMode(newValue);
+                    }
+                  },
+                  items: app_theme.ThemeMode.values
+                      .map<DropdownMenuItem<app_theme.ThemeMode>>((
+                        app_theme.ThemeMode mode,
+                      ) {
+                        String modeName = '';
+                        switch (mode) {
+                          case app_theme.ThemeMode.light:
+                            modeName = '浅色模式';
+                            break;
+                          case app_theme.ThemeMode.dark:
+                            modeName = '深色模式';
+                            break;
+                          case app_theme.ThemeMode.system:
+                            modeName = '跟随系统';
+                            break;
+                        }
+                        return DropdownMenuItem<app_theme.ThemeMode>(
+                          value: mode,
+                          child: Text(modeName),
+                        );
+                      })
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '字体大小',
+            children: [
+              ListTile(
+                title: const Text('界面字体大小'),
+                subtitle: Text('${_fontSize.toInt()}px'),
+                trailing: SizedBox(
+                  width: 200,
+                  child: Slider(
+                    value: _fontSize,
+                    min: 12.0,
+                    max: 20.0,
+                    divisions: 8,
+                    onChanged: (value) {
+                      setState(() {
+                        _fontSize = value;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '语言',
+            children: [
+              ListTile(
+                title: const Text('界面语言'),
+                subtitle: Text(_selectedLanguage),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  _showLanguageDialog();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildModelSettings() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '模型设置',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '添加模型',
+            children: [
+              ListTile(
+                title: const Text('添加新模型'),
+                trailing: const Icon(Icons.add),
+                onTap: () {
+                  // TODO: 实现添加模型功能
+                },
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '模型列表',
+            children: [
+              ListTile(
+                title: const Text('GPT-4'),
+                subtitle: const Text('OpenAI'),
+                trailing: const Icon(Icons.check_circle, color: Colors.green),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Claude 3'),
+                subtitle: const Text('Anthropic'),
+                trailing: const Icon(Icons.circle_outlined),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Gemini Pro'),
+                subtitle: const Text('Google'),
+                trailing: const Icon(Icons.circle_outlined),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildDataSettings() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '数据设置',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '数据存储',
+            children: [
+              SwitchListTile(
+                title: const Text('自动保存数据'),
+                subtitle: const Text('自动保存对话内容'),
+                value: _autoSave,
+                onChanged: (value) {
+                  setState(() {
+                    _autoSave = value;
+                  });
+                },
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '数据管理',
+            children: [
+              ListTile(
+                title: const Text('清空所有数据'),
+                subtitle: const Text('删除所有对话和设置'),
+                trailing: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                ),
+                onTap: () {
+                  _showClearDataDialog();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildAboutSettings() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '关于',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '应用信息',
+            children: [
+              ListTile(
+                title: const Text('Lemon Tea'),
+                subtitle: const Text('版本 1.0.0'),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('开发者'),
+                subtitle: const Text('Lemon Tea Team'),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          _buildSection(
+            title: '帮助',
+            children: [
+              ListTile(
+                title: const Text('帮助文档'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // TODO: 打开帮助文档
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('反馈问题'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // TODO: 打开反馈页面
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSection({
     required String title,
-    required IconData icon,
     required List<Widget> children,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 20, color: Colors.grey[600]),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ],
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            // borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.withOpacity(0.2)),
           ),
           child: Column(children: children),
@@ -292,33 +456,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('清除'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('关于 Lemon Tea'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Lemon Tea v1.0.0'),
-                SizedBox(height: 8),
-                Text('一个简洁的AI助手应用'),
-                SizedBox(height: 16),
-                Text('© 2024 Lemon Tea Team'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('确定'),
               ),
             ],
           ),
