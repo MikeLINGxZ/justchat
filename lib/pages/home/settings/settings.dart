@@ -174,7 +174,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             title: '字体大小',
             children: [
               ListTile(
-                title: const Text('界面字体大小'),
+                title: const Text('界面字体'),
                 subtitle: Text('${_fontSize.toInt()}px'),
                 trailing: SizedBox(
                   width: 200,
