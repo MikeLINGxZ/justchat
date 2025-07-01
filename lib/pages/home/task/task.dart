@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class TaskPage extends ConsumerStatefulWidget {
   const TaskPage({super.key});
@@ -18,7 +19,7 @@ class _TaskPage extends ConsumerState<TaskPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '任务管理',
+            S.of(context).taskManagement,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
               fontWeight: FontWeight.bold,
@@ -37,7 +38,7 @@ class _TaskPage extends ConsumerState<TaskPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '暂无任务',
+                    S.of(context).noTasks,
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -45,7 +46,7 @@ class _TaskPage extends ConsumerState<TaskPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '在这里管理您的任务',
+                    S.of(context).manageTasksHere,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[500],

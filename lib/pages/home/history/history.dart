@@ -4,6 +4,7 @@ import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
@@ -64,19 +65,19 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个对话吗？删除后无法恢复。'),
+        title: Text(S.of(context).confirmDelete),
+        content: Text(S.of(context).confirmDeleteConversation),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),
-            child: const Text('删除'),
+            child: Text(S.of(context).delete),
           ),
         ],
       ),
@@ -100,7 +101,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
           Row(
             children: [
               Text(
-                '对话历史',
+                S.of(context).conversationHistory,
                 style: TextStyle(
                   fontSize: FontSizeUtils.getHeadingSize(ref),
                   fontWeight: FontWeight.bold,
@@ -111,7 +112,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 ElevatedButton.icon(
                   onPressed: widget.onNewConversation,
                   icon: const Icon(Icons.add),
-                  label: const Text('新对话'),
+                  label: Text(S.of(context).newConversation),
                 ),
             ],
           ),
@@ -120,7 +121,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
           // 搜索框
           TextField(
             decoration: InputDecoration(
-              hintText: '搜索对话...',
+              hintText: S.of(context).searchConversations,
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -150,7 +151,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _searchQuery.isEmpty ? '暂无对话历史' : '未找到相关对话',
+                          _searchQuery.isEmpty ? S.of(context).noConversationHistory : '未找到相关对话',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[600],
@@ -212,7 +213,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${conversation.messages.length}条消息',
+                                S.of(context).messagesCount(conversation.messages.length),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -222,7 +223,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                               IconButton(
                                 onPressed: () => _handleDeleteConversation(conversation.id),
                                 icon: const Icon(Icons.delete_outline, size: 18),
-                                tooltip: '删除对话',
+                                tooltip: S.of(context).deleteConversation,
                                 style: IconButton.styleFrom(
                                   foregroundColor: Colors.red,
                                   backgroundColor: Colors.red.withValues(alpha: 0.1),
@@ -244,7 +245,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   }
 
   String _getPreviewText(List<Message> messages) {
-    if (messages.isEmpty) return '空对话';
+    if (messages.isEmpty) return S.of(context).conversation;
     
     // 获取最后一条用户消息作为预览
     for (int i = messages.length - 1; i >= 0; i--) {

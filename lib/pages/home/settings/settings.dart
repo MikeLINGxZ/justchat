@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -16,10 +17,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   int _selectedMenuIndex = 0;
 
   final List<Map<String, dynamic>> _menuItems = [
-    {'title': '通用', 'icon': Icons.settings_outlined},
-    {'title': '模型', 'icon': Icons.model_training_outlined},
-    {'title': '数据', 'icon': Icons.storage_outlined},
-    {'title': '关于', 'icon': Icons.info_outline},
+    {'title': 'general', 'icon': Icons.settings_outlined},
+    {'title': 'model', 'icon': Icons.model_training_outlined},
+    {'title': 'data', 'icon': Icons.storage_outlined},
+    {'title': 'about', 'icon': Icons.info_outline},
   ];
 
   @override
@@ -47,7 +48,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  '设置',
+                  S.of(context).settings,
                   style: TextStyle(
                     fontSize: FontSizeUtils.getHeadingSize(ref),
                     fontWeight: FontWeight.bold
@@ -60,6 +61,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   itemBuilder: (context, index) {
                     final item = _menuItems[index];
                     final isSelected = _selectedMenuIndex == index;
+                    
+                    // 根据菜单项的title获取对应的多语言文本
+                    String title;
+                    switch (item['title']) {
+                      case 'general':
+                        title = S.of(context).general;
+                        break;
+                      case 'model':
+                        title = S.of(context).model;
+                        break;
+                      case 'data':
+                        title = S.of(context).data;
+                        break;
+                      case 'about':
+                        title = S.of(context).about;
+                        break;
+                      default:
+                        title = '';
+                    }
 
                     return ListTile(
                       leading: Icon(
@@ -68,7 +88,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             isSelected ? Theme.of(context).primaryColor : null,
                       ),
                       title: Text(
-                        item['title'],
+                        title,
                         style: TextStyle(
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
@@ -130,7 +150,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '通用设置',
+            S.of(context).generalSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
               fontWeight: FontWeight.bold
@@ -139,10 +159,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '主题',
+            title: S.of(context).theme,
             children: [
               ListTile(
-                title: const Text('主题模式'),
+                title: Text(S.of(context).themeMode),
                 subtitle: Text(themeManager.getThemeModeName()),
                 trailing: DropdownButton<app_theme.ThemeMode>(
                   value: themeMode,
@@ -160,13 +180,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             String modeName = '';
                             switch (mode) {
                               case app_theme.ThemeMode.light:
-                                modeName = '浅色模式';
+                                modeName = S.of(context).lightMode;
                                 break;
                               case app_theme.ThemeMode.dark:
-                                modeName = '深色模式';
+                                modeName = S.of(context).darkMode;
                                 break;
                               case app_theme.ThemeMode.system:
-                                modeName = '跟随系统';
+                                modeName = S.of(context).systemMode;
                                 break;
                             }
                             return DropdownMenuItem<app_theme.ThemeMode>(
@@ -183,10 +203,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '字体大小',
+            title: S.of(context).fontSize,
             children: [
               ListTile(
-                title: const Text('界面字体'),
+                title: Text(S.of(context).interfaceFont),
                 subtitle: Text('${app_theme.getFontSizeModeName(fontSizeMode)} (${currentFontSize.toInt()}px)'),
                 trailing: DropdownButton<app_theme.FontSizeMode>(
                   value: fontSizeMode,
@@ -214,10 +234,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '语言',
+            title: S.of(context).language,
             children: [
               ListTile(
-                title: const Text('界面语言'),
+                title: Text(S.of(context).interfaceLanguage),
                 subtitle: Text(_selectedLanguage),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
@@ -238,7 +258,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '模型设置',
+            S.of(context).modelSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
               fontWeight: FontWeight.bold
@@ -247,10 +267,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '添加模型',
+            title: S.of(context).addModel,
             children: [
               ListTile(
-                title: const Text('添加新模型'),
+                title: Text(S.of(context).addNewModel),
                 trailing: const Icon(Icons.add),
                 onTap: () {
                   // TODO: 实现添加模型功能
@@ -262,7 +282,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '模型列表',
+            title: S.of(context).modelList,
             children: [
               ListTile(
                 title: const Text('GPT-4'),
@@ -295,7 +315,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '数据设置',
+            S.of(context).dataSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
               fontWeight: FontWeight.bold
@@ -304,10 +324,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: '数据存储',
+            title: S.of(context).dataStorage,
             children: [
               SwitchListTile(
-                title: const Text('自动保存数据'),
+                title: Text(S.of(context).autoSaveData),
                 subtitle: const Text('自动保存对话内容'),
                 value: _autoSave,
                 onChanged: (value) {
@@ -432,12 +452,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('选择语言'),
+            title: Text(S.of(context).language),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<String>(
-                  title: const Text('中文'),
+                  title: Text(S.of(context).chinese),
                   value: '中文',
                   groupValue: _selectedLanguage,
                   onChanged: (value) {
@@ -463,7 +483,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('取消'),
+                child: Text(S.of(context).cancel),
               ),
             ],
           ),
@@ -475,12 +495,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('确认清除'),
+            title: Text(S.of(context).confirmDelete),
             content: const Text('确定要清除所有数据吗？此操作无法撤销。'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('取消'),
+                child: Text(S.of(context).cancel),
               ),
               TextButton(
                 onPressed: () {
@@ -491,7 +511,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ).showSnackBar(const SnackBar(content: Text('数据已清除')));
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('清除'),
+                child: Text(S.of(context).delete),
               ),
             ],
           ),

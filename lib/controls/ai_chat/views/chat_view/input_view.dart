@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lemon_tea/controls/input.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class InputView extends StatefulWidget {
   final Function(String)? onFileSelected;
@@ -74,7 +75,7 @@ class _InputView extends State<InputView> {
             controller: _textController,
             minLines: 2,
             maxLines: 4,
-            hintText: '输入消息...',
+            hintText: S.of(context).inputMessage,
             onChanged: (value) {
               if (value.endsWith('\n')) {
                 final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
@@ -102,11 +103,11 @@ class _InputView extends State<InputView> {
                       _handleFileSelection('image');
                       _menuController.close();
                     },
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.image),
-                        SizedBox(width: 8),
-                        Text('上传图片'),
+                        const Icon(Icons.image),
+                        const SizedBox(width: 8),
+                        Text(S.of(context).uploadImage),
                       ],
                     ),
                   ),
@@ -115,11 +116,11 @@ class _InputView extends State<InputView> {
                       _handleFileSelection('file');
                       _menuController.close();
                     },
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.insert_drive_file),
-                        SizedBox(width: 8),
-                        Text('上传文件'),
+                        const Icon(Icons.insert_drive_file),
+                        const SizedBox(width: 8),
+                        Text(S.of(context).uploadFile),
                       ],
                     ),
                   ),

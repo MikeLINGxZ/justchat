@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class TitleBarView extends ConsumerWidget {
   final String tag;
@@ -9,8 +10,8 @@ class TitleBarView extends ConsumerWidget {
 
   const TitleBarView({
     super.key,
-    this.tag = '对话',
-    this.title = 'AI 助手',
+    this.tag = '',
+    this.title = '',
     this.onAddTap,
   });
 
@@ -34,6 +35,10 @@ class TitleBarView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 如果没有提供tag和title，使用默认值
+    final displayTag = tag.isEmpty ? S.of(context).conversation : tag;
+    final displayTitle = title.isEmpty ? S.of(context).aiAssistant : title;
+
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -55,7 +60,7 @@ class TitleBarView extends ConsumerWidget {
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              tag,
+              displayTag,
               style: TextStyle(
                 fontSize: FontSizeUtils.getSmallSize(ref),
                 color: Theme.of(context).colorScheme.primary,
@@ -65,7 +70,7 @@ class TitleBarView extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              title,
+              displayTitle,
               style: TextStyle(
                 fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.bold,

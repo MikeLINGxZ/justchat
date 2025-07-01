@@ -3,6 +3,7 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/input_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({
@@ -11,7 +12,7 @@ class ChatView extends StatefulWidget {
     this.onSend, 
     required this.historyMessages,
     this.onNewConversation,
-    this.currentTitle = 'AI 助手',
+    this.currentTitle = '',
   });
 
   final Function(String)? onFileSelected;
@@ -27,6 +28,8 @@ class ChatView extends StatefulWidget {
 class _ChatView extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
+    final displayTitle = widget.currentTitle.isEmpty ? S.of(context).aiAssistant : widget.currentTitle;
+    
     return ConstrainedBox(
       constraints: const BoxConstraints(
         minWidth: 400.0,
@@ -36,7 +39,7 @@ class _ChatView extends State<ChatView> {
           // 顶部部件
           SizedBox(
             child: TitleBarView(
-              title: widget.currentTitle,
+              title: displayTitle,
               onAddTap: widget.onNewConversation,
             ),
           ),
