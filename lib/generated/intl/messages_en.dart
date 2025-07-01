@@ -82,6 +82,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "No Conversation History",
     ),
     "noTasks": MessageLookupByLibrary.simpleMessage("No Tasks"),
+    "pluginManagement": MessageLookupByLibrary.simpleMessage(
+      "Plugin Management",
+    ),
     "searchConversations": MessageLookupByLibrary.simpleMessage(
       "Search conversations...",
     ),

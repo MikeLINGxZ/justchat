@@ -459,6 +459,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Plugin Management`
+  String get pluginManagement {
+    return Intl.message(
+      'Plugin Management',
+      name: 'pluginManagement',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

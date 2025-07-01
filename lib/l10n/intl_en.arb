@@ -50,5 +50,6 @@
   "fontSizeSmall": "Small",
   "fontSizeMedium": "Medium",
   "fontSizeLarge": "Large",
-  "fontSizeExtraLarge": "Extra Large"
+  "fontSizeExtraLarge": "Extra Large",
+  "pluginManagement": "Plugin Management"
 }

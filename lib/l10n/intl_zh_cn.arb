@@ -50,5 +50,6 @@
   "fontSizeSmall": "小",
   "fontSizeMedium": "中",
   "fontSizeLarge": "大",
-  "fontSizeExtraLarge": "超大"
+  "fontSizeExtraLarge": "超大",
+  "pluginManagement": "插件管理"
 }

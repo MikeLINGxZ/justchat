@@ -72,6 +72,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "newConversation": MessageLookupByLibrary.simpleMessage("新对话"),
     "noConversationHistory": MessageLookupByLibrary.simpleMessage("暂无对话历史"),
     "noTasks": MessageLookupByLibrary.simpleMessage("暂无任务"),
+    "pluginManagement": MessageLookupByLibrary.simpleMessage("插件管理"),
     "searchConversations": MessageLookupByLibrary.simpleMessage("搜索对话..."),
     "settings": MessageLookupByLibrary.simpleMessage("设置"),
     "systemMode": MessageLookupByLibrary.simpleMessage("跟随系统"),
