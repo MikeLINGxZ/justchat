@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  bool _isDarkMode = false;
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _autoSave = true;
   String _selectedLanguage = '中文';
   double _fontSize = 14.0;
 
   @override
   Widget build(BuildContext context) {
+    // 获取当前主题模式
+    final themeMode = ref.watch(app_theme.themeManagerProvider);
+    final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -39,15 +44,36 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: '外观',
                     icon: Icons.palette_outlined,
                     children: [
-                      SwitchListTile(
-                        title: const Text('深色模式'),
-                        subtitle: const Text('切换到深色主题'),
-                        value: _isDarkMode,
-                        onChanged: (value) {
-                          setState(() {
-                            _isDarkMode = value;
-                          });
-                        },
+                      ListTile(
+                        title: const Text('主题模式'),
+                        subtitle: Text(themeManager.getThemeModeName()),
+                        trailing: DropdownButton<app_theme.ThemeMode>(
+                          value: themeMode,
+                          underline: Container(),
+                          onChanged: (app_theme.ThemeMode? newValue) {
+                            if (newValue != null) {
+                              themeManager.setThemeMode(newValue);
+                            }
+                          },
+                          items: app_theme.ThemeMode.values.map<DropdownMenuItem<app_theme.ThemeMode>>((app_theme.ThemeMode mode) {
+                            String modeName = '';
+                            switch (mode) {
+                              case app_theme.ThemeMode.light:
+                                modeName = '浅色模式';
+                                break;
+                              case app_theme.ThemeMode.dark:
+                                modeName = '深色模式';
+                                break;
+                              case app_theme.ThemeMode.system:
+                                modeName = '跟随系统';
+                                break;
+                            }
+                            return DropdownMenuItem<app_theme.ThemeMode>(
+                              value: mode,
+                              child: Text(modeName),
+                            );
+                          }).toList(),
+                        ),
                       ),
                       const Divider(),
                       ListTile(
