@@ -4,6 +4,7 @@ import 'package:lemon_tea/controls/sidebar_icon_button.dart';
 import 'package:lemon_tea/pages/home/assistant/assistant.dart';
 import 'package:lemon_tea/pages/home/task/task.dart';
 import 'package:lemon_tea/pages/home/history/history.dart';
+import 'package:lemon_tea/pages/home/settings/settings.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
 
@@ -38,6 +39,7 @@ class _HomePage extends State<HomePage> {
         onConversationDeleted: _handleConversationDeleted,
         onNewConversation: _handleNewConversation,
       ),
+      const SettingsPage(),
     ]);
   }
 
@@ -100,6 +102,16 @@ class _HomePage extends State<HomePage> {
                         onPressed: () {
                           setState(() {
                             _selectedIndex = 2;
+                          });
+                        },
+                      ),
+                      const Spacer(),
+                      SidebarIconButton(
+                        icon: Icons.settings,
+                        isSelected: _selectedIndex == 3,
+                        onPressed: () {
+                          setState(() {
+                            _selectedIndex = 3;
                           });
                         },
                       ),

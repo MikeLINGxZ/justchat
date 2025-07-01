@@ -3,7 +3,6 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/chat_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
-import 'package:lemon_tea/models/conversation.dart';
 
 class AssistantPage extends StatefulWidget {
   final ConversationManager? conversationManager;
