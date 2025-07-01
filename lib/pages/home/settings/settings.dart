@@ -163,7 +163,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: Text(S.of(context).themeMode),
-                subtitle: Text(themeManager.getThemeModeName()),
+                subtitle: Text(themeManager.getLocalizedThemeModeName(context)),
                 trailing: DropdownButton<app_theme.ThemeMode>(
                   value: themeMode,
                   underline: Container(),
@@ -207,7 +207,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: Text(S.of(context).interfaceFont),
-                subtitle: Text('${app_theme.getFontSizeModeName(fontSizeMode)} (${currentFontSize.toInt()}px)'),
+                subtitle: Text('${app_theme.getLocalizedFontSizeModeName(context, fontSizeMode)} (${currentFontSize.toInt()}px)'),
                 trailing: DropdownButton<app_theme.FontSizeMode>(
                   value: fontSizeMode,
                   underline: Container(),
@@ -222,7 +222,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ) {
                         return DropdownMenuItem<app_theme.FontSizeMode>(
                           value: mode,
-                          child: Text(app_theme.getFontSizeModeName(mode),style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
+                          child: Text(app_theme.getLocalizedFontSizeModeName(context, mode), style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
                         );
                       })
                       .toList(),

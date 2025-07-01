@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lemon_tea/generated/l10n.dart';
 
 /// 主题模式枚举
 enum ThemeMode {
@@ -31,6 +32,22 @@ String getFontSizeModeName(FontSizeMode mode) {
       return '大';
     case FontSizeMode.extraLarge:
       return '超大';
+  }
+}
+
+/// 获取字体大小模式的多语言名称
+String getLocalizedFontSizeModeName(BuildContext context, FontSizeMode mode) {
+  switch (mode) {
+    case FontSizeMode.extraSmall:
+      return S.of(context).fontSizeExtraSmall;
+    case FontSizeMode.small:
+      return S.of(context).fontSizeSmall;
+    case FontSizeMode.medium:
+      return S.of(context).fontSizeMedium;
+    case FontSizeMode.large:
+      return S.of(context).fontSizeLarge;
+    case FontSizeMode.extraLarge:
+      return S.of(context).fontSizeExtraLarge;
   }
 }
 
@@ -123,6 +140,30 @@ class ThemeManager extends StateNotifier<ThemeMode> {
     }
   }
 
+  /// 获取当前主题模式的多语言名称
+  String getLocalizedThemeModeName(BuildContext context) {
+    switch (state) {
+      case ThemeMode.light:
+        return S.of(context).lightMode;
+      case ThemeMode.dark:
+        return S.of(context).darkMode;
+      case ThemeMode.system:
+        return S.of(context).systemMode;
+    }
+  }
+
+  /// 获取下一个主题模式的多语言名称
+  String getLocalizedNextThemeModeName(BuildContext context) {
+    switch (state) {
+      case ThemeMode.light:
+        return S.of(context).darkMode;
+      case ThemeMode.dark:
+        return S.of(context).systemMode;
+      case ThemeMode.system:
+        return S.of(context).lightMode;
+    }
+  }
+
   /// 获取下一个主题模式的中文名称
   String getNextThemeModeName() {
     switch (state) {
@@ -173,5 +214,10 @@ class FontSizeModeNotifier extends StateNotifier<FontSizeMode> {
   /// 获取当前字体大小模式的名称
   String getCurrentFontSizeModeName() {
     return getFontSizeModeName(state);
+  }
+  
+  /// 获取当前字体大小模式的多语言名称
+  String getLocalizedCurrentFontSizeModeName(BuildContext context) {
+    return getLocalizedFontSizeModeName(context, state);
   }
 } 

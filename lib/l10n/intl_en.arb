@@ -45,5 +45,10 @@
   "deleteConversation": "Delete Conversation",
   "inputMessage": "Type a message...",
   "uploadImage": "Upload Image",
-  "uploadFile": "Upload File"
+  "uploadFile": "Upload File",
+  "fontSizeExtraSmall": "Extra Small",
+  "fontSizeSmall": "Small",
+  "fontSizeMedium": "Medium",
+  "fontSizeLarge": "Large",
+  "fontSizeExtraLarge": "Extra Large"
 }

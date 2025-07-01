@@ -424,6 +424,41 @@ class S {
   String get uploadFile {
     return Intl.message('Upload File', name: 'uploadFile', desc: '', args: []);
   }
+
+  /// `Extra Small`
+  String get fontSizeExtraSmall {
+    return Intl.message(
+      'Extra Small',
+      name: 'fontSizeExtraSmall',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Small`
+  String get fontSizeSmall {
+    return Intl.message('Small', name: 'fontSizeSmall', desc: '', args: []);
+  }
+
+  /// `Medium`
+  String get fontSizeMedium {
+    return Intl.message('Medium', name: 'fontSizeMedium', desc: '', args: []);
+  }
+
+  /// `Large`
+  String get fontSizeLarge {
+    return Intl.message('Large', name: 'fontSizeLarge', desc: '', args: []);
+  }
+
+  /// `Extra Large`
+  String get fontSizeExtraLarge {
+    return Intl.message(
+      'Extra Large',
+      name: 'fontSizeExtraLarge',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

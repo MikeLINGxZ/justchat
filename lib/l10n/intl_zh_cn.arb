@@ -45,5 +45,10 @@
   "deleteConversation": "删除对话",
   "inputMessage": "输入消息...",
   "uploadImage": "上传图片",
-  "uploadFile": "上传文件"
+  "uploadFile": "上传文件",
+  "fontSizeExtraSmall": "超小",
+  "fontSizeSmall": "小",
+  "fontSizeMedium": "中",
+  "fontSizeLarge": "大",
+  "fontSizeExtraLarge": "超大"
 }
