@@ -67,7 +67,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   S.of(context).settings,
                   style: TextStyle(
                     fontSize: FontSizeUtils.getHeadingSize(ref),
-                    fontWeight: FontWeight.bold
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -77,7 +77,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   itemBuilder: (context, index) {
                     final item = _menuItems[index];
                     final isSelected = settings.selectedMenuIndex == index;
-                    
+
                     // 根据菜单项的title获取对应的多语言文本
                     String title;
                     switch (item['title']) {
@@ -156,10 +156,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final fontSizeManager = ref.read(app_theme.fontSizeModeProvider.notifier);
     final settings = ref.watch(settingsManagerProvider);
     final settingsManager = ref.read(settingsManagerProvider.notifier);
-    
+
     // 基础字体大小为14
     final double baseFontSize = 14.0;
-    final double currentFontSize = app_theme.calculateFontSize(baseFontSize, fontSizeMode);
+    final double currentFontSize = app_theme.calculateFontSize(
+      baseFontSize,
+      fontSizeMode,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -170,7 +173,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             S.of(context).generalSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
-              fontWeight: FontWeight.bold
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 24),
@@ -208,7 +211,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             }
                             return DropdownMenuItem<app_theme.ThemeMode>(
                               value: mode,
-                              child: Text(modeName,style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
+                              child: Text(
+                                modeName,
+                                style: TextStyle(
+                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                ),
+                              ),
                             );
                           })
                           .toList(),
@@ -224,7 +232,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: Text(S.of(context).interfaceFont),
-                subtitle: Text('${app_theme.getLocalizedFontSizeModeName(context, fontSizeMode)} (${currentFontSize.toInt()}px)'),
+                subtitle: Text(
+                  '${app_theme.getLocalizedFontSizeModeName(context, fontSizeMode)} (${currentFontSize.toInt()}px)',
+                ),
                 trailing: DropdownButton<app_theme.FontSizeMode>(
                   value: fontSizeMode,
                   underline: Container(),
@@ -233,16 +243,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       fontSizeManager.setFontSizeMode(newValue);
                     }
                   },
-                  items: app_theme.FontSizeMode.values
-                      .map<DropdownMenuItem<app_theme.FontSizeMode>>((
-                        app_theme.FontSizeMode mode,
-                      ) {
-                        return DropdownMenuItem<app_theme.FontSizeMode>(
-                          value: mode,
-                          child: Text(app_theme.getLocalizedFontSizeModeName(context, mode), style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),),
-                        );
-                      })
-                      .toList(),
+                  items:
+                      app_theme.FontSizeMode.values
+                          .map<DropdownMenuItem<app_theme.FontSizeMode>>((
+                            app_theme.FontSizeMode mode,
+                          ) {
+                            return DropdownMenuItem<app_theme.FontSizeMode>(
+                              value: mode,
+                              child: Text(
+                                app_theme.getLocalizedFontSizeModeName(
+                                  context,
+                                  mode,
+                                ),
+                                style: TextStyle(
+                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                ),
+                              ),
+                            );
+                          })
+                          .toList(),
                 ),
               ),
             ],
@@ -272,7 +291,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final providers = ref.watch(providerManagerProvider);
     final selectedProvider = ref.watch(selectedProviderProvider);
     final selectedModel = ref.watch(selectedModelProvider);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -282,7 +301,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             S.of(context).modelSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
-              fontWeight: FontWeight.bold
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 24),
@@ -310,8 +329,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _buildSection(
               title: '${selectedProvider.displayName} 的模型',
               children: [
-                if (selectedProvider.models != null && selectedProvider.models!.isNotEmpty)
-                  ...selectedProvider.models!.map((model) => _buildModelTile(model, selectedProvider))
+                if (selectedProvider.models != null &&
+                    selectedProvider.models!.isNotEmpty)
+                  ...selectedProvider.models!.map(
+                    (model) => _buildModelTile(model, selectedProvider),
+                  )
                 else
                   const ListTile(
                     title: Text('暂无模型'),
@@ -370,28 +392,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   break;
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit),
-                    SizedBox(width: 8),
-                    Text('编辑'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('删除', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit),
+                        SizedBox(width: 8),
+                        Text('编辑'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('删除', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
@@ -405,7 +428,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildModelTile(Model model, LlmProvider provider) {
     final selectedModel = ref.watch(selectedModelProvider);
     final isSelected = selectedModel?.id == model.id;
-    
+
     return ListTile(
       title: Text(model.displayName),
       subtitle: Text('类型: ${model.object}'),
@@ -422,7 +445,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildDataSettings() {
     final settings = ref.watch(settingsManagerProvider);
     final settingsManager = ref.read(settingsManagerProvider.notifier);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -432,7 +455,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             S.of(context).dataSettings,
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
-              fontWeight: FontWeight.bold
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 24),
@@ -481,7 +504,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             '关于',
             style: TextStyle(
               fontSize: FontSizeUtils.getHeadingSize(ref),
-              fontWeight: FontWeight.bold
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 24),
@@ -539,7 +562,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title,
           style: TextStyle(
             fontSize: FontSizeUtils.getSubheadingSize(ref),
-            fontWeight: FontWeight.w600
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
@@ -562,7 +585,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void _showLanguageDialog() {
     final settings = ref.read(settingsManagerProvider);
     final settingsManager = ref.read(settingsManagerProvider.notifier);
-    
+
     showDialog(
       context: context,
       builder:
@@ -605,7 +628,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   void _showClearDataDialog() {
     final settingsManager = ref.read(settingsManagerProvider.notifier);
-    
+
     showDialog(
       context: context,
       builder:
@@ -650,117 +673,135 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final providers = ref.read(providerManagerProvider);
     final selectedProvider = ref.read(selectedProviderProvider);
     final selectedModel = ref.read(selectedModelProvider);
-    
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择模型'),
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: Column(
-            children: [
-              // 供应商选择
-              const Text('选择供应商:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: providers.length,
-                  itemBuilder: (context, index) {
-                    final provider = providers[index];
-                    final isSelected = selectedProvider?.name == provider.name;
-                    
-                    return ListTile(
-                      title: Text(provider.displayName),
-                      subtitle: Text(provider.baseUrl),
-                      trailing: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color: isSelected ? Colors.green : null,
-                      ),
-                      onTap: () {
-                        ref.read(selectedProviderProvider.notifier).state = provider;
-                        ref.read(selectedModelProvider.notifier).state = null;
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  },
-                ),
-              ),
-              
-              if (selectedProvider != null) ...[
-                const Divider(),
-                const Text('选择模型:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: selectedProvider.models?.length ?? 0,
-                    itemBuilder: (context, index) {
-                      final model = selectedProvider.models![index];
-                      final isSelected = selectedModel?.id == model.id;
-                      
-                      return ListTile(
-                        title: Text(model.displayName),
-                        subtitle: Text('类型: ${model.object}'),
-                        trailing: Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? Colors.green : null,
-                        ),
-                        onTap: () {
-                          ref.read(selectedModelProvider.notifier).state = model;
-                          Navigator.of(context).pop();
-                        },
-                      );
-                    },
+      builder:
+          (context) => AlertDialog(
+            title: const Text('选择模型'),
+            content: SizedBox(
+              width: 400,
+              height: 300,
+              child: Column(
+                children: [
+                  // 供应商选择
+                  const Text(
+                    '选择供应商:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: providers.length,
+                      itemBuilder: (context, index) {
+                        final provider = providers[index];
+                        final isSelected =
+                            selectedProvider?.name == provider.name;
+
+                        return ListTile(
+                          title: Text(provider.displayName),
+                          subtitle: Text(provider.baseUrl),
+                          trailing: Icon(
+                            isSelected
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                            color: isSelected ? Colors.green : null,
+                          ),
+                          onTap: () {
+                            ref.read(selectedProviderProvider.notifier).state =
+                                provider;
+                            ref.read(selectedModelProvider.notifier).state =
+                                null;
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  if (selectedProvider != null) ...[
+                    const Divider(),
+                    const Text(
+                      '选择模型:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: selectedProvider.models?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          final model = selectedProvider.models![index];
+                          final isSelected = selectedModel?.id == model.id;
+
+                          return ListTile(
+                            title: Text(model.displayName),
+                            subtitle: Text('类型: ${model.object}'),
+                            trailing: Icon(
+                              isSelected
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: isSelected ? Colors.green : null,
+                            ),
+                            onTap: () {
+                              ref.read(selectedModelProvider.notifier).state =
+                                  model;
+                              Navigator.of(context).pop();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(S.of(context).cancel),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
-          ),
-        ],
-      ),
     );
   }
 
   void _showDeleteProviderDialog(LlmProvider provider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('确认删除'),
+            content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(S.of(context).cancel),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    final providerManager = ref.read(
+                      providerManagerProvider.notifier,
+                    );
+                    await providerManager.deleteProvider(provider.name);
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('供应商删除成功')));
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('删除失败：${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text(S.of(context).delete),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              try {
-                final providerManager = ref.read(providerManagerProvider.notifier);
-                await providerManager.deleteProvider(provider.name);
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('供应商删除成功')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('删除失败：${e.toString()}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(S.of(context).delete),
-          ),
-        ],
-      ),
     );
   }
 }
