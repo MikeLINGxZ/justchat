@@ -26,22 +26,6 @@ enum AppLanguage {
   chinese,  // 中文
 }
 
-/// 获取字体大小模式的名称
-String getFontSizeModeName(FontSizeMode mode) {
-  switch (mode) {
-    case FontSizeMode.extraSmall:
-      return '超小';
-    case FontSizeMode.small:
-      return '小';
-    case FontSizeMode.medium:
-      return '中';
-    case FontSizeMode.large:
-      return '大';
-    case FontSizeMode.extraLarge:
-      return '超大';
-  }
-}
-
 /// 获取字体大小模式的多语言名称
 String getLocalizedFontSizeModeName(BuildContext context, FontSizeMode mode) {
   switch (mode) {
@@ -211,18 +195,6 @@ class ThemeManager extends StateNotifier<ThemeMode> {
         return S.of(context).lightMode;
     }
   }
-
-  /// 获取下一个主题模式的中文名称
-  String getNextThemeModeName() {
-    switch (state) {
-      case ThemeMode.light:
-        return '深色模式';
-      case ThemeMode.dark:
-        return '跟随系统';
-      case ThemeMode.system:
-        return '浅色模式';
-    }
-  }
 }
 
 /// 字体大小管理器
@@ -259,11 +231,6 @@ class FontSizeModeNotifier extends StateNotifier<FontSizeMode> {
     }
   }
 
-  /// 获取当前字体大小模式的名称
-  String getCurrentFontSizeModeName() {
-    return getFontSizeModeName(state);
-  }
-  
   /// 获取当前字体大小模式的多语言名称
   String getLocalizedCurrentFontSizeModeName(BuildContext context) {
     return getLocalizedFontSizeModeName(context, state);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
+import 'package:lemon_tea/utils/settings_item_manager.dart' as app_theme;
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/settings_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
