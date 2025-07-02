@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/utils/settings_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -12,9 +13,18 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _autoSave = true;
-  String _selectedLanguage = '中文';
-  int _selectedMenuIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    // 初始化时加载设置
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = ref.read(settingsManagerProvider);
+      // 如果语言设置与当前不同，需要重新加载语言
+      if (settings.language != '中文' && settings.language == 'English') {
+        S.load(const Locale('en', 'US'));
+      }
+    });
+  }
 
   final List<Map<String, dynamic>> _menuItems = [
     {'title': 'general', 'icon': Icons.settings_outlined},
@@ -27,6 +37,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final themeMode = ref.watch(app_theme.themeManagerProvider);
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
+    final settings = ref.watch(settingsManagerProvider);
+    final settingsManager = ref.read(settingsManagerProvider.notifier);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +72,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   itemCount: _menuItems.length,
                   itemBuilder: (context, index) {
                     final item = _menuItems[index];
-                    final isSelected = _selectedMenuIndex == index;
+                    final isSelected = settings.selectedMenuIndex == index;
                     
                     // 根据菜单项的title获取对应的多语言文本
                     String title;
@@ -101,9 +113,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
                       selected: isSelected,
                       onTap: () {
-                        setState(() {
-                          _selectedMenuIndex = index;
-                        });
+                        settingsManager.setSelectedMenuIndex(index);
                       },
                     );
                   },
@@ -120,7 +130,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildContent() {
-    switch (_selectedMenuIndex) {
+    final settings = ref.watch(settingsManagerProvider);
+    switch (settings.selectedMenuIndex) {
       case 0:
         return _buildGeneralSettings();
       case 1:
@@ -139,6 +150,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final themeManager = ref.read(app_theme.themeManagerProvider.notifier);
     final fontSizeMode = ref.watch(app_theme.fontSizeModeProvider);
     final fontSizeManager = ref.read(app_theme.fontSizeModeProvider.notifier);
+    final settings = ref.watch(settingsManagerProvider);
+    final settingsManager = ref.read(settingsManagerProvider.notifier);
     
     // 基础字体大小为14
     final double baseFontSize = 14.0;
@@ -238,7 +251,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: Text(S.of(context).interfaceLanguage),
-                subtitle: Text(_selectedLanguage),
+                subtitle: Text(settings.language),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
                   _showLanguageDialog();
@@ -309,6 +322,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildDataSettings() {
+    final settings = ref.watch(settingsManagerProvider);
+    final settingsManager = ref.read(settingsManagerProvider.notifier);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -329,11 +345,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               SwitchListTile(
                 title: Text(S.of(context).autoSaveData),
                 subtitle: const Text('自动保存对话内容'),
-                value: _autoSave,
+                value: settings.autoSave,
                 onChanged: (value) {
-                  setState(() {
-                    _autoSave = value;
-                  });
+                  settingsManager.setAutoSave(value);
                 },
               ),
             ],
@@ -448,6 +462,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _showLanguageDialog() {
+    final settings = ref.read(settingsManagerProvider);
+    final settingsManager = ref.read(settingsManagerProvider.notifier);
+    
     showDialog(
       context: context,
       builder:
@@ -459,11 +476,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 RadioListTile<String>(
                   title: Text(S.of(context).chinese),
                   value: '中文',
-                  groupValue: _selectedLanguage,
+                  groupValue: settings.language,
                   onChanged: (value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
+                    settingsManager.setLanguage(value!);
                     S.load(const Locale('zh', 'CN'));
                     Navigator.of(context).pop();
                   },
@@ -471,11 +486,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 RadioListTile<String>(
                   title: const Text('English'),
                   value: 'English',
-                  groupValue: _selectedLanguage,
+                  groupValue: settings.language,
                   onChanged: (value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
+                    settingsManager.setLanguage(value!);
                     S.load(const Locale('en', 'US'));
                     Navigator.of(context).pop();
                   },
@@ -493,6 +506,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _showClearDataDialog() {
+    final settingsManager = ref.read(settingsManagerProvider.notifier);
+    
     showDialog(
       context: context,
       builder:
@@ -505,8 +520,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: Text(S.of(context).cancel),
               ),
               TextButton(
-                onPressed: () {
-                  // TODO: 实现清除数据功能
+                onPressed: () async {
+                  // 清除设置数据
+                  await settingsManager.clearAllSettings();
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(
                     context,
