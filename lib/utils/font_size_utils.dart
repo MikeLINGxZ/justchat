@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/utils/settings_item_manager.dart';
+import 'package:lemon_tea/utils/setting/manager.dart';
 
 /// 字体大小工具类
 class FontSizeUtils {

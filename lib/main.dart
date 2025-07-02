@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/home.dart';
+import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
+import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
-import 'package:lemon_tea/utils/settings_item_manager.dart' as app_theme;
-import 'package:lemon_tea/utils/settings_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 
