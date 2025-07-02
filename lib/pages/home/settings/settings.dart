@@ -4,6 +4,10 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
+import 'package:lemon_tea/utils/setting/provider_manager.dart';
+import 'package:lemon_tea/pages/home/settings/provider_dialog.dart';
+import 'package:lemon_tea/models/llm_provider.dart';
+import 'package:lemon_tea/models/model.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -265,6 +269,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildModelSettings() {
+    final providers = ref.watch(providerManagerProvider);
+    final selectedProvider = ref.watch(selectedProviderProvider);
+    final selectedModel = ref.watch(selectedModelProvider);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -280,44 +288,134 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 24),
 
           _buildSection(
-            title: S.of(context).addModel,
+            title: '模型供应商',
             children: [
               ListTile(
-                title: Text(S.of(context).addNewModel),
+                title: const Text('添加供应商'),
+                subtitle: const Text('添加新的AI模型供应商'),
                 trailing: const Icon(Icons.add),
                 onTap: () {
-                  // TODO: 实现添加模型功能
+                  _showProviderDialog();
                 },
               ),
+              if (providers.isNotEmpty) ...[
+                const Divider(height: 1),
+                ...providers.map((provider) => _buildProviderTile(provider)),
+              ],
             ],
           ),
 
-          const SizedBox(height: 24),
+          if (selectedProvider != null) ...[
+            const SizedBox(height: 24),
+            _buildSection(
+              title: '${selectedProvider.displayName} 的模型',
+              children: [
+                if (selectedProvider.models != null && selectedProvider.models!.isNotEmpty)
+                  ...selectedProvider.models!.map((model) => _buildModelTile(model, selectedProvider))
+                else
+                  const ListTile(
+                    title: Text('暂无模型'),
+                    subtitle: Text('该供应商暂无可用模型'),
+                  ),
+              ],
+            ),
+          ],
 
+          const SizedBox(height: 24),
           _buildSection(
-            title: S.of(context).modelList,
+            title: '当前选择',
             children: [
               ListTile(
-                title: const Text('GPT-4'),
-                subtitle: const Text('OpenAI'),
-                trailing: const Icon(Icons.check_circle, color: Colors.green),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                title: const Text('Claude 3'),
-                subtitle: const Text('Anthropic'),
-                trailing: const Icon(Icons.circle_outlined),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                title: const Text('Gemini Pro'),
-                subtitle: const Text('Google'),
-                trailing: const Icon(Icons.circle_outlined),
+                title: Text(selectedProvider?.displayName ?? '未选择供应商'),
+                subtitle: Text(selectedModel?.displayName ?? '未选择模型'),
+                trailing: const Icon(Icons.settings),
+                onTap: () {
+                  _showModelSelectionDialog();
+                },
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProviderTile(LlmProvider provider) {
+    return ListTile(
+      title: Text(provider.displayName),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(provider.baseUrl),
+          if (provider.description != null) Text(provider.description!),
+          Text('模型数量: ${provider.models?.length ?? 0}'),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            provider.hasApiKey ? Icons.check_circle : Icons.warning,
+            color: provider.hasApiKey ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'edit':
+                  _showProviderDialog(provider: provider);
+                  break;
+                case 'delete':
+                  _showDeleteProviderDialog(provider);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit),
+                    SizedBox(width: 8),
+                    Text('编辑'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('删除', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      onTap: () {
+        ref.read(selectedProviderProvider.notifier).state = provider;
+        ref.read(selectedModelProvider.notifier).state = null;
+      },
+    );
+  }
+
+  Widget _buildModelTile(Model model, LlmProvider provider) {
+    final selectedModel = ref.watch(selectedModelProvider);
+    final isSelected = selectedModel?.id == model.id;
+    
+    return ListTile(
+      title: Text(model.displayName),
+      subtitle: Text('类型: ${model.object}'),
+      trailing: Icon(
+        isSelected ? Icons.check_circle : Icons.circle_outlined,
+        color: isSelected ? Colors.green : null,
+      ),
+      onTap: () {
+        ref.read(selectedModelProvider.notifier).state = model;
+      },
     );
   }
 
@@ -533,6 +631,136 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showProviderDialog({LlmProvider? provider}) {
+    showDialog(
+      context: context,
+      builder: (context) => ProviderDialog(provider: provider),
+    ).then((result) {
+      if (result == true) {
+        // 刷新供应商列表
+        setState(() {});
+      }
+    });
+  }
+
+  void _showModelSelectionDialog() {
+    final providers = ref.read(providerManagerProvider);
+    final selectedProvider = ref.read(selectedProviderProvider);
+    final selectedModel = ref.read(selectedModelProvider);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择模型'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: Column(
+            children: [
+              // 供应商选择
+              const Text('选择供应商:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: providers.length,
+                  itemBuilder: (context, index) {
+                    final provider = providers[index];
+                    final isSelected = selectedProvider?.name == provider.name;
+                    
+                    return ListTile(
+                      title: Text(provider.displayName),
+                      subtitle: Text(provider.baseUrl),
+                      trailing: Icon(
+                        isSelected ? Icons.check_circle : Icons.circle_outlined,
+                        color: isSelected ? Colors.green : null,
+                      ),
+                      onTap: () {
+                        ref.read(selectedProviderProvider.notifier).state = provider;
+                        ref.read(selectedModelProvider.notifier).state = null;
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  },
+                ),
+              ),
+              
+              if (selectedProvider != null) ...[
+                const Divider(),
+                const Text('选择模型:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: selectedProvider.models?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final model = selectedProvider.models![index];
+                      final isSelected = selectedModel?.id == model.id;
+                      
+                      return ListTile(
+                        title: Text(model.displayName),
+                        subtitle: Text('类型: ${model.object}'),
+                        trailing: Icon(
+                          isSelected ? Icons.check_circle : Icons.circle_outlined,
+                          color: isSelected ? Colors.green : null,
+                        ),
+                        onTap: () {
+                          ref.read(selectedModelProvider.notifier).state = model;
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(S.of(context).cancel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteProviderDialog(LlmProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                final providerManager = ref.read(providerManagerProvider.notifier);
+                await providerManager.deleteProvider(provider.name);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('供应商删除成功')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('删除失败：${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(S.of(context).delete),
+          ),
+        ],
+      ),
     );
   }
 }

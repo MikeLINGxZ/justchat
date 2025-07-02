@@ -469,6 +469,221 @@ class S {
       args: [],
     );
   }
+
+  /// `Model Provider`
+  String get modelProvider {
+    return Intl.message(
+      'Model Provider',
+      name: 'modelProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add Provider`
+  String get addProvider {
+    return Intl.message(
+      'Add Provider',
+      name: 'addProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Provider`
+  String get editProvider {
+    return Intl.message(
+      'Edit Provider',
+      name: 'editProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete Provider`
+  String get deleteProvider {
+    return Intl.message(
+      'Delete Provider',
+      name: 'deleteProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider Name`
+  String get providerName {
+    return Intl.message(
+      'Provider Name',
+      name: 'providerName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API Base URL`
+  String get apiBaseUrl {
+    return Intl.message('API Base URL', name: 'apiBaseUrl', desc: '', args: []);
+  }
+
+  /// `API Key`
+  String get apiKey {
+    return Intl.message('API Key', name: 'apiKey', desc: '', args: []);
+  }
+
+  /// `Display Name`
+  String get displayName {
+    return Intl.message(
+      'Display Name',
+      name: 'displayName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Description`
+  String get description {
+    return Intl.message('Description', name: 'description', desc: '', args: []);
+  }
+
+  /// `Test Connection`
+  String get testConnection {
+    return Intl.message(
+      'Test Connection',
+      name: 'testConnection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connection test successful`
+  String get connectionSuccess {
+    return Intl.message(
+      'Connection test successful',
+      name: 'connectionSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connection test failed`
+  String get connectionFailed {
+    return Intl.message(
+      'Connection test failed',
+      name: 'connectionFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider added successfully`
+  String get providerAdded {
+    return Intl.message(
+      'Provider added successfully',
+      name: 'providerAdded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider updated successfully`
+  String get providerUpdated {
+    return Intl.message(
+      'Provider updated successfully',
+      name: 'providerUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider deleted successfully`
+  String get providerDeleted {
+    return Intl.message(
+      'Provider deleted successfully',
+      name: 'providerDeleted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Operation failed`
+  String get operationFailed {
+    return Intl.message(
+      'Operation failed',
+      name: 'operationFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select Model`
+  String get selectModel {
+    return Intl.message(
+      'Select Model',
+      name: 'selectModel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select Provider`
+  String get selectProvider {
+    return Intl.message(
+      'Select Provider',
+      name: 'selectProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Current Selection`
+  String get currentSelection {
+    return Intl.message(
+      'Current Selection',
+      name: 'currentSelection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No provider selected`
+  String get noProviderSelected {
+    return Intl.message(
+      'No provider selected',
+      name: 'noProviderSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No model selected`
+  String get noModelSelected {
+    return Intl.message(
+      'No model selected',
+      name: 'noModelSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Model Count`
+  String get modelCount {
+    return Intl.message('Model Count', name: 'modelCount', desc: '', args: []);
+  }
+
+  /// `No Models`
+  String get noModels {
+    return Intl.message('No Models', name: 'noModels', desc: '', args: []);
+  }
+
+  /// `No available models for this provider`
+  String get noAvailableModels {
+    return Intl.message(
+      'No available models for this provider',
+      name: 'noAvailableModels',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
