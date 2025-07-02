@@ -66,11 +66,11 @@ class SettingsManager extends StateNotifier<AppSettings> {
   static const String _settingsKey = 'app_settings';
   
   SettingsManager() : super(AppSettings()) {
-    _loadSettings();
+    loadSettings();
   }
 
   /// 加载保存的设置
-  Future<void> _loadSettings() async {
+  Future<void> loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final settingsJson = prefs.getString(_settingsKey);

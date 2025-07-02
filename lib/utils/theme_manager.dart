@@ -130,11 +130,11 @@ class ThemeManager extends StateNotifier<ThemeMode> {
   static const String _themeKey = 'theme_mode';
   
   ThemeManager() : super(ThemeMode.system) {
-    _loadThemeMode();
+    loadThemeMode();
   }
 
   /// 加载保存的主题模式
-  Future<void> _loadThemeMode() async {
+  Future<void> loadThemeMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt(_themeKey);
@@ -230,11 +230,11 @@ class FontSizeModeNotifier extends StateNotifier<FontSizeMode> {
   static const String _fontSizeKey = 'font_size_mode';
   
   FontSizeModeNotifier() : super(FontSizeMode.medium) {
-    _loadFontSizeMode();
+    loadFontSizeMode();
   }
 
   /// 加载保存的字体大小模式
-  Future<void> _loadFontSizeMode() async {
+  Future<void> loadFontSizeMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final fontSizeIndex = prefs.getInt(_fontSizeKey);

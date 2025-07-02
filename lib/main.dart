@@ -4,8 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/home.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/theme_manager.dart' as app_theme;
+import 'package:lemon_tea/utils/settings_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
+
+/// 初始化应用设置
+Future<void> _initializeAppSettings(ProviderContainer container) async {
+  // 等待设置加载完成
+  await container.read(settingsManagerProvider.notifier).loadSettings();
+  
+  // 等待主题和字体大小设置加载完成
+  await container.read(app_theme.themeManagerProvider.notifier).loadThemeMode();
+  await container.read(app_theme.fontSizeModeProvider.notifier).loadFontSizeMode();
+  
+  // 根据设置初始化语言
+  final settings = container.read(settingsManagerProvider);
+  if (settings.language == 'English') {
+    S.load(const Locale('en', 'US'));
+  } else {
+    S.load(const Locale('zh', 'CN'));
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +46,17 @@ void main() async {
       await windowManager.focus(); // 聚焦窗口
     });
   }
-  runApp(ProviderScope(child: const LemonTea()));
+  
+  // 创建ProviderContainer来初始化设置
+  final container = ProviderContainer();
+  
+  // 初始化应用设置
+  await _initializeAppSettings(container);
+  
+  runApp(ProviderScope(
+    parent: container,
+    child: const LemonTea(),
+  ));
 }
 
 class LemonTea extends ConsumerWidget {
@@ -117,6 +146,8 @@ class LemonTea extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 获取当前主题模式
     final themeMode = ref.watch(app_theme.themeManagerProvider);
+    // 获取用户设置
+    final settings = ref.watch(settingsManagerProvider);
     
     // 转换为 Flutter 的 ThemeMode
     ThemeMode flutterThemeMode;
@@ -141,7 +172,7 @@ class LemonTea extends ConsumerWidget {
       ],
       supportedLocales: S.delegate.supportedLocales,
       title: "Lemon Tea",
-      locale: Locale('zh', 'CN'),
+      locale: settings.language == 'English' ? const Locale('en', 'US') : const Locale('zh', 'CN'),
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: flutterThemeMode,
