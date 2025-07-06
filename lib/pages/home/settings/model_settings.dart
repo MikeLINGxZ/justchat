@@ -30,61 +30,25 @@ class ModelSettings extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          _buildSection(
+          _buildSectionWithAction(
             context: context,
             ref: ref,
             title: '模型供应商',
-            children: [
-              ListTile(
-                title: const Text('添加供应商'),
-                subtitle: const Text('添加新的AI模型供应商'),
-                trailing: const Icon(Icons.add),
-                onTap: () {
-                  _showProviderDialog(context, ref);
-                },
-              ),
-              if (providers.isNotEmpty) ...[
-                const Divider(height: 1),
-                ...providers.map((provider) => _buildProviderTile(context, ref, provider)),
-              ],
-            ],
-          ),
-
-          if (selectedProvider != null) ...[
-            const SizedBox(height: 24),
-            _buildSection(
-              context: context,
-              ref: ref,
-              title: '${selectedProvider.displayName} 的模型',
-              children: [
-                if (selectedProvider.models != null &&
-                    selectedProvider.models!.isNotEmpty)
-                  ...selectedProvider.models!.map(
-                    (model) => _buildModelTile(context, ref, model, selectedProvider),
-                  )
-                else
-                  const ListTile(
-                    title: Text('暂无模型'),
-                    subtitle: Text('该供应商暂无可用模型'),
-                  ),
-              ],
+            action: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                _showProviderDialog(context, ref);
+              },
+              tooltip: '添加供应商',
             ),
-          ],
-
-          const SizedBox(height: 24),
-          _buildSection(
-            context: context,
-            ref: ref,
-            title: '当前选择',
             children: [
-              ListTile(
-                title: Text(selectedProvider?.displayName ?? '未选择供应商'),
-                subtitle: Text(selectedModel?.displayName ?? '未选择模型'),
-                trailing: const Icon(Icons.settings),
-                onTap: () {
-                  _showModelSelectionDialog(context, ref);
-                },
-              ),
+              if (providers.isNotEmpty)
+                ...providers.map((provider) => _buildProviderTile(context, ref, provider))
+              else
+                const ListTile(
+                  title: Text('暂无供应商'),
+                  subtitle: Text('点击右上角添加按钮添加新的AI模型供应商'),
+                ),
             ],
           ),
         ],
@@ -125,6 +89,46 @@ class ModelSettings extends ConsumerWidget {
     );
   }
 
+  Widget _buildSectionWithAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String title,
+    required Widget action,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            action,
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.withOpacity(0.2),
+                width: 1.0,
+              ),
+            ),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
   Widget _buildProviderTile(BuildContext context, WidgetRef ref, LlmProvider provider) {
     return ListTile(
       title: Text(provider.displayName),
@@ -139,9 +143,32 @@ class ModelSettings extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            provider.hasApiKey ? Icons.check_circle : Icons.warning,
-            color: provider.hasApiKey ? Colors.green : Colors.orange,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: provider.hasApiKey ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: provider.hasApiKey ? Colors.green : Colors.orange,
+                width: 1,
+              ),
+            ),
+            child: Text(
+              provider.hasApiKey ? '已配置' : '未配置',
+              style: TextStyle(
+                color: provider.hasApiKey ? Colors.green : Colors.orange,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: () {
+              _showModelsDialog(context, ref, provider);
+            },
+            tooltip: '查看模型列表',
           ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
@@ -208,6 +235,53 @@ class ModelSettings extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => ProviderDialog(provider: provider),
+    );
+  }
+
+  void _showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${provider.displayName} 的模型列表'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: provider.models != null && provider.models!.isNotEmpty
+              ? ListView.builder(
+                  itemCount: provider.models!.length,
+                  itemBuilder: (context, index) {
+                    final model = provider.models![index];
+                    return ListTile(
+                      title: Text(model.displayName),
+                      subtitle: Text('类型: ${model.object}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.check_circle_outline),
+                        onPressed: () {
+                          ref.read(selectedProviderProvider.notifier).state = provider;
+                          ref.read(selectedModelProvider.notifier).state = model;
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('已选择模型: ${model.displayName}'),
+                            ),
+                          );
+                        },
+                        tooltip: '选择此模型',
+                      ),
+                    );
+                  },
+                )
+              : const Center(
+                  child: Text('该供应商暂无可用模型'),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(S.of(context).cancel),
+          ),
+        ],
+      ),
     );
   }
 
