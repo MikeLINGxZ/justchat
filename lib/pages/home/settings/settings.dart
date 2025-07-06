@@ -8,6 +8,10 @@ import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/pages/home/settings/provider_dialog.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/pages/home/settings/general_settings.dart';
+import 'package:lemon_tea/pages/home/settings/model_settings.dart';
+import 'package:lemon_tea/pages/home/settings/data_settings.dart';
+import 'package:lemon_tea/pages/home/settings/about_settings.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -137,15 +141,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final settings = ref.watch(settingsManagerProvider);
     switch (settings.selectedMenuIndex) {
       case 0:
-        return _buildGeneralSettings();
+        return const GeneralSettings();
       case 1:
-        return _buildModelSettings();
+        return const ModelSettings();
       case 2:
-        return _buildDataSettings();
+        return const DataSettings();
       case 3:
-        return _buildAboutSettings();
+        return const AboutSettings();
       default:
-        return _buildGeneralSettings();
+        return const GeneralSettings();
     }
   }
 
