@@ -239,25 +239,40 @@ class ModelSettings extends ConsumerWidget {
   }
 
   void _showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+    // 获取最新的供应商数据，确保模型列表是最新的
+    final currentProviders = ref.read(providerManagerProvider);
+    final currentProvider = currentProviders.firstWhere(
+      (p) => p.name == provider.name,
+      orElse: () => provider,
+    );
+
+    // 调试信息
+    print('显示模型列表对话框');
+    print('供应商名称: ${currentProvider.name}');
+    print('模型数量: ${currentProvider.models?.length ?? 0}');
+    if (currentProvider.models != null) {
+      print('模型列表: ${currentProvider.models!.map((m) => m.displayName).toList()}');
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${provider.displayName} 的模型列表'),
+        title: Text('${currentProvider.displayName} 的模型列表'),
         content: SizedBox(
           width: 400,
           height: 300,
-          child: provider.models != null && provider.models!.isNotEmpty
+          child: currentProvider.models != null && currentProvider.models!.isNotEmpty
               ? ListView.builder(
-                  itemCount: provider.models!.length,
+                  itemCount: currentProvider.models!.length,
                   itemBuilder: (context, index) {
-                    final model = provider.models![index];
+                    final model = currentProvider.models![index];
                     return ListTile(
                       title: Text(model.displayName),
                       subtitle: Text('类型: ${model.object}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.check_circle_outline),
                         onPressed: () {
-                          ref.read(selectedProviderProvider.notifier).state = provider;
+                          ref.read(selectedProviderProvider.notifier).state = currentProvider;
                           ref.read(selectedModelProvider.notifier).state = model;
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -272,7 +287,19 @@ class ModelSettings extends ConsumerWidget {
                   },
                 )
               : const Center(
-                  child: Text('该供应商暂无可用模型'),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('该供应商暂无可用模型'),
+                      SizedBox(height: 8),
+                      Text(
+                        '请先测试连接以获取模型列表',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 ),
         ),
         actions: [

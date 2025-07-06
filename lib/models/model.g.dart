@@ -9,11 +9,11 @@ part of 'model.dart';
 Model _$ModelFromJson(Map<String, dynamic> json) => Model(
   id: json['id'] as String,
   object: json['object'] as String,
-  ownedBy: json['OwnedBy'] as String,
+  ownedBy: json['owned_by'] as String,
 );
 
 Map<String, dynamic> _$ModelToJson(Model instance) => <String, dynamic>{
   'id': instance.id,
   'object': instance.object,
-  'OwnedBy': instance.ownedBy,
+  'owned_by': instance.ownedBy,
 };

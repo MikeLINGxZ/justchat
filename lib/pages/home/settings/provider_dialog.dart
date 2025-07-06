@@ -265,15 +265,29 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
       );
 
       final providerManager = ref.read(providerManagerProvider.notifier);
-      final isConnected = await providerManager.testProviderConnection(provider);
+      final result = await providerManager.testProviderConnection(provider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isConnected ? '连接测试成功' : '连接测试失败'),
-            backgroundColor: isConnected ? Colors.green : Colors.red,
-          ),
-        );
+        if (result['success']) {
+          final models = result['models'] as List;
+          final message = result['message'] as String;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          final error = result['error'] as String;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('连接测试失败：$error'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

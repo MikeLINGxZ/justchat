@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/utils/api_service.dart';
 
 /// 模型供应商管理器Provider
 final providerManagerProvider = StateNotifierProvider<ProviderManager, List<LlmProvider>>((ref) {
@@ -109,10 +110,15 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
 
   /// 更新模型供应商
   Future<void> updateProvider(String originalName, LlmProvider updatedProvider) async {
+    print('更新供应商: $originalName');
+    
     final index = state.indexWhere((p) => p.name == originalName);
     if (index == -1) {
       throw Exception('未找到要更新的模型供应商');
     }
+    
+    print('更新前模型数量: ${state[index].models?.length ?? 0}');
+    print('更新后模型数量: ${updatedProvider.models?.length ?? 0}');
     
     // 检查新名称是否与其他供应商冲突
     if (originalName != updatedProvider.name && 
@@ -124,6 +130,7 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
     newProviders[index] = updatedProvider;
     state = newProviders;
     await _saveProviders();
+    print('供应商更新完成');
   }
 
   /// 删除模型供应商
@@ -175,11 +182,43 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
     await updateProvider(providerName, updatedProvider);
   }
 
-  /// 测试供应商连接
-  Future<bool> testProviderConnection(LlmProvider provider) async {
-    // TODO: 实现实际的连接测试
-    // 这里可以发送一个简单的API请求来验证连接
-    await Future.delayed(const Duration(seconds: 1)); // 模拟网络请求
-    return provider.hasApiKey; // 简单检查是否有API密钥
+  /// 测试供应商连接并获取模型列表
+  Future<Map<String, dynamic>> testProviderConnection(LlmProvider provider) async {
+    try {
+      print('开始测试连接: ${provider.name}');
+      final result = await ApiService.testConnectionAndGetModels(provider);
+      
+      if (result['success']) {
+        // 如果连接成功，更新供应商的模型列表
+        final models = result['models'] as List<Model>;
+        print('获取到 ${models.length} 个模型');
+        
+        final updatedProvider = provider.copyWith(models: models);
+        
+        // 更新存储中的供应商信息
+        await updateProvider(provider.name, updatedProvider);
+        print('供应商信息已更新');
+        
+        return {
+          'success': true,
+          'models': models,
+          'message': '连接测试成功，获取到 ${models.length} 个模型',
+        };
+      } else {
+        print('连接测试失败: ${result['error']}');
+        return {
+          'success': false,
+          'error': result['error'],
+          'models': <Model>[],
+        };
+      }
+    } catch (e) {
+      print('测试连接异常: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'models': <Model>[],
+      };
+    }
   }
 } 

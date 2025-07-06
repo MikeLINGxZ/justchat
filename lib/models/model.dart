@@ -6,7 +6,7 @@ part 'model.g.dart';
 class Model {
   final String id;
   final String object;
-  @JsonKey(name: 'OwnedBy')
+  @JsonKey(name: 'owned_by')
   final String ownedBy;
 
   const Model({
