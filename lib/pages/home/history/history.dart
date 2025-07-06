@@ -65,6 +65,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
         title: Text(S.of(context).confirmDelete),
         content: Text(S.of(context).confirmDeleteConversation),
         actions: [

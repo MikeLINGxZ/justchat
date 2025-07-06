@@ -260,7 +260,7 @@ class ModelSettings extends ConsumerWidget {
 
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(4),
             ),
             title: Text('${currentProvider.displayName} 的模型列表'),
             content: SizedBox(
@@ -338,6 +338,9 @@ class ModelSettings extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
         title: const Text('选择模型'),
         content: SizedBox(
           width: 400,
@@ -420,6 +423,9 @@ class ModelSettings extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
         title: const Text('确认删除'),
         content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
         actions: [

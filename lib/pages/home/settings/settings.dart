@@ -594,6 +594,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
             title: Text(S.of(context).language),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -637,6 +640,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
             title: Text(S.of(context).confirmDelete),
             content: const Text('确定要清除所有数据吗？此操作无法撤销。'),
             actions: [
@@ -682,6 +688,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
             title: const Text('选择模型'),
             content: SizedBox(
               width: 400,
@@ -774,6 +783,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
             title: const Text('确认删除'),
             content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
             actions: [

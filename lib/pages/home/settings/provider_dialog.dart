@@ -53,6 +53,9 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
     final isEditMode = widget.provider != null;
     
     return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(4),
+      ),
       title: Text(
         isEditMode ? '编辑模型供应商' : '添加模型供应商',
         style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),

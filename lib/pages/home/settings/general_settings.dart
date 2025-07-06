@@ -195,6 +195,9 @@ class GeneralSettings extends ConsumerWidget {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
             title: Text(S.of(context).language),
             content: Column(
               mainAxisSize: MainAxisSize.min,

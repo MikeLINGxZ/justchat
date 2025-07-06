@@ -103,6 +103,9 @@ class DataSettings extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
         title: Text(S.of(context).confirmDelete),
         content: const Text('确定要清除所有数据吗？此操作无法撤销。'),
         actions: [
