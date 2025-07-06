@@ -8,11 +8,14 @@ class Model {
   final String object;
   @JsonKey(name: 'owned_by')
   final String ownedBy;
+  @JsonKey(defaultValue: true)
+  final bool enabled;
 
   const Model({
     required this.id, 
     required this.object, 
     required this.ownedBy,
+    this.enabled = true,
   });
 
   /// 从 JSON 创建 Model 实例
@@ -26,11 +29,13 @@ class Model {
     String? id,
     String? object,
     String? ownedBy,
+    bool? enabled,
   }) {
     return Model(
       id: id ?? this.id,
       object: object ?? this.object,
       ownedBy: ownedBy ?? this.ownedBy,
+      enabled: enabled ?? this.enabled,
     );
   }
 
@@ -54,7 +59,7 @@ class Model {
 
   @override
   String toString() {
-    return 'Model(id: $id, object: $object, ownedBy: $ownedBy)';
+    return 'Model(id: $id, object: $object, ownedBy: $ownedBy, enabled: $enabled)';
   }
 
   @override
@@ -63,11 +68,12 @@ class Model {
     return other is Model &&
         other.id == id &&
         other.object == object &&
-        other.ownedBy == ownedBy;
+        other.ownedBy == ownedBy &&
+        other.enabled == enabled;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, object, ownedBy);
+    return Object.hash(id, object, ownedBy, enabled);
   }
 }

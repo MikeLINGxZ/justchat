@@ -35,6 +35,7 @@ class ApiService {
             ownedBy: modelJson['owned_by']?.toString() ?? 
                      modelJson['OwnedBy']?.toString() ?? 
                      provider.name.toLowerCase(),
+            enabled: true, // 默认启用
           );
         }).where((model) => model.id.isNotEmpty).toList();
       } else {

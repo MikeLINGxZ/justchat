@@ -57,9 +57,9 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
         alias: 'OpenAI',
         description: 'OpenAI官方API',
         models: [
-          Model(id: 'gpt-4', object: 'model', ownedBy: 'openai'),
-          Model(id: 'gpt-4-turbo', object: 'model', ownedBy: 'openai'),
-          Model(id: 'gpt-3.5-turbo', object: 'model', ownedBy: 'openai'),
+          Model(id: 'gpt-4', object: 'model', ownedBy: 'openai', enabled: true),
+          Model(id: 'gpt-4-turbo', object: 'model', ownedBy: 'openai', enabled: true),
+          Model(id: 'gpt-3.5-turbo', object: 'model', ownedBy: 'openai', enabled: true),
         ],
       ),
       LlmProvider(
@@ -68,9 +68,9 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
         alias: 'Claude',
         description: 'Anthropic Claude API',
         models: [
-          Model(id: 'claude-3-opus-20240229', object: 'model', ownedBy: 'anthropic'),
-          Model(id: 'claude-3-sonnet-20240229', object: 'model', ownedBy: 'anthropic'),
-          Model(id: 'claude-3-haiku-20240307', object: 'model', ownedBy: 'anthropic'),
+          Model(id: 'claude-3-opus-20240229', object: 'model', ownedBy: 'anthropic', enabled: true),
+          Model(id: 'claude-3-sonnet-20240229', object: 'model', ownedBy: 'anthropic', enabled: true),
+          Model(id: 'claude-3-haiku-20240307', object: 'model', ownedBy: 'anthropic', enabled: true),
         ],
       ),
       LlmProvider(
@@ -79,8 +79,8 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
         alias: 'Gemini',
         description: 'Google Gemini API',
         models: [
-          Model(id: 'gemini-pro', object: 'model', ownedBy: 'google'),
-          Model(id: 'gemini-pro-vision', object: 'model', ownedBy: 'google'),
+          Model(id: 'gemini-pro', object: 'model', ownedBy: 'google', enabled: true),
+          Model(id: 'gemini-pro-vision', object: 'model', ownedBy: 'google', enabled: true),
         ],
       ),
     ];
@@ -154,7 +154,7 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
     for (final provider in state) {
       if (provider.models != null) {
         for (final model in provider.models!) {
-          if (model.isChatModel) {
+          if (model.isChatModel && model.enabled) {
             models.add(model);
           }
         }
@@ -168,7 +168,7 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
     final provider = getProviderByName(providerName);
     if (provider?.models == null) return [];
     
-    return provider!.models!.where((model) => model.isChatModel).toList();
+    return provider!.models!.where((model) => model.isChatModel && model.enabled).toList();
   }
 
   /// 更新供应商的API密钥

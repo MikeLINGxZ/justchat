@@ -137,7 +137,7 @@ class ModelSettings extends ConsumerWidget {
         children: [
           Text(provider.baseUrl),
           if (provider.description != null) Text(provider.description!),
-          Text('模型数量: ${provider.models?.length ?? 0}'),
+          Text('模型数量: ${provider.models?.where((m) => m.enabled).length ?? 0} / ${provider.models?.length ?? 0}'),
         ],
       ),
       trailing: Row(
@@ -239,75 +239,90 @@ class ModelSettings extends ConsumerWidget {
   }
 
   void _showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
-    // 获取最新的供应商数据，确保模型列表是最新的
-    final currentProviders = ref.read(providerManagerProvider);
-    final currentProvider = currentProviders.firstWhere(
-      (p) => p.name == provider.name,
-      orElse: () => provider,
-    );
-
-    // 调试信息
-    print('显示模型列表对话框');
-    print('供应商名称: ${currentProvider.name}');
-    print('模型数量: ${currentProvider.models?.length ?? 0}');
-    if (currentProvider.models != null) {
-      print('模型列表: ${currentProvider.models!.map((m) => m.displayName).toList()}');
-    }
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${currentProvider.displayName} 的模型列表'),
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: currentProvider.models != null && currentProvider.models!.isNotEmpty
-              ? ListView.builder(
-                  itemCount: currentProvider.models!.length,
-                  itemBuilder: (context, index) {
-                    final model = currentProvider.models![index];
-                    return ListTile(
-                      title: Text(model.displayName),
-                      subtitle: Text('类型: ${model.object}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.check_circle_outline),
-                        onPressed: () {
-                          ref.read(selectedProviderProvider.notifier).state = currentProvider;
-                          ref.read(selectedModelProvider.notifier).state = model;
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('已选择模型: ${model.displayName}'),
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          // 获取最新的供应商数据，确保模型列表是最新的
+          final currentProviders = ref.watch(providerManagerProvider);
+          final currentProvider = currentProviders.firstWhere(
+            (p) => p.name == provider.name,
+            orElse: () => provider,
+          );
+
+          // 调试信息
+          print('显示模型列表对话框');
+          print('供应商名称: ${currentProvider.name}');
+          print('模型数量: ${currentProvider.models?.length ?? 0}');
+          if (currentProvider.models != null) {
+            print('模型列表: ${currentProvider.models!.map((m) => m.displayName).toList()}');
+          }
+
+          return AlertDialog(
+            title: Text('${currentProvider.displayName} 的模型列表'),
+            content: SizedBox(
+              width: 400,
+              height: 300,
+              child: currentProvider.models != null && currentProvider.models!.isNotEmpty
+                  ? ListView.builder(
+                      itemCount: currentProvider.models!.length,
+                      itemBuilder: (context, index) {
+                        final model = currentProvider.models![index];
+                        return ListTile(
+                          title: Text(model.displayName),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: model.enabled,
+                              onChanged: (value) async {
+                                // 更新模型的启用状态
+                                final updatedModel = model.copyWith(enabled: value);
+                                final updatedModels = List<Model>.from(currentProvider.models!);
+                                updatedModels[index] = updatedModel;
+                                
+                                final updatedProvider = currentProvider.copyWith(models: updatedModels);
+                                
+                                // 保存更新后的供应商信息
+                                final providerManager = ref.read(providerManagerProvider.notifier);
+                                await providerManager.updateProvider(currentProvider.name, updatedProvider);
+                                
+                                // 显示提示信息
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${model.displayName} ${value ? '已启用' : '已禁用'}'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                        tooltip: '选择此模型',
+                          ),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('该供应商暂无可用模型'),
+                          SizedBox(height: 8),
+                          Text(
+                            '请先测试连接以获取模型列表',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                )
-              : const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.info_outline, size: 48, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('该供应商暂无可用模型'),
-                      SizedBox(height: 8),
-                      Text(
-                        '请先测试连接以获取模型列表',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
-          ),
-        ],
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(S.of(context).cancel),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
