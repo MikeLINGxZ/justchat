@@ -259,6 +259,9 @@ class ModelSettings extends ConsumerWidget {
           }
 
           return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(3),
+            ),
             title: Text('${currentProvider.displayName} 的模型列表'),
             content: SizedBox(
               width: 400,
