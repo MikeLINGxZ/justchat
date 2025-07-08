@@ -11,21 +11,21 @@ class FontSizeUtils {
 
   /// 获取调整后的标题字体大小 (20)
   static double getHeadingSize(WidgetRef ref) {
-    return getAdjustedFontSize(ref, 20);
+    return getAdjustedFontSize(ref, 19);
   }
 
   /// 获取调整后的副标题字体大小 (16)
   static double getSubheadingSize(WidgetRef ref) {
-    return getAdjustedFontSize(ref, 16);
+    return getAdjustedFontSize(ref, 17);
   }
 
   /// 获取调整后的正文字体大小 (14)
   static double getBodySize(WidgetRef ref) {
-    return getAdjustedFontSize(ref, 14);
+    return getAdjustedFontSize(ref, 15);
   }
 
   /// 获取调整后的小字体大小 (12)
   static double getSmallSize(WidgetRef ref) {
-    return getAdjustedFontSize(ref, 12);
+    return getAdjustedFontSize(ref, 13);
   }
 } 

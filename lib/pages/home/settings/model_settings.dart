@@ -45,9 +45,15 @@ class ModelSettings extends ConsumerWidget {
               if (providers.isNotEmpty)
                 ...providers.map((provider) => _buildProviderTile(context, ref, provider))
               else
-                const ListTile(
-                  title: Text('暂无供应商'),
-                  subtitle: Text('点击右上角添加按钮添加新的AI模型供应商'),
+                ListTile(
+                  title: Text(
+                    '暂无供应商',
+                    style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                  ),
+                  subtitle: Text(
+                    '点击右上角添加按钮添加新的AI模型供应商',
+                    style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+                  ),
                 ),
             ],
           ),
@@ -131,13 +137,26 @@ class ModelSettings extends ConsumerWidget {
 
   Widget _buildProviderTile(BuildContext context, WidgetRef ref, LlmProvider provider) {
     return ListTile(
-      title: Text(provider.displayName),
+      title: Text(
+        provider.displayName,
+        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(provider.baseUrl),
-          if (provider.description != null) Text(provider.description!),
-          Text('模型数量: ${provider.models?.where((m) => m.enabled).length ?? 0} / ${provider.models?.length ?? 0}'),
+          Text(
+            provider.baseUrl,
+            style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+          ),
+          if (provider.description != null) 
+            Text(
+              provider.description!,
+              style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+            ),
+          Text(
+            '模型数量: ${provider.models?.where((m) => m.enabled).length ?? 0} / ${provider.models?.length ?? 0}',
+            style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+          ),
         ],
       ),
       trailing: Row(
@@ -157,7 +176,7 @@ class ModelSettings extends ConsumerWidget {
               provider.hasApiKey ? '已配置' : '未配置',
               style: TextStyle(
                 color: provider.hasApiKey ? Colors.green : Colors.orange,
-                fontSize: 12,
+                fontSize: FontSizeUtils.getSmallSize(ref),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -183,23 +202,32 @@ class ModelSettings extends ConsumerWidget {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit),
-                    SizedBox(width: 8),
-                    Text('编辑'),
+                    const Icon(Icons.edit),
+                    const SizedBox(width: 8),
+                    Text(
+                      '编辑',
+                      style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('删除', style: TextStyle(color: Colors.red)),
+                    const Icon(Icons.delete, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(
+                      '删除',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                        color: Colors.red,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -219,8 +247,14 @@ class ModelSettings extends ConsumerWidget {
     final isSelected = selectedModel?.id == model.id;
 
     return ListTile(
-      title: Text(model.displayName),
-      subtitle: Text('类型: ${model.object}'),
+      title: Text(
+        model.displayName,
+        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+      ),
+      subtitle: Text(
+        '类型: ${model.object}',
+        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+      ),
       trailing: Icon(
         isSelected ? Icons.check_circle : Icons.circle_outlined,
         color: isSelected ? Colors.green : null,
@@ -262,7 +296,10 @@ class ModelSettings extends ConsumerWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
             ),
-            title: Text('${currentProvider.displayName} 的模型列表'),
+            title: Text(
+              '${currentProvider.displayName} 的模型列表',
+              style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
+            ),
             content: SizedBox(
               width: 400,
               height: 300,
@@ -272,7 +309,10 @@ class ModelSettings extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final model = currentProvider.models![index];
                         return ListTile(
-                          title: Text(model.displayName),
+                          title: Text(
+                            model.displayName,
+                            style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                          ),
                           trailing: Transform.scale(
                             scale: 0.8,
                             child: Switch(
@@ -292,7 +332,10 @@ class ModelSettings extends ConsumerWidget {
                                 // 显示提示信息
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('${model.displayName} ${value ? '已启用' : '已禁用'}'),
+                                    content: Text(
+                                      '${model.displayName} ${value ? '已启用' : '已禁用'}',
+                                      style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                                    ),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -302,17 +345,20 @@ class ModelSettings extends ConsumerWidget {
                         );
                       },
                     )
-                  : const Center(
+                  : Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.info_outline, size: 48, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('该供应商暂无可用模型'),
-                          SizedBox(height: 8),
+                          const Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            '该供应商暂无可用模型',
+                            style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                          ),
+                          const SizedBox(height: 8),
                           Text(
                             '请先测试连接以获取模型列表',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref), color: Colors.grey),
                           ),
                         ],
                       ),
@@ -321,7 +367,10 @@ class ModelSettings extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(S.of(context).cancel),
+                child: Text(
+                  S.of(context).cancel,
+                  style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                ),
               ),
             ],
           );
@@ -341,15 +390,21 @@ class ModelSettings extends ConsumerWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
-        title: const Text('选择模型'),
+        title: Text(
+          '选择模型',
+          style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
+        ),
         content: SizedBox(
           width: 400,
           height: 300,
           child: Column(
             children: [
-              const Text(
+              Text(
                 '选择供应商:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getSubheadingSize(ref),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Expanded(
@@ -360,8 +415,14 @@ class ModelSettings extends ConsumerWidget {
                     final isSelected = selectedProvider?.name == provider.name;
 
                     return ListTile(
-                      title: Text(provider.displayName),
-                      subtitle: Text(provider.baseUrl),
+                      title: Text(
+                        provider.displayName,
+                        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                      ),
+                      subtitle: Text(
+                        provider.baseUrl,
+                        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+                      ),
                       trailing: Icon(
                         isSelected ? Icons.check_circle : Icons.circle_outlined,
                         color: isSelected ? Colors.green : null,
@@ -378,9 +439,12 @@ class ModelSettings extends ConsumerWidget {
 
               if (selectedProvider != null) ...[
                 const Divider(),
-                const Text(
+                Text(
                   '选择模型:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getSubheadingSize(ref),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -391,8 +455,14 @@ class ModelSettings extends ConsumerWidget {
                       final isSelected = selectedModel?.id == model.id;
 
                       return ListTile(
-                        title: Text(model.displayName),
-                        subtitle: Text('类型: ${model.object}'),
+                        title: Text(
+                          model.displayName,
+                          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                        ),
+                        subtitle: Text(
+                          '类型: ${model.object}',
+                          style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+                        ),
                         trailing: Icon(
                           isSelected ? Icons.check_circle : Icons.circle_outlined,
                           color: isSelected ? Colors.green : null,
@@ -412,7 +482,10 @@ class ModelSettings extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
+            child: Text(
+              S.of(context).cancel,
+              style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+            ),
           ),
         ],
       ),
@@ -426,12 +499,21 @@ class ModelSettings extends ConsumerWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
-        title: const Text('确认删除'),
-        content: Text('确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。'),
+        title: Text(
+          '确认删除',
+          style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
+        ),
+        content: Text(
+          '确定要删除供应商 "${provider.displayName}" 吗？此操作无法撤销。',
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
+            child: Text(
+              S.of(context).cancel,
+              style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -440,19 +522,30 @@ class ModelSettings extends ConsumerWidget {
                 await providerManager.deleteProvider(provider.name);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('供应商删除成功')),
+                  SnackBar(
+                    content: Text(
+                      '供应商删除成功',
+                      style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                    ),
+                  ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('删除失败：${e.toString()}'),
+                    content: Text(
+                      '删除失败：${e.toString()}',
+                      style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(S.of(context).delete),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+            ),
           ),
         ],
       ),
