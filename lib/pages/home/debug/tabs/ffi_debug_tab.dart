@@ -34,28 +34,11 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
       if (!mounted) return;
       
       try {
-        // 使用ExampleFfi单例
-        final exampleFfi = ExampleFfi.instance();
-        
-        
         // 获取输入文本
         final input = _inputController.text.isEmpty ? "默认输入" : _inputController.text;
         
-        // 将 Dart 字符串转换为 C 字符串
-        final inputPtr = input.toNativeUtf8().cast<Char>();
-        
-        // 调用本地函数 (这里使用一个简单的示例方法)
-         final resultPtr = exampleFfi.ProcessString(inputPtr);
-        // 将结果转换回 Dart 字符串
-
-        String result = "示例FFI调用成功";
-        if (resultPtr != nullptr) {
-          // 将C字符串转换为Dart字符串
-          result = resultPtr.cast<Utf8>().toDartString();
-        }
-        
-        // 释放内存
-        calloc.free(inputPtr);
+        // 直接使用封装好的方法
+        final result = ExampleFfi.processString(input);
         
         setState(() {
           _isExecuting = false;
