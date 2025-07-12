@@ -1,4 +1,8 @@
+import 'dart:ffi';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:lemon_tea/ffi/nativefl.dart';
+import 'package:ffi/ffi.dart';
 
 class FfiDebugTab extends StatefulWidget {
   const FfiDebugTab({super.key});
@@ -22,20 +26,81 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
   void _executeFFI() {
     setState(() {
       _isExecuting = true;
+      _outputController.text = '正在执行...';
     });
 
     // 模拟执行过程
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       
-      setState(() {
-        _isExecuting = false;
-        _outputController.text = '执行结果：\n'
-            '输入: ${_inputController.text}\n'
-            '时间: ${DateTime.now().toString()}\n'
-            '状态: 成功\n'
-            '返回值: 0';
-      });
+      try {
+        // 获取动态库
+        DynamicLibrary? dylib;
+        try {
+          if (Platform.isMacOS) {
+            // 尝试不同的路径加载动态库
+            final List<String> possiblePaths = [
+              'libflutter_call_macos_arm64.dylib',
+              'lib/ffi/libflutter_call_macos_arm64.dylib',
+              '${Directory.current.path}/lib/ffi/libflutter_call_macos_arm64.dylib',
+              '/Users/linhuafeng/Work/lemon_tea/lemon_tea_desktop/lib/ffi/libflutter_call_macos_arm64.dylib'
+            ];
+            
+            for (final path in possiblePaths) {
+              try {
+                dylib = DynamicLibrary.open(path);
+                _outputController.text = '成功加载动态库: $path\n';
+                break;
+              } catch (e) {
+                // 继续尝试下一个路径
+              }
+            }
+            
+            if (dylib == null) {
+              throw Exception('无法加载动态库，所有路径尝试均失败');
+            }
+          } else {
+            dylib = DynamicLibrary.process();
+          }
+        } catch (e) {
+          throw Exception('加载动态库失败: $e');
+        }
+        
+        // 创建 Nativefl 实例
+        final nativefl = Nativefl(dylib);
+        
+        // 获取输入文本
+        final input = _inputController.text.isEmpty ? "默认输入" : _inputController.text;
+        
+        // 将 Dart 字符串转换为 C 字符串
+        final inputPtr = input.toNativeUtf8().cast<Char>();
+        
+        // 调用本地函数
+        final resultPtr = nativefl.ProcessString(inputPtr);
+        
+        // 将结果转换回 Dart 字符串
+        String result = "无结果";
+        if (resultPtr != nullptr) {
+          result = resultPtr.cast<Utf8>().toDartString();
+        }
+        
+        // 释放内存
+        calloc.free(inputPtr.cast<Utf8>());
+        
+        setState(() {
+          _isExecuting = false;
+          _outputController.text += '执行结果：\n'
+              '输入: $input\n'
+              '时间: ${DateTime.now().toString()}\n'
+              '状态: 成功\n'
+              '返回值: $result';
+        });
+      } catch (e) {
+        setState(() {
+          _isExecuting = false;
+          _outputController.text = '执行出错: $e';
+        });
+      }
     });
   }
 

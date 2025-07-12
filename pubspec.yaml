@@ -53,6 +53,7 @@ dependencies:
   markdown_widget: ^2.3.2+8
   shared_preferences: ^2.2.2
   http: ^1.2.0
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,7 @@ dev_dependencies:
   custom_lint: ^0.7.0
   riverpod_lint: ^2.6.3
   json_serializable: ^6.9.5
+  ffigen: ^9.0.1
 
 dependency_overrides:
   build_runner: ^2.5.1
@@ -123,3 +125,14 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 flutter_intl:
   enabled: true
+
+ffigen:
+  # 生成文件的路径
+  output: lib/ffi/nativefl.dart
+  # 生成文件的 class name
+  name: Nativefl
+  # 生成的描述
+  description: Native bindings for nativefl
+  headers:
+    entry-points:
+      - lib/ffi/lib/libflutter_call_macos_arm64.h
