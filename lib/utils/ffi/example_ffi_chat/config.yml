@@ -1,0 +1,6 @@
+output: example_ffi_chat.g.dart
+name: ExampleFfiChatGenerate
+description: ffi调用aiChat样例
+headers:
+  entry-points:
+    - example_ffi_chat.h

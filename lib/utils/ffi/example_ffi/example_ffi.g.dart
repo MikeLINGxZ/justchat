@@ -4,17 +4,18 @@
 // ignore_for_file: type=lint
 import 'dart:ffi' as ffi;
 
-/// Native bindings for nativefl
-class Nativefl {
+/// ffi调用样例
+class ExampleFfiGenerate {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
   _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
-  Nativefl(ffi.DynamicLibrary dynamicLibrary) : _lookup = dynamicLibrary.lookup;
+  ExampleFfiGenerate(ffi.DynamicLibrary dynamicLibrary)
+    : _lookup = dynamicLibrary.lookup;
 
   /// The symbols are looked up with [lookup].
-  Nativefl.fromLookup(
+  ExampleFfiGenerate.fromLookup(
     ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup,
   ) : _lookup = lookup;
 
@@ -3358,18 +3359,6 @@ class Nativefl {
   >('ProcessString');
   late final _ProcessString =
       _ProcessStringPtr.asFunction<
-        ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)
-      >();
-
-  ffi.Pointer<ffi.Char> Chat(ffi.Pointer<ffi.Char> jsonInput) {
-    return _Chat(jsonInput);
-  }
-
-  late final _ChatPtr = _lookup<
-    ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>
-  >('Chat');
-  late final _Chat =
-      _ChatPtr.asFunction<
         ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)
       >();
 }
