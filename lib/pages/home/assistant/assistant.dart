@@ -3,6 +3,8 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/chat_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
+import 'package:lemon_tea/utils/ffi/example_ffi_chat/example_ffi_chat.dart' as ffi_chat;
+import 'dart:io' show Platform;
 
 class AssistantPage extends StatefulWidget {
   final ConversationManager? conversationManager;
@@ -167,16 +169,60 @@ def hello():
       );
     }
 
-    // 模拟AI回复（这里可以集成真实的AI服务）
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final aiMessage = Message(
-      role: MessageRole.assistant,
-      content: '我收到了你的消息："$message"。这是一个模拟的AI回复。',
-    );
-
-    // 保存到存储
-    await _conversationManager.addMessageToCurrent(aiMessage);
+    try {
+      // 从环境变量获取API密钥
+      String? apiKey = Platform.environment['DEEPSEEK_API_KEY'];
+      
+      // 如果环境变量中没有API密钥，显示错误
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception("未设置环境变量DEEPSEEK_API_KEY，请先设置API密钥");
+      }
+      
+      // 准备聊天历史记录
+      List<ffi_chat.Message> chatMessages = _historyMessages.map((msg) {
+        return ffi_chat.Message(
+          role: msg.role == MessageRole.user ? "user" : "assistant",
+          content: msg.content,
+        );
+      }).toList();
+      
+      // 创建聊天请求
+      final chatRequest = ffi_chat.ChatRequest(
+        systemPrompt: "你是一个有用的AI助手。",
+        messages: chatMessages,
+        apiKey: apiKey, // 使用环境变量中的API密钥
+        baseURL: "https://api.deepseek.com/v1", // 从配置中获取
+        model: "deepseek-chat", // 从配置中获取或使用默认值
+      );
+      
+      // 调用FFI聊天接口
+      final chatResponse = ffi_chat.ExampleFfiChat.chat(chatRequest);
+      
+      // 检查是否有错误
+      if (chatResponse.error != null && chatResponse.error!.isNotEmpty) {
+        throw Exception(chatResponse.error);
+      }
+      
+      // 创建AI回复消息
+      final aiMessage = Message(
+        role: MessageRole.assistant,
+        content: chatResponse.content,
+      );
+      
+      // 保存到存储
+      await _conversationManager.addMessageToCurrent(aiMessage);
+    } catch (e) {
+      debugPrint('Error during chat: $e');
+      
+      // 发生错误时，添加错误消息
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: '抱歉，处理您的请求时发生错误：${e.toString()}',
+      );
+      
+      // 保存错误消息到存储
+      await _conversationManager.addMessageToCurrent(errorMessage);
+    }
   }
 
   Future<void> _handleNewConversation() async {
