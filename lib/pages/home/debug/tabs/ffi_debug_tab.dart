@@ -1,8 +1,10 @@
 import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:lemon_tea/ffi/nativefl.dart';
 import 'package:ffi/ffi.dart';
+import 'package:lemon_tea/utils/ffi/ffi.dart';
+import 'package:lemon_tea/utils/ffi/ffi_utils.dart';
+import 'package:lemon_tea/utils/ffi/ffi_paths.dart';
 
 class FfiDebugTab extends StatefulWidget {
   const FfiDebugTab({super.key});
@@ -34,37 +36,47 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
       if (!mounted) return;
       
       try {
-        // 获取动态库
-        DynamicLibrary? dylib;
+        // 获取动态库并创建Nativefl实例
+        Nativefl? nativefl;
+        String loadedPath = "";
+        
         try {
           if (Platform.isMacOS) {
-            // 尝试不同的路径加载动态库
-            final List<String> possiblePaths = [
-              'example_ffi_arm64.dylib',
-            ];
+            // 使用全局函数获取可用的动态库路径
+            final List<String> possiblePaths = getLibPathsByType('core');
             
-            for (final path in possiblePaths) {
-              try {
-                dylib = DynamicLibrary.open(path);
-                _outputController.text = '成功加载动态库: $path\n';
-                break;
-              } catch (e) {
-                // 继续尝试下一个路径
-              }
-            }
+            // 使用多路径加载功能
+            final result = FfiUtils.loadFirstSuccessful(possiblePaths);
+            nativefl = result.nativefl;
+            loadedPath = result.path;
+            _outputController.text = '成功加载动态库: $loadedPath\n';
             
-            if (dylib == null) {
-              throw Exception('无法加载动态库，所有路径尝试均失败');
+            // 尝试加载所有可用的动态库（仅用于演示）
+            try {
+              // 获取所有可用的动态库路径
+              final allPaths = getAvailableLibPaths();
+              final multipleLibs = FfiUtils.loadMultipleLibs(allPaths);
+              _outputController.text += '成功加载的所有动态库:\n';
+              multipleLibs.forEach((path, _) {
+                _outputController.text += '- $path\n';
+              });
+            } catch (e) {
+              // 忽略多库加载错误，因为我们已经有一个可用的库
             }
           } else {
-            dylib = DynamicLibrary.process();
+            // 对于其他平台，获取对应平台的库路径
+            final List<String> platformPaths = getAvailableLibPaths();
+            if (platformPaths.isNotEmpty) {
+              final result = FfiUtils.loadFirstSuccessful(platformPaths);
+              nativefl = result.nativefl;
+              loadedPath = result.path;
+            } else {
+              nativefl = FfiUtils.loadNativefl();
+            }
           }
         } catch (e) {
           throw Exception('加载动态库失败: $e');
         }
-        
-        // 创建 Nativefl 实例
-        final nativefl = Nativefl(dylib);
         
         // 获取输入文本
         final input = _inputController.text.isEmpty ? "默认输入" : _inputController.text;
@@ -87,6 +99,7 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
         setState(() {
           _isExecuting = false;
           _outputController.text += '执行结果：\n'
+              '使用库: $loadedPath\n'
               '输入: $input\n'
               '时间: ${DateTime.now().toString()}\n'
               '状态: 成功\n'

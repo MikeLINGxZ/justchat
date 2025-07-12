@@ -3360,6 +3360,18 @@ class Nativefl {
       _ProcessStringPtr.asFunction<
         ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)
       >();
+
+  ffi.Pointer<ffi.Char> Chat(ffi.Pointer<ffi.Char> jsonInput) {
+    return _Chat(jsonInput);
+  }
+
+  late final _ChatPtr = _lookup<
+    ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>
+  >('Chat');
+  late final _Chat =
+      _ChatPtr.asFunction<
+        ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)
+      >();
 }
 
 final class __mbstate_t extends ffi.Union {

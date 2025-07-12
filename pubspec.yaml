@@ -54,6 +54,7 @@ dependencies:
   shared_preferences: ^2.2.2
   http: ^1.2.0
   ffi: ^2.1.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
@@ -128,12 +129,12 @@ flutter_intl:
 
 ffigen:
   # 生成文件的路径
-  output: lib/ffi/nativefl.dart
+  output: lib/utils/ffi/ffi.dart
   # 生成文件的 class name
   name: Nativefl
   # 生成的描述
   description: Native bindings for nativefl
   headers:
     entry-points:
-      - lib/ffi/lib/example_ffi_arm64.h
-      - lib/ffi/lib/example_ffi_chat_arm64.h
+      - lib/utils/ffi/header/example_ffi_arm64.h
+      - lib/utils/ffi/header/example_ffi_chat_arm64.h
