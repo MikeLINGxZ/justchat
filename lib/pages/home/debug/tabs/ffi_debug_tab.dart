@@ -2,9 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ffi/ffi.dart';
-import 'package:lemon_tea/utils/ffi/ffi.dart';
-import 'package:lemon_tea/utils/ffi/ffi_utils.dart';
-import 'package:lemon_tea/utils/ffi/ffi_paths.dart';
+import 'package:lemon_tea/utils/ffi/example_ffi/example_ffi.dart';
 
 class FfiDebugTab extends StatefulWidget {
   const FfiDebugTab({super.key});
@@ -36,47 +34,9 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
       if (!mounted) return;
       
       try {
-        // 获取动态库并创建Nativefl实例
-        Nativefl? nativefl;
-        String loadedPath = "";
+        // 使用ExampleFfi单例
+        final exampleFfi = ExampleFfi.instance();
         
-        try {
-          if (Platform.isMacOS) {
-            // 使用全局函数获取可用的动态库路径
-            final List<String> possiblePaths = getLibPathsByType('core');
-            
-            // 使用多路径加载功能
-            final result = FfiUtils.loadFirstSuccessful(possiblePaths);
-            nativefl = result.nativefl;
-            loadedPath = result.path;
-            _outputController.text = '成功加载动态库: $loadedPath\n';
-            
-            // 尝试加载所有可用的动态库（仅用于演示）
-            try {
-              // 获取所有可用的动态库路径
-              final allPaths = getAvailableLibPaths();
-              final multipleLibs = FfiUtils.loadMultipleLibs(allPaths);
-              _outputController.text += '成功加载的所有动态库:\n';
-              multipleLibs.forEach((path, _) {
-                _outputController.text += '- $path\n';
-              });
-            } catch (e) {
-              // 忽略多库加载错误，因为我们已经有一个可用的库
-            }
-          } else {
-            // 对于其他平台，获取对应平台的库路径
-            final List<String> platformPaths = getAvailableLibPaths();
-            if (platformPaths.isNotEmpty) {
-              final result = FfiUtils.loadFirstSuccessful(platformPaths);
-              nativefl = result.nativefl;
-              loadedPath = result.path;
-            } else {
-              nativefl = FfiUtils.loadNativefl();
-            }
-          }
-        } catch (e) {
-          throw Exception('加载动态库失败: $e');
-        }
         
         // 获取输入文本
         final input = _inputController.text.isEmpty ? "默认输入" : _inputController.text;
@@ -84,22 +44,22 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
         // 将 Dart 字符串转换为 C 字符串
         final inputPtr = input.toNativeUtf8().cast<Char>();
         
-        // 调用本地函数
-        final resultPtr = nativefl.ProcessString(inputPtr);
-        
+        // 调用本地函数 (这里使用一个简单的示例方法)
+         final resultPtr = exampleFfi.ProcessString(inputPtr);
         // 将结果转换回 Dart 字符串
-        String result = "无结果";
+
+        String result = "示例FFI调用成功";
         if (resultPtr != nullptr) {
+          // 将C字符串转换为Dart字符串
           result = resultPtr.cast<Utf8>().toDartString();
         }
         
         // 释放内存
-        calloc.free(inputPtr.cast<Utf8>());
+        calloc.free(inputPtr);
         
         setState(() {
           _isExecuting = false;
           _outputController.text += '执行结果：\n'
-              '使用库: $loadedPath\n'
               '输入: $input\n'
               '时间: ${DateTime.now().toString()}\n'
               '状态: 成功\n'
