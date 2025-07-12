@@ -29,8 +29,13 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		5000DA912E22D434001A0AB2 /* example_ffi_arm64.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5000DA902E22D433001A0AB2 /* example_ffi_arm64.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		5000DA922E22D449001A0AB2 /* example_ffi_arm64.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 5000DA902E22D433001A0AB2 /* example_ffi_arm64.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		5000DA942E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5000DA932E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
+		5000DA952E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 5000DA932E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		5000DA962E22DA19001A0AB2 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F23B302053E48FA1CE4C95F /* Pods_Runner.framework */; };
+		5000DA972E22DA19001A0AB2 /* Pods_Runner.framework in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 9F23B302053E48FA1CE4C95F /* Pods_Runner.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5000DA982E22DA3F001A0AB2 /* example_ffi_chat_arm64.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 5000DA932E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib */; };
+		5000DA992E22DA3F001A0AB2 /* example_ffi_arm64.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 5000DA902E22D433001A0AB2 /* example_ffi_arm64.dylib */; };
 		733C9416A97344120D09CCD6 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE29A13C09FB3B2B06405A05 /* Pods_RunnerTests.framework */; };
-		A6EDCD1442F7B07C617A7907 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F23B302053E48FA1CE4C95F /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +62,9 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				5000DA952E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib in Embed Libraries */,
 				5000DA922E22D449001A0AB2 /* example_ffi_arm64.dylib in Embed Libraries */,
+				5000DA972E22DA19001A0AB2 /* Pods_Runner.framework in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -86,6 +93,7 @@
 		4AC16ABE2EC67868C023DAA2 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		5000DA882E22D3D5001A0AB2 /* example_ffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = example_ffi.dylib; path = Lib/example_ffi.dylib; sourceTree = "<group>"; };
 		5000DA902E22D433001A0AB2 /* example_ffi_arm64.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = example_ffi_arm64.dylib; path = Lib/example_ffi_arm64.dylib; sourceTree = "<group>"; };
+		5000DA932E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = example_ffi_chat_arm64.dylib; path = Lib/example_ffi_chat_arm64.dylib; sourceTree = "<group>"; };
 		72174AC2AC441E53BA3916BC /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		929B7E57326740D5E6F66FE1 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -109,7 +117,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				5000DA912E22D434001A0AB2 /* example_ffi_arm64.dylib in Frameworks */,
-				A6EDCD1442F7B07C617A7907 /* Pods_Runner.framework in Frameworks */,
+				5000DA942E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib in Frameworks */,
+				5000DA962E22DA19001A0AB2 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,6 +216,7 @@
 		D73912EC22F37F3D000D13A0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5000DA932E22DA15001A0AB2 /* example_ffi_chat_arm64.dylib */,
 				5000DA902E22D433001A0AB2 /* example_ffi_arm64.dylib */,
 				5000DA882E22D3D5001A0AB2 /* example_ffi.dylib */,
 				9F23B302053E48FA1CE4C95F /* Pods_Runner.framework */,
@@ -322,6 +332,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5000DA982E22DA3F001A0AB2 /* example_ffi_chat_arm64.dylib in Resources */,
+				5000DA992E22DA3F001A0AB2 /* example_ffi_arm64.dylib in Resources */,
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
 			);

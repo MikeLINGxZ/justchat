@@ -135,4 +135,5 @@ ffigen:
   description: Native bindings for nativefl
   headers:
     entry-points:
-      - lib/ffi/lib/libflutter_call_macos_arm64.h
+      - lib/ffi/lib/example_ffi_arm64.h
+      - lib/ffi/lib/example_ffi_chat_arm64.h
