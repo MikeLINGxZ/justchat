@@ -26,7 +26,7 @@
   },
   "swift_versions": "5.0",
   "vendored_libraries": "librealm_dart.dylib",
-  "prepare_command": "touch /Users/linhuafeng/Work/lemon_tea/macos/Flutter/ephemeral/.symlinks/plugins/realm/macos/librealm_dart.dylib",
+  "prepare_command": "touch /Users/linhuafeng/Work/lemon_tea/lemon_tea_desktop/macos/Flutter/ephemeral/.symlinks/plugins/realm/macos/librealm_dart.dylib",
   "script_phases": [
     {
       "name": "Download Realm Flutter macOS Binaries",

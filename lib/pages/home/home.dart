@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/controls/window_title_bar.dart';
 import 'package:lemon_tea/controls/sidebar_icon_button.dart';
 import 'package:lemon_tea/pages/home/assistant/assistant.dart';
@@ -6,6 +7,7 @@ import 'package:lemon_tea/pages/home/task/task.dart';
 import 'package:lemon_tea/pages/home/history/history.dart';
 import 'package:lemon_tea/pages/home/settings/settings.dart';
 import 'package:lemon_tea/pages/home/plugins/plugins.dart';
+import 'package:lemon_tea/pages/home/debug/debug.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
 
@@ -41,8 +43,15 @@ class _HomePage extends State<HomePage> {
         onNewConversation: _handleNewConversation,
       ),
       const PluginsPage(),
-      const SettingsPage(),
     ]);
+    
+    // 在debug模式下添加debug页面
+    if (kDebugMode) {
+      _pages.add(const DebugPage());
+    }
+    
+    // 最后添加settings页面
+    _pages.add(const SettingsPage());
   }
 
   Future<void> _handleConversationSelected(Conversation conversation) async {
@@ -118,12 +127,25 @@ class _HomePage extends State<HomePage> {
                         },
                       ),
                       const Spacer(),
+                      // 在debug模式下显示debug按钮
+                      if (kDebugMode) ...[
+                        SidebarIconButton(
+                          icon: Icons.bug_report,
+                          isSelected: _selectedIndex == 4,
+                          onPressed: () {
+                            setState(() {
+                              _selectedIndex = 4;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                      ],
                       SidebarIconButton(
                         icon: Icons.settings,
-                        isSelected: _selectedIndex == 4,
+                        isSelected: _selectedIndex == (kDebugMode ? 5 : 4),
                         onPressed: () {
                           setState(() {
-                            _selectedIndex = 4;
+                            _selectedIndex = kDebugMode ? 5 : 4;
                           });
                         },
                       ),
