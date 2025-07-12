@@ -40,10 +40,7 @@ class _FfiDebugTabState extends State<FfiDebugTab> {
           if (Platform.isMacOS) {
             // 尝试不同的路径加载动态库
             final List<String> possiblePaths = [
-              'libflutter_call_macos_arm64.dylib',
-              'lib/ffi/libflutter_call_macos_arm64.dylib',
-              '${Directory.current.path}/lib/ffi/libflutter_call_macos_arm64.dylib',
-              '/Users/linhuafeng/Work/lemon_tea/lemon_tea_desktop/lib/ffi/libflutter_call_macos_arm64.dylib'
+              'example_ffi_arm64.dylib',
             ];
             
             for (final path in possiblePaths) {
