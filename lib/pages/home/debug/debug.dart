@@ -6,6 +6,7 @@ import 'tabs/network_debug_tab.dart';
 import 'tabs/storage_debug_tab.dart';
 import 'tabs/performance_debug_tab.dart';
 import 'tabs/log_debug_tab.dart';
+import 'tabs/ffi_debug_tab.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -47,6 +48,12 @@ class _DebugPageState extends State<DebugPage> {
       icon: Icons.article,
       color: Colors.red,
       widget: const LogDebugTab(),
+    ),
+    DebugTab(
+      title: 'FFI 调试',
+      icon: Icons.code,
+      color: Colors.indigo,
+      widget: const FfiDebugTab(),
     ),
   ];
 
