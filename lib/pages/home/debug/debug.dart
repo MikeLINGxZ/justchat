@@ -7,6 +7,7 @@ import 'tabs/storage_debug_tab.dart';
 import 'tabs/performance_debug_tab.dart';
 import 'tabs/log_debug_tab.dart';
 import 'tabs/ffi_debug_tab.dart';
+import 'tabs/socket_debug_tab.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -54,6 +55,12 @@ class _DebugPageState extends State<DebugPage> {
       icon: Icons.code,
       color: Colors.indigo,
       widget: const FfiDebugTab(),
+    ),
+    DebugTab(
+      title: 'Socket 调试',
+      icon: Icons.settings_ethernet,
+      color: Colors.teal,
+      widget: const SocketDebugTab(),
     ),
   ];
 
