@@ -166,6 +166,34 @@ class _SocketDebugTabState extends State<SocketDebugTab> {
       });
     }
   }
+  
+  void _checkAvailableTools() async {
+    setState(() {
+      _isExecuting = true;
+      _outputController.text = '正在检查可用的命令行工具...\n';
+    });
+
+    try {
+      final tools = await checkAvailableTools();
+      
+      setState(() {
+        _isExecuting = false;
+        _outputController.text += '检查结果：\n'
+            '时间: ${DateTime.now().toString()}\n\n'
+            '可用工具：\n'
+            'curl: ${tools['curl'] == true ? '✅ 可用' : '❌ 不可用'}\n'
+            'socat: ${tools['socat'] == true ? '✅ 可用' : '❌ 不可用'}\n'
+            'nc (netcat): ${tools['nc'] == true ? '✅ 可用' : '❌ 不可用'}\n'
+            'python3: ${tools['python3'] == true ? '✅ 可用' : '❌ 不可用'}\n\n'
+            '提示：如果curl可用，Socket连接问题可能是权限或沙盒限制导致的。';
+      });
+    } catch (e) {
+      setState(() {
+        _isExecuting = false;
+        _outputController.text += '执行出错: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +370,38 @@ class _SocketDebugTabState extends State<SocketDebugTab> {
                           label: Text(_isExecuting ? '测试中...' : '使用curl测试'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // 按钮区域 - 第三行
+                  Row(
+                    children: [
+                      // 检查可用工具按钮
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isExecuting ? null : _checkAvailableTools,
+                          icon: _isExecuting 
+                              ? Container(
+                                  width: 24,
+                                  height: 24,
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : const Icon(Icons.build),
+                          label: Text(_isExecuting ? '检查中...' : '检查可用工具'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(

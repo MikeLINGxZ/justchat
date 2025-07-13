@@ -112,48 +112,135 @@ class SocketHttpClient {
   Future<String> _getViaCommandLine(String path) async {
     try {
       // 尝试使用curl命令
+      print('尝试使用curl命令访问Socket');
       final result = await Process.run('curl', [
         '--unix-socket', 
         socketPath, 
         'http://localhost$path'
       ]);
       
+      print('curl执行结果: exitCode=${result.exitCode}, stdout=${result.stdout}, stderr=${result.stderr}');
+      
       if (result.exitCode == 0) {
         return result.stdout.toString().trim();
       } else {
-        throw Exception('命令执行失败: ${result.stderr}');
+        throw Exception('curl命令执行失败: ${result.stderr}');
       }
     } catch (e) {
+      print('curl执行失败: $e');
+      
       try {
-        // 如果curl失败，尝试使用nc (netcat)命令
-        final tempFile = File('${Directory.systemTemp.path}/socket_request.txt');
-        await tempFile.writeAsString(
-          'GET $path HTTP/1.1\r\n'
-          'Host: localhost\r\n'
-          'Connection: close\r\n\r\n'
-        );
+        // 如果curl失败，尝试使用socat命令
+        print('尝试使用socat命令访问Socket');
         
-        final result = await Process.run('nc', [
-          '-U', 
-          socketPath,
-          '<',
-          tempFile.path
+        // 准备HTTP请求内容
+        final requestContent = 'GET $path HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n';
+        
+        // 创建临时文件存储请求内容
+        final tempDir = Directory.systemTemp;
+        final requestFile = File('${tempDir.path}/socket_request.txt');
+        await requestFile.writeAsString(requestContent);
+        
+        // 使用socat命令
+        // 注意：Process.run不支持直接传递stdin流，我们需要使用Process.start
+        final process = await Process.start('socat', [
+          '-t', '5',  // 5秒超时
+          'UNIX-CONNECT:$socketPath',
+          'STDIO'
         ]);
         
-        await tempFile.delete();
+        // 写入请求内容
+        process.stdin.write(requestContent);
+        await process.stdin.flush();
+        await process.stdin.close();
         
-        if (result.exitCode == 0) {
-          final responseStr = result.stdout.toString();
+        // 读取输出
+        final stdout = await process.stdout.transform(utf8.decoder).join();
+        final stderr = await process.stderr.transform(utf8.decoder).join();
+        final exitCode = await process.exitCode;
+        
+        // 删除临时文件
+        await requestFile.delete();
+        
+        print('socat执行结果: exitCode=$exitCode, stdout=$stdout, stderr=$stderr');
+        
+        if (exitCode == 0) {
+          final responseStr = stdout;
           final parts = responseStr.split('\r\n\r\n');
           if (parts.length >= 2) {
             return parts[1].trim();
           }
           return responseStr.trim();
         } else {
-          throw Exception('nc命令执行失败: ${result.stderr}');
+          throw Exception('socat命令执行失败: $stderr');
         }
       } catch (e) {
-        throw Exception('命令行访问Socket失败: $e');
+        print('socat执行失败: $e');
+        
+        // 尝试使用Python脚本
+        try {
+          print('尝试使用Python脚本访问Socket');
+          
+          // 创建临时Python脚本
+          final tempDir = Directory.systemTemp;
+          final pythonScript = File('${tempDir.path}/socket_client.py');
+          
+          await pythonScript.writeAsString('''
+import socket
+import sys
+
+try:
+    # 创建Unix domain socket
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    
+    # 连接到socket
+    sock.connect('$socketPath')
+    
+    # 发送HTTP请求
+    request = 'GET $path HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n'
+    sock.sendall(request.encode())
+    
+    # 接收响应
+    response = b''
+    while True:
+        data = sock.recv(4096)
+        if not data:
+            break
+        response += data
+    
+    # 关闭socket
+    sock.close()
+    
+    # 输出响应
+    print(response.decode())
+    sys.exit(0)
+except Exception as e:
+    print(f"错误: {e}", file=sys.stderr)
+    sys.exit(1)
+''');
+          
+          // 执行Python脚本
+          final result = await Process.run('python3', [pythonScript.path]);
+          
+          // 删除临时脚本
+          await pythonScript.delete();
+          
+          print('Python脚本执行结果: exitCode=${result.exitCode}, stdout=${result.stdout}, stderr=${result.stderr}');
+          
+          if (result.exitCode == 0) {
+            final responseStr = result.stdout.toString();
+            final parts = responseStr.split('\r\n\r\n');
+            if (parts.length >= 2) {
+              return parts[1].trim();
+            }
+            return responseStr.trim();
+          } else {
+            throw Exception('Python脚本执行失败: ${result.stderr}');
+          }
+        } catch (e) {
+          print('Python脚本执行失败: $e');
+          throw Exception('所有命令行方法都失败: $e');
+        }
       }
     }
   }
@@ -271,4 +358,43 @@ Future<Map<String, dynamic>> testSocketWithCurl(String socketPath, String path) 
       'exitCode': -1,
     };
   }
+}
+
+/// 检查系统中可用的命令行工具
+Future<Map<String, bool>> checkAvailableTools() async {
+  final tools = <String, bool>{};
+  
+  // 检查curl
+  try {
+    final result = await Process.run('which', ['curl']);
+    tools['curl'] = result.exitCode == 0;
+  } catch (e) {
+    tools['curl'] = false;
+  }
+  
+  // 检查socat
+  try {
+    final result = await Process.run('which', ['socat']);
+    tools['socat'] = result.exitCode == 0;
+  } catch (e) {
+    tools['socat'] = false;
+  }
+  
+  // 检查nc
+  try {
+    final result = await Process.run('which', ['nc']);
+    tools['nc'] = result.exitCode == 0;
+  } catch (e) {
+    tools['nc'] = false;
+  }
+  
+  // 检查python3
+  try {
+    final result = await Process.run('which', ['python3']);
+    tools['python3'] = result.exitCode == 0;
+  } catch (e) {
+    tools['python3'] = false;
+  }
+  
+  return tools;
 }
