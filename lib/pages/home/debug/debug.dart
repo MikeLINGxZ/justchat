@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-
-import 'tabs/debug_info_tab.dart';
-import 'tabs/network_debug_tab.dart';
-import 'tabs/storage_debug_tab.dart';
-import 'tabs/performance_debug_tab.dart';
-import 'tabs/log_debug_tab.dart';
 import 'tabs/ffi_debug_tab.dart';
-import 'tabs/socket_debug_tab.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -20,47 +12,41 @@ class _DebugPageState extends State<DebugPage> {
   int _selectedIndex = 0;
 
   final List<DebugTab> _debugTabs = [
-    DebugTab(
-      title: '调试信息',
-      icon: Icons.info_outline,
-      color: Colors.blue,
-      widget: const DebugInfoTab(),
-    ),
-    DebugTab(
-      title: '网络调试',
-      icon: Icons.network_check,
-      color: Colors.green,
-      widget: const NetworkDebugTab(),
-    ),
-    DebugTab(
-      title: '存储调试',
-      icon: Icons.storage,
-      color: Colors.orange,
-      widget: const StorageDebugTab(),
-    ),
-    DebugTab(
-      title: '性能调试',
-      icon: Icons.speed,
-      color: Colors.purple,
-      widget: const PerformanceDebugTab(),
-    ),
-    DebugTab(
-      title: '日志调试',
-      icon: Icons.article,
-      color: Colors.red,
-      widget: const LogDebugTab(),
-    ),
+    // DebugTab(
+    //   title: '调试信息',
+    //   icon: Icons.info_outline,
+    //   color: Colors.blue,
+    //   widget: const DebugInfoTab(),
+    // ),
+    // DebugTab(
+    //   title: '网络调试',
+    //   icon: Icons.network_check,
+    //   color: Colors.green,
+    //   widget: const NetworkDebugTab(),
+    // ),
+    // DebugTab(
+    //   title: '存储调试',
+    //   icon: Icons.storage,
+    //   color: Colors.orange,
+    //   widget: const StorageDebugTab(),
+    // ),
+    // DebugTab(
+    //   title: '性能调试',
+    //   icon: Icons.speed,
+    //   color: Colors.purple,
+    //   widget: const PerformanceDebugTab(),
+    // ),
+    // DebugTab(
+    //   title: '日志调试',
+    //   icon: Icons.article,
+    //   color: Colors.red,
+    //   widget: const LogDebugTab(),
+    // ),
     DebugTab(
       title: 'FFI 调试',
       icon: Icons.code,
       color: Colors.indigo,
       widget: const FfiDebugTab(),
-    ),
-    DebugTab(
-      title: 'Socket 调试',
-      icon: Icons.settings_ethernet,
-      color: Colors.teal,
-      widget: const SocketDebugTab(),
     ),
   ];
 
