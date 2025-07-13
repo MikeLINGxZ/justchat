@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/home.dart';
+import 'package:lemon_tea/utils/local_server/local_service_provider.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
@@ -26,8 +27,27 @@ Future<void> _initializeAppSettings(ProviderContainer container) async {
   }
 }
 
+/// 启动CLI服务
+Future<void> _startCliService(ProviderContainer container) async {
+  try {
+    // 使用Provider启动CLI服务
+    final port = await container.read(cliServiceProvider.notifier).startService();
+    
+    if (port != null) {
+      debugPrint('CLI服务已成功启动，端口: $port');
+    } else {
+      debugPrint('CLI服务启动失败');
+    }
+  } catch (e) {
+    debugPrint('启动CLI服务时发生错误: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 创建ProviderContainer来初始化设置和服务
+  final container = ProviderContainer();
 
   if (System.isDesktop) {
     // 初始化 WindowManager
@@ -45,10 +65,10 @@ void main() async {
       await windowManager.show(); // 显示窗口
       await windowManager.focus(); // 聚焦窗口
     });
+    
+    // 启动CLI服务
+    await _startCliService(container);
   }
-  
-  // 创建ProviderContainer来初始化设置
-  final container = ProviderContainer();
   
   // 初始化应用设置
   await _initializeAppSettings(container);
