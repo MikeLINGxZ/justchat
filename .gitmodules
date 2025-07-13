@@ -1,0 +1,3 @@
+[submodule "lemon_tea_cli"]
+	path = lemon_tea_cli
+	url = https://gitlab.linhf.cn/project/lemontea/lemon_tea_cli.git
