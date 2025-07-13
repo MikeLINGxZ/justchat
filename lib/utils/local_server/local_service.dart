@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:lemon_tea/utils/system.dart';
@@ -23,6 +25,15 @@ class CliService {
   
   /// 服务端口
   int? _port;
+  
+  /// Isolate实例
+  Isolate? _isolate;
+  
+  /// 发送端口
+  SendPort? _sendPort;
+  
+  /// 接收端口
+  ReceivePort? _receivePort;
   
   /// 获取服务是否正在运行
   bool get isRunning => _isRunning;
@@ -57,6 +68,67 @@ class CliService {
     }
     
     return binaryPath;
+  }
+  
+  /// 在Isolate中运行CLI服务的入口点
+  static Future<void> _isolateEntryPoint(Map<String, dynamic> params) async {
+    final SendPort sendPort = params['sendPort'] as SendPort;
+    final String binaryPath = params['binaryPath'] as String;
+    final int port = params['port'] as int;
+    
+    try {
+      // 打印启动信息
+      debugPrint('Isolate: 正在启动CLI进程: $binaryPath --port $port');
+      
+      // 启动CLI进程
+      final process = await Process.start(
+        binaryPath,
+        ['--port', port.toString()],
+        mode: ProcessStartMode.normal,
+        runInShell: true,
+      );
+      
+      // 发送进程启动成功消息
+      sendPort.send({'status': 'started', 'port': port});
+      
+      // 监听进程输出
+      process.stdout.transform(utf8.decoder).listen(
+        (data) {
+          debugPrint('Isolate: CLI输出: $data');
+          sendPort.send({'type': 'stdout', 'data': data});
+        },
+        onError: (error) {
+          debugPrint('Isolate: CLI输出流错误: $error');
+          sendPort.send({'type': 'error', 'data': 'stdout错误: $error'});
+        },
+        onDone: () {
+          debugPrint('Isolate: CLI输出流已关闭');
+        },
+      );
+      
+      process.stderr.transform(utf8.decoder).listen(
+        (data) {
+          debugPrint('Isolate: CLI错误: $data');
+          sendPort.send({'type': 'stderr', 'data': data});
+        },
+        onError: (error) {
+          debugPrint('Isolate: CLI错误流错误: $error');
+          sendPort.send({'type': 'error', 'data': 'stderr错误: $error'});
+        },
+        onDone: () {
+          debugPrint('Isolate: CLI错误流已关闭');
+        },
+      );
+      
+      // 监听进程退出
+      final exitCode = await process.exitCode;
+      debugPrint('Isolate: CLI进程退出，退出码: $exitCode');
+      sendPort.send({'status': 'exited', 'exitCode': exitCode});
+      
+    } catch (e) {
+      debugPrint('Isolate: 启动CLI进程失败: $e');
+      sendPort.send({'status': 'error', 'message': e.toString()});
+    }
   }
   
   /// 启动CLI服务
@@ -95,68 +167,100 @@ class CliService {
         }
       }
       
-      // 启动CLI进程
-      _cliProcess = await Process.start(
-        binaryPath,
-        ['--port', port.toString()],
-        mode: ProcessStartMode.detached,
+      // 创建接收端口
+      _receivePort = ReceivePort();
+      
+      // 创建Completer用于等待服务启动
+      final completer = Completer<int?>();
+      
+      // 监听接收端口
+      _receivePort!.listen((message) {
+        if (message is Map<String, dynamic>) {
+          if (message['status'] == 'started') {
+            // 服务启动成功
+            if (!completer.isCompleted) {
+              _isRunning = true;
+              _port = message['port'] as int;
+              debugPrint('CLI服务已在Isolate中启动，端口: $_port');
+              completer.complete(_port);
+            }
+          } else if (message['status'] == 'exited') {
+            // 服务退出
+            debugPrint('CLI服务已退出，退出码: ${message['exitCode']}');
+            _isRunning = false;
+            _port = null;
+          } else if (message['status'] == 'error') {
+            // 服务启动失败
+            if (!completer.isCompleted) {
+              debugPrint('启动CLI服务失败: ${message['message']}');
+              completer.complete(null);
+            }
+          } else if (message['type'] == 'stdout' || message['type'] == 'stderr') {
+            // 处理进程输出
+            final type = message['type'] as String;
+            final data = message['data'] as String;
+            debugPrint('CLI ${type == 'stdout' ? '输出' : '错误'}: $data');
+          }
+        }
+      });
+      
+      // 启动Isolate
+      debugPrint('正在启动CLI服务Isolate...');
+      _isolate = await Isolate.spawn(
+        _isolateEntryPoint, 
+        {
+          'sendPort': _receivePort!.sendPort,
+          'binaryPath': binaryPath,
+          'port': port,
+        }
       );
       
-      // 监听进程输出
-      _cliProcess!.stdout.transform(utf8.decoder).listen((data) {
-        debugPrint('CLI输出: $data');
-      });
-      
-      _cliProcess!.stderr.transform(utf8.decoder).listen((data) {
-        debugPrint('CLI错误: $data');
-      });
-      
-      // 监听进程退出
-      _cliProcess!.exitCode.then((exitCode) {
-        debugPrint('CLI进程退出，退出码: $exitCode');
-        _isRunning = false;
-        _port = null;
-      });
-      
-      _isRunning = true;
-      _port = port;
-      
-      debugPrint('CLI服务已启动，端口: $port');
-      return port;
+      // 等待服务启动或失败
+      return await completer.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('启动CLI服务超时');
+          stopService();
+          return null;
+        },
+      );
     } catch (e) {
       debugPrint('启动CLI服务失败: $e');
+      // 清理资源
+      _cleanupResources();
       return null;
     }
   }
   
+  /// 清理资源
+  void _cleanupResources() {
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+    _receivePort?.close();
+    _receivePort = null;
+    _sendPort = null;
+    _isRunning = false;
+    _port = null;
+  }
+  
   /// 停止CLI服务
   Future<void> stopService() async {
-    if (!_isRunning || _cliProcess == null) {
+    if (!_isRunning) {
       debugPrint('CLI服务未运行');
       return;
     }
     
     try {
-      // 尝试正常终止进程
-      _cliProcess!.kill();
+      debugPrint('正在停止CLI服务...');
       
-      // 等待进程退出
-      await _cliProcess!.exitCode.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          // 如果进程没有在5秒内退出，则强制终止
-          _cliProcess!.kill(ProcessSignal.sigkill);
-          return -1;
-        },
-      );
-      
-      _isRunning = false;
-      _port = null;
-      _cliProcess = null;
+      // 终止Isolate
+      _cleanupResources();
       
       debugPrint('CLI服务已停止');
     } catch (e) {
       debugPrint('停止CLI服务失败: $e');
+      // 确保状态重置
+      _cleanupResources();
     }
   }
 } 
