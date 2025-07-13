@@ -37,46 +37,19 @@ class CliService {
     String binaryPath;
     
     if (System.isWindows) {
-      // Windows平台
+      // todo Windows平台
       final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
       binaryPath = path.join(appDir, 'data', 'flutter_assets', 'cli', 'lemon_tea_local_windows_$arch.exe');
     } else if (System.isMacOS) {
       // macOS平台
       final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
-      
-      // 尝试标准路径
-      binaryPath = path.join(appDir, '..', 'Frameworks', 'App.framework', 'Resources', 'flutter_assets', 'lemon_tea_local_darwin_$arch');
-      
+      binaryPath = path.join(appDir, '..', 'Resources',  'lemon_tea_local_darwin_$arch');
       // 检查标准路径是否存在
       if (!File(binaryPath).existsSync()) {
-        // 尝试开发模式路径
-        binaryPath = path.join(appDir, 'cli', 'lemon_tea_local_darwin_$arch');
-        
-        // 检查开发模式路径是否存在
-        if (!File(binaryPath).existsSync()) {
-          // 尝试特定的Resources目录路径 - 修正为Contents/Resources
-          binaryPath = path.join(appDir, '..', 'Resources',  'lemon_tea_local_darwin_$arch');
-          
-          // 如果仍然不存在，尝试完整的指定路径
-          if (!File(binaryPath).existsSync()) {
-            // 修正路径为包含Contents目录
-            final String buildPath = '/Users/linhuafeng/Work/lemon_tea/lemon_tea_desktop/build/macos/Build/Products/Debug/lemon_tea.app/Contents/Resources/cli/lemon_tea_local_darwin_$arch';
-            if (File(buildPath).existsSync()) {
-              binaryPath = buildPath;
-            } else {
-              // 打印当前应用目录，帮助调试
-              debugPrint('应用目录: $appDir');
-              // 尝试直接在应用目录下查找
-              final String directPath = path.join(path.dirname(path.dirname(appDir)), 'Resources', 'cli', 'lemon_tea_local_darwin_$arch');
-              if (File(directPath).existsSync()) {
-                binaryPath = directPath;
-              }
-            }
-          }
-        }
+        throw UnsupportedError('不存在local_server: ${binaryPath}');
       }
     } else if (System.isLinux) {
-      // Linux平台
+      // todo Linux平台
       final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
       binaryPath = path.join(appDir, 'data', 'flutter_assets', 'cli', 'lemon_tea_local_linux_$arch');
     } else {
