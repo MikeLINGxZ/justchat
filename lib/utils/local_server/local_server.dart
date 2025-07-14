@@ -119,7 +119,17 @@ class CliService {
   }
 
   /// 获取CLI二进制文件路径
-  String _getCliBinaryPath() {
+  String _getCliBinaryPath({String? customBinaryPath}) {
+    // 如果提供了自定义路径，优先使用
+    if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
+      final customFile = File(customBinaryPath);
+      if (customFile.existsSync()) {
+        return customBinaryPath;
+      } else {
+        debugPrint('自定义二进制文件不存在: $customBinaryPath，将使用默认路径');
+      }
+    }
+    
     // 获取应用程序目录
     final String appDir = path.dirname(Platform.resolvedExecutable);
     String binaryPath;
@@ -174,8 +184,9 @@ class CliService {
   /// 启动CLI服务
   ///
   /// [requestedPort] 请求使用的端口号，如果为null则自动分配
+  /// [customBinaryPath] 自定义二进制文件路径，如果为null则使用默认路径
   /// 返回服务端口号，如果启动失败则返回null
-  Future<int?> startService({int? requestedPort}) async {
+  Future<int?> startService({int? requestedPort, String? customBinaryPath}) async {
     try {
       // 如果服务已经在运行，直接返回当前端口
       if (_isRunning && _port != null) {
@@ -199,7 +210,7 @@ class CliService {
       }
 
       // 获取二进制文件路径
-      final String binaryPath = _getCliBinaryPath();
+      final String binaryPath = _getCliBinaryPath(customBinaryPath: customBinaryPath);
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/local_server/local_server.dart';
+import 'package:lemon_tea/utils/storage/local_storage.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class CliDebugTab extends ConsumerStatefulWidget {
   const CliDebugTab({super.key});
@@ -13,20 +16,31 @@ class CliDebugTab extends ConsumerStatefulWidget {
 class _CliDebugTabState extends ConsumerState<CliDebugTab> {
   final TextEditingController _portController = TextEditingController();
   final TextEditingController _logController = TextEditingController();
+  final TextEditingController _binaryPathController = TextEditingController();
   bool _isChangingPort = false;
   bool _isRestarting = false;
   bool _isStopping = false;
   bool _isRunning = false;
   int? _currentPort;
+  String? _customBinaryPath;
+  bool _isDebugMode = false;
   
   // 创建CLI服务实例
   final CliService _cliService = CliService();
+  
+  // 本地存储实例
+  final LocalStorage _localStorage = LocalStorage();
+  
+  // 存储键名
+  static const String _portKey = 'cli_debug_port';
+  static const String _binaryPathKey = 'cli_debug_binary_path';
 
   @override
   void initState() {
     super.initState();
+    _isDebugMode = _checkIsDebugMode();
+    _loadSavedSettings();
     _checkServiceStatus();
-    _updatePortController();
     _addLogMessage('CLI调试页面已初始化');
     
     // 添加端口控制器监听器，用于实时更新应用按钮状态
@@ -38,7 +52,60 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     _portController.removeListener(_onPortTextChanged);
     _portController.dispose();
     _logController.dispose();
+    _binaryPathController.dispose();
     super.dispose();
+  }
+  
+  // 检查是否为调试模式
+  bool _checkIsDebugMode() {
+    bool inDebugMode = false;
+    assert(() {
+      inDebugMode = true;
+      return true;
+    }());
+    return inDebugMode;
+  }
+  
+  // 加载保存的设置
+  Future<void> _loadSavedSettings() async {
+    try {
+      // 加载保存的端口
+      final savedPort = await _localStorage.getInt(_portKey);
+      if (savedPort != null) {
+        setState(() {
+          _currentPort = savedPort;
+        });
+        _portController.text = savedPort.toString();
+      }
+      
+      // 加载保存的二进制路径
+      final savedPath = await _localStorage.getString(_binaryPathKey);
+      if (savedPath != null && savedPath.isNotEmpty) {
+        setState(() {
+          _customBinaryPath = savedPath;
+        });
+        _binaryPathController.text = savedPath;
+      }
+    } catch (e) {
+      _addLogMessage('加载保存的设置失败: $e');
+    }
+  }
+  
+  // 保存设置
+  Future<void> _saveSettings() async {
+    try {
+      // 保存端口
+      if (_currentPort != null) {
+        await _localStorage.setInt(_portKey, _currentPort!);
+      }
+      
+      // 保存二进制路径
+      if (_customBinaryPath != null && _customBinaryPath!.isNotEmpty) {
+        await _localStorage.setString(_binaryPathKey, _customBinaryPath!);
+      }
+    } catch (e) {
+      _addLogMessage('保存设置失败: $e');
+    }
   }
   
   // 端口文本变化监听
@@ -65,6 +132,11 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       _isRunning = _cliService.isRunning;
       _currentPort = _cliService.port;
     });
+    
+    // 如果当前端口不为空，更新端口控制器
+    if (_currentPort != null) {
+      _portController.text = _currentPort.toString();
+    }
   }
 
   void _updatePortController() {
@@ -83,6 +155,36 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       _logController.text = '${_logController.text}$logEntry';
     });
   }
+  
+  // 选择二进制文件
+  Future<void> _selectBinaryFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: System.isWindows ? ['exe'] : null,
+      );
+      
+      if (result != null && result.files.single.path != null) {
+        final path = result.files.single.path!;
+        final file = File(path);
+        
+        if (await file.exists()) {
+          setState(() {
+            _customBinaryPath = path;
+            _binaryPathController.text = path;
+          });
+          _addLogMessage('已选择二进制文件: $path');
+          
+          // 保存设置
+          await _saveSettings();
+        } else {
+          _addLogMessage('所选文件不存在');
+        }
+      }
+    } catch (e) {
+      _addLogMessage('选择文件时发生错误: $e');
+    }
+  }
 
   Future<void> _restartCliService() async {
     if (_isRestarting) return;
@@ -97,9 +199,10 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       // 先停止服务
       await _cliService.stopService();
       
-      // 然后启动服务，使用当前端口
+      // 然后启动服务，使用当前端口和自定义二进制路径（如果在调试模式下）
       final port = await _cliService.startService(
         requestedPort: _currentPort,
+        customBinaryPath: _isDebugMode ? _customBinaryPath : null,
       );
       
       if (port != null) {
@@ -109,6 +212,9 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
           _currentPort = port;
         });
         _updatePortController();
+        
+        // 保存设置
+        await _saveSettings();
       } else {
         _addLogMessage('CLI服务重启失败');
         setState(() {
@@ -204,6 +310,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       // 然后使用新端口启动服务
       final port = await _cliService.startService(
         requestedPort: newPort,
+        customBinaryPath: _isDebugMode ? _customBinaryPath : null,
       );
       
       if (port != null) {
@@ -213,11 +320,13 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
           _currentPort = port;
         });
         _updatePortController();
+        
+        // 保存设置
+        await _saveSettings();
       } else {
         _addLogMessage('端口更改失败');
         setState(() {
           _isRunning = false;
-          _currentPort = null;
         });
       }
     } catch (e) {
@@ -270,6 +379,14 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
+                    if (_isDebugMode)
+                      Chip(
+                        label: const Text('调试模式'),
+                        backgroundColor: Colors.amber[100],
+                        labelStyle: TextStyle(color: Colors.amber[900]),
+                        avatar: Icon(Icons.bug_report, size: 16, color: Colors.amber[900]),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -317,7 +434,62 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                 ),
                 const SizedBox(height: 20),
                 
+                // 调试模式下的二进制文件路径设置
+                if (_isDebugMode) ...[
+                  Text(
+                    '二进制文件路径',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _binaryPathController,
+                          decoration: InputDecoration(
+                            labelText: '二进制文件路径',
+                            hintText: '选择或输入CLI二进制文件路径',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            prefixIcon: const Icon(Icons.file_present),
+                          ),
+                          enabled: !_isChangingPort && !_isRestarting && !_isStopping,
+                          onChanged: (value) {
+                            _customBinaryPath = value.isNotEmpty ? value : null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: !_isChangingPort && !_isRestarting && !_isStopping
+                            ? _selectBinaryFile
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('浏览...'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                
                 // 端口设置
+                Text(
+                  '端口设置',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(

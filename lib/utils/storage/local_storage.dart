@@ -18,6 +18,48 @@ class LocalStorage implements StorageInterface {
       _initialized = true;
     }
   }
+  
+  /// 保存整数值
+  Future<bool> setInt(String key, int value) async {
+    await _ensureInitialized();
+    return await _prefs.setInt(key, value);
+  }
+  
+  /// 获取整数值
+  Future<int?> getInt(String key) async {
+    await _ensureInitialized();
+    return _prefs.getInt(key);
+  }
+  
+  /// 保存字符串值
+  Future<bool> setString(String key, String value) async {
+    await _ensureInitialized();
+    return await _prefs.setString(key, value);
+  }
+  
+  /// 获取字符串值
+  Future<String?> getString(String key) async {
+    await _ensureInitialized();
+    return _prefs.getString(key);
+  }
+  
+  /// 保存布尔值
+  Future<bool> setBool(String key, bool value) async {
+    await _ensureInitialized();
+    return await _prefs.setBool(key, value);
+  }
+  
+  /// 获取布尔值
+  Future<bool?> getBool(String key) async {
+    await _ensureInitialized();
+    return _prefs.getBool(key);
+  }
+  
+  /// 删除指定键的值
+  Future<bool> remove(String key) async {
+    await _ensureInitialized();
+    return await _prefs.remove(key);
+  }
 
   @override
   Future<void> saveConversation(Conversation conversation) async {
