@@ -43,6 +43,29 @@ Future<void> _startCliService(ProviderContainer container) async {
   }
 }
 
+/// 停止CLI服务
+Future<void> _stopCliService(ProviderContainer container) async {
+  try {
+    await container.read(cliServiceProvider.notifier).stopService();
+    debugPrint('CLI服务已停止');
+  } catch (e) {
+    debugPrint('停止CLI服务时发生错误: $e');
+  }
+}
+
+class MyWindowListener extends WindowListener {
+  final ProviderContainer container;
+  
+  MyWindowListener(this.container);
+  
+  @override
+  void onWindowClose() async {
+    await _stopCliService(container);
+    await Future.delayed(const Duration(milliseconds: 100));
+    await windowManager.destroy();
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -65,6 +88,9 @@ void main() async {
       await windowManager.show(); // 显示窗口
       await windowManager.focus(); // 聚焦窗口
     });
+    
+    // 监听窗口关闭事件，确保在应用退出时停止CLI服务
+    windowManager.addListener(MyWindowListener(container));
     
     // 启动CLI服务
     await _startCliService(container);

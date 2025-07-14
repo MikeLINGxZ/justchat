@@ -35,6 +35,15 @@ class CliService {
   /// 接收端口
   ReceivePort? _receivePort;
   
+  /// 状态监听器
+  final List<Function(bool isRunning, int? port)> _statusListeners = [];
+  
+  /// 最后一次检查时间
+  DateTime? _lastHeartbeat;
+  
+  /// 心跳检测计时器
+  Timer? _heartbeatTimer;
+  
   /// 获取服务是否正在运行
   bool get isRunning => _isRunning;
   
@@ -91,6 +100,15 @@ class CliService {
       // 发送进程启动成功消息
       sendPort.send({'status': 'started', 'port': port});
       
+      // 设置心跳检测
+      Timer.periodic(const Duration(seconds: 2), (timer) {
+        if (process.pid != 0) {
+          sendPort.send({'status': 'heartbeat'});
+        } else {
+          timer.cancel();
+        }
+      });
+      
       // 监听进程输出
       process.stdout.transform(utf8.decoder).listen(
         (data) {
@@ -129,6 +147,52 @@ class CliService {
       debugPrint('Isolate: 启动CLI进程失败: $e');
       sendPort.send({'status': 'error', 'message': e.toString()});
     }
+  }
+  
+  /// 添加状态监听器
+  void addStatusListener(Function(bool isRunning, int? port) listener) {
+    _statusListeners.add(listener);
+  }
+  
+  /// 移除状态监听器
+  void removeStatusListener(Function(bool isRunning, int? port) listener) {
+    _statusListeners.remove(listener);
+  }
+  
+  /// 通知所有监听器状态变化
+  void _notifyStatusChange() {
+    for (final listener in _statusListeners) {
+      listener(_isRunning, _port);
+    }
+  }
+  
+  /// 启动心跳检测
+  void _startHeartbeatMonitor() {
+    _lastHeartbeat = DateTime.now();
+    
+    // 取消现有计时器
+    _heartbeatTimer?.cancel();
+    
+    // 创建新计时器，每5秒检查一次心跳
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_lastHeartbeat != null) {
+        final difference = DateTime.now().difference(_lastHeartbeat!);
+        
+        // 如果超过10秒没有收到心跳，认为服务已经异常退出
+        if (difference.inSeconds > 10 && _isRunning) {
+          debugPrint('CLI服务心跳超时，认为服务已异常退出');
+          _isRunning = false;
+          _notifyStatusChange();
+        }
+      }
+    });
+  }
+  
+  /// 停止心跳检测
+  void _stopHeartbeatMonitor() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    _lastHeartbeat = null;
   }
   
   /// 启动CLI服务
@@ -183,12 +247,32 @@ class CliService {
               _port = message['port'] as int;
               debugPrint('CLI服务已在Isolate中启动，端口: $_port');
               completer.complete(_port);
+              
+              // 启动心跳监控
+              _startHeartbeatMonitor();
+              
+              // 通知状态变化
+              _notifyStatusChange();
             }
+          } else if (message['status'] == 'heartbeat') {
+            // 更新心跳时间
+            _lastHeartbeat = DateTime.now();
           } else if (message['status'] == 'exited') {
             // 服务退出
-            debugPrint('CLI服务已退出，退出码: ${message['exitCode']}');
+            final exitCode = message['exitCode'] as int;
+            debugPrint('CLI服务已退出，退出码: $exitCode');
+            
+            final wasRunning = _isRunning;
             _isRunning = false;
             _port = null;
+            
+            // 停止心跳监控
+            _stopHeartbeatMonitor();
+            
+            // 只有在之前是运行状态时才通知状态变化
+            if (wasRunning) {
+              _notifyStatusChange();
+            }
           } else if (message['status'] == 'error') {
             // 服务启动失败
             if (!completer.isCompleted) {
@@ -239,8 +323,18 @@ class CliService {
     _receivePort?.close();
     _receivePort = null;
     _sendPort = null;
+    
+    // 停止心跳监控
+    _stopHeartbeatMonitor();
+    
+    final wasRunning = _isRunning;
     _isRunning = false;
     _port = null;
+    
+    // 只有在之前是运行状态时才通知状态变化
+    if (wasRunning) {
+      _notifyStatusChange();
+    }
   }
   
   /// 停止CLI服务
