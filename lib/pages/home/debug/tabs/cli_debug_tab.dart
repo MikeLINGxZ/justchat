@@ -379,6 +379,16 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (_isRunning && _currentPort != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '端口: $_currentPort',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     if (_isDebugMode)
                       Chip(
@@ -388,49 +398,6 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                         avatar: Icon(Icons.bug_report, size: 16, color: Colors.amber[900]),
                       ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                
-                // 状态信息
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _isRunning ? Colors.green[50] : Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _isRunning ? Colors.green[300]! : Colors.red[300]!,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isRunning ? Icons.play_arrow : Icons.stop,
-                        color: _isRunning ? Colors.green[700] : Colors.red[700],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _isRunning ? '服务运行中' : '服务已停止',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: _isRunning ? Colors.green[700] : Colors.red[700],
-                              ),
-                            ),
-                            if (_isRunning && _currentPort != null)
-                              Text(
-                                '端口: $_currentPort',
-                                style: TextStyle(
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 20),
                 
