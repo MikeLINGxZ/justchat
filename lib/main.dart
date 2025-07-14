@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/home.dart';
-import 'package:lemon_tea/utils/local_server/local_service_provider.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
@@ -28,45 +27,8 @@ Future<void> _initializeAppSettings(ProviderContainer container) async {
 }
 
 /// 启动CLI服务
-Future<void> _startCliService(ProviderContainer container) async {
-  try {
-    // 使用Provider启动CLI服务
-    final port = await container.read(cliServiceProvider.notifier).startService();
-    
-    if (port != null) {
-      debugPrint('CLI服务已成功启动，端口: $port');
-    } else {
-      debugPrint('CLI服务启动失败');
-    }
-  } catch (e) {
-    debugPrint('启动CLI服务时发生错误: $e');
-  }
-}
-
-/// 停止CLI服务
-Future<void> _stopCliService(ProviderContainer container) async {
-  try {
-    await container.read(cliServiceProvider.notifier).stopService();
-    debugPrint('CLI服务已停止');
-  } catch (e) {
-    debugPrint('停止CLI服务时发生错误: $e');
-  }
-}
-
-class MyWindowListener extends WindowListener {
-  final ProviderContainer container;
-  
-  MyWindowListener(this.container);
-  
-  @override
-  void onWindowClose() async {
-    debugPrint('窗口关闭事件触发，正在停止CLI服务...');
-    await _stopCliService(container);
-    // 增加等待时间，确保CLI进程有足够时间被终止
-    await Future.delayed(const Duration(seconds: 1));
-    debugPrint('准备销毁窗口...');
-    await windowManager.destroy();
-  }
+Future<void> _startLemonTeaService(ProviderContainer container) async {
+  // todo 启动服务
 }
 
 void main() async {
@@ -92,17 +54,8 @@ void main() async {
       await windowManager.focus(); // 聚焦窗口
     });
     
-    // 监听窗口关闭事件，确保在应用退出时停止CLI服务
-    windowManager.addListener(MyWindowListener(container));
-    
     // 启动CLI服务
-    await _startCliService(container);
-    
-    // 注册应用退出时的回调，确保CLI服务被停止
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final binding = WidgetsBinding.instance as WidgetsFlutterBinding;
-      binding.addObserver(_AppLifecycleObserver(container));
-    });
+    await _startLemonTeaService(container);
   }
   
   // 初始化应用设置
@@ -112,28 +65,6 @@ void main() async {
     parent: container,
     child: const LemonTea(),
   ));
-}
-
-/// 应用生命周期观察者，用于在应用退出时停止CLI服务
-class _AppLifecycleObserver extends WidgetsBindingObserver {
-  final ProviderContainer container;
-  
-  _AppLifecycleObserver(this.container);
-  
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      // 应用被终止
-      debugPrint('应用生命周期变为detached，正在停止CLI服务...');
-      _stopCliService(container);
-      
-      // 添加一个延迟，确保CLI进程有足够时间被终止
-      // 注意：这个延迟可能不会被执行，因为应用可能已经被终止
-      Future.delayed(const Duration(seconds: 1), () {
-        debugPrint('CLI服务停止完成');
-      });
-    }
-  }
 }
 
 class LemonTea extends ConsumerWidget {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/utils/local_server/local_service_provider.dart';
 import 'package:lemon_tea/utils/system.dart';
 
 class CliDebugTab extends ConsumerStatefulWidget {
@@ -32,8 +31,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
   }
 
   void _updatePortController() {
-    final cliState = ref.read(cliServiceProvider);
-    _portController.text = cliState.port?.toString() ?? '未启动';
+
   }
 
   void _addLogMessage(String message) {
@@ -46,116 +44,21 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
   }
 
   Future<void> _restartCliService() async {
-    if (_isRestarting) return;
 
-    setState(() {
-      _isRestarting = true;
-    });
-
-    _addLogMessage('正在重启CLI服务...');
-
-    try {
-      // 使用新的restartService方法
-      final port = await ref.read(cliServiceProvider.notifier).restartService();
-      
-      if (port != null) {
-        _addLogMessage('CLI服务已重启，端口: $port');
-        _updatePortController();
-      } else {
-        _addLogMessage('CLI服务重启失败');
-      }
-    } catch (e) {
-      _addLogMessage('重启CLI服务时发生错误: $e');
-    } finally {
-      setState(() {
-        _isRestarting = false;
-      });
-    }
   }
 
   Future<void> _stopCliService() async {
-    if (_isStopping) return;
 
-    setState(() {
-      _isStopping = true;
-    });
-
-    _addLogMessage('正在停止CLI服务...');
-
-    try {
-      await ref.read(cliServiceProvider.notifier).stopService();
-      _addLogMessage('CLI服务已停止');
-      _updatePortController();
-    } catch (e) {
-      _addLogMessage('停止CLI服务时发生错误: $e');
-    } finally {
-      setState(() {
-        _isStopping = false;
-      });
-    }
   }
 
   Future<void> _changePort() async {
-    if (_isChangingPort) return;
 
-    final portText = _portController.text.trim();
-    if (portText.isEmpty) {
-      _addLogMessage('错误：端口不能为空');
-      return;
-    }
-
-    int? newPort;
-    try {
-      newPort = int.parse(portText);
-    } catch (e) {
-      _addLogMessage('错误：无效的端口号');
-      return;
-    }
-
-    if (newPort <= 0 || newPort > 65535) {
-      _addLogMessage('错误：端口号必须在1-65535之间');
-      return;
-    }
-
-    setState(() {
-      _isChangingPort = true;
-    });
-
-    _addLogMessage('正在更改CLI服务端口到: $newPort...');
-
-    try {
-      // 检查端口是否可用
-      final isPortAvailable = await System.isPortAvailable(newPort);
-      if (!isPortAvailable) {
-        _addLogMessage('错误：端口 $newPort 已被占用');
-        setState(() {
-          _isChangingPort = false;
-        });
-        return;
-      }
-      
-      // 使用新端口重启服务
-      final port = await ref.read(cliServiceProvider.notifier).restartService(requestedPort: newPort);
-      if (port != null) {
-        _addLogMessage('CLI服务已启动，端口: $port');
-        _updatePortController();
-      } else {
-        _addLogMessage('CLI服务启动失败');
-      }
-    } catch (e) {
-      _addLogMessage('更改端口时发生错误: $e');
-    } finally {
-      setState(() {
-        _isChangingPort = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cliState = ref.watch(cliServiceProvider);
-    final isRunning = cliState.isRunning;
-    final currentPort = cliState.port;
+    final isRunning = false;
+    final currentPort = "00000";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

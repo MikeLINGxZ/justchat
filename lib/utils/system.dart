@@ -2,9 +2,11 @@ import 'dart:io';
 import 'dart:math';
 
 class System {
+
   static bool get isDesktop {
     return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
   }
+
   static bool get isMobile {
     return Platform.isAndroid || Platform.isIOS;
   }
@@ -29,12 +31,31 @@ class System {
     return Platform.isLinux;
   }
 
+  static String get platform {
+    if (isAndroid) {
+      return "android";
+    }
+    if (isIOS) {
+      return "ios";
+    }
+    if (isWindows) {
+      return "windows";
+    }
+    if (isMacOS) {
+      return "macos";
+    }
+    if (isLinux) {
+      return "linux";
+    }
+    return "";
+  }
+
   /// 获取一个空闲的端口号
   ///
   /// [startPort] 开始搜索的端口号，默认为8000
   /// [endPort] 结束搜索的端口号，默认为9000
   /// 返回一个空闲的端口号，如果没有找到则返回null
-  static Future<int?> findFreePort({int startPort = 8000, int endPort = 9000}) async {
+  static Future<int?> findFreePort({int startPort = 8000, int endPort = 65535}) async {
     if (startPort < 0 || endPort > 65535 || startPort > endPort) {
       throw ArgumentError('端口范围无效: $startPort-$endPort');
     }
