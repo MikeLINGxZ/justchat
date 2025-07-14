@@ -5,6 +5,7 @@ import 'package:lemon_tea/pages/home/home.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
+import 'package:lemon_tea/utils/local_server/local_server.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 
@@ -28,7 +29,15 @@ Future<void> _initializeAppSettings(ProviderContainer container) async {
 
 /// 启动CLI服务
 Future<void> _startLemonTeaService(ProviderContainer container) async {
-  // todo 启动服务
+  // 启动CLI服务
+  final cliService = CliService();
+  final port = await cliService.startService();
+  
+  if (port != null) {
+    debugPrint('CLI服务已启动，端口: $port');
+  } else {
+    debugPrint('CLI服务启动失败');
+  }
 }
 
 void main() async {
