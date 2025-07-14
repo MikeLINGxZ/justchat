@@ -28,13 +28,35 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     _checkServiceStatus();
     _updatePortController();
     _addLogMessage('CLI调试页面已初始化');
+    
+    // 添加端口控制器监听器，用于实时更新应用按钮状态
+    _portController.addListener(_onPortTextChanged);
   }
 
   @override
   void dispose() {
+    _portController.removeListener(_onPortTextChanged);
     _portController.dispose();
     _logController.dispose();
     super.dispose();
+  }
+  
+  // 端口文本变化监听
+  void _onPortTextChanged() {
+    // 触发重建以更新应用按钮状态
+    setState(() {});
+  }
+  
+  // 检查当前输入的端口是否与服务端口相同
+  bool get _isPortUnchanged {
+    if (_currentPort == null) return false;
+    
+    try {
+      final inputPort = int.parse(_portController.text.trim());
+      return inputPort == _currentPort;
+    } catch (e) {
+      return false;
+    }
   }
   
   // 检查服务状态
@@ -75,7 +97,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       // 先停止服务
       await _cliService.stopService();
       
-      // 然后启动服务
+      // 然后启动服务，使用当前端口
       final port = await _cliService.startService(
         requestedPort: _currentPort,
       );
@@ -91,7 +113,6 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
         _addLogMessage('CLI服务重启失败');
         setState(() {
           _isRunning = false;
-          _currentPort = null;
         });
       }
     } catch (e) {
@@ -119,7 +140,6 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
         _addLogMessage('CLI服务已停止');
         setState(() {
           _isRunning = false;
-          _currentPort = null;
         });
       } else {
         _addLogMessage('停止CLI服务失败');
@@ -152,6 +172,12 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     
     if (newPort <= 0 || newPort > 65535) {
       _addLogMessage('端口号必须在1-65535之间');
+      return;
+    }
+    
+    // 如果端口未变，则不需要操作
+    if (_currentPort != null && newPort == _currentPort) {
+      _addLogMessage('端口未变更，无需操作');
       return;
     }
     
@@ -311,7 +337,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: _isRunning && !_isChangingPort && !_isRestarting && !_isStopping
+                      onPressed: _isRunning && !_isChangingPort && !_isRestarting && !_isStopping && !_isPortUnchanged
                           ? _changePort
                           : null,
                       style: ElevatedButton.styleFrom(
