@@ -59,17 +59,22 @@ class _DebugPageState extends State<DebugPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
         children: [
           // 左侧菜单
           Container(
             width: 200,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               border: Border(
-                right: BorderSide(color: Colors.grey[300]!),
+                right: BorderSide(
+                  color: Theme.of(context).dividerColor.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
             ),
             child: Column(
@@ -79,7 +84,10 @@ class _DebugPageState extends State<DebugPage> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey[300]!),
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.2),
+                        width: 1,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -115,23 +123,24 @@ class _DebugPageState extends State<DebugPage> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           leading: Icon(
                             tab.icon,
-                            color: isSelected ? tab.color : Colors.grey[600],
+                            color: isSelected ? tab.color : isDarkMode ? Colors.grey[400] : Colors.grey[600],
                             size: 22,
                           ),
                           title: Text(
                             tab.title,
                             style: TextStyle(
-                              color: isSelected ? tab.color : Colors.grey[800],
+                              color: isSelected ? tab.color : isDarkMode ? Colors.grey[300] : Colors.grey[800],
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               fontSize: 14,
                             ),
                           ),
-                          tileColor: isSelected ? tab.color.withOpacity(0.1) : Colors.white,
+                          tileColor: isSelected 
+                            ? tab.color.withOpacity(isDarkMode ? 0.2 : 0.1) 
+                            : Theme.of(context).cardColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                             side: BorderSide(
-                              color: isSelected ? tab.color : Colors.grey[200]!, 
-                              // width: isSelected ? 2 : 1,
+                              color: isSelected ? tab.color : Theme.of(context).dividerColor.withOpacity(0.2), 
                             ),
                           ),
                           onTap: () {
