@@ -54,14 +54,14 @@ class CliService {
       _forceKillProcess();
       exit(0);
     });
-    
+
     if (!System.isWindows) {
       ProcessSignal.sigterm.watch().listen((_) {
         _forceKillProcess();
         exit(0);
       });
     }
-    
+
     // 创建退出文件
     _createExitFile();
   }
@@ -70,20 +70,22 @@ class CliService {
   void _createExitFile() {
     try {
       final tempDir = Directory.systemTemp;
-      final exitFile = File('${tempDir.path}/lemon_tea_exit_${_currentPid}.pid');
-      
+      final exitFile = File(
+        '${tempDir.path}/lemon_tea_exit_${_currentPid}.pid',
+      );
+
       // 确保文件存在
       if (!exitFile.existsSync()) {
         exitFile.createSync();
       }
-      
+
       // 添加删除钩子
       ProcessSignal.sigint.watch().listen((_) {
         if (exitFile.existsSync()) {
           exitFile.deleteSync();
         }
       });
-      
+
       if (!System.isWindows) {
         ProcessSignal.sigterm.watch().listen((_) {
           if (exitFile.existsSync()) {
@@ -102,7 +104,7 @@ class CliService {
       // 先终止监视进程
       _watcherProcess?.kill();
       _watcherProcess = null;
-      
+
       // 然后终止主进程
       if (_processId != null) {
         if (System.isWindows) {
@@ -129,15 +131,16 @@ class CliService {
         debugPrint('自定义二进制文件不存在: $customBinaryPath，将使用默认路径');
       }
     }
-    
+
     // 获取应用程序目录
     final String appDir = path.dirname(Platform.resolvedExecutable);
     String binaryPath;
 
     switch (System.platform) {
       case 'windows':
-      // Windows平台
-        final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
+        // Windows平台
+        final String arch =
+            Platform.version.contains('arm') ? 'arm64' : 'amd64';
         binaryPath = path.join(
           appDir,
           'data',
@@ -148,8 +151,9 @@ class CliService {
         break;
 
       case 'macos':
-      // macOS平台
-        final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
+        // macOS平台
+        final String arch =
+            Platform.version.contains('arm') ? 'arm64' : 'amd64';
         binaryPath = path.join(
           appDir,
           '..',
@@ -163,8 +167,9 @@ class CliService {
         break;
 
       case 'linux':
-      // Linux平台
-        final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
+        // Linux平台
+        final String arch =
+            Platform.version.contains('arm') ? 'arm64' : 'amd64';
         binaryPath = path.join(
           appDir,
           'data',
@@ -186,13 +191,16 @@ class CliService {
   /// [requestedPort] 请求使用的端口号，如果为null则自动分配
   /// [customBinaryPath] 自定义二进制文件路径，如果为null则使用默认路径
   /// 返回服务端口号，如果启动失败则返回null
-  Future<int?> startService({int? requestedPort, String? customBinaryPath}) async {
+  Future<int?> startService({
+    int? requestedPort,
+    String? customBinaryPath,
+  }) async {
     try {
       // 如果服务已经在运行，直接返回当前端口
       if (_isRunning && _port != null) {
         return _port;
       }
-      
+
       // 获取端口
       int? port;
       if (requestedPort != null &&
@@ -210,7 +218,9 @@ class CliService {
       }
 
       // 获取二进制文件路径
-      final String binaryPath = _getCliBinaryPath(customBinaryPath: customBinaryPath);
+      final String binaryPath = _getCliBinaryPath(
+        customBinaryPath: customBinaryPath,
+      );
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在
@@ -229,51 +239,57 @@ class CliService {
       }
 
       // 直接启动进程，不使用脚本
-      _process = await Process.start(
-        binaryPath,
-        ['--port', port.toString()],
-      );
-      
+      _process = await Process.start(binaryPath, [
+        '--port',
+        port.toString(),
+        '--debug',
+        _isDebugMode() ? 'true' : 'false',
+      ]);
+
       // 保存进程ID
       _processId = _process!.pid;
-      
+
       // 记录进程ID到退出文件
       _updateExitFile();
-      
+
       // 监听进程输出
-      _stdoutSubscription = _process!.stdout.transform(utf8.decoder).listen((data) {
+      _stdoutSubscription = _process!.stdout.transform(utf8.decoder).listen((
+        data,
+      ) {
         debugPrint('CLI输出: $data');
       });
-      
-      _stderrSubscription = _process!.stderr.transform(utf8.decoder).listen((data) {
+
+      _stderrSubscription = _process!.stderr.transform(utf8.decoder).listen((
+        data,
+      ) {
         debugPrint('CLI错误: $data');
       });
-      
+
       // 监听进程退出
       _process!.exitCode.then((exitCode) {
         debugPrint('CLI进程退出，退出码: $exitCode');
         _cleanupProcess();
       });
-      
+
       // 等待一小段时间确保进程启动成功
       await Future.delayed(const Duration(seconds: 1));
-      
+
       // 检查服务是否可用
       if (!await _isServiceAvailable(port)) {
         debugPrint('CLI服务启动失败，无法连接到端口: $port');
         _forceKillProcess();
         return null;
       }
-      
+
       _isRunning = true;
       _port = port;
-      
+
       // 仅在应用程序打包发布时注册进程清理
       // 在开发模式下，不注册监视进程，避免误杀
       if (!_isDebugMode()) {
         _registerProcessCleanup();
       }
-      
+
       return port;
     } catch (e) {
       debugPrint('启动CLI服务失败: $e');
@@ -300,8 +316,10 @@ class CliService {
         if (System.isWindows) {
           // Windows平台使用批处理脚本监视父进程
           final tempDir = Directory.systemTemp;
-          final watcherScript = File('${tempDir.path}/lemon_tea_watcher_${_currentPid}.bat');
-          
+          final watcherScript = File(
+            '${tempDir.path}/lemon_tea_watcher_${_currentPid}.bat',
+          );
+
           // 创建监视脚本，增加检测间隔和重试次数
           watcherScript.writeAsStringSync('''
 @echo off
@@ -323,15 +341,21 @@ if errorlevel 1 (
 )
 goto loop
 ''');
-          
+
           // 启动监视脚本
-          _watcherProcess = await Process.start('cmd.exe', ['/c', 'start', '/b', watcherScript.path]);
-          
+          _watcherProcess = await Process.start('cmd.exe', [
+            '/c',
+            'start',
+            '/b',
+            watcherScript.path,
+          ]);
         } else {
           // Unix平台使用shell脚本监视父进程
           final tempDir = Directory.systemTemp;
-          final watcherScript = File('${tempDir.path}/lemon_tea_watcher_${_currentPid}.sh');
-          
+          final watcherScript = File(
+            '${tempDir.path}/lemon_tea_watcher_${_currentPid}.sh',
+          );
+
           // 创建监视脚本，增加检测间隔和重试次数
           watcherScript.writeAsStringSync('''
 #!/bin/sh
@@ -351,12 +375,14 @@ while :; do
     fi
 done
 ''');
-          
+
           // 设置脚本执行权限
           Process.runSync('chmod', ['+x', watcherScript.path]);
-          
+
           // 启动监视脚本
-          _watcherProcess = await Process.start('/bin/sh', [watcherScript.path]);
+          _watcherProcess = await Process.start('/bin/sh', [
+            watcherScript.path,
+          ]);
         }
       } catch (e) {
         debugPrint('注册进程清理失败: $e');
@@ -369,7 +395,9 @@ done
     try {
       if (_processId != null) {
         final tempDir = Directory.systemTemp;
-        final exitFile = File('${tempDir.path}/lemon_tea_exit_${_currentPid}.pid');
+        final exitFile = File(
+          '${tempDir.path}/lemon_tea_exit_${_currentPid}.pid',
+        );
         exitFile.writeAsStringSync(_processId.toString());
       }
     } catch (e) {
@@ -381,15 +409,17 @@ done
   Future<bool> _isServiceAvailable(int port) async {
     try {
       // 尝试连接服务
-      final socket = await Socket.connect('localhost', port, 
-          timeout: const Duration(seconds: 2))
-          .catchError((e) => null);
-      
+      final socket = await Socket.connect(
+        'localhost',
+        port,
+        timeout: const Duration(seconds: 2),
+      ).catchError((e) => null);
+
       if (socket != null) {
         await socket.close();
         return true;
       }
-      
+
       return false;
     } catch (e) {
       return false;
