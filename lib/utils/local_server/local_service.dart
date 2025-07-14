@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:isolate';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
@@ -26,15 +25,6 @@ class CliService {
   /// 服务端口
   int? _port;
   
-  /// Isolate实例
-  Isolate? _isolate;
-  
-  /// 发送端口
-  SendPort? _sendPort;
-  
-  /// 接收端口
-  ReceivePort? _receivePort;
-  
   /// 状态监听器
   final List<Function(bool isRunning, int? port)> _statusListeners = [];
   
@@ -43,6 +33,15 @@ class CliService {
   
   /// 心跳检测计时器
   Timer? _heartbeatTimer;
+  
+  /// 进程监控计时器
+  Timer? _processMonitorTimer;
+  
+  /// 进程输出流订阅
+  StreamSubscription? _stdoutSubscription;
+  
+  /// 进程错误流订阅
+  StreamSubscription? _stderrSubscription;
   
   /// 获取服务是否正在运行
   bool get isRunning => _isRunning;
@@ -57,7 +56,7 @@ class CliService {
     String binaryPath;
     
     if (System.isWindows) {
-      // todo Windows平台
+      // Windows平台
       final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
       binaryPath = path.join(appDir, 'data', 'flutter_assets', 'cli', 'lemon_tea_local_windows_$arch.exe');
     } else if (System.isMacOS) {
@@ -69,7 +68,7 @@ class CliService {
         throw UnsupportedError('不存在local_server: ${binaryPath}');
       }
     } else if (System.isLinux) {
-      // todo Linux平台
+      // Linux平台
       final String arch = Platform.version.contains('arm') ? 'arm64' : 'amd64';
       binaryPath = path.join(appDir, 'data', 'flutter_assets', 'cli', 'lemon_tea_local_linux_$arch');
     } else {
@@ -77,76 +76,6 @@ class CliService {
     }
     
     return binaryPath;
-  }
-  
-  /// 在Isolate中运行CLI服务的入口点
-  static Future<void> _isolateEntryPoint(Map<String, dynamic> params) async {
-    final SendPort sendPort = params['sendPort'] as SendPort;
-    final String binaryPath = params['binaryPath'] as String;
-    final int port = params['port'] as int;
-    
-    try {
-      // 打印启动信息
-      debugPrint('Isolate: 正在启动CLI进程: $binaryPath --port $port');
-      
-      // 启动CLI进程
-      final process = await Process.start(
-        binaryPath,
-        ['--port', port.toString()],
-        mode: ProcessStartMode.normal,
-        runInShell: true,
-      );
-      
-      // 发送进程启动成功消息
-      sendPort.send({'status': 'started', 'port': port});
-      
-      // 设置心跳检测
-      Timer.periodic(const Duration(seconds: 2), (timer) {
-        if (process.pid != 0) {
-          sendPort.send({'status': 'heartbeat'});
-        } else {
-          timer.cancel();
-        }
-      });
-      
-      // 监听进程输出
-      process.stdout.transform(utf8.decoder).listen(
-        (data) {
-          debugPrint('Isolate: CLI输出: $data');
-          sendPort.send({'type': 'stdout', 'data': data});
-        },
-        onError: (error) {
-          debugPrint('Isolate: CLI输出流错误: $error');
-          sendPort.send({'type': 'error', 'data': 'stdout错误: $error'});
-        },
-        onDone: () {
-          debugPrint('Isolate: CLI输出流已关闭');
-        },
-      );
-      
-      process.stderr.transform(utf8.decoder).listen(
-        (data) {
-          debugPrint('Isolate: CLI错误: $data');
-          sendPort.send({'type': 'stderr', 'data': data});
-        },
-        onError: (error) {
-          debugPrint('Isolate: CLI错误流错误: $error');
-          sendPort.send({'type': 'error', 'data': 'stderr错误: $error'});
-        },
-        onDone: () {
-          debugPrint('Isolate: CLI错误流已关闭');
-        },
-      );
-      
-      // 监听进程退出
-      final exitCode = await process.exitCode;
-      debugPrint('Isolate: CLI进程退出，退出码: $exitCode');
-      sendPort.send({'status': 'exited', 'exitCode': exitCode});
-      
-    } catch (e) {
-      debugPrint('Isolate: 启动CLI进程失败: $e');
-      sendPort.send({'status': 'error', 'message': e.toString()});
-    }
   }
   
   /// 添加状态监听器
@@ -195,15 +124,43 @@ class CliService {
     _lastHeartbeat = null;
   }
   
+  /// 启动进程监控
+  void _startProcessMonitor() {
+    // 取消现有计时器
+    _processMonitorTimer?.cancel();
+    
+    // 创建新计时器，每2秒检查一次进程状态
+    _processMonitorTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_cliProcess != null) {
+        try {
+          // 尝试获取进程PID，如果进程已经退出，这里会抛出异常
+          final pid = _cliProcess!.pid;
+          if (pid != 0) {
+            // 更新心跳时间
+            _lastHeartbeat = DateTime.now();
+          }
+        } catch (e) {
+          // 进程已经退出
+          debugPrint('CLI进程已退出');
+          _cleanupResources();
+        }
+      }
+    });
+  }
+  
+  /// 停止进程监控
+  void _stopProcessMonitor() {
+    _processMonitorTimer?.cancel();
+    _processMonitorTimer = null;
+  }
+  
   /// 启动CLI服务
   /// 
   /// [requestedPort] 请求使用的端口号，如果为null则自动分配
   /// 返回服务端口号，如果启动失败则返回null
   Future<int?> startService({int? requestedPort}) async {
-    if (_isRunning) {
-      debugPrint('CLI服务已经在运行中，端口: $_port');
-      return _port;
-    }
+    // 确保先停止任何现有的服务
+    await stopService();
     
     try {
       // 获取端口
@@ -246,83 +203,152 @@ class CliService {
         }
       }
       
-      // 创建接收端口
-      _receivePort = ReceivePort();
-      
       // 创建Completer用于等待服务启动
       final completer = Completer<int?>();
       
-      // 监听接收端口
-      _receivePort!.listen((message) {
-        if (message is Map<String, dynamic>) {
-          if (message['status'] == 'started') {
-            // 服务启动成功
-            if (!completer.isCompleted) {
-              _isRunning = true;
-              _port = message['port'] as int;
-              debugPrint('CLI服务已在Isolate中启动，端口: $_port');
-              completer.complete(_port);
-              
-              // 启动心跳监控
-              _startHeartbeatMonitor();
-              
-              // 通知状态变化
-              _notifyStatusChange();
+      try {
+        // 启动CLI进程
+        debugPrint('正在启动CLI进程: $binaryPath --port $port');
+        
+        // 使用Process.run而不是Process.start，这样可以避免stdio连接问题
+        // 但这意味着我们无法获取实时输出，而是在进程结束后获取所有输出
+        if (System.isWindows) {
+          // Windows平台使用不同的参数
+          _cliProcess = await Process.start(
+            binaryPath,
+            ['--port', port.toString()],
+            mode: ProcessStartMode.normal,  // 在Windows上使用normal模式
+            runInShell: true,
+          );
+        } else {
+          // macOS和Linux平台
+          _cliProcess = await Process.start(
+            binaryPath,
+            ['--port', port.toString()],
+            mode: ProcessStartMode.normal,  // 使用normal模式代替detached
+            runInShell: false,  // 不使用shell
+          );
+        }
+        
+        // 设置超时
+        final timeout = Timer(const Duration(seconds: 10), () {
+          if (!completer.isCompleted) {
+            debugPrint('启动CLI服务超时');
+            stopService();
+            completer.complete(null);
+          }
+        });
+        
+        // 监听进程输出
+        _stdoutSubscription = _cliProcess!.stdout.transform(utf8.decoder).listen(
+          (data) {
+            debugPrint('CLI输出: $data');
+            
+            // 检查输出中是否包含服务启动成功的信息
+            if (data.contains('服务已启动') || data.contains('server started') || data.contains('listening on')) {
+              if (!completer.isCompleted) {
+                _isRunning = true;
+                _port = port;
+                debugPrint('CLI服务已启动，端口: $_port');
+                
+                // 启动心跳监控和进程监控
+                _startHeartbeatMonitor();
+                _startProcessMonitor();
+                
+                // 通知状态变化
+                _notifyStatusChange();
+                
+                // 取消超时
+                timeout.cancel();
+                
+                completer.complete(_port);
+              }
             }
-          } else if (message['status'] == 'heartbeat') {
-            // 更新心跳时间
-            _lastHeartbeat = DateTime.now();
-          } else if (message['status'] == 'exited') {
-            // 服务退出
-            final exitCode = message['exitCode'] as int;
-            debugPrint('CLI服务已退出，退出码: $exitCode');
-            
-            final wasRunning = _isRunning;
-            _isRunning = false;
-            _port = null;
-            
-            // 停止心跳监控
-            _stopHeartbeatMonitor();
-            
-            // 只有在之前是运行状态时才通知状态变化
-            if (wasRunning) {
-              _notifyStatusChange();
-            }
-          } else if (message['status'] == 'error') {
-            // 服务启动失败
+          },
+          onError: (error) {
+            debugPrint('CLI输出流错误: $error');
             if (!completer.isCompleted) {
-              debugPrint('启动CLI服务失败: ${message['message']}');
               completer.complete(null);
             }
-          } else if (message['type'] == 'stdout' || message['type'] == 'stderr') {
-            // 处理进程输出
-            final type = message['type'] as String;
-            final data = message['data'] as String;
-            debugPrint('CLI ${type == 'stdout' ? '输出' : '错误'}: $data');
+          },
+          onDone: () {
+            debugPrint('CLI输出流已关闭');
+          },
+        );
+        
+        _stderrSubscription = _cliProcess!.stderr.transform(utf8.decoder).listen(
+          (data) {
+            debugPrint('CLI错误: $data');
+          },
+          onError: (error) {
+            debugPrint('CLI错误流错误: $error');
+          },
+          onDone: () {
+            debugPrint('CLI错误流已关闭');
+          },
+        );
+        
+        // 监听进程退出
+        unawaited(_cliProcess!.exitCode.then((exitCode) {
+          debugPrint('CLI进程退出，退出码: $exitCode');
+          
+          final wasRunning = _isRunning;
+          _isRunning = false;
+          _port = null;
+          
+          // 停止监控
+          _stopHeartbeatMonitor();
+          _stopProcessMonitor();
+          
+          // 清理资源
+          _cleanupResources();
+          
+          // 只有在之前是运行状态时才通知状态变化
+          if (wasRunning) {
+            _notifyStatusChange();
           }
+          
+          // 如果completer还没有完成，则完成它
+          if (!completer.isCompleted) {
+            completer.complete(null);
+          }
+        }));
+        
+        // 假设进程已经启动成功，等待一段时间后检查
+        Timer(const Duration(seconds: 2), () {
+          if (!completer.isCompleted) {
+            try {
+              if (_cliProcess != null && _cliProcess!.pid != 0) {
+                _isRunning = true;
+                _port = port;
+                debugPrint('CLI服务已启动（假定），端口: $_port');
+                
+                // 启动心跳监控和进程监控
+                _startHeartbeatMonitor();
+                _startProcessMonitor();
+                
+                // 通知状态变化
+                _notifyStatusChange();
+                
+                // 取消超时
+                timeout.cancel();
+                
+                completer.complete(_port);
+              }
+            } catch (e) {
+              debugPrint('检查进程状态失败: $e');
+            }
+          }
+        });
+      } catch (e) {
+        debugPrint('启动CLI进程失败: $e');
+        if (!completer.isCompleted) {
+          completer.complete(null);
         }
-      });
-      
-      // 启动Isolate
-      debugPrint('正在启动CLI服务Isolate...');
-      _isolate = await Isolate.spawn(
-        _isolateEntryPoint, 
-        {
-          'sendPort': _receivePort!.sendPort,
-          'binaryPath': binaryPath,
-          'port': port,
-        }
-      );
+      }
       
       // 等待服务启动或失败
-      return await completer.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('启动CLI服务超时');
-          stopService();
-          return null;
-        },
-      );
+      return await completer.future;
     } catch (e) {
       debugPrint('启动CLI服务失败: $e');
       // 清理资源
@@ -333,14 +359,36 @@ class CliService {
   
   /// 清理资源
   void _cleanupResources() {
-    _isolate?.kill(priority: Isolate.immediate);
-    _isolate = null;
-    _receivePort?.close();
-    _receivePort = null;
-    _sendPort = null;
+    // 取消流订阅
+    _stdoutSubscription?.cancel();
+    _stdoutSubscription = null;
+    _stderrSubscription?.cancel();
+    _stderrSubscription = null;
     
-    // 停止心跳监控
+    // 停止监控
     _stopHeartbeatMonitor();
+    _stopProcessMonitor();
+    
+    // 终止进程
+    if (_cliProcess != null) {
+      try {
+        // 尝试正常终止进程
+        if (System.isWindows) {
+          // Windows平台使用taskkill终止进程
+          Process.runSync('taskkill', ['/F', '/PID', '${_cliProcess!.pid}']);
+        } else {
+          // macOS和Linux平台使用kill命令
+          Process.runSync('kill', ['-9', '${_cliProcess!.pid}']);
+        }
+        
+        // 尝试使用Dart API终止进程（作为备份）
+        _cliProcess!.kill();
+      } catch (e) {
+        debugPrint('终止CLI进程失败: $e');
+      } finally {
+        _cliProcess = null;
+      }
+    }
     
     final wasRunning = _isRunning;
     _isRunning = false;
@@ -354,7 +402,7 @@ class CliService {
   
   /// 停止CLI服务
   Future<void> stopService() async {
-    if (!_isRunning) {
+    if (!_isRunning && _cliProcess == null) {
       debugPrint('CLI服务未运行');
       return;
     }
@@ -362,7 +410,7 @@ class CliService {
     try {
       debugPrint('正在停止CLI服务...');
       
-      // 终止Isolate
+      // 清理资源和终止进程
       _cleanupResources();
       
       debugPrint('CLI服务已停止');

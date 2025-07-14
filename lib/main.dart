@@ -60,8 +60,11 @@ class MyWindowListener extends WindowListener {
   
   @override
   void onWindowClose() async {
+    debugPrint('窗口关闭事件触发，正在停止CLI服务...');
     await _stopCliService(container);
-    await Future.delayed(const Duration(milliseconds: 100));
+    // 增加等待时间，确保CLI进程有足够时间被终止
+    await Future.delayed(const Duration(seconds: 1));
+    debugPrint('准备销毁窗口...');
     await windowManager.destroy();
   }
 }
@@ -94,6 +97,12 @@ void main() async {
     
     // 启动CLI服务
     await _startCliService(container);
+    
+    // 注册应用退出时的回调，确保CLI服务被停止
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final binding = WidgetsBinding.instance as WidgetsFlutterBinding;
+      binding.addObserver(_AppLifecycleObserver(container));
+    });
   }
   
   // 初始化应用设置
@@ -103,6 +112,28 @@ void main() async {
     parent: container,
     child: const LemonTea(),
   ));
+}
+
+/// 应用生命周期观察者，用于在应用退出时停止CLI服务
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  final ProviderContainer container;
+  
+  _AppLifecycleObserver(this.container);
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // 应用被终止
+      debugPrint('应用生命周期变为detached，正在停止CLI服务...');
+      _stopCliService(container);
+      
+      // 添加一个延迟，确保CLI进程有足够时间被终止
+      // 注意：这个延迟可能不会被执行，因为应用可能已经被终止
+      Future.delayed(const Duration(seconds: 1), () {
+        debugPrint('CLI服务停止完成');
+      });
+    }
+  }
 }
 
 class LemonTea extends ConsumerWidget {
