@@ -55,12 +55,9 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     _addLogMessage('正在重启CLI服务...');
 
     try {
-      await ref.read(cliServiceProvider.notifier).stopService();
-      _addLogMessage('CLI服务已停止');
+      // 使用新的restartService方法
+      final port = await ref.read(cliServiceProvider.notifier).restartService();
       
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      final port = await ref.read(cliServiceProvider.notifier).startService();
       if (port != null) {
         _addLogMessage('CLI服务已重启，端口: $port');
         _updatePortController();
@@ -127,28 +124,18 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     _addLogMessage('正在更改CLI服务端口到: $newPort...');
 
     try {
-      // 先停止当前服务
-      await ref.read(cliServiceProvider.notifier).stopService();
-      _addLogMessage('CLI服务已停止');
-      
       // 检查端口是否可用
       final isPortAvailable = await System.isPortAvailable(newPort);
       if (!isPortAvailable) {
         _addLogMessage('错误：端口 $newPort 已被占用');
-        // 尝试重启原来的服务
-        final port = await ref.read(cliServiceProvider.notifier).startService();
-        if (port != null) {
-          _addLogMessage('已恢复CLI服务，端口: $port');
-          _updatePortController();
-        }
         setState(() {
           _isChangingPort = false;
         });
         return;
       }
       
-      // 使用新端口启动服务
-      final port = await ref.read(cliServiceProvider.notifier).startService(requestedPort: newPort);
+      // 使用新端口重启服务
+      final port = await ref.read(cliServiceProvider.notifier).restartService(requestedPort: newPort);
       if (port != null) {
         _addLogMessage('CLI服务已启动，端口: $port');
         _updatePortController();

@@ -54,6 +54,12 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   /// 上次使用的端口
   int? _lastPort;
   
+  /// 是否禁用自动重启（手动操作时设置为true）
+  bool _disableAutoRestart = false;
+  
+  /// 禁用自动重启的计时器
+  Timer? _disableAutoRestartTimer;
+  
   /// 构造函数
   CliServiceNotifier() : super(CliServiceState.initial()) {
     // 设置CLI服务状态监听器
@@ -76,10 +82,12 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
       _lastPort = port;
     }
     
-    // 如果服务异常停止，尝试重启
-    if (previousState.isRunning && !isRunning) {
+    // 如果服务异常停止，且未禁用自动重启，则尝试重启
+    if (previousState.isRunning && !isRunning && !_disableAutoRestart) {
       debugPrint('检测到CLI服务异常退出，尝试重启...');
       _restartService();
+    } else if (previousState.isRunning && !isRunning) {
+      debugPrint('CLI服务已停止，由于是手动操作，不会自动重启');
     }
   }
   
@@ -93,11 +101,29 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   
   /// 检查服务状态并在需要时重启
   Future<void> _checkServiceStatus() async {
-    // 如果状态显示服务应该运行，但实际上没有运行，则尝试重启
-    if (state.isRunning && !_cliService.isRunning) {
+    // 如果状态显示服务应该运行，但实际上没有运行，且未禁用自动重启，则尝试重启
+    if (state.isRunning && !_cliService.isRunning && !_disableAutoRestart) {
       debugPrint('定期检查：检测到CLI服务异常退出，尝试重启...');
       await _restartService();
+    } else if (state.isRunning && !_cliService.isRunning) {
+      debugPrint('定期检查：CLI服务已停止，由于是手动操作，不会自动重启');
+      // 更新状态以反映实际情况
+      state = state.copyWith(isRunning: false, port: null);
     }
+  }
+  
+  /// 临时禁用自动重启（用于手动操作）
+  void _temporarilyDisableAutoRestart() {
+    _disableAutoRestart = true;
+    
+    // 取消现有的禁用计时器
+    _disableAutoRestartTimer?.cancel();
+    
+    // 设置新的计时器，30秒后重新启用自动重启
+    _disableAutoRestartTimer = Timer(const Duration(seconds: 30), () {
+      _disableAutoRestart = false;
+      debugPrint('自动重启功能已重新启用');
+    });
   }
   
   /// 重启服务的实现
@@ -123,7 +149,7 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
     _restartTimer = Timer(Duration(seconds: backoffSeconds), () async {
       debugPrint('正在尝试重启CLI服务...');
       // 尝试使用上次的端口重启
-      final port = await startService(requestedPort: _lastPort);
+      final port = await startService(requestedPort: _lastPort, isManualOperation: false);
       
       if (port != null) {
         debugPrint('CLI服务重启成功，端口: $port');
@@ -151,10 +177,16 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   /// 启动CLI服务
   /// 
   /// [requestedPort] 请求使用的端口号，如果为null则自动分配
+  /// [isManualOperation] 是否是手动操作，默认为true
   /// 返回服务端口号，如果启动失败则返回null
-  Future<int?> startService({int? requestedPort}) async {
+  Future<int?> startService({int? requestedPort, bool isManualOperation = true}) async {
     if (state.isRunning) {
       return state.port;
+    }
+    
+    // 如果是手动操作，临时禁用自动重启
+    if (isManualOperation) {
+      _temporarilyDisableAutoRestart();
     }
     
     final port = await _cliService.startService(requestedPort: requestedPort);
@@ -169,13 +201,32 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   }
   
   /// 停止CLI服务
-  Future<void> stopService() async {
+  /// 
+  /// [isManualOperation] 是否是手动操作，默认为true
+  Future<void> stopService({bool isManualOperation = true}) async {
     _restartTimer?.cancel();
     _restartTimer = null;
     _restartAttempts = 0;
     
+    // 如果是手动操作，临时禁用自动重启
+    if (isManualOperation) {
+      _temporarilyDisableAutoRestart();
+    }
+    
     await _cliService.stopService();
     state = state.copyWith(isRunning: false, port: null);
+  }
+  
+  /// 重启CLI服务（手动操作）
+  Future<int?> restartService({int? requestedPort}) async {
+    // 临时禁用自动重启
+    _temporarilyDisableAutoRestart();
+    
+    // 停止服务
+    await stopService(isManualOperation: false);
+    
+    // 启动服务
+    return await startService(requestedPort: requestedPort, isManualOperation: false);
   }
   
   /// 获取CLI服务状态
@@ -189,6 +240,7 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   @override
   void dispose() {
     _restartTimer?.cancel();
+    _disableAutoRestartTimer?.cancel();
     _cliService.removeStatusListener(_onServiceStatusChanged);
     super.dispose();
   }
