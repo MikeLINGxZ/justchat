@@ -105,7 +105,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       leading: Icon(
                         item['icon'],
                         color:
-                            isSelected ? Theme.of(context).primaryColor : null,
+                            isSelected ? Theme.of(context).colorScheme.primary : null,
                       ),
                       title: Text(
                         title,
@@ -114,7 +114,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               isSelected ? FontWeight.bold : FontWeight.normal,
                           color:
                               isSelected
-                                  ? Theme.of(context).primaryColor
+                                  ? Theme.of(context).colorScheme.primary
                                   : null,
                           fontSize: FontSizeUtils.getBodySize(ref),
                         ),
