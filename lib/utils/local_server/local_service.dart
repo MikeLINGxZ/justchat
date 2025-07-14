@@ -197,19 +197,34 @@ class CliService {
   
   /// 启动CLI服务
   /// 
+  /// [requestedPort] 请求使用的端口号，如果为null则自动分配
   /// 返回服务端口号，如果启动失败则返回null
-  Future<int?> startService() async {
+  Future<int?> startService({int? requestedPort}) async {
     if (_isRunning) {
       debugPrint('CLI服务已经在运行中，端口: $_port');
       return _port;
     }
     
     try {
-      // 获取空闲端口
-      final port = await System.findFreePort();
+      // 获取端口
+      int? port;
+      if (requestedPort != null) {
+        // 检查请求的端口是否可用
+        final isAvailable = await System.isPortAvailable(requestedPort);
+        if (isAvailable) {
+          port = requestedPort;
+        } else {
+          debugPrint('请求的端口 $requestedPort 不可用，将自动分配端口');
+        }
+      }
+      
+      // 如果未指定端口或请求的端口不可用，则自动分配
       if (port == null) {
-        debugPrint('无法获取空闲端口');
-        return null;
+        port = await System.findFreePort();
+        if (port == null) {
+          debugPrint('无法获取空闲端口');
+          return null;
+        }
       }
       
       // 获取二进制文件路径

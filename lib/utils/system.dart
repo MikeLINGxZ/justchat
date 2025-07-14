@@ -63,4 +63,24 @@ class System {
     // 如果所有端口都被占用，则返回null
     return null;
   }
+  
+  /// 检查指定端口是否可用
+  ///
+  /// [port] 要检查的端口号
+  /// 返回端口是否可用，true表示可用，false表示被占用
+  static Future<bool> isPortAvailable(int port) async {
+    if (port < 0 || port > 65535) {
+      throw ArgumentError('端口号无效: $port');
+    }
+
+    try {
+      // 尝试绑定端口来检查它是否可用
+      final serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, port, shared: true);
+      await serverSocket.close();
+      return true;
+    } catch (e) {
+      // 端口不可用
+      return false;
+    }
+  }
 }

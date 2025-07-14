@@ -51,6 +51,9 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   /// 最大重启尝试次数
   static const int _maxRestartAttempts = 5;
   
+  /// 上次使用的端口
+  int? _lastPort;
+  
   /// 构造函数
   CliServiceNotifier() : super(CliServiceState.initial()) {
     // 设置CLI服务状态监听器
@@ -67,6 +70,11 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
     // 更新状态
     final previousState = state;
     state = state.copyWith(isRunning: isRunning, port: port);
+    
+    // 保存上次使用的端口
+    if (port != null) {
+      _lastPort = port;
+    }
     
     // 如果服务异常停止，尝试重启
     if (previousState.isRunning && !isRunning) {
@@ -114,7 +122,8 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
     // 设置新的重启计时器
     _restartTimer = Timer(Duration(seconds: backoffSeconds), () async {
       debugPrint('正在尝试重启CLI服务...');
-      final port = await startService();
+      // 尝试使用上次的端口重启
+      final port = await startService(requestedPort: _lastPort);
       
       if (port != null) {
         debugPrint('CLI服务重启成功，端口: $port');
@@ -140,15 +149,19 @@ class CliServiceNotifier extends StateNotifier<CliServiceState> {
   }
   
   /// 启动CLI服务
-  Future<int?> startService() async {
+  /// 
+  /// [requestedPort] 请求使用的端口号，如果为null则自动分配
+  /// 返回服务端口号，如果启动失败则返回null
+  Future<int?> startService({int? requestedPort}) async {
     if (state.isRunning) {
       return state.port;
     }
     
-    final port = await _cliService.startService();
+    final port = await _cliService.startService(requestedPort: requestedPort);
     
     if (port != null) {
       state = state.copyWith(isRunning: true, port: port);
+      _lastPort = port;
       _resetRestartAttempts();
     }
     
