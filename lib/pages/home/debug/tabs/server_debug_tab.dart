@@ -198,12 +198,12 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
     try {
       // 先停止服务
       await _server.stopService();
+
+      // 保存设置
+      await _saveSettings();
       
       // 然后启动服务，使用当前端口和自定义二进制路径（如果在调试模式下）
-      final port = await _server.startService(
-        requestedPort: _currentPort,
-        customBinaryPath: _isDebugMode ? _customBinaryPath : null,
-      );
+      final port = await _server.startService( );
       
       if (port != null) {
         _addLogMessage('SERVER重启成功，端口: $port');
@@ -212,9 +212,6 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
           _currentPort = port;
         });
         _updatePortController();
-        
-        // 保存设置
-        await _saveSettings();
       } else {
         _addLogMessage('SERVER重启失败');
         setState(() {
@@ -306,12 +303,12 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       
       // 先停止服务
       await _server.stopService();
+
+      // 保存设置
+      await _saveSettings();
       
       // 然后使用新端口启动服务
-      final port = await _server.startService(
-        requestedPort: newPort,
-        customBinaryPath: _isDebugMode ? _customBinaryPath : null,
-      );
+      final port = await _server.startService();
       
       if (port != null) {
         _addLogMessage('端口更改成功，新端口: $port');
@@ -320,9 +317,6 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
           _currentPort = port;
         });
         _updatePortController();
-        
-        // 保存设置
-        await _saveSettings();
       } else {
         _addLogMessage('端口更改失败');
         setState(() {
