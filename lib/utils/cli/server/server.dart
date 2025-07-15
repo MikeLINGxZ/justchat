@@ -140,6 +140,7 @@ class Server {
     if (_isDebugMode()) {
       final debugPath = _debugManager.getBinaryPath(customBinaryPath);
       if (debugPath != null) {
+        debugPrint('使用调试模式下的二进制文件路径: $debugPath');
         return debugPath;
       }
     }
@@ -238,15 +239,17 @@ class Server {
         }
       }
 
-      // 在debug模式下处理二进制路径
+      // 在debug模式下处理二进制路径 - 这里必须在获取二进制路径之前处理
       if (_isDebugMode()) {
-        _debugManager.handleBinaryPath(customBinaryPath);
+        await _debugManager.handleBinaryPath(customBinaryPath);
       }
 
       // 获取二进制文件路径
       final String binaryPath = _getSERVERBinaryPath(
         customBinaryPath: customBinaryPath,
       );
+      debugPrint('最终使用的二进制文件路径: $binaryPath');
+      
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在
@@ -513,6 +516,11 @@ class _ServerDebugManager {
         if (file.existsSync()) {
           _storedBinaryPath = savedPath;
           debugPrint('从本地存储加载二进制文件路径: $savedPath');
+        } else {
+          debugPrint('本地存储的二进制文件不存在: $savedPath');
+          // 清除无效路径
+          await _localStorage.setString(_binaryPathKey, '');
+          _storedBinaryPath = null;
         }
       }
     } catch (e) {
@@ -530,6 +538,8 @@ class _ServerDebugManager {
         // 同时保存到本地存储
         await _localStorage.setString(_binaryPathKey, customBinaryPath);
         debugPrint('已保存调试模式下的二进制文件路径: $customBinaryPath');
+      } else {
+        debugPrint('提供的自定义二进制文件不存在: $customBinaryPath');
       }
     }
     // 如果没有提供自定义路径，但本地存储中有路径，尝试从本地存储中加载
@@ -545,11 +555,13 @@ class _ServerDebugManager {
       final customFile = File(customBinaryPath);
       if (customFile.existsSync()) {
         return customBinaryPath;
+      } else {
+        debugPrint('提供的自定义二进制文件不存在: $customBinaryPath');
       }
     }
     
     // 使用存储的路径
-    if (_storedBinaryPath != null) {
+    if (_storedBinaryPath != null && _storedBinaryPath!.isNotEmpty) {
       final storedFile = File(_storedBinaryPath!);
       if (storedFile.existsSync()) {
         debugPrint('使用调试模式下存储的二进制文件路径: $_storedBinaryPath');
