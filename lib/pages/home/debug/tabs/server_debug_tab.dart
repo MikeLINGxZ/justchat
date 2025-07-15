@@ -300,6 +300,10 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
         });
         return;
       }
+
+      setState(() {
+        _currentPort = newPort;
+      });
       
       // 先停止服务
       await _server.stopService();

@@ -8,8 +8,10 @@ import 'package:lemon_tea/utils/storage/local_storage.dart';
 
 /// SERVER服务类，用于管理SERVER二进制文件的启动和停止
 class Server {
-  /// 单例实例
   static final Server _instance = Server._internal();
+  
+  /// 本地存储实例
+  final LocalStorage _localStorage = LocalStorage();
 
   /// 工厂构造函数
   factory Server() => _instance;
@@ -196,14 +198,25 @@ class Server {
       }
 
       // 获取端口
-      int? port = await System.findFreePort();
+      int? port;
+      String? binaryPath;
+
+      if (_isDebugMode()) {
+        port = await _localStorage.getInt('server_debug_port');
+        binaryPath = await _localStorage.getString('server_debug_binary_path');
+      }
+      
+      // 如果没有从本地存储获取到有效端口，则查找空闲端口
       if (port == null) {
-        debugPrint('无法获取空闲端口');
-        return null;
+        port = await System.findFreePort();
+        if (port == null) {
+          debugPrint('无法获取空闲端口');
+          return null;
+        }
       }
 
-      // 获取二进制文件路径
-      final String binaryPath = _getSERVERBinaryPath();
+      binaryPath ??= _getSERVERBinaryPath();
+
       debugPrint('最终使用的二进制文件路径: $binaryPath');
       
       final File binaryFile = File(binaryPath);
