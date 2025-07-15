@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/system.dart';
-import 'package:lemon_tea/utils/server/server.dart';
+import 'package:lemon_tea/utils/cli/server/server.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';

@@ -13,6 +13,12 @@ class Server {
   /// 工厂构造函数
   factory Server() => _instance;
 
+  /// 端口变更流控制器
+  final StreamController<int?> _portController = StreamController<int?>.broadcast();
+
+  /// 端口变更流
+  Stream<int?> get portStream => _portController.stream;
+
   /// 内部构造函数
   Server._internal() {
     // 注册应用退出钩子

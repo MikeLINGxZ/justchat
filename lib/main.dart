@@ -5,7 +5,7 @@ import 'package:lemon_tea/pages/home/home.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
-import 'package:lemon_tea/utils/server/server.dart';
+import 'package:lemon_tea/utils/cli/server/server.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 

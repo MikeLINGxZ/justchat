@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # proto 文件根目录
-PROTO_DIR="rpc"
+PROTO_DIR="lib/rpc"
 
 # 1. 删除 rpc 目录下的所有 .dart 文件
 echo "Cleaning existing .dart files under $PROTO_DIR..."
