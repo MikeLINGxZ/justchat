@@ -72,7 +72,7 @@ class Client {
 
       // 创建gRPC客户端存根
       _stub = LemonTeaClient(_channel!);
-
+      debugPrint('初始化gRPC客户端成功: $port');
       return true;
     } catch (e) {
       debugPrint('初始化gRPC客户端失败: $e');

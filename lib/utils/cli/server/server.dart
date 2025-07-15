@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:path/path.dart' as path;
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
@@ -290,7 +291,8 @@ class Server {
       if (!_isDebugMode()) {
         _registerProcessCleanup();
       }
-
+      Client().close();
+      Client().init(port: port);
       return port;
     } catch (e) {
       debugPrint('启动SERVER服务失败: $e');
