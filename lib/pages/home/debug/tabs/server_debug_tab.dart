@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/utils/system.dart';
-import 'package:lemon_tea/utils/local_server/local_server.dart';
+import 'package:lemon_tea/utils/server/server.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
-class CliDebugTab extends ConsumerStatefulWidget {
-  const CliDebugTab({super.key});
+class ServerDebugTab extends ConsumerStatefulWidget {
+  const ServerDebugTab({super.key});
 
   @override
-  ConsumerState<CliDebugTab> createState() => _CliDebugTabState();
+  ConsumerState<ServerDebugTab> createState() => _ServerDebugTabState();
 }
 
-class _CliDebugTabState extends ConsumerState<CliDebugTab> {
+class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
   final TextEditingController _portController = TextEditingController();
   final TextEditingController _logController = TextEditingController();
   final TextEditingController _binaryPathController = TextEditingController();
@@ -25,15 +25,15 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
   String? _customBinaryPath;
   bool _isDebugMode = false;
   
-  // 创建CLI服务实例
-  final CliService _cliService = CliService();
+  // 创建SERVER服务实例
+  final Server _server = Server();
   
   // 本地存储实例
   final LocalStorage _localStorage = LocalStorage();
   
   // 存储键名
-  static const String _portKey = 'cli_debug_port';
-  static const String _binaryPathKey = 'cli_debug_binary_path';
+  static const String _portKey = 'server_debug_port';
+  static const String _binaryPathKey = 'server_debug_binary_path';
 
   @override
   void initState() {
@@ -41,7 +41,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     _isDebugMode = _checkIsDebugMode();
     _loadSavedSettings();
     _checkServiceStatus();
-    _addLogMessage('CLI调试页面已初始化');
+    _addLogMessage('SERVER调试页面已初始化');
     
     // 添加端口控制器监听器，用于实时更新应用按钮状态
     _portController.addListener(_onPortTextChanged);
@@ -129,8 +129,8 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
   // 检查服务状态
   Future<void> _checkServiceStatus() async {
     setState(() {
-      _isRunning = _cliService.isRunning;
-      _currentPort = _cliService.port;
+      _isRunning = _server.isRunning;
+      _currentPort = _server.port;
     });
     
     // 如果当前端口不为空，更新端口控制器
@@ -186,27 +186,27 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     }
   }
 
-  Future<void> _restartCliService() async {
+  Future<void> _restartServer() async {
     if (_isRestarting) return;
     
     setState(() {
       _isRestarting = true;
     });
     
-    _addLogMessage('正在重启CLI服务...');
+    _addLogMessage('正在重启SERVER...');
     
     try {
       // 先停止服务
-      await _cliService.stopService();
+      await _server.stopService();
       
       // 然后启动服务，使用当前端口和自定义二进制路径（如果在调试模式下）
-      final port = await _cliService.startService(
+      final port = await _server.startService(
         requestedPort: _currentPort,
         customBinaryPath: _isDebugMode ? _customBinaryPath : null,
       );
       
       if (port != null) {
-        _addLogMessage('CLI服务重启成功，端口: $port');
+        _addLogMessage('SERVER重启成功，端口: $port');
         setState(() {
           _isRunning = true;
           _currentPort = port;
@@ -216,7 +216,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
         // 保存设置
         await _saveSettings();
       } else {
-        _addLogMessage('CLI服务重启失败');
+        _addLogMessage('SERVER重启失败');
         setState(() {
           _isRunning = false;
         });
@@ -230,25 +230,25 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
     }
   }
 
-  Future<void> _stopCliService() async {
+  Future<void> _stopServer() async {
     if (_isStopping) return;
     
     setState(() {
       _isStopping = true;
     });
     
-    _addLogMessage('正在停止CLI服务...');
+    _addLogMessage('正在停止SERVER...');
     
     try {
-      final result = await _cliService.stopService();
+      final result = await _server.stopService();
       
       if (result) {
-        _addLogMessage('CLI服务已停止');
+        _addLogMessage('SERVER已停止');
         setState(() {
           _isRunning = false;
         });
       } else {
-        _addLogMessage('停止CLI服务失败');
+        _addLogMessage('停止SERVER失败');
       }
     } catch (e) {
       _addLogMessage('停止过程中发生错误: $e');
@@ -305,10 +305,10 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       }
       
       // 先停止服务
-      await _cliService.stopService();
+      await _server.stopService();
       
       // 然后使用新端口启动服务
-      final port = await _cliService.startService(
+      final port = await _server.startService(
         requestedPort: newPort,
         customBinaryPath: _isDebugMode ? _customBinaryPath : null,
       );
@@ -344,14 +344,14 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'CLI 服务调试',
+          'SERVER 调试',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          '管理和监控本地CLI服务',
+          '管理和监控本地SERVER',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.grey[600],
           ),
@@ -417,7 +417,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                           controller: _binaryPathController,
                           decoration: InputDecoration(
                             labelText: '二进制文件路径',
-                            hintText: '选择或输入CLI二进制文件路径',
+                            hintText: '选择或输入SERVER二进制文件路径',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -509,7 +509,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: !_isRestarting && !_isChangingPort && !_isStopping
-                            ? _restartCliService
+                            ? _restartServer
                             : null,
                         icon: _isRestarting
                             ? const SizedBox(
@@ -536,7 +536,7 @@ class _CliDebugTabState extends ConsumerState<CliDebugTab> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _isRunning && !_isStopping && !_isChangingPort && !_isRestarting
-                            ? _stopCliService
+                            ? _stopServer
                             : null,
                         icon: _isStopping
                             ? const SizedBox(

@@ -6,15 +6,15 @@ import 'package:path/path.dart' as path;
 import 'package:lemon_tea/utils/system.dart';
 
 /// CLI服务类，用于管理CLI二进制文件的启动和停止
-class CliService {
+class Server {
   /// 单例实例
-  static final CliService _instance = CliService._internal();
+  static final Server _instance = Server._internal();
 
   /// 工厂构造函数
-  factory CliService() => _instance;
+  factory Server() => _instance;
 
   /// 内部构造函数
-  CliService._internal() {
+  Server._internal() {
     // 注册应用退出钩子
     _registerExitHook();
   }

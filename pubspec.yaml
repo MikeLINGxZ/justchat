@@ -75,11 +75,13 @@ dev_dependencies:
   riverpod_lint: ^2.6.3
   json_serializable: ^6.9.5
   ffigen: ^9.0.1
+  protobuf: ^4.1.0
 
 dependency_overrides:
   build_runner: ^2.5.1
   analyzer_plugin: ^0.13.1
   analyzer: ^7.4.5
+  protoc_plugin: ^22.4.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

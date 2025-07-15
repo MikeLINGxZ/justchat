@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'tabs/ffi_debug_tab.dart';
-import 'tabs/cli_debug_tab.dart';
+import 'tabs/server_debug_tab.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -44,10 +44,10 @@ class _DebugPageState extends State<DebugPage> {
     //   widget: const LogDebugTab(),
     // ),
     DebugTab(
-      title: 'CLI 调试',
+      title: 'SERVER 调试',
       icon: Icons.terminal,
       color: Colors.teal,
-      widget: const CliDebugTab(),
+      widget: const ServerDebugTab(),
     ),
     DebugTab(
       title: 'FFI 调试',
