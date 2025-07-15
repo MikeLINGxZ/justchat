@@ -19,6 +19,7 @@ class Client {
     cliServer.Server().portStream.listen((port) {
       if (port != null && port != _port) {
         _port = port;
+        debugPrint('服务端口变化: $port');
         _reconnect();
       } else if (port == null) {
         _cleanupClient();

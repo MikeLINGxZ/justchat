@@ -6,6 +6,7 @@ import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
+import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 
@@ -35,6 +36,15 @@ Future<void> _startLemonTeaService(ProviderContainer container) async {
   
   if (port != null) {
     debugPrint('CLI服务已启动，端口: $port');
+    
+    // 初始化RPC客户端
+    final client = Client();
+    final initialized = await client.init();
+    if (initialized) {
+      debugPrint('RPC客户端初始化成功');
+    } else {
+      debugPrint('RPC客户端初始化失败');
+    }
   } else {
     debugPrint('CLI服务启动失败');
   }

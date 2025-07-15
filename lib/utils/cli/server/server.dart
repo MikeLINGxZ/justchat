@@ -4,8 +4,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:lemon_tea/utils/system.dart';
+import 'package:lemon_tea/utils/storage/local_storage.dart';
 
-/// CLI服务类，用于管理CLI二进制文件的启动和停止
+/// SERVER服务类，用于管理SERVER二进制文件的启动和停止
 class Server {
   /// 单例实例
   static final Server _instance = Server._internal();
@@ -19,10 +20,47 @@ class Server {
   /// 端口变更流
   Stream<int?> get portStream => _portController.stream;
 
+  /// 存储的二进制文件路径
+  static String? _storedBinaryPath;
+
+  /// 本地存储实例
+  final LocalStorage _localStorage = LocalStorage();
+  
+  /// 存储键名
+  static const String _binaryPathKey = 'server_debug_binary_path';
+
+  /// 设置存储的二进制文件路径
+  static void setStoredBinaryPath(String path) {
+    _storedBinaryPath = path;
+  }
+
+  /// 获取存储的二进制文件路径
+  static String? get storedBinaryPath => _storedBinaryPath;
+
   /// 内部构造函数
   Server._internal() {
     // 注册应用退出钩子
     _registerExitHook();
+    // 加载保存的二进制路径
+    _loadSavedBinaryPath();
+  }
+  
+  /// 从本地存储加载保存的二进制文件路径
+  Future<void> _loadSavedBinaryPath() async {
+    try {
+      if (_isDebugMode()) {
+        final savedPath = await _localStorage.getString(_binaryPathKey);
+        if (savedPath != null && savedPath.isNotEmpty) {
+          final file = File(savedPath);
+          if (file.existsSync()) {
+            _storedBinaryPath = savedPath;
+            debugPrint('从本地存储加载二进制文件路径: $savedPath');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('加载保存的二进制文件路径失败: $e');
+    }
   }
 
   /// 服务是否正在运行
@@ -126,8 +164,8 @@ class Server {
     }
   }
 
-  /// 获取CLI二进制文件路径
-  String _getCliBinaryPath({String? customBinaryPath}) {
+  /// 获取SERVER二进制文件路径
+  String _getSERVERBinaryPath({String? customBinaryPath}) {
     // 如果提供了自定义路径，优先使用
     if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
       final customFile = File(customBinaryPath);
@@ -135,6 +173,16 @@ class Server {
         return customBinaryPath;
       } else {
         debugPrint('自定义二进制文件不存在: $customBinaryPath，将使用默认路径');
+      }
+    }
+
+    // 如果处于调试模式，优先使用存储的路径
+    if (_isDebugMode() && _storedBinaryPath != null) {
+      final storedFile = File(_storedBinaryPath!);
+      if (storedFile.existsSync()) {
+        return _storedBinaryPath!;
+      } else {
+        debugPrint('调试模式下存储的二进制文件不存在: $_storedBinaryPath，将使用默认路径');
       }
     }
 
@@ -151,7 +199,7 @@ class Server {
           appDir,
           'data',
           'flutter_assets',
-          'cli',
+          'SERVER',
           'lemon_tea_local_windows_$arch.exe',
         );
         break;
@@ -180,7 +228,7 @@ class Server {
           appDir,
           'data',
           'flutter_assets',
-          'cli',
+          'SERVER',
           'lemon_tea_local_linux_$arch',
         );
         break;
@@ -192,7 +240,7 @@ class Server {
     return binaryPath;
   }
 
-  /// 启动CLI服务
+  /// 启动SERVER服务
   ///
   /// [requestedPort] 请求使用的端口号，如果为null则自动分配
   /// [customBinaryPath] 自定义二进制文件路径，如果为null则使用默认路径
@@ -223,15 +271,35 @@ class Server {
         }
       }
 
+      // 在debug模式下，如果提供了自定义路径，保存该路径以便后续使用
+      if (_isDebugMode() && customBinaryPath != null && customBinaryPath.isNotEmpty) {
+        final customFile = File(customBinaryPath);
+        if (customFile.existsSync()) {
+          _storedBinaryPath = customBinaryPath;
+          // 同时保存到本地存储
+          await _localStorage.setString(_binaryPathKey, customBinaryPath);
+          debugPrint('已保存调试模式下的二进制文件路径: $customBinaryPath');
+        }
+      }
+      
+      // 在debug模式下，如果没有提供自定义路径，但本地存储中有路径，尝试从本地存储中加载
+      if (_isDebugMode() && (customBinaryPath == null || customBinaryPath.isEmpty)) {
+        await _loadSavedBinaryPath();
+        if (_storedBinaryPath != null && _storedBinaryPath!.isNotEmpty) {
+          customBinaryPath = _storedBinaryPath;
+          debugPrint('使用本地存储的二进制文件路径: $customBinaryPath');
+        }
+      }
+
       // 获取二进制文件路径
-      final String binaryPath = _getCliBinaryPath(
+      final String binaryPath = _getSERVERBinaryPath(
         customBinaryPath: customBinaryPath,
       );
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在
       if (!await binaryFile.exists()) {
-        debugPrint('CLI二进制文件不存在: $binaryPath');
+        debugPrint('SERVER二进制文件不存在: $binaryPath');
         return null;
       }
 
@@ -262,18 +330,18 @@ class Server {
       _stdoutSubscription = _process!.stdout.transform(utf8.decoder).listen((
         data,
       ) {
-        debugPrint('CLI输出: $data');
+        debugPrint('SERVER输出: $data');
       });
 
       _stderrSubscription = _process!.stderr.transform(utf8.decoder).listen((
         data,
       ) {
-        debugPrint('CLI错误: $data');
+        debugPrint('SERVER错误: $data');
       });
 
       // 监听进程退出
       _process!.exitCode.then((exitCode) {
-        debugPrint('CLI进程退出，退出码: $exitCode');
+        debugPrint('SERVER进程退出，退出码: $exitCode');
         _cleanupProcess();
       });
 
@@ -282,13 +350,16 @@ class Server {
 
       // 检查服务是否可用
       if (!await _isServiceAvailable(port)) {
-        debugPrint('CLI服务启动失败，无法连接到端口: $port');
+        debugPrint('SERVER服务启动失败，无法连接到端口: $port');
         _forceKillProcess();
         return null;
       }
 
       _isRunning = true;
       _port = port;
+      
+      // 通知监听器端口变化
+      _portController.add(port);
 
       // 仅在应用程序打包发布时注册进程清理
       // 在开发模式下，不注册监视进程，避免误杀
@@ -298,7 +369,7 @@ class Server {
 
       return port;
     } catch (e) {
-      debugPrint('启动CLI服务失败: $e');
+      debugPrint('启动SERVER服务失败: $e');
       _forceKillProcess();
       return null;
     }
@@ -443,10 +514,15 @@ done
     _stderrSubscription?.cancel();
     _stderrSubscription = null;
     _isRunning = false;
-    _port = null;
+    
+    // 如果端口发生变化，通知监听器
+    if (_port != null) {
+      _port = null;
+      _portController.add(null);
+    }
   }
 
-  /// 停止CLI服务
+  /// 停止SERVER服务
   Future<bool> stopService() async {
     if (!_isRunning) {
       return false;
@@ -456,7 +532,7 @@ done
       _forceKillProcess();
       return true;
     } catch (e) {
-      debugPrint('停止CLI服务失败: $e');
+      debugPrint('停止SERVER服务失败: $e');
       return false;
     }
   }
