@@ -57,6 +57,40 @@ Future<void> updateLlmConfig() async {
   }
 }
 
-Future<List<Model>> llmModels(String baseUrl,String? apiKey) {
-  // todo 调用Client的Models方法获取信息
+/// 获取LLM模型列表
+///
+/// [baseUrl] LLM提供商的基础URL
+/// [apiKey] 可选的API密钥
+/// 返回模型列表
+Future<List<Model>> llmModels(String baseUrl, String? apiKey) async {
+  try {
+    // 检查客户端是否初始化
+    if (Client().stub == null) {
+      await Client().init();
+      if (Client().stub == null) {
+        debugPrint('无法初始化gRPC客户端');
+        return [];
+      }
+    }
+    
+    // 创建请求对象
+    final request = ModelsRequest(
+      baseUrl: baseUrl,
+      apiKey: apiKey ?? '',
+    );
+    
+    // 调用Models方法获取模型列表
+    final response = await Client().stub!.models(request);
+    
+    // 将gRPC模型对象转换为应用程序模型对象
+    return response.models.map((pbModel) => Model(
+      id: pbModel.id,
+      object: pbModel.object,
+      ownedBy: pbModel.ownedBy,
+      enabled: pbModel.enabled,
+    )).toList();
+  } catch (e) {
+    debugPrint('获取LLM模型列表失败: $e');
+    return [];
+  }
 }
