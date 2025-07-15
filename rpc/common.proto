@@ -1,0 +1,44 @@
+syntax = "proto3";
+package lemon_tea.common;
+
+option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_cli/rpc";
+
+// Empty 空参数占位
+message Empty {}
+
+// LlmProvider llm API配置信息
+message LlmProvider {
+  string  id = 1;
+  string name = 2;
+  string base_url = 3;
+  string api_key = 4;
+  optional string alias = 5;
+  optional string description = 6;
+  repeated Model models = 7;
+}
+
+// Model llm模型信息
+message Model {
+  string id = 1;
+  string object = 2;
+  string owned_by = 3;
+  bool enabled = 4;
+}
+
+// Message 对话消息
+message Message {
+  MessageRole role = 1;
+  string content = 2;
+//  repeated ToolCall tool_calls = 3;
+//  optional string tool_call_id = 4;
+}
+
+// MessageRole 对话角色
+enum MessageRole {
+  MESSAGE_ROLE_UNSPECIFIED = 0;
+  MESSAGE_ROLE_SYSTEM = 1;
+  MESSAGE_ROLE_USER = 2;
+  MESSAGE_ROLE_ASSISTANT = 3;
+  MESSAGE_ROLE_FUNCTION = 4;
+  MESSAGE_ROLE_TOOL = 5;
+}

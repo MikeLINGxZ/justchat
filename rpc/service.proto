@@ -1,0 +1,53 @@
+syntax = "proto3";
+package lemon_tea.server;
+
+option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_cli/rpc";
+
+import "rpc/common.proto";
+
+service LemonTea {
+
+  /** llm 接口 **/
+
+  // UpdateLlmConfig 更新llm配置
+  rpc UpdateLlmConfig(UpdateLlmConfigRequest) returns (UpdateLlmConfigResponse);
+
+  // Models 获取llm的模型列表
+  rpc Models(ModelsRequest) returns (ModelsResponse);
+
+  // Chat 对话接口
+  rpc Chat(stream ChatRequest) returns (stream ChatResponse);
+}
+
+message UpdateLlmConfigRequest {
+  repeated lemon_tea.common.LlmProvider llm_providers = 1;
+}
+
+message UpdateLlmConfigResponse {
+
+}
+
+message ModelsRequest {
+  string name = 1;
+  string base_url = 2;
+  string api_key = 3;
+}
+
+message ModelsResponse {
+  repeated lemon_tea.common.Model models = 1;
+}
+
+message ChatRequest {
+  string llm_provider_id = 1;
+  string model_id = 2;
+  repeated  lemon_tea.common.Message history_messages = 3;
+  lemon_tea.common.Message message = 5;
+  string prompt = 6;
+}
+
+message ChatResponse {
+  string content = 1;         // 返回的内容片段
+  bool is_done = 2;           // 是否完成
+  string request_id = 3;      // 请求ID，用于关联请求和响应
+  string error_message = 4;   // 错误信息，如果有
+}

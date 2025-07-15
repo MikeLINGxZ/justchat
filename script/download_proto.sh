@@ -1,38 +1,39 @@
 #!/bin/bash
 
-# 定义仓库URL和分支
+# 配置部分
 REPO_URL="https://gitlab.linhf.cn/project/lemontea/lemon_tea_cli.git"
 BRANCH="dev"
-TARGET_DIR="rpc"
-PROTO_PATTERN="*.proto"
+RPC_DIR_IN_REPO="rpc"
+LOCAL_RPC_DIR="rpc"
+
+# 创建本地 rpc 目录（如果不存在）
+mkdir -p "$LOCAL_RPC_DIR"
 
 # 创建临时目录
-TEMP_DIR=$(mktemp -d)
+TMP_DIR=$(mktemp -d)
 
-echo "正在克隆仓库..."
-git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$TEMP_DIR"
+echo "克隆仓库 $REPO_URL 的 $BRANCH 分支到临时目录..."
+git clone --depth 1 -b "$BRANCH" "$REPO_URL" "$TMP_DIR"
 
-# 检查克隆是否成功
 if [ $? -ne 0 ]; then
-    echo "错误：无法克隆仓库"
-    rm -rf "$TEMP_DIR"
-    exit 1
+  echo "❌ 克隆仓库失败，请检查网络或仓库地址。"
+  exit 1
 fi
 
-# 创建目标目录（如果不存在）
-rm -rf "./$TARGET_DIR"
-mkdir -p "./$TARGET_DIR"
+# 查找并复制 .proto 文件
+PROTO_FILES=$(find "$TMP_DIR/$RPC_DIR_IN_REPO" -type f -name "*.proto")
 
-echo "正在复制.proto文件..."
-# 查找并复制所有.proto文件
-find "$TEMP_DIR/$TARGET_DIR" -name "$PROTO_PATTERN" -exec cp {} "./$TARGET_DIR/" \;
+if [ -z "$PROTO_FILES" ]; then
+  echo "⚠️ 在 $RPC_DIR_IN_REPO 中未找到 .proto 文件。"
+else
+  echo "✅ 找到以下 .proto 文件："
+  echo "$PROTO_FILES"
 
-# 检查复制是否成功
-if [ $? -ne 0 ]; then
-    echo "警告：未找到任何.proto文件或复制失败"
+  cp $PROTO_FILES "$LOCAL_RPC_DIR/"
+  echo "✅ .proto 文件已复制到 $LOCAL_RPC_DIR/"
 fi
 
 # 清理临时目录
-rm -rf "$TEMP_DIR"
+rm -rf "$TMP_DIR"
 
-echo "操作完成。.proto文件已保存到 ./$TARGET_DIR/"
+echo "✅ 完成！"
