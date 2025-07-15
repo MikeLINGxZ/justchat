@@ -136,25 +136,36 @@ class ModelSettings extends ConsumerWidget {
   }
 
   Widget _buildProviderTile(BuildContext context, WidgetRef ref, LlmProvider provider) {
+    // 获取最新的供应商数据，确保模型列表是最新的
+    final providers = ref.watch(providerManagerProvider);
+    final currentProvider = providers.firstWhere(
+      (p) => p.name == provider.name,
+      orElse: () => provider,
+    );
+    
+    // 计算启用的模型数量
+    final enabledModelsCount = currentProvider.models?.where((m) => m.enabled).length ?? 0;
+    final totalModelsCount = currentProvider.models?.length ?? 0;
+    
     return ListTile(
       title: Text(
-        provider.displayName,
+        currentProvider.displayName,
         style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            provider.baseUrl,
+            currentProvider.baseUrl,
             style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
           ),
-          if (provider.description != null) 
+          if (currentProvider.description != null) 
             Text(
-              provider.description!,
+              currentProvider.description!,
               style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
             ),
           Text(
-            '模型数量: ${provider.models?.where((m) => m.enabled).length ?? 0} / ${provider.models?.length ?? 0}',
+            '模型数量: $enabledModelsCount / $totalModelsCount',
             style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
           ),
         ],
@@ -165,17 +176,17 @@ class ModelSettings extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: provider.hasApiKey ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              color: currentProvider.hasApiKey ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: provider.hasApiKey ? Colors.green : Colors.orange,
+                color: currentProvider.hasApiKey ? Colors.green : Colors.orange,
                 width: 1,
               ),
             ),
             child: Text(
-              provider.hasApiKey ? '已配置' : '未配置',
+              currentProvider.hasApiKey ? '已配置' : '未配置',
               style: TextStyle(
-                color: provider.hasApiKey ? Colors.green : Colors.orange,
+                color: currentProvider.hasApiKey ? Colors.green : Colors.orange,
                 fontSize: FontSizeUtils.getSmallSize(ref),
                 fontWeight: FontWeight.w500,
               ),
@@ -185,7 +196,7 @@ class ModelSettings extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.list),
             onPressed: () {
-              _showModelsDialog(context, ref, provider);
+              _showModelsDialog(context, ref, currentProvider);
             },
             tooltip: '查看模型列表',
           ),
@@ -194,10 +205,13 @@ class ModelSettings extends ConsumerWidget {
             onSelected: (value) {
               switch (value) {
                 case 'edit':
-                  _showProviderDialog(context, ref, provider: provider);
+                  _showProviderDialog(context, ref, provider: currentProvider);
                   break;
                 case 'delete':
-                  _showDeleteProviderDialog(context, ref, provider);
+                  _showDeleteProviderDialog(context, ref, currentProvider);
+                  break;
+                case 'refresh':
+                  _testConnection(context, ref, currentProvider);
                   break;
               }
             },
@@ -210,6 +224,19 @@ class ModelSettings extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       '编辑',
+                      style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    const Icon(Icons.refresh),
+                    const SizedBox(width: 8),
+                    Text(
+                      '测试连接',
                       style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
                     ),
                   ],
@@ -236,7 +263,7 @@ class ModelSettings extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        ref.read(selectedProviderProvider.notifier).state = provider;
+        ref.read(selectedProviderProvider.notifier).state = currentProvider;
         ref.read(selectedModelProvider.notifier).state = null;
       },
     );
@@ -296,9 +323,26 @@ class ModelSettings extends ConsumerWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
             ),
-            title: Text(
-              '${currentProvider.displayName} 的模型列表',
-              style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${currentProvider.displayName} 的模型列表',
+                    style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: '刷新模型列表',
+                  onPressed: () {
+                    // 强制刷新对话框
+                    Navigator.of(context).pop();
+                    _showModelsDialog(context, ref, currentProvider);
+                  },
+                ),
+              ],
             ),
             content: SizedBox(
               width: 400,
@@ -356,9 +400,13 @@ class ModelSettings extends ConsumerWidget {
                             style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            '请先测试连接以获取模型列表',
-                            style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref), color: Colors.grey),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('测试连接获取模型'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _showProviderDialog(context, ref, provider: currentProvider);
+                            },
                           ),
                         ],
                       ),
@@ -546,6 +594,147 @@ class ModelSettings extends ConsumerWidget {
               S.of(context).delete,
               style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 直接在列表中测试连接
+  Future<void> _testConnection(BuildContext context, WidgetRef ref, LlmProvider provider) async {
+    final providerManager = ref.read(providerManagerProvider.notifier);
+    
+    // 显示加载对话框
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('正在测试连接并获取模型列表...'),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      final result = await providerManager.testProviderConnection(provider);
+      
+      // 关闭加载对话框
+      Navigator.of(context).pop();
+      
+      if (result['success']) {
+        final models = result['models'] as List<Model>;
+        
+        // 显示保存模型对话框
+        if (models.isNotEmpty) {
+          _showSaveModelsDialog(context, ref, provider, models);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('连接测试成功，但未获取到模型'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        final error = result['error'] as String;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('连接测试失败：$error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // 关闭加载对话框
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('连接测试失败：${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  /// 显示保存模型对话框
+  void _showSaveModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider, List<Model> models) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
+        title: const Text('保存模型信息'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('是否将获取到的模型信息保存到此供应商？'),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: models.length > 5 ? 5 : models.length,
+                  itemBuilder: (context, index) {
+                    final model = models[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text(model.displayName),
+                      subtitle: Text('类型: ${model.object}'),
+                    );
+                  },
+                ),
+              ),
+              if (models.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text('... 还有 ${models.length - 5} 个模型未显示'),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              // 更新供应商的模型列表
+              final updatedProvider = provider.copyWith(models: models);
+              
+              // 保存供应商信息
+              try {
+                final providerManager = ref.read(providerManagerProvider.notifier);
+                await providerManager.updateProvider(provider.name, updatedProvider);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('模型信息已保存'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('保存模型信息失败：${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('保存'),
           ),
         ],
       ),

@@ -189,15 +189,9 @@ class ProviderManager extends StateNotifier<List<LlmProvider>> {
       final result = await ApiService.testConnectionAndGetModels(provider);
       
       if (result['success']) {
-        // 如果连接成功，更新供应商的模型列表
+        // 获取到模型列表，但不自动保存
         final models = result['models'] as List<Model>;
         print('获取到 ${models.length} 个模型');
-        
-        final updatedProvider = provider.copyWith(models: models);
-        
-        // 更新存储中的供应商信息
-        await updateProvider(provider.name, updatedProvider);
-        print('供应商信息已更新');
         
         return {
           'success': true,

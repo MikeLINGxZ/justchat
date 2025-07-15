@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/utils/cli/cli_utils/llm_config_utils.dart';
 
 /// API服务类，负责与LLM供应商的API通信
 class ApiService {
@@ -71,11 +72,22 @@ class ApiService {
     }
 
     try {
-      final models = await getModels(provider);
-      return {
-        'success': true,
-        'models': models,
-      };
+      // 使用llmModels函数获取模型列表
+      final models = await llmModels(provider.baseUrl, provider.apiKey);
+      
+      if (models.isNotEmpty) {
+        return {
+          'success': true,
+          'models': models,
+        };
+      } else {
+        // 如果没有获取到模型，尝试使用HTTP请求获取
+        final httpModels = await getModels(provider);
+        return {
+          'success': true,
+          'models': httpModels,
+        };
+      }
     } catch (e) {
       return {
         'success': false,

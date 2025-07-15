@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
+import 'package:lemon_tea/models/model.dart';
 import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
@@ -272,15 +273,21 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
 
       if (mounted) {
         if (result['success']) {
-          final models = result['models'] as List;
-          final message = result['message'] as String;
+          final models = result['models'] as List<Model>;
+          
+          // 显示成功消息
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(message),
+              content: Text('连接测试成功，获取到 ${models.length} 个模型'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
             ),
           );
+          
+          // 如果获取到了模型，显示对话框询问是否保存
+          if (models.isNotEmpty) {
+            _showSaveModelsDialog(provider, models);
+          }
         } else {
           final error = result['error'] as String;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -308,5 +315,91 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
         });
       }
     }
+  }
+  
+  /// 显示保存模型对话框
+  void _showSaveModelsDialog(LlmProvider provider, List<Model> models) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
+        title: const Text('保存模型信息'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('是否将获取到的模型信息保存到此供应商？'),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: models.length > 5 ? 5 : models.length,
+                  itemBuilder: (context, index) {
+                    final model = models[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text(model.displayName),
+                      subtitle: Text('类型: ${model.object}'),
+                    );
+                  },
+                ),
+              ),
+              if (models.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text('... 还有 ${models.length - 5} 个模型未显示'),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              // 更新供应商的模型列表
+              final updatedProvider = provider.copyWith(models: models);
+              
+              // 保存供应商信息
+              try {
+                final providerManager = ref.read(providerManagerProvider.notifier);
+                
+                if (widget.provider != null) {
+                  // 编辑模式
+                  await providerManager.updateProvider(widget.provider!.name, updatedProvider);
+                } else {
+                  // 添加模式
+                  await providerManager.addProvider(updatedProvider);
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('模型信息已保存'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('保存模型信息失败：${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
   }
 } 
