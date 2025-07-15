@@ -10,18 +10,17 @@
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
 // ignore_for_file: non_constant_identifier_names
 
-import 'dart:async' as $async;
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'common.pb.dart' as $0;
+import 'common.pb.dart' as $1;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 class UpdateLlmConfigRequest extends $pb.GeneratedMessage {
   factory UpdateLlmConfigRequest({
-    $core.Iterable<$0.LlmProvider>? llmProviders,
+    $core.Iterable<$1.LlmProvider>? llmProviders,
   }) {
     final result = create();
     if (llmProviders != null) result.llmProviders.addAll(llmProviders);
@@ -34,7 +33,7 @@ class UpdateLlmConfigRequest extends $pb.GeneratedMessage {
   factory UpdateLlmConfigRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateLlmConfigRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
-    ..pc<$0.LlmProvider>(1, _omitFieldNames ? '' : 'llmProviders', $pb.PbFieldType.PM, subBuilder: $0.LlmProvider.create)
+    ..pc<$1.LlmProvider>(1, _omitFieldNames ? '' : 'llmProviders', $pb.PbFieldType.PM, subBuilder: $1.LlmProvider.create)
     ..hasRequiredFields = false
   ;
 
@@ -56,7 +55,7 @@ class UpdateLlmConfigRequest extends $pb.GeneratedMessage {
   static UpdateLlmConfigRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$0.LlmProvider> get llmProviders => $_getList(0);
+  $pb.PbList<$1.LlmProvider> get llmProviders => $_getList(0);
 }
 
 class UpdateLlmConfigResponse extends $pb.GeneratedMessage {
@@ -161,7 +160,7 @@ class ModelsRequest extends $pb.GeneratedMessage {
 
 class ModelsResponse extends $pb.GeneratedMessage {
   factory ModelsResponse({
-    $core.Iterable<$0.Model>? models,
+    $core.Iterable<$1.Model>? models,
   }) {
     final result = create();
     if (models != null) result.models.addAll(models);
@@ -174,7 +173,7 @@ class ModelsResponse extends $pb.GeneratedMessage {
   factory ModelsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ModelsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
-    ..pc<$0.Model>(1, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM, subBuilder: $0.Model.create)
+    ..pc<$1.Model>(1, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM, subBuilder: $1.Model.create)
     ..hasRequiredFields = false
   ;
 
@@ -196,15 +195,15 @@ class ModelsResponse extends $pb.GeneratedMessage {
   static ModelsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$0.Model> get models => $_getList(0);
+  $pb.PbList<$1.Model> get models => $_getList(0);
 }
 
 class ChatRequest extends $pb.GeneratedMessage {
   factory ChatRequest({
     $core.String? llmProviderId,
     $core.String? modelId,
-    $core.Iterable<$0.Message>? historyMessages,
-    $0.Message? message,
+    $core.Iterable<$1.Message>? historyMessages,
+    $1.Message? message,
     $core.String? prompt,
   }) {
     final result = create();
@@ -224,8 +223,8 @@ class ChatRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ChatRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'llmProviderId')
     ..aOS(2, _omitFieldNames ? '' : 'modelId')
-    ..pc<$0.Message>(3, _omitFieldNames ? '' : 'historyMessages', $pb.PbFieldType.PM, subBuilder: $0.Message.create)
-    ..aOM<$0.Message>(5, _omitFieldNames ? '' : 'message', subBuilder: $0.Message.create)
+    ..pc<$1.Message>(3, _omitFieldNames ? '' : 'historyMessages', $pb.PbFieldType.PM, subBuilder: $1.Message.create)
+    ..aOM<$1.Message>(5, _omitFieldNames ? '' : 'message', subBuilder: $1.Message.create)
     ..aOS(6, _omitFieldNames ? '' : 'prompt')
     ..hasRequiredFields = false
   ;
@@ -266,18 +265,18 @@ class ChatRequest extends $pb.GeneratedMessage {
   void clearModelId() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $pb.PbList<$0.Message> get historyMessages => $_getList(2);
+  $pb.PbList<$1.Message> get historyMessages => $_getList(2);
 
   @$pb.TagNumber(5)
-  $0.Message get message => $_getN(3);
+  $1.Message get message => $_getN(3);
   @$pb.TagNumber(5)
-  set message($0.Message value) => $_setField(5, value);
+  set message($1.Message value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasMessage() => $_has(3);
   @$pb.TagNumber(5)
   void clearMessage() => $_clearField(5);
   @$pb.TagNumber(5)
-  $0.Message ensureMessage() => $_ensure(3);
+  $1.Message ensureMessage() => $_ensure(3);
 
   @$pb.TagNumber(6)
   $core.String get prompt => $_getSZ(4);
@@ -369,25 +368,6 @@ class ChatResponse extends $pb.GeneratedMessage {
   $core.bool hasErrorMessage() => $_has(3);
   @$pb.TagNumber(4)
   void clearErrorMessage() => $_clearField(4);
-}
-
-class LemonTeaApi {
-  final $pb.RpcClient _client;
-
-  LemonTeaApi(this._client);
-
-  /// UpdateLlmConfig 更新llm配置
-  $async.Future<UpdateLlmConfigResponse> updateLlmConfig($pb.ClientContext? ctx, UpdateLlmConfigRequest request) =>
-    _client.invoke<UpdateLlmConfigResponse>(ctx, 'LemonTea', 'UpdateLlmConfig', request, UpdateLlmConfigResponse())
-  ;
-  /// Models 获取llm的模型列表
-  $async.Future<ModelsResponse> models($pb.ClientContext? ctx, ModelsRequest request) =>
-    _client.invoke<ModelsResponse>(ctx, 'LemonTea', 'Models', request, ModelsResponse())
-  ;
-  /// Chat 对话接口
-  $async.Future<ChatResponse> chat($pb.ClientContext? ctx, ChatRequest request) =>
-    _client.invoke<ChatResponse>(ctx, 'LemonTea', 'Chat', request, ChatResponse())
-  ;
 }
 
 

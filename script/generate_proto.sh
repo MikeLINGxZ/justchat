@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # proto 文件根目录
-PROTO_DIR="lib/rpc"
+PROTO_DIR="rpc"
 
 # 1. 删除 rpc 目录下的所有 .dart 文件
 echo "Cleaning existing .dart files under $PROTO_DIR..."
@@ -15,7 +15,7 @@ echo "Cleanup completed."
 echo "Generating Dart code from .proto files..."
 find "$PROTO_DIR" -type f -name "*.proto" | while read file; do
   echo "Processing $file"
-  protoc --dart_out=. "$file"
+  protoc --dart_out=grpc:lib "$file"
 done
 
 echo "All proto files processed."

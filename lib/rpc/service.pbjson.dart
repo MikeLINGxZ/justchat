@@ -14,8 +14,6 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
-import 'common.pbjson.dart' as $0;
-
 @$core.Deprecated('Use updateLlmConfigRequestDescriptor instead')
 const UpdateLlmConfigRequest$json = {
   '1': 'UpdateLlmConfigRequest',
@@ -102,34 +100,4 @@ final $typed_data.Uint8List chatResponseDescriptor = $convert.base64Decode(
     'CgxDaGF0UmVzcG9uc2USGAoHY29udGVudBgBIAEoCVIHY29udGVudBIXCgdpc19kb25lGAIgAS'
     'gIUgZpc0RvbmUSHQoKcmVxdWVzdF9pZBgDIAEoCVIJcmVxdWVzdElkEiMKDWVycm9yX21lc3Nh'
     'Z2UYBCABKAlSDGVycm9yTWVzc2FnZQ==');
-
-const $core.Map<$core.String, $core.dynamic> LemonTeaServiceBase$json = {
-  '1': 'LemonTea',
-  '2': [
-    {'1': 'UpdateLlmConfig', '2': '.lemon_tea.server.UpdateLlmConfigRequest', '3': '.lemon_tea.server.UpdateLlmConfigResponse'},
-    {'1': 'Models', '2': '.lemon_tea.server.ModelsRequest', '3': '.lemon_tea.server.ModelsResponse'},
-    {'1': 'Chat', '2': '.lemon_tea.server.ChatRequest', '3': '.lemon_tea.server.ChatResponse', '5': true, '6': true},
-  ],
-};
-
-@$core.Deprecated('Use lemonTeaServiceDescriptor instead')
-const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> LemonTeaServiceBase$messageJson = {
-  '.lemon_tea.server.UpdateLlmConfigRequest': UpdateLlmConfigRequest$json,
-  '.lemon_tea.common.LlmProvider': $0.LlmProvider$json,
-  '.lemon_tea.common.Model': $0.Model$json,
-  '.lemon_tea.server.UpdateLlmConfigResponse': UpdateLlmConfigResponse$json,
-  '.lemon_tea.server.ModelsRequest': ModelsRequest$json,
-  '.lemon_tea.server.ModelsResponse': ModelsResponse$json,
-  '.lemon_tea.server.ChatRequest': ChatRequest$json,
-  '.lemon_tea.common.Message': $0.Message$json,
-  '.lemon_tea.server.ChatResponse': ChatResponse$json,
-};
-
-/// Descriptor for `LemonTea`. Decode as a `google.protobuf.ServiceDescriptorProto`.
-final $typed_data.Uint8List lemonTeaServiceDescriptor = $convert.base64Decode(
-    'CghMZW1vblRlYRJmCg9VcGRhdGVMbG1Db25maWcSKC5sZW1vbl90ZWEuc2VydmVyLlVwZGF0ZU'
-    'xsbUNvbmZpZ1JlcXVlc3QaKS5sZW1vbl90ZWEuc2VydmVyLlVwZGF0ZUxsbUNvbmZpZ1Jlc3Bv'
-    'bnNlEksKBk1vZGVscxIfLmxlbW9uX3RlYS5zZXJ2ZXIuTW9kZWxzUmVxdWVzdBogLmxlbW9uX3'
-    'RlYS5zZXJ2ZXIuTW9kZWxzUmVzcG9uc2USSQoEQ2hhdBIdLmxlbW9uX3RlYS5zZXJ2ZXIuQ2hh'
-    'dFJlcXVlc3QaHi5sZW1vbl90ZWEuc2VydmVyLkNoYXRSZXNwb25zZSgBMAE=');
 
