@@ -20,49 +20,6 @@ class Server {
   /// 端口变更流
   Stream<int?> get portStream => _portController.stream;
 
-  /// 存储的二进制文件路径
-  static String? _storedBinaryPath;
-
-  /// 本地存储实例
-  final LocalStorage _localStorage = LocalStorage();
-  
-  /// 存储键名
-  static const String _binaryPathKey = 'server_debug_binary_path';
-
-  /// 设置存储的二进制文件路径
-  static void setStoredBinaryPath(String path) {
-    _storedBinaryPath = path;
-  }
-
-  /// 获取存储的二进制文件路径
-  static String? get storedBinaryPath => _storedBinaryPath;
-
-  /// 内部构造函数
-  Server._internal() {
-    // 注册应用退出钩子
-    _registerExitHook();
-    // 加载保存的二进制路径
-    _loadSavedBinaryPath();
-  }
-  
-  /// 从本地存储加载保存的二进制文件路径
-  Future<void> _loadSavedBinaryPath() async {
-    try {
-      if (_isDebugMode()) {
-        final savedPath = await _localStorage.getString(_binaryPathKey);
-        if (savedPath != null && savedPath.isNotEmpty) {
-          final file = File(savedPath);
-          if (file.existsSync()) {
-            _storedBinaryPath = savedPath;
-            debugPrint('从本地存储加载二进制文件路径: $savedPath');
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('加载保存的二进制文件路径失败: $e');
-    }
-  }
-
   /// 服务是否正在运行
   bool _isRunning = false;
 
@@ -90,6 +47,19 @@ class Server {
 
   /// 获取服务端口
   int? get port => _port;
+
+  /// 内部构造函数
+  Server._internal() {
+    // 注册应用退出钩子
+    _registerExitHook();
+    // 如果处于调试模式，加载保存的二进制路径
+    if (_isDebugMode()) {
+      _debugManager.loadSavedBinaryPath();
+    }
+  }
+
+  /// 调试管理器
+  final _ServerDebugManager _debugManager = _ServerDebugManager();
 
   /// 注册应用退出钩子
   void _registerExitHook() {
@@ -166,23 +136,20 @@ class Server {
 
   /// 获取SERVER二进制文件路径
   String _getSERVERBinaryPath({String? customBinaryPath}) {
+    // 如果处于调试模式，尝试获取调试二进制路径
+    if (_isDebugMode()) {
+      final debugPath = _debugManager.getBinaryPath(customBinaryPath);
+      if (debugPath != null) {
+        return debugPath;
+      }
+    }
     // 如果提供了自定义路径，优先使用
-    if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
+    else if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
       final customFile = File(customBinaryPath);
       if (customFile.existsSync()) {
         return customBinaryPath;
       } else {
         debugPrint('自定义二进制文件不存在: $customBinaryPath，将使用默认路径');
-      }
-    }
-
-    // 如果处于调试模式，优先使用存储的路径
-    if (_isDebugMode() && _storedBinaryPath != null) {
-      final storedFile = File(_storedBinaryPath!);
-      if (storedFile.existsSync()) {
-        return _storedBinaryPath!;
-      } else {
-        debugPrint('调试模式下存储的二进制文件不存在: $_storedBinaryPath，将使用默认路径');
       }
     }
 
@@ -271,24 +238,9 @@ class Server {
         }
       }
 
-      // 在debug模式下，如果提供了自定义路径，保存该路径以便后续使用
-      if (_isDebugMode() && customBinaryPath != null && customBinaryPath.isNotEmpty) {
-        final customFile = File(customBinaryPath);
-        if (customFile.existsSync()) {
-          _storedBinaryPath = customBinaryPath;
-          // 同时保存到本地存储
-          await _localStorage.setString(_binaryPathKey, customBinaryPath);
-          debugPrint('已保存调试模式下的二进制文件路径: $customBinaryPath');
-        }
-      }
-      
-      // 在debug模式下，如果没有提供自定义路径，但本地存储中有路径，尝试从本地存储中加载
-      if (_isDebugMode() && (customBinaryPath == null || customBinaryPath.isEmpty)) {
-        await _loadSavedBinaryPath();
-        if (_storedBinaryPath != null && _storedBinaryPath!.isNotEmpty) {
-          customBinaryPath = _storedBinaryPath;
-          debugPrint('使用本地存储的二进制文件路径: $customBinaryPath');
-        }
+      // 在debug模式下处理二进制路径
+      if (_isDebugMode()) {
+        _debugManager.handleBinaryPath(customBinaryPath);
       }
 
       // 获取二进制文件路径
@@ -535,5 +487,78 @@ done
       debugPrint('停止SERVER服务失败: $e');
       return false;
     }
+  }
+}
+
+/// 调试模式下的服务管理器
+class _ServerDebugManager {
+  /// 本地存储实例
+  final LocalStorage _localStorage = LocalStorage();
+  
+  /// 存储键名
+  static const String _binaryPathKey = 'server_debug_binary_path';
+  
+  /// 存储的二进制文件路径
+  String? _storedBinaryPath;
+  
+  /// 获取存储的二进制文件路径
+  String? get storedBinaryPath => _storedBinaryPath;
+
+  /// 从本地存储加载保存的二进制文件路径
+  Future<void> loadSavedBinaryPath() async {
+    try {
+      final savedPath = await _localStorage.getString(_binaryPathKey);
+      if (savedPath != null && savedPath.isNotEmpty) {
+        final file = File(savedPath);
+        if (file.existsSync()) {
+          _storedBinaryPath = savedPath;
+          debugPrint('从本地存储加载二进制文件路径: $savedPath');
+        }
+      }
+    } catch (e) {
+      debugPrint('加载保存的二进制文件路径失败: $e');
+    }
+  }
+  
+  /// 处理调试模式下的二进制路径
+  Future<void> handleBinaryPath(String? customBinaryPath) async {
+    // 如果提供了自定义路径，保存该路径以便后续使用
+    if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
+      final customFile = File(customBinaryPath);
+      if (customFile.existsSync()) {
+        _storedBinaryPath = customBinaryPath;
+        // 同时保存到本地存储
+        await _localStorage.setString(_binaryPathKey, customBinaryPath);
+        debugPrint('已保存调试模式下的二进制文件路径: $customBinaryPath');
+      }
+    }
+    // 如果没有提供自定义路径，但本地存储中有路径，尝试从本地存储中加载
+    else if (_storedBinaryPath == null || _storedBinaryPath!.isEmpty) {
+      await loadSavedBinaryPath();
+    }
+  }
+  
+  /// 获取调试模式下的二进制路径
+  String? getBinaryPath(String? customBinaryPath) {
+    // 如果提供了自定义路径，优先使用
+    if (customBinaryPath != null && customBinaryPath.isNotEmpty) {
+      final customFile = File(customBinaryPath);
+      if (customFile.existsSync()) {
+        return customBinaryPath;
+      }
+    }
+    
+    // 使用存储的路径
+    if (_storedBinaryPath != null) {
+      final storedFile = File(_storedBinaryPath!);
+      if (storedFile.existsSync()) {
+        debugPrint('使用调试模式下存储的二进制文件路径: $_storedBinaryPath');
+        return _storedBinaryPath;
+      } else {
+        debugPrint('调试模式下存储的二进制文件不存在: $_storedBinaryPath');
+      }
+    }
+    
+    return null;
   }
 }
