@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/debug_config.dart';
 import 'package:lemon_tea/models/message.dart';
 import 'package:lemon_tea/models/model.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
@@ -80,6 +81,10 @@ class SqliteDatabaseInitializer {
       // 创建提供商表
       await db.execute(LlmProvider.createTableSql());
       debugPrint('提供商表创建成功');
+
+      // debug配置表
+      await db.execute(DebugConfig.createTableSql());
+      debugPrint('debug配置表创建成功');
     } catch (e) {
       debugPrint('创建数据库表失败: $e');
       rethrow;
