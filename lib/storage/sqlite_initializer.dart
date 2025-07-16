@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message.dart';
 import 'package:lemon_tea/models/model.dart';
@@ -33,19 +34,26 @@ class SqliteDatabaseInitializer {
       Directory documentsDirectory = await getApplicationDocumentsDirectory();
       String path = join(documentsDirectory.path, _databaseName);
       
+      debugPrint('初始化数据库: $path');
+      
       // 打开数据库
       _database = await openDatabase(
         path,
         version: _databaseVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
+        onOpen: (db) {
+          debugPrint('数据库已打开: ${db.path}');
+        },
       );
       
       // 完成初始化
       if (!_initDBCompleter.isCompleted) {
         _initDBCompleter.complete(_database);
+        debugPrint('数据库初始化完成');
       }
     } catch (e) {
+      debugPrint('数据库初始化错误: $e');
       if (!_initDBCompleter.isCompleted) {
         _initDBCompleter.completeError(e);
       }
@@ -55,22 +63,33 @@ class SqliteDatabaseInitializer {
   
   /// 创建数据库表
   Future<void> _onCreate(Database db, int version) async {
-    // 创建会话表
-    await db.execute(Conversation.createTableSql());
-    
-    // 创建消息表
-    await db.execute(Message.createTableSql());
-    
-    // 创建模型表
-    await db.execute(Model.createTableSql());
-    
-    // 创建提供商表
-    await db.execute(LlmProvider.createTableSql());
+    debugPrint('创建数据库表，版本: $version');
+    try {
+      // 创建会话表
+      await db.execute(Conversation.createTableSql());
+      debugPrint('会话表创建成功');
+      
+      // 创建消息表
+      await db.execute(Message.createTableSql());
+      debugPrint('消息表创建成功');
+      
+      // 创建模型表
+      await db.execute(Model.createTableSql());
+      debugPrint('模型表创建成功');
+      
+      // 创建提供商表
+      await db.execute(LlmProvider.createTableSql());
+      debugPrint('提供商表创建成功');
+    } catch (e) {
+      debugPrint('创建数据库表失败: $e');
+      rethrow;
+    }
   }
   
   /// 数据库升级
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // 处理数据库版本升级
+    debugPrint('升级数据库: $oldVersion -> $newVersion');
     if (oldVersion < 2) {
       // 未来版本2的升级代码
     }
@@ -82,6 +101,7 @@ class SqliteDatabaseInitializer {
     if (db != null) {
       await db.close();
       _database = null;
+      debugPrint('数据库连接已关闭');
     }
   }
   
@@ -97,5 +117,6 @@ class SqliteDatabaseInitializer {
     final path = await getDatabasePath();
     await databaseFactory.deleteDatabase(path);
     _database = null;
+    debugPrint('数据库已删除: $path');
   }
 } 

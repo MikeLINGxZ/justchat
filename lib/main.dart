@@ -7,6 +7,7 @@ import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
+import 'package:lemon_tea/storage/sqlite_storage.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 
@@ -25,6 +26,17 @@ Future<void> _initializeAppSettings(ProviderContainer container) async {
     S.load(const Locale('en', 'US'));
   } else {
     S.load(const Locale('zh', 'CN'));
+  }
+}
+
+/// 初始化数据库
+Future<void> _initializeDatabase() async {
+  try {
+    // 获取数据库实例，这将触发数据库初始化
+    await SqliteStorage.instance.database;
+    debugPrint('数据库初始化成功');
+  } catch (e) {
+    debugPrint('数据库初始化失败: $e');
   }
 }
 
@@ -55,6 +67,9 @@ void main() async {
   
   // 创建ProviderContainer来初始化设置和服务
   final container = ProviderContainer();
+
+  // 初始化数据库
+  await _initializeDatabase();
 
   if (System.isDesktop) {
     // 初始化 WindowManager

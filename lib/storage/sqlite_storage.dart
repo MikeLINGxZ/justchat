@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'sqlite_initializer.dart';
+
+/// SQLite数据库存储提供者
+final sqliteStorageProvider = Provider<SqliteStorage>((ref) {
+  return SqliteStorage.instance;
+});
 
 /// SQLite数据库存储类
 /// 提供数据库操作功能
