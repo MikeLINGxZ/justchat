@@ -7,11 +7,71 @@ import 'package:lemon_tea/pages/home/settings/provider_dialog.dart';
 import 'package:lemon_tea/models/llm_provider_v0.dart';
 import 'package:lemon_tea/models/model_v0.dart';
 
-class ModelSettings extends ConsumerWidget {
+class ModelSettings extends ConsumerStatefulWidget {
   const ModelSettings({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModelSettings> createState() => _ModelSettingsState();
+}
+
+class _ModelSettingsState extends ConsumerState<ModelSettings> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          child: Text(
+            S.of(context).modelSettings,
+            style: TextStyle(
+              fontSize: FontSizeUtils.getHeadingSize(ref),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(
+              text: '模型供应商',
+              icon: const Icon(Icons.cloud),
+            ),
+            Tab(
+              text: '提示词',
+              icon: const Icon(Icons.text_fields),
+            ),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildProviderTab(),
+              _buildPromptsTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProviderTab() {
     final providers = ref.watch(providerManagerProvider);
     final selectedProvider = ref.watch(selectedProviderProvider);
     final selectedModel = ref.watch(selectedModelProvider);
@@ -21,15 +81,6 @@ class ModelSettings extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            S.of(context).modelSettings,
-            style: TextStyle(
-              fontSize: FontSizeUtils.getHeadingSize(ref),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-
           _buildSectionWithAction(
             context: context,
             ref: ref,
@@ -58,6 +109,18 @@ class ModelSettings extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPromptsTab() {
+    return Center(
+      child: Text(
+        '提示词',
+        style: TextStyle(
+          fontSize: FontSizeUtils.getHeadingSize(ref),
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -423,119 +486,6 @@ class ModelSettings extends ConsumerWidget {
             ],
           );
         },
-      ),
-    );
-  }
-
-  void _showModelSelectionDialog(BuildContext context, WidgetRef ref) {
-    final providers = ref.read(providerManagerProvider);
-    final selectedProvider = ref.read(selectedProviderProvider);
-    final selectedModel = ref.read(selectedModelProvider);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
-        title: Text(
-          '选择模型',
-          style: TextStyle(fontSize: FontSizeUtils.getHeadingSize(ref)),
-        ),
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: Column(
-            children: [
-              Text(
-                '选择供应商:',
-                style: TextStyle(
-                  fontSize: FontSizeUtils.getSubheadingSize(ref),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: providers.length,
-                  itemBuilder: (context, index) {
-                    final provider = providers[index];
-                    final isSelected = selectedProvider?.name == provider.name;
-
-                    return ListTile(
-                      title: Text(
-                        provider.displayName,
-                        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
-                      ),
-                      subtitle: Text(
-                        provider.baseUrl,
-                        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
-                      ),
-                      trailing: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color: isSelected ? Colors.green : null,
-                      ),
-                      onTap: () {
-                        ref.read(selectedProviderProvider.notifier).state = provider;
-                        ref.read(selectedModelProvider.notifier).state = null;
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              if (selectedProvider != null) ...[
-                const Divider(),
-                Text(
-                  '选择模型:',
-                  style: TextStyle(
-                    fontSize: FontSizeUtils.getSubheadingSize(ref),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: selectedProvider.models?.length ?? 0,
-                    itemBuilder: (context, index) {
-                      final model = selectedProvider.models![index];
-                      final isSelected = selectedModel?.id == model.id;
-
-                      return ListTile(
-                        title: Text(
-                          model.displayName,
-                          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
-                        ),
-                        subtitle: Text(
-                          '类型: ${model.object}',
-                          style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
-                        ),
-                        trailing: Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? Colors.green : null,
-                        ),
-                        onTap: () {
-                          ref.read(selectedModelProvider.notifier).state = model;
-                          Navigator.of(context).pop();
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              S.of(context).cancel,
-              style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
-            ),
-          ),
-        ],
       ),
     );
   }
