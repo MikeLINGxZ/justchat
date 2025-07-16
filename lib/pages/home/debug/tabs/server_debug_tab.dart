@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/storage/debug_storage.dart';
+import 'package:lemon_tea/utils/debug/debug_key.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
@@ -24,13 +26,10 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
   int? _currentPort;
   String? _customBinaryPath;
   bool _isDebugMode = false;
-  
+
   // 创建SERVER服务实例
   final Server _server = Server();
-  
-  // 本地存储实例
-  final LocalStorage _localStorage = LocalStorage();
-  
+
   // 存储键名
   static const String _portKey = 'server_debug_port';
   static const String _binaryPathKey = 'server_debug_binary_path';
@@ -42,7 +41,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
     _loadSavedSettings();
     _checkServiceStatus();
     _addLogMessage('SERVER调试页面已初始化');
-    
+
     // 添加端口控制器监听器，用于实时更新应用按钮状态
     _portController.addListener(_onPortTextChanged);
   }
@@ -55,7 +54,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
     _binaryPathController.dispose();
     super.dispose();
   }
-  
+
   // 检查是否为调试模式
   bool _checkIsDebugMode() {
     bool inDebugMode = false;
@@ -65,22 +64,22 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
     }());
     return inDebugMode;
   }
-  
+
   // 加载保存的设置
   Future<void> _loadSavedSettings() async {
     try {
       // 加载保存的端口
-      final savedPort = await _localStorage.getInt(_portKey);
+      final savedPort = int.tryParse(await DebugStorage.getConfig(DebugKey.serverPort) ?? "");
       if (savedPort != null) {
         setState(() {
           _currentPort = savedPort;
         });
         _portController.text = savedPort.toString();
       }
-      
+
       // 加载保存的二进制路径
-      final savedPath = await _localStorage.getString(_binaryPathKey);
-      if (savedPath != null && savedPath.isNotEmpty) {
+      final savedPath = await DebugStorage.getConfig(DebugKey.serverBinaryPath) ?? "";
+      if (savedPath != "" && savedPath.isNotEmpty) {
         setState(() {
           _customBinaryPath = savedPath;
         });
@@ -90,34 +89,34 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       _addLogMessage('加载保存的设置失败: $e');
     }
   }
-  
+
   // 保存设置
   Future<void> _saveSettings() async {
     try {
       // 保存端口
       if (_currentPort != null) {
-        await _localStorage.setInt(_portKey, _currentPort!);
+        await DebugStorage.saveConfig(DebugKey.serverPort, _currentPort.toString());
       }
-      
+
       // 保存二进制路径
       if (_customBinaryPath != null && _customBinaryPath!.isNotEmpty) {
-        await _localStorage.setString(_binaryPathKey, _customBinaryPath!);
+        await DebugStorage.saveConfig(DebugKey.serverBinaryPath,_customBinaryPath??"");
       }
     } catch (e) {
       _addLogMessage('保存设置失败: $e');
     }
   }
-  
+
   // 端口文本变化监听
   void _onPortTextChanged() {
     // 触发重建以更新应用按钮状态
     setState(() {});
   }
-  
+
   // 检查当前输入的端口是否与服务端口相同
   bool get _isPortUnchanged {
     if (_currentPort == null) return false;
-    
+
     try {
       final inputPort = int.parse(_portController.text.trim());
       return inputPort == _currentPort;
@@ -125,14 +124,14 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       return false;
     }
   }
-  
+
   // 检查服务状态
   Future<void> _checkServiceStatus() async {
     setState(() {
       _isRunning = _server.isRunning;
       _currentPort = _server.port;
     });
-    
+
     // 如果当前端口不为空，更新端口控制器
     if (_currentPort != null) {
       _portController.text = _currentPort.toString();
@@ -150,12 +149,12 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
   void _addLogMessage(String message) {
     final timestamp = DateTime.now().toString().split('.')[0];
     final logEntry = '[$timestamp] $message\n';
-    
+
     setState(() {
       _logController.text = '${_logController.text}$logEntry';
     });
   }
-  
+
   // 选择二进制文件
   Future<void> _selectBinaryFile() async {
     try {
@@ -163,18 +162,18 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
         type: FileType.custom,
         allowedExtensions: System.isWindows ? ['exe'] : null,
       );
-      
+
       if (result != null && result.files.single.path != null) {
         final path = result.files.single.path!;
         final file = File(path);
-        
+
         if (await file.exists()) {
           setState(() {
             _customBinaryPath = path;
             _binaryPathController.text = path;
           });
           _addLogMessage('已选择二进制文件: $path');
-          
+
           // 保存设置
           await _saveSettings();
         } else {
@@ -188,23 +187,23 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
 
   Future<void> _restartServer() async {
     if (_isRestarting) return;
-    
+
     setState(() {
       _isRestarting = true;
     });
-    
+
     _addLogMessage('正在重启SERVER...');
-    
+
     try {
       // 先停止服务
       await _server.stopService();
 
       // 保存设置
       await _saveSettings();
-      
+
       // 然后启动服务，使用当前端口和自定义二进制路径（如果在调试模式下）
       final port = await _server.startService( );
-      
+
       if (port != null) {
         _addLogMessage('SERVER重启成功，端口: $port');
         setState(() {
@@ -229,16 +228,16 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
 
   Future<void> _stopServer() async {
     if (_isStopping) return;
-    
+
     setState(() {
       _isStopping = true;
     });
-    
+
     _addLogMessage('正在停止SERVER...');
-    
+
     try {
       final result = await _server.stopService();
-      
+
       if (result) {
         _addLogMessage('SERVER已停止');
         setState(() {
@@ -258,13 +257,13 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
 
   Future<void> _changePort() async {
     if (_isChangingPort) return;
-    
+
     final String portText = _portController.text.trim();
     if (portText.isEmpty) {
       _addLogMessage('请输入有效的端口号');
       return;
     }
-    
+
     int? newPort;
     try {
       newPort = int.parse(portText);
@@ -272,24 +271,24 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       _addLogMessage('端口号格式无效');
       return;
     }
-    
+
     if (newPort <= 0 || newPort > 65535) {
       _addLogMessage('端口号必须在1-65535之间');
       return;
     }
-    
+
     // 如果端口未变，则不需要操作
     if (_currentPort != null && newPort == _currentPort) {
       _addLogMessage('端口未变更，无需操作');
       return;
     }
-    
+
     setState(() {
       _isChangingPort = true;
     });
-    
+
     _addLogMessage('正在更改端口到 $newPort...');
-    
+
     try {
       // 检查端口是否可用
       final isAvailable = await System.isPortAvailable(newPort);
@@ -304,16 +303,16 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       setState(() {
         _currentPort = newPort;
       });
-      
+
       // 先停止服务
       await _server.stopService();
 
       // 保存设置
       await _saveSettings();
-      
+
       // 然后使用新端口启动服务
       final port = await _server.startService();
-      
+
       if (port != null) {
         _addLogMessage('端口更改成功，新端口: $port');
         setState(() {
@@ -355,7 +354,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
           ),
         ),
         const SizedBox(height: 24),
-        
+
         // 状态区域
         Card(
           elevation: 2,
@@ -398,7 +397,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                
+
                 // 调试模式下的二进制文件路径设置
                 if (_isDebugMode) ...[
                   Text(
@@ -446,7 +445,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                
+
                 // 端口设置
                 Text(
                   '端口设置',
@@ -499,7 +498,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                
+
                 // 控制按钮
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -564,7 +563,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
           ),
         ),
         const SizedBox(height: 20),
-        
+
         // 日志区域
         Expanded(
           child: Card(
@@ -587,7 +586,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 日志输出
                   Expanded(
                     child: Container(
@@ -613,7 +612,7 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
                       ),
                     ),
                   ),
-                  
+
                   // 清除按钮
                   Align(
                     alignment: Alignment.centerRight,
@@ -642,4 +641,4 @@ class _ServerDebugTabState extends ConsumerState<ServerDebugTab> {
       ],
     );
   }
-} 
+}

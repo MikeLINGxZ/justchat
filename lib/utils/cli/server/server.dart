@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:lemon_tea/storage/debug_storage.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/cli/cli_utils/llm_config_utils.dart';
+import 'package:lemon_tea/utils/debug/debug_key.dart';
 import 'package:path/path.dart' as path;
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
@@ -13,9 +15,6 @@ import 'package:lemon_tea/rpc/service.pb.dart';
 /// SERVER服务类，用于管理SERVER二进制文件的启动和停止
 class Server {
   static final Server _instance = Server._internal();
-  
-  /// 本地存储实例
-  final LocalStorage _localStorage = LocalStorage();
 
   /// 工厂构造函数
   factory Server() => _instance;
@@ -205,11 +204,11 @@ class Server {
       int? port;
       String? binaryPath;
 
-      if (_isDebugMode()) {
-        port = await _localStorage.getInt('server_debug_port');
-        binaryPath = await _localStorage.getString('server_debug_binary_path');
+      if (_isDebugMode() || await DebugStorage.isEnableDebug()) {
+        port = int.tryParse(await DebugStorage.getConfig(DebugKey.serverPort) ?? "");
+        binaryPath = await DebugStorage.getConfig(DebugKey.serverBinaryPath);
       }
-      
+
       // 如果没有从本地存储获取到有效端口，则查找空闲端口
       if (port == null) {
         port = await System.findFreePort();
@@ -222,7 +221,7 @@ class Server {
       binaryPath ??= _getSERVERBinaryPath();
 
       debugPrint('最终使用的二进制文件路径: $binaryPath');
-      
+
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在
@@ -285,7 +284,7 @@ class Server {
 
       _isRunning = true;
       _port = port;
-      
+
       // 通知监听器端口变化
       _portController.add(port);
 
@@ -449,7 +448,7 @@ done
     _stderrSubscription?.cancel();
     _stderrSubscription = null;
     _isRunning = false;
-    
+
     // 如果端口发生变化，通知监听器
     if (_port != null) {
       _port = null;
