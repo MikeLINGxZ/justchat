@@ -42,7 +42,7 @@ class Model {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         provider_id TEXT NOT NULL,
-        model TEXT,
+        object TEXT,
         owned_by TEXT,
         enabled INTEGER NOT NULL DEFAULT 1,
         metadata TEXT
