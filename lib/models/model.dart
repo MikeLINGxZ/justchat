@@ -30,6 +30,21 @@ class Model {
     this.enabled = true,
   });
 
+  /// 表创建sql
+  static String createTableSql() {
+    return '''
+      CREATE TABLE models (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        metadata TEXT
+      )
+    ''';
+  }
+
   /// 生成 fromJson 方法
   factory Model.fromJson(Map<String, dynamic> json) => _$ModelFromJson(json);
 

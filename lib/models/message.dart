@@ -33,6 +33,22 @@ class Message {
     this.deleted = false,
   });
 
+  /// 表创建sql
+  static String createTableSql() {
+    return '''
+      CREATE TABLE messages (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        metadata TEXT,
+        FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
+      )
+    ''';
+  }
+
   /// 从 JSON 创建 LlmProvider 实例
   factory Message.fromJson(Map<String, dynamic> json) => _$MessageFromJson(json);
 

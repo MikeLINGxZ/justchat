@@ -28,6 +28,22 @@ class Conversation {
     this.deleted = false,
   });
 
+  /// 表创建sql
+  static String createTableSql() {
+    return '''
+      CREATE TABLE conversations (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        model_id TEXT,
+        provider_id TEXT,
+        system_prompt TEXT,
+        metadata TEXT
+      )
+    ''';
+  }
+
   /// 生成 fromJson 方法
   factory Conversation.fromJson(Map<String, dynamic> json) => _$ConversationFromJson(json);
 

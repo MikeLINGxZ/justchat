@@ -41,6 +41,21 @@ class LlmProvider {
     required this.defaultModelId,
   });
 
+  /// 表创建sql
+  static String createTableSql() {
+    return '''
+      CREATE TABLE llm_providers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        api_key TEXT,
+        base_url TEXT,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        metadata TEXT
+      )
+    ''';
+  }
 
   /// 从 JSON 创建 LlmProvider 实例
   factory LlmProvider.fromJson(Map<String, dynamic> json) => _$LlmProviderFromJson(json);
