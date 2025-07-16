@@ -6,6 +6,82 @@ import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 
+// 创建提供商列表的Provider
+final providersProvider = FutureProvider<List<LlmProvider>>((ref) async {
+  return LlmStorage.getAllProviders();
+});
+
+// 创建模型列表的Provider，接受提供商ID作为参数
+final modelsProvider = FutureProvider.family<List<Model>, String>((ref, providerId) async {
+  try {
+    final models = await LlmStorage.getModelsByProviderId(providerId);
+    if (models.isNotEmpty) {
+      return models;
+    }
+    // 如果没有数据，返回模拟数据
+    return _createMockModels(providerId);
+  } catch (e) {
+    // 出错时返回模拟数据
+    return _createMockModels(providerId);
+  }
+});
+
+// 创建模拟模型数据
+List<Model> _createMockModels(String providerId) {
+  if (providerId.contains('openai')) {
+    return [
+      Model(
+        llmProviderId: providerId,
+        id: 'gpt-4-turbo',
+        ownedBy: 'OpenAI',
+        enabled: true,
+      ),
+      Model(
+        llmProviderId: providerId,
+        id: 'gpt-4',
+        ownedBy: 'OpenAI',
+        enabled: true,
+      ),
+      Model(
+        llmProviderId: providerId,
+        id: 'gpt-3.5-turbo',
+        ownedBy: 'OpenAI',
+        enabled: true,
+      ),
+    ];
+  } else if (providerId.contains('anthropic')) {
+    return [
+      Model(
+        llmProviderId: providerId,
+        id: 'claude-3-opus',
+        ownedBy: 'Anthropic',
+        enabled: true,
+      ),
+      Model(
+        llmProviderId: providerId,
+        id: 'claude-3-sonnet',
+        ownedBy: 'Anthropic',
+        enabled: true,
+      ),
+      Model(
+        llmProviderId: providerId,
+        id: 'claude-3-haiku',
+        ownedBy: 'Anthropic',
+        enabled: true,
+      ),
+    ];
+  } else {
+    return [
+      Model(
+        llmProviderId: providerId,
+        id: 'default-model',
+        ownedBy: '未知提供商',
+        enabled: true,
+      ),
+    ];
+  }
+}
+
 class ModelSettings extends ConsumerStatefulWidget {
   const ModelSettings({super.key});
 
@@ -17,8 +93,10 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   Map<String, bool> _expandedProviders = {};
-  // 存储模型数据的缓存
-  Map<String, List<Model>> _modelsCache = {};
+  // 存储本地修改的模型状态
+  final Map<String, bool> _modelEnabledStates = {};
+  // 存储本地修改的提供商状态
+  final Map<String, bool> _providerEnabledStates = {};
 
   @override
   void initState() {
@@ -32,88 +110,81 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     super.dispose();
   }
 
-  // 获取模型列表，如果数据库查询失败则使用模拟数据
-  Future<List<Model>> _getModels(String providerId) async {
-    try {
-      // 尝试从数据库获取
-      final models = await LlmStorage.getModelsByProviderId(providerId);
-      if (models.isNotEmpty) {
-        _modelsCache[providerId] = models;
-        return models;
-      }
-      
-      // 如果缓存中有数据，返回缓存
-      if (_modelsCache.containsKey(providerId)) {
-        return _modelsCache[providerId]!;
-      }
-      
-      // 创建模拟数据
-      final mockModels = _createMockModels(providerId);
-      _modelsCache[providerId] = mockModels;
-      return mockModels;
-    } catch (e) {
-      debugPrint('获取模型失败: $e');
-      // 返回模拟数据
-      final mockModels = _createMockModels(providerId);
-      _modelsCache[providerId] = mockModels;
-      return mockModels;
-    }
+  // 获取模型的启用状态，优先使用本地状态
+  bool getModelEnabledState(Model model) {
+    final key = '${model.llmProviderId}_${model.id}';
+    return _modelEnabledStates.containsKey(key) 
+        ? _modelEnabledStates[key]! 
+        : model.enabled;
   }
 
-  // 创建模拟模型数据
-  List<Model> _createMockModels(String providerId) {
-    if (providerId.contains('openai')) {
-      return [
-        Model(
-          llmProviderId: providerId,
-          id: 'gpt-4-turbo',
-          ownedBy: 'OpenAI',
-          enabled: true,
-        ),
-        Model(
-          llmProviderId: providerId,
-          id: 'gpt-4',
-          ownedBy: 'OpenAI',
-          enabled: true,
-        ),
-        Model(
-          llmProviderId: providerId,
-          id: 'gpt-3.5-turbo',
-          ownedBy: 'OpenAI',
-          enabled: true,
-        ),
-      ];
-    } else if (providerId.contains('anthropic')) {
-      return [
-        Model(
-          llmProviderId: providerId,
-          id: 'claude-3-opus',
-          ownedBy: 'Anthropic',
-          enabled: true,
-        ),
-        Model(
-          llmProviderId: providerId,
-          id: 'claude-3-sonnet',
-          ownedBy: 'Anthropic',
-          enabled: true,
-        ),
-        Model(
-          llmProviderId: providerId,
-          id: 'claude-3-haiku',
-          ownedBy: 'Anthropic',
-          enabled: true,
-        ),
-      ];
-    } else {
-      return [
-        Model(
-          llmProviderId: providerId,
-          id: 'default-model',
-          ownedBy: '未知提供商',
-          enabled: true,
-        ),
-      ];
-    }
+  // 获取提供商的启用状态，优先使用本地状态
+  bool getProviderEnabledState(LlmProvider provider) {
+    return _providerEnabledStates.containsKey(provider.id) 
+        ? _providerEnabledStates[provider.id]! 
+        : provider.enable;
+  }
+
+  // 更新模型启用状态
+  void updateModelEnabledState(Model model, bool value) {
+    final key = '${model.llmProviderId}_${model.id}';
+    setState(() {
+      _modelEnabledStates[key] = value;
+    });
+    
+    // 异步更新数据库，不影响UI响应
+    LlmStorage.updateModel(Model(
+      llmProviderId: model.llmProviderId,
+      id: model.id,
+      object: model.object,
+      ownedBy: model.ownedBy,
+      enabled: value,
+    )).then((success) {
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('更新模型状态失败，请稍后重试')),
+        );
+      }
+    }).catchError((e) {
+      debugPrint('更新模型出错: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('更新模型状态出错: $e')),
+        );
+      }
+    });
+  }
+
+  // 更新提供商启用状态
+  void updateProviderEnabledState(LlmProvider provider, bool value) {
+    setState(() {
+      _providerEnabledStates[provider.id] = value;
+    });
+    
+    // 异步更新数据库，不影响UI响应
+    LlmStorage.updateProvider(LlmProvider(
+      id: provider.id,
+      name: provider.name,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      alias: provider.alias,
+      description: provider.description,
+      enable: value,
+      checked: provider.checked,
+    )).then((success) {
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('更新供应商状态失败，请稍后重试')),
+        );
+      }
+    }).catchError((e) {
+      debugPrint('更新供应商出错: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('更新供应商状态出错: $e')),
+        );
+      }
+    });
   }
 
   @override
@@ -188,31 +259,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
           child: TabBarView(
             controller: _tabController,
             children: [
-              FutureBuilder<List<LlmProvider>>(
-                future: LlmStorage.getAllProviders(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  
-                  if (snapshot.hasError) {
-                    return Center(child: Text('加载失败: ${snapshot.error}'));
-                  }
-                  
-                  final providers = snapshot.data ?? [];
-                  
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, 
-                      children: [
-                        for (final provider in providers)
-                          _buildProviderCard(provider),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              _buildProvidersTab(),
               _buildPromptsTab()
             ],
           ),
@@ -221,9 +268,29 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     );
   }
 
+  Widget _buildProvidersTab() {
+    return ref.watch(providersProvider).when(
+      data: (providers) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, 
+            children: [
+              for (final provider in providers)
+                _buildProviderCard(provider),
+            ],
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('加载失败: $error')),
+    );
+  }
+
   Widget _buildProviderCard(LlmProvider provider) {
     final theme = Theme.of(context);
     final isExpanded = _expandedProviders[provider.id] ?? false;
+    final isEnabled = getProviderEnabledState(provider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -336,126 +403,70 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 Transform.scale(
                   scale: 0.8, // 调小开关大小
                   child: Switch(
-                    value: provider.enable,
-                    onChanged: (value) async {
-                      final updatedProvider = LlmProvider(
-                        id: provider.id,
-                        name: provider.name,
-                        baseUrl: provider.baseUrl,
-                        apiKey: provider.apiKey,
-                        alias: provider.alias,
-                        description: provider.description,
-                        enable: value,
-                        checked: provider.checked,
-                      );
-                      
-                      final success = await LlmStorage.updateProvider(updatedProvider);
-                      if (success) {
-                        setState(() {});
-                      } else {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('更新状态失败')),
-                          );
-                        }
-                      }
-                    },
+                    value: isEnabled,
+                    onChanged: (value) => updateProviderEnabledState(provider, value),
                   ),
                 ),
               ],
             ),
           ),
           if (isExpanded)
-            FutureBuilder<List<Model>>(
-              future: _getModels(provider.id),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                
-                if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: Text('加载模型失败: ${snapshot.error}')),
-                  );
-                }
-                
-                final models = snapshot.data ?? [];
-                
-                if (models.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: Text('暂无模型')),
-                  );
-                }
-                
-                return Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerLowest,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: models.length,
-                    itemBuilder: (context, index) {
-                      final model = models[index];
-                      return ListTile(
-                        title: Text(model.id),
-                        subtitle: Text('提供者: ${model.ownedBy}'),
-                        trailing: Transform.scale(
-                          scale: 0.8, // 调小开关大小
-                          child: Switch(
-                            value: model.enabled,
-                            onChanged: (value) async {
-                              try {
-                                final updatedModel = Model(
-                                  llmProviderId: model.llmProviderId,
-                                  id: model.id,
-                                  object: model.object,
-                                  ownedBy: model.ownedBy,
-                                  enabled: value,
-                                );
-                                
-                                // 更新缓存
-                                setState(() {
-                                  final index = _modelsCache[provider.id]?.indexWhere((m) => m.id == model.id) ?? -1;
-                                  if (index != -1 && _modelsCache[provider.id] != null) {
-                                    _modelsCache[provider.id]![index] = updatedModel;
-                                  }
-                                });
-                                
-                                // 尝试更新数据库
-                                final success = await LlmStorage.updateModel(updatedModel);
-                                if (!success && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('更新模型状态失败，但UI已更新')),
-                                  );
-                                }
-                              } catch (e) {
-                                debugPrint('更新模型出错: $e');
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('更新模型状态出错: $e')),
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
+            _buildModelsList(provider.id),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModelsList(String providerId) {
+    final theme = Theme.of(context);
+    
+    return ref.watch(modelsProvider(providerId)).when(
+      data: (models) {
+        if (models.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: Text('暂无模型')),
+          );
+        }
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLowest,
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+          ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: models.length,
+            itemBuilder: (context, index) {
+              final model = models[index];
+              final isEnabled = getModelEnabledState(model);
+              
+              return ListTile(
+                title: Text(model.id),
+                subtitle: Text('提供者: ${model.ownedBy}'),
+                trailing: Transform.scale(
+                  scale: 0.8, // 调小开关大小
+                  child: Switch(
+                    value: isEnabled,
+                    onChanged: (value) => updateModelEnabledState(model, value),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(child: Text('加载模型失败: $error')),
       ),
     );
   }
@@ -493,7 +504,8 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               Navigator.of(context).pop();
               final success = await LlmStorage.deleteProvider(provider.id);
               if (success) {
-                setState(() {});
+                // 刷新提供商列表
+                ref.refresh(providersProvider);
               } else {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
