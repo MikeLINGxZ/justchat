@@ -33,10 +33,15 @@ class Message {
     this.deleted = false,
   });
 
+  /// 表名
+  static String tableName() {
+    return 'messages';
+  }
+
   /// 表创建sql
   static String createTableSql() {
     return '''
-      CREATE TABLE messages (
+      CREATE TABLE ${tableName()} (
         id TEXT PRIMARY KEY,
         conversation_id TEXT NOT NULL,
         role TEXT NOT NULL,

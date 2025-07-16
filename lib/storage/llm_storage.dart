@@ -4,13 +4,10 @@ import 'package:lemon_tea/storage/sqlite_util.dart';
 import 'package:flutter/foundation.dart';
 
 class LlmStorage {
-  static const String _providerTable = 'llm_providers';
-  static const String _modelTable = 'models';
-
   // 1. 获取所有llm_provider
   static Future<List<LlmProvider>> getAllProviders() async {
     try {
-      final results = await SqliteUtil.instance.query(_providerTable);
+      final results = await SqliteUtil.instance.query(LlmProvider.tableName());
       return results.map((map) => LlmProvider.fromMap(map)).toList();
     } catch (e) {
       debugPrint('获取所有LLM提供商失败: $e');
@@ -22,7 +19,7 @@ class LlmStorage {
   static Future<LlmProvider?> getProviderById(String id) async {
     try {
       final results = await SqliteUtil.instance.query(
-        _providerTable,
+        LlmProvider.tableName(),
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -41,7 +38,7 @@ class LlmStorage {
   static Future<bool> updateProvider(LlmProvider provider) async {
     try {
       final result = await SqliteUtil.instance.update(
-        _providerTable,
+        LlmProvider.tableName(),
         provider.toMap(),
         where: 'id = ?',
         whereArgs: [provider.id],
@@ -57,7 +54,7 @@ class LlmStorage {
   static Future<bool> deleteProvider(String id) async {
     try {
       final result = await SqliteUtil.instance.delete(
-        _providerTable,
+        LlmProvider.tableName(),
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -71,7 +68,7 @@ class LlmStorage {
   // 5. 添加llm_provider
   static Future<bool> addProvider(LlmProvider provider) async {
     try {
-      final result = await SqliteUtil.instance.insert(_providerTable, provider.toMap());
+      final result = await SqliteUtil.instance.insert(LlmProvider.tableName(), provider.toMap());
       return result > 0;
     } catch (e) {
       debugPrint('添加LLM提供商失败: $e');
@@ -83,7 +80,7 @@ class LlmStorage {
   static Future<List<Model>> getModelsByProviderId(String providerId) async {
     try {
       final results = await SqliteUtil.instance.query(
-        _modelTable,
+        Model.tableName(),
         where: 'llm_provider_id = ?',
         whereArgs: [providerId],
       );
@@ -98,7 +95,7 @@ class LlmStorage {
   static Future<Model?> getModelById(String id) async {
     try {
       final results = await SqliteUtil.instance.query(
-        _modelTable,
+        Model.tableName(),
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -117,7 +114,7 @@ class LlmStorage {
   static Future<bool> updateModel(Model model) async {
     try {
       final result = await SqliteUtil.instance.update(
-        _modelTable,
+        Model.tableName(),
         model.toMap(),
         where: 'id = ?',
         whereArgs: [model.id],
@@ -133,7 +130,7 @@ class LlmStorage {
   static Future<bool> deleteModel(String id) async {
     try {
       final result = await SqliteUtil.instance.delete(
-        _modelTable,
+        Model.tableName(),
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -147,7 +144,7 @@ class LlmStorage {
   // 10. 添加模型
   static Future<bool> addModel(Model model) async {
     try {
-      final result = await SqliteUtil.instance.insert(_modelTable, model.toMap());
+      final result = await SqliteUtil.instance.insert(Model.tableName(), model.toMap());
       return result > 0;
     } catch (e) {
       debugPrint('添加模型失败: $e');

@@ -41,10 +41,15 @@ class LlmProvider {
     required this.defaultModelId,
   });
 
+  /// 表名
+  static String tableName() {
+    return 'llm_providers';
+  }
+
   /// 表创建sql
   static String createTableSql() {
     return '''
-      CREATE TABLE llm_providers (
+      CREATE TABLE ${tableName()} (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         api_key TEXT,

@@ -30,10 +30,15 @@ class Model {
     this.enabled = true,
   });
 
+  /// 表名
+  static String tableName() {
+    return 'models';
+  }
+
   /// 表创建sql
   static String createTableSql() {
     return '''
-      CREATE TABLE models (
+      CREATE TABLE ${tableName()} (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         provider_id TEXT NOT NULL,

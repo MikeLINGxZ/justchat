@@ -28,10 +28,15 @@ class Conversation {
     this.deleted = false,
   });
 
+  /// 表名
+  static String tableName() {
+    return 'conversations';
+  }
+
   /// 表创建sql
   static String createTableSql() {
     return '''
-      CREATE TABLE conversations (
+      CREATE TABLE ${tableName()} (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         created_at INTEGER NOT NULL,
