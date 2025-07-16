@@ -12,6 +12,8 @@ Conversation _$ConversationFromJson(Map<String, dynamic> json) => Conversation(
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   deleted: json['deleted'] as bool? ?? false,
+  defaultModelId: json['defaultModelId'] as String?,
+  defaultProviderId: json['defaultProviderId'] as String?,
 );
 
 Map<String, dynamic> _$ConversationToJson(Conversation instance) =>
@@ -21,4 +23,6 @@ Map<String, dynamic> _$ConversationToJson(Conversation instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'deleted': instance.deleted,
+      'defaultProviderId': instance.defaultProviderId,
+      'defaultModelId': instance.defaultModelId,
     };

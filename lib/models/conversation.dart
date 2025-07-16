@@ -20,12 +20,20 @@ class Conversation {
   @JsonKey(defaultValue: false)
   bool deleted;
 
+  /// 对话默认使用的供应商
+  final String? defaultProviderId;
+
+  /// 对话默认使用的模型
+  final String? defaultModelId;
+
   Conversation({
     required this.id,
     required this.title,
     required this.createdAt,
     required this.updatedAt,
     this.deleted = false,
+    this.defaultModelId,
+    this.defaultProviderId,
   });
 
   /// 表名
@@ -44,6 +52,8 @@ class Conversation {
         model_id TEXT,
         provider_id TEXT,
         system_prompt TEXT,
+        default_provider_id TEXT NOT NULL,
+        default_model_id TEXT NOT NULL,
         metadata TEXT
       )
     ''';
@@ -63,6 +73,8 @@ class Conversation {
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
       'deleted': deleted ? 1 : 0,
+      'default_provider_id': defaultProviderId,
+      'default_model_id': defaultModelId
     };
   }
 
@@ -74,6 +86,8 @@ class Conversation {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at']),
       deleted: map['deleted'] == 1,
+      defaultProviderId: map['default_provider_id'],
+      defaultModelId: map['default_model_id'],
     );
   }
 }

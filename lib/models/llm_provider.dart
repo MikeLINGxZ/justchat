@@ -23,10 +23,6 @@ class LlmProvider {
   /// 是否验证
   @JsonKey(defaultValue: false)
   final bool checked;
-  /// 对话默认使用的供应商
-  final String defaultProviderId;
-  /// 对话默认使用的模型id
-  final String defaultModelId;
 
   LlmProvider({
     required this.id,
@@ -37,8 +33,6 @@ class LlmProvider {
     this.description,
     this.enable = true,
     this.checked = false,
-    required this.defaultProviderId,
-    required this.defaultModelId,
   });
 
   /// 表名
@@ -49,16 +43,16 @@ class LlmProvider {
   /// 表创建sql
   static String createTableSql() {
     return '''
-      CREATE TABLE ${tableName()} (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        api_key TEXT,
-        base_url TEXT,
-        enabled INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        metadata TEXT
-      )
+    CREATE TABLE ${tableName()} (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      base_url TEXT NOT NULL,
+      api_key TEXT,
+      alias TEXT,
+      description TEXT,
+      enable INTEGER NOT NULL DEFAULT 1,
+      checked INTEGER NOT NULL DEFAULT 0
+    )
     ''';
   }
 
@@ -79,8 +73,6 @@ class LlmProvider {
       'description': description,
       'enable': enable ? 1 : 0,
       'checked': checked ? 1 : 0,
-      'default_provider_id': defaultProviderId,
-      'default_model_id': defaultModelId,
     };
   }
 
@@ -95,8 +87,6 @@ class LlmProvider {
       description: map['description'],
       enable: map['enable'] == 1,
       checked: map['checked'] == 1,
-      defaultProviderId: map['default_provider_id'],
-      defaultModelId: map['default_model_id'],
     );
   }
 }

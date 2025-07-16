@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
-import 'package:lemon_tea/utils/setting/provider_manager.dart';
-import 'package:lemon_tea/models/llm_provider_v0.dart';
-import 'package:lemon_tea/models/model_v0.dart';
+import 'package:lemon_tea/models/llm_provider.dart';
 
 class ModelSettings extends ConsumerStatefulWidget {
   const ModelSettings({super.key});
@@ -50,13 +49,13 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+            color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
           child: TabBar(
             controller: _tabController,
             labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
+            unselectedLabelColor: theme.colorScheme.onSurface,
             indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
             indicator: BoxDecoration(
@@ -64,7 +63,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha(13),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -100,17 +99,46 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: [_buildProviderTab(), _buildPromptsTab()],
+            children: [
+              FutureBuilder<List<LlmProvider>>(
+                future: LlmStorage.getAllProviders(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Center(child: Text('加载失败: ${snapshot.error}'));
+                  }
+                  
+                  final providers = snapshot.data ?? [];
+                  
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, 
+                      children: [
+                        for (final provider in providers)
+                          ListTile(
+                            title: Text(provider.name),
+                            subtitle: Text(provider.baseUrl),
+                            trailing: Switch(
+                              value: provider.enable,
+                              onChanged: (value) {
+                                // TODO: 更新提供商启用状态
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              _buildPromptsTab()
+            ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildProviderTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: []),
     );
   }
 
