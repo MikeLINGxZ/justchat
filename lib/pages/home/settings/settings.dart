@@ -6,8 +6,8 @@ import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/pages/home/settings/provider_dialog.dart';
-import 'package:lemon_tea/models/llm_provider.dart';
-import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/models/llm_provider_v0.dart';
+import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/pages/home/settings/general_settings.dart';
 import 'package:lemon_tea/pages/home/settings/model_settings.dart';
 import 'package:lemon_tea/pages/home/settings/data_settings.dart';
@@ -366,7 +366,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _buildProviderTile(LlmProvider provider) {
+  Widget _buildProviderTile(LlmProvider_v0 provider) {
     return ListTile(
       title: Text(provider.displayName),
       subtitle: Column(
@@ -429,7 +429,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _buildModelTile(Model model, LlmProvider provider) {
+  Widget _buildModelTile(Model_v0 model, LlmProvider_v0 provider) {
     final selectedModel = ref.watch(selectedModelProvider);
     final isSelected = selectedModel?.id == model.id;
 
@@ -667,7 +667,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  void _showProviderDialog({LlmProvider? provider}) {
+  void _showProviderDialog({LlmProvider_v0? provider}) {
     showDialog(
       context: context,
       builder: (context) => ProviderDialog(provider: provider),
@@ -778,7 +778,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  void _showDeleteProviderDialog(LlmProvider provider) {
+  void _showDeleteProviderDialog(LlmProvider_v0 provider) {
     showDialog(
       context: context,
       builder:

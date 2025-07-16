@@ -9,7 +9,7 @@ import 'package:lemon_tea/pages/home/settings/settings.dart';
 import 'package:lemon_tea/pages/home/plugins/plugins.dart';
 import 'package:lemon_tea/pages/home/debug/debug.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -54,7 +54,7 @@ class _HomePage extends State<HomePage> {
     _pages.add(const SettingsPage());
   }
 
-  Future<void> _handleConversationSelected(Conversation conversation) async {
+  Future<void> _handleConversationSelected(Conversation_v0 conversation) async {
     await _conversationManager.loadConversation(conversation.id);
     // 切换到助手页面
     setState(() {

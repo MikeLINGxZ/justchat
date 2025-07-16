@@ -4,8 +4,8 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/pages/home/settings/provider_dialog.dart';
-import 'package:lemon_tea/models/llm_provider.dart';
-import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/models/llm_provider_v0.dart';
+import 'package:lemon_tea/models/model_v0.dart';
 
 class ModelSettings extends ConsumerWidget {
   const ModelSettings({super.key});
@@ -135,7 +135,7 @@ class ModelSettings extends ConsumerWidget {
     );
   }
 
-  Widget _buildProviderTile(BuildContext context, WidgetRef ref, LlmProvider provider) {
+  Widget _buildProviderTile(BuildContext context, WidgetRef ref, LlmProvider_v0 provider) {
     // 获取最新的供应商数据，确保模型列表是最新的
     final providers = ref.watch(providerManagerProvider);
     final currentProvider = providers.firstWhere(
@@ -269,7 +269,7 @@ class ModelSettings extends ConsumerWidget {
     );
   }
 
-  Widget _buildModelTile(BuildContext context, WidgetRef ref, Model model, LlmProvider provider) {
+  Widget _buildModelTile(BuildContext context, WidgetRef ref, Model_v0 model, LlmProvider_v0 provider) {
     final selectedModel = ref.watch(selectedModelProvider);
     final isSelected = selectedModel?.id == model.id;
 
@@ -292,14 +292,14 @@ class ModelSettings extends ConsumerWidget {
     );
   }
 
-  void _showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provider}) {
+  void _showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider_v0? provider}) {
     showDialog(
       context: context,
       builder: (context) => ProviderDialog(provider: provider),
     );
   }
 
-  void _showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+  void _showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider_v0 provider) {
     showDialog(
       context: context,
       builder: (context) => Consumer(
@@ -364,7 +364,7 @@ class ModelSettings extends ConsumerWidget {
                               onChanged: (value) async {
                                 // 更新模型的启用状态
                                 final updatedModel = model.copyWith(enabled: value);
-                                final updatedModels = List<Model>.from(currentProvider.models!);
+                                final updatedModels = List<Model_v0>.from(currentProvider.models!);
                                 updatedModels[index] = updatedModel;
                                 
                                 final updatedProvider = currentProvider.copyWith(models: updatedModels);
@@ -540,7 +540,7 @@ class ModelSettings extends ConsumerWidget {
     );
   }
 
-  void _showDeleteProviderDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+  void _showDeleteProviderDialog(BuildContext context, WidgetRef ref, LlmProvider_v0 provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -601,7 +601,7 @@ class ModelSettings extends ConsumerWidget {
   }
   
   /// 直接在列表中测试连接
-  Future<void> _testConnection(BuildContext context, WidgetRef ref, LlmProvider provider) async {
+  Future<void> _testConnection(BuildContext context, WidgetRef ref, LlmProvider_v0 provider) async {
     final providerManager = ref.read(providerManagerProvider.notifier);
     
     // 显示加载对话框
@@ -627,7 +627,7 @@ class ModelSettings extends ConsumerWidget {
       Navigator.of(context).pop();
       
       if (result['success']) {
-        final models = result['models'] as List<Model>;
+        final models = result['models'] as List<Model_v0>;
         
         // 显示保存模型对话框
         if (models.isNotEmpty) {
@@ -663,7 +663,7 @@ class ModelSettings extends ConsumerWidget {
   }
   
   /// 显示保存模型对话框
-  void _showSaveModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider, List<Model> models) {
+  void _showSaveModelsDialog(BuildContext context, WidgetRef ref, LlmProvider_v0 provider, List<Model_v0> models) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/models/llm_provider.dart';
-import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/models/llm_provider_v0.dart';
+import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 
 class ProviderDialog extends ConsumerStatefulWidget {
-  final LlmProvider? provider; // 如果为null，则为添加模式；否则为编辑模式
+  final LlmProvider_v0? provider; // 如果为null，则为添加模式；否则为编辑模式
 
   const ProviderDialog({super.key, this.provider});
 
@@ -206,7 +206,7 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
     });
 
     try {
-      final provider = LlmProvider(
+      final provider = LlmProvider_v0(
         name: _nameController.text.trim(),
         baseUrl: _baseUrlController.text.trim(),
         apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim(),
@@ -260,7 +260,7 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
     });
 
     try {
-      final provider = LlmProvider(
+      final provider = LlmProvider_v0(
         name: _nameController.text.trim(),
         baseUrl: _baseUrlController.text.trim(),
         apiKey: _apiKeyController.text.trim().isEmpty ? null : _apiKeyController.text.trim(),
@@ -273,7 +273,7 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
 
       if (mounted) {
         if (result['success']) {
-          final models = result['models'] as List<Model>;
+          final models = result['models'] as List<Model_v0>;
           
           // 显示成功消息
           ScaffoldMessenger.of(context).showSnackBar(
@@ -318,7 +318,7 @@ class _ProviderDialogState extends ConsumerState<ProviderDialog> {
   }
   
   /// 显示保存模型对话框
-  void _showSaveModelsDialog(LlmProvider provider, List<Model> models) {
+  void _showSaveModelsDialog(LlmProvider_v0 provider, List<Model_v0> models) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

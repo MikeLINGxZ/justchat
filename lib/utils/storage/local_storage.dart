@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 import 'package:lemon_tea/utils/storage/storage_interface.dart';
 
 /// 本地存储实现，使用SharedPreferences
@@ -62,7 +62,7 @@ class LocalStorage implements StorageInterface {
   }
 
   @override
-  Future<void> saveConversation(Conversation conversation) async {
+  Future<void> saveConversation(Conversation_v0 conversation) async {
     await _ensureInitialized();
     
     final conversations = await _getAllConversationsMap();
@@ -72,12 +72,12 @@ class LocalStorage implements StorageInterface {
   }
 
   @override
-  Future<List<Conversation>> getAllConversations() async {
+  Future<List<Conversation_v0>> getAllConversations() async {
     await _ensureInitialized();
     
     final conversations = await _getAllConversationsMap();
     final conversationList = conversations.values
-        .map((json) => Conversation.fromJson(jsonDecode(json)))
+        .map((json) => Conversation_v0.fromJson(jsonDecode(json)))
         .where((conv) => !conv.isDeleted)
         .toList();
     
@@ -88,14 +88,14 @@ class LocalStorage implements StorageInterface {
   }
 
   @override
-  Future<Conversation?> getConversationById(String id) async {
+  Future<Conversation_v0?> getConversationById(String id) async {
     await _ensureInitialized();
     
     final conversations = await _getAllConversationsMap();
     final jsonString = conversations[id];
     
     if (jsonString != null) {
-      final conversation = Conversation.fromJson(jsonDecode(jsonString));
+      final conversation = Conversation_v0.fromJson(jsonDecode(jsonString));
       return conversation.isDeleted ? null : conversation;
     }
     
@@ -151,7 +151,7 @@ class LocalStorage implements StorageInterface {
     int activeConversations = 0;
     
     for (final jsonString in conversations.values) {
-      final conversation = Conversation.fromJson(jsonDecode(jsonString));
+      final conversation = Conversation_v0.fromJson(jsonDecode(jsonString));
       if (!conversation.isDeleted) {
         activeConversations++;
         totalMessages += conversation.messages.length;
@@ -195,7 +195,7 @@ class LocalStorage implements StorageInterface {
     final jsonString = deletedConversations[id];
     
     if (jsonString != null) {
-      final conversation = Conversation.fromJson(jsonDecode(jsonString));
+      final conversation = Conversation_v0.fromJson(jsonDecode(jsonString));
       final restoredConversation = conversation.copyWith(isDeleted: false);
       await saveConversation(restoredConversation);
       
@@ -206,12 +206,12 @@ class LocalStorage implements StorageInterface {
   }
 
   /// 获取已删除的对话列表
-  Future<List<Conversation>> getDeletedConversations() async {
+  Future<List<Conversation_v0>> getDeletedConversations() async {
     await _ensureInitialized();
     
     final deletedConversations = await _getDeletedConversationsMap();
     final conversationList = deletedConversations.values
-        .map((json) => Conversation.fromJson(jsonDecode(json)))
+        .map((json) => Conversation_v0.fromJson(jsonDecode(json)))
         .toList();
     
     // 按删除时间倒序排列

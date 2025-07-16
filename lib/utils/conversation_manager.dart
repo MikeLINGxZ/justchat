@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/storage/storage_interface.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
@@ -8,18 +8,18 @@ import 'package:lemon_tea/utils/storage/local_storage.dart';
 class ConversationManager extends ChangeNotifier {
   final StorageInterface _storage;
   
-  List<Conversation> _conversations = [];
-  Conversation? _currentConversation;
+  List<Conversation_v0> _conversations = [];
+  Conversation_v0? _currentConversation;
   bool _isLoading = false;
 
   ConversationManager({StorageInterface? storage}) 
       : _storage = storage ?? LocalStorage();
 
   /// 获取所有对话
-  List<Conversation> get conversations => List.unmodifiable(_conversations);
+  List<Conversation_v0> get conversations => List.unmodifiable(_conversations);
   
   /// 获取当前对话
-  Conversation? get currentConversation => _currentConversation;
+  Conversation_v0? get currentConversation => _currentConversation;
   
   /// 是否正在加载
   bool get isLoading => _isLoading;
@@ -38,11 +38,11 @@ class ConversationManager extends ChangeNotifier {
   }
 
   /// 创建新对话
-  Future<Conversation> createConversation({
+  Future<Conversation_v0> createConversation({
     String title = '新对话',
     List<Message> initialMessages = const [],
   }) async {
-    final conversation = Conversation.create(
+    final conversation = Conversation_v0.create(
       title: title,
       messages: initialMessages,
     );
@@ -181,7 +181,7 @@ class ConversationManager extends ChangeNotifier {
   }
 
   /// 搜索对话
-  List<Conversation> searchConversations(String query) {
+  List<Conversation_v0> searchConversations(String query) {
     if (query.isEmpty) {
       return _conversations;
     }

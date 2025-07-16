@@ -1,15 +1,15 @@
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 
 /// 存储接口，定义对话存储的标准操作
 abstract class StorageInterface {
   /// 保存对话
-  Future<void> saveConversation(Conversation conversation);
+  Future<void> saveConversation(Conversation_v0 conversation);
 
   /// 获取所有对话（不包括已删除的）
-  Future<List<Conversation>> getAllConversations();
+  Future<List<Conversation_v0>> getAllConversations();
 
   /// 根据ID获取对话
-  Future<Conversation?> getConversationById(String id);
+  Future<Conversation_v0?> getConversationById(String id);
 
   /// 删除对话（软删除）
   Future<void> deleteConversation(String id);

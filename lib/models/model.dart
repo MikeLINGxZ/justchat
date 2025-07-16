@@ -4,76 +4,57 @@ part 'model.g.dart';
 
 @JsonSerializable()
 class Model {
+  // 供应商id
+  final String llm_provider_id;
+
+  // 模型id
   final String id;
+
+  // 模型类型（默认值 "model"）
+  @JsonKey(defaultValue: "model")
   final String object;
+
+  // 模型提供者
   @JsonKey(name: 'owned_by')
   final String ownedBy;
+
+  // 是否启用（默认值 true）
   @JsonKey(defaultValue: true)
   final bool enabled;
 
-  const Model({
-    required this.id, 
-    required this.object, 
+  Model({
+    required this.llm_provider_id,
+    required this.id,
+    this.object = "model",
     required this.ownedBy,
     this.enabled = true,
   });
 
-  /// 从 JSON 创建 Model 实例
+  // 生成 fromJson 方法
   factory Model.fromJson(Map<String, dynamic> json) => _$ModelFromJson(json);
 
-  /// 转换为 JSON
+  // 生成 toJson 方法
   Map<String, dynamic> toJson() => _$ModelToJson(this);
 
-  /// 创建 Model 的副本，可选择性地更新某些字段
-  Model copyWith({
-    String? id,
-    String? object,
-    String? ownedBy,
-    bool? enabled,
-  }) {
+  // 转换为数据库 Map
+  Map<String, dynamic> toMap() {
+    return {
+      'llm_provider_id': llm_provider_id,
+      'id': id,
+      'object': object,
+      'owned_by': ownedBy,
+      'enabled': enabled ? 1 : 0, // SQLite 中布尔用 0/1 表示
+    };
+  }
+
+  // 从数据库 Map 构造对象
+  factory Model.fromMap(Map<String, dynamic> map) {
     return Model(
-      id: id ?? this.id,
-      object: object ?? this.object,
-      ownedBy: ownedBy ?? this.ownedBy,
-      enabled: enabled ?? this.enabled,
+      llm_provider_id: map['llm_provider_id'],
+      id: map['id'],
+      object: map['object'] ?? "model",
+      ownedBy: map['owned_by'],
+      enabled: map['enabled'] == 1,
     );
-  }
-
-  /// 检查模型是否有效（必须有ID）
-  bool get isValid => id.isNotEmpty;
-
-  /// 获取模型的显示名称（使用ID作为显示名称）
-  String get displayName => id;
-
-  /// 检查是否为特定类型的模型
-  bool isType(String type) => object.toLowerCase() == type.toLowerCase();
-
-  /// 检查是否为聊天模型
-  bool get isChatModel => isType('chat.completions') || isType('model');
-
-  /// 检查是否为嵌入模型
-  bool get isEmbeddingModel => isType('embeddings') || isType('text-embedding');
-
-  /// 检查是否为图像模型
-  bool get isImageModel => isType('images') || isType('image');
-
-  @override
-  String toString() {
-    return 'Model(id: $id, object: $object, ownedBy: $ownedBy, enabled: $enabled)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Model &&
-        other.id == id &&
-        other.object == object &&
-        other.ownedBy == ownedBy &&
-        other.enabled == enabled;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(id, object, ownedBy, enabled);
   }
 }

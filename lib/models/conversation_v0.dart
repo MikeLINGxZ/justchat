@@ -1,10 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 
-part 'conversation.g.dart';
+part 'conversation_v0.g.dart';
 
 @JsonSerializable()
-class Conversation {
+class Conversation_v0 {
   /// 对话唯一标识
   final String id;
 
@@ -23,7 +23,7 @@ class Conversation {
   /// 是否已删除
   bool isDeleted;
 
-  Conversation({
+  Conversation_v0({
     required this.id,
     required this.title,
     required this.messages,
@@ -32,17 +32,17 @@ class Conversation {
     this.isDeleted = false,
   });
 
-  factory Conversation.fromJson(Map<String, dynamic> json) =>
-      _$ConversationFromJson(json);
-  Map<String, dynamic> toJson() => _$ConversationToJson(this);
+  factory Conversation_v0.fromJson(Map<String, dynamic> json) =>
+      _$Conversation_v0FromJson(json);
+  Map<String, dynamic> toJson() => _$Conversation_v0ToJson(this);
 
   /// 创建新对话
-  factory Conversation.create({
+  factory Conversation_v0.create({
     required String title,
     List<Message> messages = const [],
   }) {
     final now = DateTime.now();
-    return Conversation(
+    return Conversation_v0(
       id: _generateId(),
       title: title,
       messages: messages,
@@ -52,7 +52,7 @@ class Conversation {
   }
 
   /// 添加消息
-  Conversation addMessage(Message message) {
+  Conversation_v0 addMessage(Message message) {
     final newMessages = List<Message>.from(messages)..add(message);
     return copyWith(
       messages: newMessages,
@@ -61,7 +61,7 @@ class Conversation {
   }
 
   /// 更新标题
-  Conversation updateTitle(String newTitle) {
+  Conversation_v0 updateTitle(String newTitle) {
     return copyWith(
       title: newTitle,
       updatedAt: DateTime.now(),
@@ -69,12 +69,12 @@ class Conversation {
   }
 
   /// 标记为删除
-  Conversation markAsDeleted() {
+  Conversation_v0 markAsDeleted() {
     return copyWith(isDeleted: true);
   }
 
   /// 复制并修改
-  Conversation copyWith({
+  Conversation_v0 copyWith({
     String? id,
     String? title,
     List<Message>? messages,
@@ -82,7 +82,7 @@ class Conversation {
     DateTime? updatedAt,
     bool? isDeleted,
   }) {
-    return Conversation(
+    return Conversation_v0(
       id: id ?? this.id,
       title: title ?? this.title,
       messages: messages ?? this.messages,

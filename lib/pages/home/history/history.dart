@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
@@ -8,7 +8,7 @@ import 'package:lemon_tea/generated/l10n.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
-  final Function(Conversation) onConversationSelected;
+  final Function(Conversation_v0) onConversationSelected;
   final Function(String) onConversationDeleted;
   final VoidCallback? onNewConversation;
 
@@ -26,7 +26,7 @@ class HistoryPage extends ConsumerStatefulWidget {
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
   String _searchQuery = '';
-  List<Conversation> _filteredConversations = [];
+  List<Conversation_v0> _filteredConversations = [];
 
   @override
   void initState() {

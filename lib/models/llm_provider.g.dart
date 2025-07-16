@@ -7,23 +7,24 @@ part of 'llm_provider.dart';
 // **************************************************************************
 
 LlmProvider _$LlmProviderFromJson(Map<String, dynamic> json) => LlmProvider(
+  id: json['id'] as String,
   name: json['name'] as String,
   baseUrl: json['baseUrl'] as String,
   apiKey: json['apiKey'] as String?,
   alias: json['alias'] as String?,
   description: json['description'] as String?,
-  models:
-      (json['models'] as List<dynamic>?)
-          ?.map((e) => Model.fromJson(e as Map<String, dynamic>))
-          .toList(),
+  enable: json['enable'] as bool? ?? true,
+  checked: json['checked'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$LlmProviderToJson(LlmProvider instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'name': instance.name,
       'baseUrl': instance.baseUrl,
       'apiKey': instance.apiKey,
       'alias': instance.alias,
       'description': instance.description,
-      'models': instance.models,
+      'enable': instance.enable,
+      'checked': instance.checked,
     };

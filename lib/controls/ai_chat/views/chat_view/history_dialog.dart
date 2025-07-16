@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/conversation_v0.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 
 class HistoryDialog extends StatefulWidget {
   final ConversationManager conversationManager;
-  final Function(Conversation) onConversationSelected;
+  final Function(Conversation_v0) onConversationSelected;
   final Function(String) onConversationDeleted;
   final VoidCallback? onNewConversation;
 

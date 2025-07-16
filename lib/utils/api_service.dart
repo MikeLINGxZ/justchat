@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:lemon_tea/models/llm_provider.dart';
-import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/models/llm_provider_v0.dart';
+import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/utils/cli/cli_utils/llm_config_utils.dart';
 
 /// API服务类，负责与LLM供应商的API通信
 class ApiService {
   /// 获取供应商的模型列表
-  static Future<List<Model>> getModels(LlmProvider provider) async {
+  static Future<List<Model_v0>> getModels(LlmProvider_v0 provider) async {
     if (!provider.hasApiKey) {
       throw Exception('API密钥未配置');
     }
@@ -30,7 +30,7 @@ class ApiService {
         return modelsData.map((modelData) {
           final modelJson = modelData as Map<String, dynamic>;
           // 处理不同的JSON结构
-          return Model(
+          return Model_v0(
             id: modelJson['id']?.toString() ?? '',
             object: modelJson['object']?.toString() ?? 'model',
             ownedBy: modelJson['owned_by']?.toString() ?? 
@@ -51,7 +51,7 @@ class ApiService {
   }
 
   /// 测试供应商连接
-  static Future<bool> testConnection(LlmProvider provider) async {
+  static Future<bool> testConnection(LlmProvider_v0 provider) async {
     if (!provider.hasApiKey) {
       return false;
     }
@@ -66,7 +66,7 @@ class ApiService {
   }
 
   /// 测试连接并获取模型列表
-  static Future<Map<String, dynamic>> testConnectionAndGetModels(LlmProvider provider) async {
+  static Future<Map<String, dynamic>> testConnectionAndGetModels(LlmProvider_v0 provider) async {
     if (!provider.hasApiKey) {
       throw Exception('API密钥未配置');
     }
@@ -92,7 +92,7 @@ class ApiService {
       return {
         'success': false,
         'error': e.toString(),
-        'models': <Model>[],
+        'models': <Model_v0>[],
       };
     }
   }

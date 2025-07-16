@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:lemon_tea/models/model.dart';
+import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/storage/local_storage.dart';
 import 'package:lemon_tea/rpc/common.pb.dart' as $1;
@@ -62,7 +62,7 @@ Future<void> updateLlmConfig() async {
 /// [baseUrl] LLM提供商的基础URL
 /// [apiKey] 可选的API密钥
 /// 返回模型列表
-Future<List<Model>> llmModels(String baseUrl, String? apiKey) async {
+Future<List<Model_v0>> llmModels(String baseUrl, String? apiKey) async {
   try {
     // 检查客户端是否初始化
     if (Client().stub == null) {
@@ -83,7 +83,7 @@ Future<List<Model>> llmModels(String baseUrl, String? apiKey) async {
     final response = await Client().stub!.models(request);
     
     // 将gRPC模型对象转换为应用程序模型对象
-    return response.models.map((pbModel) => Model(
+    return response.models.map((pbModel) => Model_v0(
       id: pbModel.id,
       object: pbModel.object,
       ownedBy: pbModel.ownedBy,
