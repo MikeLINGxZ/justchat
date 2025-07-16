@@ -7,7 +7,7 @@ import 'package:lemon_tea/utils/setting/storage.dart';
 import 'package:lemon_tea/utils/system.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
-import 'package:lemon_tea/storage/sqlite_storage.dart';
+import 'package:lemon_tea/storage/sqlite_util.dart';
 import 'package:window_manager/window_manager.dart';
 import 'generated/l10n.dart';
 
@@ -33,7 +33,7 @@ Future<void> _initializeAppSettings(ProviderContainer container) async {
 Future<void> _initializeDatabase() async {
   try {
     // 获取数据库实例，这将触发数据库初始化
-    await SqliteStorage.instance.database;
+    await SqliteUtil.instance.database;
     debugPrint('数据库初始化成功');
   } catch (e) {
     debugPrint('数据库初始化失败: $e');

@@ -4,24 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'sqlite_initializer.dart';
 
 /// SQLite数据库存储提供者
-final sqliteStorageProvider = Provider<SqliteStorage>((ref) {
-  return SqliteStorage.instance;
+final sqliteStorageProvider = Provider<SqliteUtil>((ref) {
+  return SqliteUtil.instance;
 });
 
 /// SQLite数据库存储类
 /// 提供数据库操作功能
-class SqliteStorage {
-  static SqliteStorage? _instance;
+class SqliteUtil {
+  static SqliteUtil? _instance;
   final SqliteDatabaseInitializer _initializer = SqliteDatabaseInitializer();
   
   // 单例模式
-  static SqliteStorage get instance {
-    _instance ??= SqliteStorage._internal();
+  static SqliteUtil get instance {
+    _instance ??= SqliteUtil._internal();
     return _instance!;
   }
   
   // 私有构造函数
-  SqliteStorage._internal();
+  SqliteUtil._internal();
   
   /// 获取数据库实例
   Future<Database> get database => _initializer.database;
