@@ -1,18 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/tool_call.dart';
 
 part 'message.g.dart';
 
-enum MessageRole {
-  @JsonValue('system')
-  system,
-  @JsonValue('user')
-  user,
-  @JsonValue('assistant')
-  assistant,
-  @JsonValue('tool')
-  tool,
-}
+
 
 @JsonSerializable()
 class Message {

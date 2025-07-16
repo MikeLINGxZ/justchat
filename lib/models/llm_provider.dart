@@ -5,24 +5,28 @@ part 'llm_provider.g.dart';
 @JsonSerializable()
 class LlmProvider {
 
-  // 模型供应商id
+  /// 模型供应商id
   final String id;
-  // 模型供应商名称
+  /// 模型供应商名称
   final String name;
-  // 模型供应商接口url
+  /// 模型供应商接口url
   final String baseUrl;
-  // 模型供应商api密钥
+  /// 模型供应商api密钥
   final String? apiKey;
-  // 模型供应商别名
+  /// 模型供应商别名
   final String? alias;
-  // 模型供应商描述
+  /// 模型供应商描述
   final String? description;
-  // 是否启用
+  /// 是否启用
   @JsonKey(defaultValue: true)
   final bool enable;
-  // 是否验证
+  /// 是否验证
   @JsonKey(defaultValue: false)
   final bool checked;
+  /// 对话默认使用的供应商
+  final String defaultProviderId;
+  /// 对话默认使用的模型id
+  final String defaultModelId;
 
   LlmProvider({
     required this.id,
@@ -33,6 +37,8 @@ class LlmProvider {
     this.description,
     this.enable = true,
     this.checked = false,
+    required this.defaultProviderId,
+    required this.defaultModelId,
   });
 
 
@@ -42,6 +48,7 @@ class LlmProvider {
   /// 转换为 JSON
   Map<String, dynamic> toJson() => _$LlmProviderToJson(this);
 
+  /// 转换为数据库 Map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -52,9 +59,12 @@ class LlmProvider {
       'description': description,
       'enable': enable ? 1 : 0,
       'checked': checked ? 1 : 0,
+      'default_provider_id': defaultProviderId,
+      'default_model_id': defaultModelId,
     };
   }
 
+  /// 从数据库 Map 构造对象
   factory LlmProvider.fromMap(Map<String, dynamic> map) {
     return LlmProvider(
       id: map['id'],
@@ -65,6 +75,8 @@ class LlmProvider {
       description: map['description'],
       enable: map['enable'] == 1,
       checked: map['checked'] == 1,
+      defaultProviderId: map['default_provider_id'],
+      defaultModelId: map['default_model_id'],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 
