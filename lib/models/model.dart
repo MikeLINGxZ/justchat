@@ -5,7 +5,7 @@ part 'model.g.dart';
 @JsonSerializable()
 class Model {
   /// 供应商id
-  final String llm_provider_id;
+  final String llmProviderId;
 
   /// 模型id
   final String id;
@@ -23,7 +23,7 @@ class Model {
   final bool enabled;
 
   Model({
-    required this.llm_provider_id,
+    required this.llmProviderId,
     required this.id,
     this.object = "model",
     required this.ownedBy,
@@ -42,9 +42,9 @@ class Model {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         provider_id TEXT NOT NULL,
+        model TEXT,
+        owned_by TEXT,
         enabled INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
         metadata TEXT
       )
     ''';
@@ -59,7 +59,7 @@ class Model {
   /// 转换为数据库 Map
   Map<String, dynamic> toMap() {
     return {
-      'llm_provider_id': llm_provider_id,
+      'llm_provider_id': llmProviderId,
       'id': id,
       'object': object,
       'owned_by': ownedBy,
@@ -70,7 +70,7 @@ class Model {
   /// 从数据库 Map 构造对象
   factory Model.fromMap(Map<String, dynamic> map) {
     return Model(
-      llm_provider_id: map['llm_provider_id'],
+      llmProviderId: map['llm_provider_id'],
       id: map['id'],
       object: map['object'] ?? "model",
       ownedBy: map['owned_by'],

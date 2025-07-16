@@ -7,7 +7,7 @@ part of 'model.dart';
 // **************************************************************************
 
 Model _$ModelFromJson(Map<String, dynamic> json) => Model(
-  llm_provider_id: json['llm_provider_id'] as String,
+  llmProviderId: json['llm_provider_id'] as String,
   id: json['id'] as String,
   object: json['object'] as String? ?? 'model',
   ownedBy: json['owned_by'] as String,
@@ -15,7 +15,7 @@ Model _$ModelFromJson(Map<String, dynamic> json) => Model(
 );
 
 Map<String, dynamic> _$ModelToJson(Model instance) => <String, dynamic>{
-  'llm_provider_id': instance.llm_provider_id,
+  'llm_provider_id': instance.llmProviderId,
   'id': instance.id,
   'object': instance.object,
   'owned_by': instance.ownedBy,

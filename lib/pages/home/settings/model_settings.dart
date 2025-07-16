@@ -329,7 +329,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                             value: model.enabled,
                             onChanged: (value) async {
                               final updatedModel = Model(
-                                llm_provider_id: model.llm_provider_id,
+                                llmProviderId: model.llmProviderId,
                                 id: model.id,
                                 object: model.object,
                                 ownedBy: model.ownedBy,
