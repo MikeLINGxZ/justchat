@@ -606,6 +606,9 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                                         padding: EdgeInsets.zero,
                                         icon: const Icon(Icons.more_vert, size: 20),
                                         tooltip: '更多操作',
+                                        // 调整菜单位置，使其不遮挡按钮但更贴合
+                                        offset: const Offset(0, 10),
+                                        position: PopupMenuPosition.under,
                                         itemBuilder: (context) => [
                                           PopupMenuItem<String>(
                                             value: 'edit',
