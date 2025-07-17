@@ -97,11 +97,36 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
   final Map<String, bool> _modelEnabledStates = {};
   // 存储本地修改的提供商状态
   final Map<String, bool> _providerEnabledStates = {};
+  // 用于跟踪已预加载的提供商ID
+  final Set<String> _preloadedProviderIds = {};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // 预加载提供商数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadProviders();
+    });
+  }
+  
+  // 预加载提供商和模型数据
+  void _preloadProviders() async {
+    final providers = await LlmStorage.getAllProviders();
+    if (providers.isNotEmpty && mounted) {
+      // 预加载第一个提供商的模型
+      final firstProvider = providers.first;
+      _preloadModels(firstProvider.id);
+    }
+  }
+  
+  // 预加载指定提供商的模型
+  void _preloadModels(String providerId) {
+    if (_preloadedProviderIds.contains(providerId)) return;
+    
+    _preloadedProviderIds.add(providerId);
+    ref.read(modelsProvider(providerId));
   }
 
   @override
@@ -460,6 +485,9 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
 
   // 显示模型列表对话框
   void _showModelsDialog(LlmProvider provider) {
+    // 确保模型数据已预加载
+    _preloadModels(provider.id);
+    
     // 创建本地状态副本，用于UI显示
     final Map<String, bool> localModelStates = {};
     
@@ -475,6 +503,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, dialogSetState) {
+          // 使用Consumer直接访问模型数据，避免loading状态
           return AlertDialog(
             title: Text(
               '${provider.name} 模型列表',
@@ -486,117 +515,124 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             content: SizedBox(
               width: 460, // 设置固定宽度，使对话框更窄
               height: 400, // 设置固定高度，确保对话框不会过大
-              child: ref.watch(modelsProvider(provider.id)).when(
-                data: (models) {
-                  if (models.isEmpty) {
-                    return Center(
-                      child: Text(
-                        '暂无模型',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                        ),
-                      ),
-                    );
-                  }
+              child: Consumer(
+                builder: (context, ref, child) {
+                  // 强制刷新模型数据
+                  final modelsAsync = ref.watch(modelsProvider(provider.id));
                   
-                  return ListView.builder(
-                    shrinkWrap: false, // 不收缩，允许滚动
-                    physics: const AlwaysScrollableScrollPhysics(), // 始终可滚动
-                    itemCount: models.length,
-                    itemBuilder: (context, index) {
-                      final model = models[index];
-                      final key = '${model.llmProviderId}_${model.id}';
-                      // 确保本地状态存在
-                      if (!localModelStates.containsKey(key)) {
-                        localModelStates[key] = getModelEnabledState(model);
+                  return modelsAsync.when(
+                    data: (models) {
+                      if (models.isEmpty) {
+                        return Center(
+                          child: Text(
+                            '暂无模型',
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getBodySize(ref),
+                            ),
+                          ),
+                        );
                       }
                       
-                      return ListTile(
-                        title: Text(
-                          model.id,
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                          ),
-                        ),
-                        subtitle: Text(
-                          '提供者: ${model.ownedBy}',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getSmallSize(ref),
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        trailing: SizedBox(
-                          height: 48, // 固定高度确保垂直居中
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center, // 水平居中
-                            crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中
-                            children: [
-                              // 自定义标签放在编辑按钮前面
-                              if (model.isCustom)
-                                Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '自定义',
-                                    style: TextStyle(
-                                      fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      return ListView.builder(
+                        shrinkWrap: false, // 不收缩，允许滚动
+                        physics: const AlwaysScrollableScrollPhysics(), // 始终可滚动
+                        itemCount: models.length,
+                        itemBuilder: (context, index) {
+                          final model = models[index];
+                          final key = '${model.llmProviderId}_${model.id}';
+                          // 确保本地状态存在
+                          if (!localModelStates.containsKey(key)) {
+                            localModelStates[key] = getModelEnabledState(model);
+                          }
+                          
+                          return ListTile(
+                            title: Text(
+                              model.id,
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getBodySize(ref),
+                              ),
+                            ),
+                            subtitle: Text(
+                              '提供者: ${model.ownedBy}',
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getSmallSize(ref),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            trailing: SizedBox(
+                              height: 48, // 固定高度确保垂直居中
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center, // 水平居中
+                                crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中
+                                children: [
+                                  // 自定义标签放在编辑按钮前面
+                                  if (model.isCustom)
+                                    Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '自定义',
+                                        style: TextStyle(
+                                          fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  // 只对自定义模型显示编辑按钮
+                                  if (model.isCustom)
+                                    SizedBox(
+                                      height: 40,
+                                      width: 40,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.edit, size: 20),
+                                        tooltip: '编辑模型',
+                                        padding: EdgeInsets.zero,
+                                        alignment: Alignment.center,
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          _showEditModelDialog(model);
+                                        },
+                                      ),
+                                    ),
+                                  Transform.scale(
+                                    scale: 0.8,
+                                    child: Switch(
+                                      value: localModelStates[key]!,
+                                      onChanged: (value) {
+                                        // 更新本地状态和UI
+                                        dialogSetState(() {
+                                          localModelStates[key] = value;
+                                        });
+                                        // 更新数据库
+                                        updateModelEnabledState(model, value);
+                                      },
                                     ),
                                   ),
-                                ),
-                              // 只对自定义模型显示编辑按钮
-                              if (model.isCustom)
-                                SizedBox(
-                                  height: 40,
-                                  width: 40,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.edit, size: 20),
-                                    tooltip: '编辑模型',
-                                    padding: EdgeInsets.zero,
-                                    alignment: Alignment.center,
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                      _showEditModelDialog(model);
-                                    },
-                                  ),
-                                ),
-                              Transform.scale(
-                                scale: 0.8,
-                                child: Switch(
-                                  value: localModelStates[key]!,
-                                  onChanged: (value) {
-                                    // 更新本地状态和UI
-                                    dialogSetState(() {
-                                      localModelStates[key] = value;
-                                    });
-                                    // 更新数据库
-                                    updateModelEnabledState(model, value);
-                                  },
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          );
+                        },
                       );
                     },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => Center(
+                      child: Text(
+                        '加载模型失败: $error',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(
-                  child: Text(
-                    '加载模型失败: $error',
-                    style: TextStyle(
-                      fontSize: FontSizeUtils.getBodySize(ref),
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
               ),
             ),
             shape: RoundedRectangleBorder(
