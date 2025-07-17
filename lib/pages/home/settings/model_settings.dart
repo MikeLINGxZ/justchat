@@ -289,82 +289,80 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
 
   Widget _buildProviderCard(LlmProvider provider) {
     final theme = Theme.of(context);
-    final isExpanded = _expandedProviders[provider.id] ?? false;
     final isEnabled = getProviderEnabledState(provider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0, // 去除阴影
+      color: theme.brightness == Brightness.light 
+          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8), // 调整圆角与tab一致
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)), // 添加边框替代阴影
+        // side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)), // 添加边框替代阴影
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            provider.name,
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getSubheadingSize(ref),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (!provider.checked)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.errorContainer,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '未验证',
-                                style: TextStyle(
-                                  fontSize: FontSizeUtils.getSmallSize(ref),
-                                  color: theme.colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        provider.baseUrl,
+                        provider.name,
                         style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: FontSizeUtils.getSubheadingSize(ref),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (provider.description != null && provider.description!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
+                      const SizedBox(width: 8),
+                      if (!provider.checked)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Text(
-                            provider.description!,
+                            '未验证',
                             style: TextStyle(
                               fontSize: FontSizeUtils.getSmallSize(ref),
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: theme.colorScheme.onErrorContainer,
                             ),
                           ),
                         ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    provider.baseUrl,
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (provider.description != null && provider.description!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        provider.description!,
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getSmallSize(ref),
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
                 IconButton(
                   icon: const Icon(Icons.list),
                   tooltip: '查看模型列表',
                   onPressed: () {
-                    setState(() {
-                      _expandedProviders[provider.id] = !isExpanded;
-                    });
+                    _showModelsDialog(provider);
                   },
                 ),
                 PopupMenuButton<String>(
@@ -410,63 +408,66 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               ],
             ),
           ),
-          if (isExpanded)
-            _buildModelsList(provider.id),
-        ],
-      ),
     );
   }
 
-  Widget _buildModelsList(String providerId) {
-    final theme = Theme.of(context);
-    
-    return ref.watch(modelsProvider(providerId)).when(
-      data: (models) {
-        if (models.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(child: Text('暂无模型')),
-          );
-        }
-        
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLowest,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(12),
-              bottomRight: Radius.circular(12),
-            ),
-          ),
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: models.length,
-            itemBuilder: (context, index) {
-              final model = models[index];
-              final isEnabled = getModelEnabledState(model);
+  // 显示模型列表对话框
+  void _showModelsDialog(LlmProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${provider.name} 模型列表'),
+        content: SizedBox(
+          width: 460, // 设置固定宽度，使对话框更窄
+          child: ref.watch(modelsProvider(provider.id)).when(
+            data: (models) {
+              if (models.isEmpty) {
+                return const Center(child: Text('暂无模型'));
+              }
               
-              return ListTile(
-                title: Text(model.id),
-                subtitle: Text('提供者: ${model.ownedBy}'),
-                trailing: Transform.scale(
-                  scale: 0.8, // 调小开关大小
-                  child: Switch(
-                    value: isEnabled,
-                    onChanged: (value) => updateModelEnabledState(model, value),
-                  ),
-                ),
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: models.length,
+                itemBuilder: (context, index) {
+                  final model = models[index];
+                  final isEnabled = getModelEnabledState(model);
+                  
+                  return ListTile(
+                    title: Text(model.id),
+                    subtitle: Text('提供者: ${model.ownedBy}'),
+                    trailing: Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: isEnabled,
+                        onChanged: (value) {
+                          updateModelEnabledState(model, value);
+                          // 强制对话框内容刷新
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  );
+                },
               );
             },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(child: Text('加载模型失败: $error')),
           ),
-        );
-      },
-      loading: () => const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(child: Text('加载模型失败: $error')),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // 设置弹窗圆角为8
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('关闭'),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8), // 设置按钮圆角为8
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
