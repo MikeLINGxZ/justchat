@@ -426,48 +426,56 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                     _showModelsDialog(provider);
                   },
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      _showEditDialog(provider);
-                    } else if (value == 'delete') {
-                      _showDeleteDialog(provider);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.edit),
-                          const SizedBox(width: 8),
-                          Text(
-                            '编辑',
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getBodySize(ref),
+                SizedBox(
+                  height: 40,
+                  width: 40,
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_vert, size: 20),
+                    tooltip: '更多操作',
+                    offset: const Offset(0, 10),
+                    position: PopupMenuPosition.under,
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _showEditDialog(provider);
+                      } else if (value == 'delete') {
+                        _showDeleteDialog(provider);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              '编辑',
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getBodySize(ref),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.delete, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Text(
-                            '删除', 
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getBodySize(ref),
-                              color: Colors.red,
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.delete, color: Colors.red, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              '删除', 
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getBodySize(ref),
+                                color: Colors.red,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 // 启用按钮放在最右边，并调小
                 Transform.scale(
