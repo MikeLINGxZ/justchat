@@ -516,24 +516,47 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                             fontSize: FontSizeUtils.getBodySize(ref),
                           ),
                         ),
-                        subtitle: Text(
-                          '提供者: ${model.ownedBy}',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getSmallSize(ref),
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '提供者: ${model.ownedBy}',
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getSmallSize(ref),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (model.isCustom)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '自定义',
+                                  style: TextStyle(
+                                    fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 20),
-                              tooltip: '编辑模型',
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _showEditModelDialog(model);
-                              },
-                            ),
+                            // 只对自定义模型显示编辑按钮
+                            if (model.isCustom)
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 20),
+                                tooltip: '编辑模型',
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  _showEditModelDialog(model);
+                                },
+                              ),
                             Transform.scale(
                               scale: 0.8,
                               child: Switch(
@@ -571,10 +594,27 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             ),
             actions: [
               TextButton(
+                onPressed: () {
+                  // 不再关闭当前对话框，直接打开添加模型对话框
+                  _showAddModelDialog(provider.id);
+                },
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  '添加模型',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+              ),
+              TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: TextButton.styleFrom(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8), // 设置按钮圆角为8
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
@@ -593,6 +633,21 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
 
   // 显示编辑模型对话框
   void _showEditModelDialog(Model model) {
+    // 只允许编辑自定义模型
+    if (!model.isCustom) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '只有自定义模型可以编辑',
+            style: TextStyle(
+              fontSize: FontSizeUtils.getBodySize(ref),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    
     final TextEditingController modelIdController = TextEditingController(text: model.id);
     final TextEditingController ownedByController = TextEditingController(text: model.ownedBy);
     bool isEnabled = model.enabled;
@@ -855,6 +910,165 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
           fontSize: FontSizeUtils.getHeadingSize(ref),
           fontWeight: FontWeight.bold,
         ),
+      ),
+    );
+  }
+
+  // 显示添加模型对话框
+  void _showAddModelDialog(String providerId) {
+    final TextEditingController modelIdController = TextEditingController();
+    final TextEditingController ownedByController = TextEditingController();
+    bool isEnabled = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(  // 使用不同的context变量名
+        title: Text(
+          '添加自定义模型',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: modelIdController,
+                decoration: InputDecoration(
+                  labelText: '模型ID *',
+                  hintText: '例如: gpt-4-turbo',
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ownedByController,
+                decoration: InputDecoration(
+                  labelText: '提供者 *',
+                  hintText: '例如: OpenAI',
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    '启用状态',
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  const Spacer(),
+                  StatefulBuilder(
+                    builder: (BuildContext context, StateSetter setState) {
+                      return Switch(
+                        value: isEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            isEnabled = value;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),  // 使用dialogContext
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              // 验证输入
+              final modelId = modelIdController.text.trim();
+              final ownedBy = ownedByController.text.trim();
+              
+              if (modelId.isEmpty || ownedBy.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '请填写所有必填字段',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                  ),
+                );
+                return;
+              }
+              
+              final newModel = Model(
+                llmProviderId: providerId,
+                id: modelId,
+                ownedBy: ownedBy,
+                enabled: isEnabled,
+                isCustom: true,
+              );
+              
+              final success = await LlmStorage.addModel(newModel);
+              Navigator.of(dialogContext).pop();  // 使用dialogContext
+              
+              if (success) {
+                // 刷新模型列表
+                ref.refresh(modelsProvider(providerId));
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '添加模型失败，可能模型ID已存在',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '添加',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
