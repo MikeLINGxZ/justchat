@@ -583,22 +583,6 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                                         ),
                                       ),
                                     ),
-                                  // 只对自定义模型显示编辑按钮
-                                  if (model.isCustom)
-                                    SizedBox(
-                                      height: 40,
-                                      width: 40,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.edit, size: 20),
-                                        tooltip: '编辑模型',
-                                        padding: EdgeInsets.zero,
-                                        alignment: Alignment.center,
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                          _showEditModelDialog(model);
-                                        },
-                                      ),
-                                    ),
                                   Transform.scale(
                                     scale: 0.8,
                                     child: Switch(
@@ -613,6 +597,59 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                                       },
                                     ),
                                   ),
+                                  // 只对自定义模型显示更多操作按钮
+                                  if (model.isCustom)
+                                    SizedBox(
+                                      height: 40,
+                                      width: 40,
+                                      child: PopupMenuButton<String>(
+                                        padding: EdgeInsets.zero,
+                                        icon: const Icon(Icons.more_vert, size: 20),
+                                        tooltip: '更多操作',
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem<String>(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.edit, size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '编辑',
+                                                  style: TextStyle(
+                                                    fontSize: FontSizeUtils.getBodySize(ref),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem<String>(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.delete, color: Colors.red, size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '删除',
+                                                  style: TextStyle(
+                                                    fontSize: FontSizeUtils.getBodySize(ref),
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            Navigator.of(context).pop();
+                                            _showEditModelDialog(model);
+                                          } else if (value == 'delete') {
+                                            Navigator.of(context).pop();
+                                            _showDeleteModelDialog(model);
+                                          }
+                                        },
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -1165,5 +1202,103 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
       debugPrint('添加模型失败: $e');
       return false;
     }
+  }
+
+  // 显示删除模型对话框
+  void _showDeleteModelDialog(Model model) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          '删除模型',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '确定要删除模型 ${model.id} 吗？此操作不可恢复。',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getBodySize(ref),
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await LlmStorage.deleteModel(model.id);
+              Navigator.of(dialogContext).pop();
+              
+              if (success) {
+                // 刷新模型列表
+                ref.refresh(modelsProvider(model.llmProviderId));
+                
+                // 延迟一点时间后重新打开模型列表对话框以显示更新后的列表
+                Future.delayed(const Duration(milliseconds: 300), () async {
+                  // 获取提供商对象
+                  final provider = await LlmStorage.getProviderById(model.llmProviderId);
+                  if (provider != null && mounted) {
+                    _showModelsDialog(provider);
+                  }
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '模型已删除',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '删除模型失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              foregroundColor: Colors.red,
+            ),
+            child: Text(
+              '删除',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
