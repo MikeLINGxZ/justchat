@@ -46,7 +46,7 @@ class Model {
       CREATE TABLE ${tableName()} (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
-        provider_id TEXT NOT NULL,
+        llm_provider_id TEXT NOT NULL,
         object TEXT,
         owned_by TEXT,
         enabled INTEGER NOT NULL DEFAULT 1,

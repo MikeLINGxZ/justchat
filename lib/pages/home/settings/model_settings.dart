@@ -917,6 +917,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
   // 显示添加模型对话框
   void _showAddModelDialog(String providerId) {
     final TextEditingController modelIdController = TextEditingController();
+    final TextEditingController modelNameController = TextEditingController();
     final TextEditingController ownedByController = TextEditingController();
     bool isEnabled = true;
 
@@ -940,6 +941,20 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 decoration: InputDecoration(
                   labelText: '模型ID *',
                   hintText: '例如: gpt-4-turbo',
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: modelNameController,
+                decoration: InputDecoration(
+                  labelText: '模型名称 *',
+                  hintText: '例如: GPT-4 Turbo',
                   labelStyle: TextStyle(
                     fontSize: FontSizeUtils.getBodySize(ref),
                   ),
@@ -1011,9 +1026,10 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             onPressed: () async {
               // 验证输入
               final modelId = modelIdController.text.trim();
+              final modelName = modelNameController.text.trim();
               final ownedBy = ownedByController.text.trim();
               
-              if (modelId.isEmpty || ownedBy.isEmpty) {
+              if (modelId.isEmpty || modelName.isEmpty || ownedBy.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -1027,6 +1043,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 return;
               }
               
+              // 创建模型对象
               final newModel = Model(
                 llmProviderId: providerId,
                 id: modelId,
@@ -1035,7 +1052,8 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 isCustom: true,
               );
               
-              final success = await LlmStorage.addModel(newModel);
+              // 添加模型到数据库，使用自定义方法处理name字段
+              final success = await _addModelWithName(newModel, modelName);
               Navigator.of(dialogContext).pop();  // 使用dialogContext
               
               if (success) {
@@ -1071,5 +1089,22 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
         ],
       ),
     );
+  }
+
+  // 添加模型到数据库，处理name字段
+  Future<bool> _addModelWithName(Model model, String name) async {
+    try {
+      // 获取模型的Map数据
+      final modelMap = model.toMap();
+      // 添加name字段
+      modelMap['name'] = name;
+      // 注意：数据库中字段名是llm_provider_id，不是provider_id
+      
+      // 使用LlmStorage的原始SQL插入方法
+      return await LlmStorage.addModelWithCustomFields(modelMap);
+    } catch (e) {
+      debugPrint('添加模型失败: $e');
+      return false;
+    }
   }
 }

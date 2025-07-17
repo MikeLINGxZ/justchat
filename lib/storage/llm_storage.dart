@@ -151,4 +151,15 @@ class LlmStorage {
       return false;
     }
   }
+  
+  // 11. 添加带有自定义字段的模型
+  static Future<bool> addModelWithCustomFields(Map<String, dynamic> modelMap) async {
+    try {
+      final result = await SqliteUtil.instance.insert(Model.tableName(), modelMap);
+      return result > 0;
+    } catch (e) {
+      debugPrint('添加自定义模型失败: $e');
+      return false;
+    }
+  }
 }
