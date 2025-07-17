@@ -485,6 +485,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             ),
             content: SizedBox(
               width: 460, // 设置固定宽度，使对话框更窄
+              height: 400, // 设置固定高度，确保对话框不会过大
               child: ref.watch(modelsProvider(provider.id)).when(
                 data: (models) {
                   if (models.isEmpty) {
@@ -499,7 +500,8 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                   }
                   
                   return ListView.builder(
-                    shrinkWrap: true,
+                    shrinkWrap: false, // 不收缩，允许滚动
+                    physics: const AlwaysScrollableScrollPhysics(), // 始终可滚动
                     itemCount: models.length,
                     itemBuilder: (context, index) {
                       final model = models[index];
