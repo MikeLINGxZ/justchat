@@ -7,7 +7,10 @@ class LlmStorage {
   // 1. 获取所有llm_provider
   static Future<List<LlmProvider>> getAllProviders() async {
     try {
-      final results = await SqliteUtil.instance.query(LlmProvider.tableName());
+      final results = await SqliteUtil.instance.query(
+        LlmProvider.tableName(),
+        orderBy: 'seq_id ASC, name ASC', // 按seq_id升序排序，相同时按名称排序
+      );
       return results.map((map) => LlmProvider.fromMap(map)).toList();
     } catch (e) {
       debugPrint('获取所有LLM提供商失败: $e');
@@ -83,6 +86,7 @@ class LlmStorage {
         Model.tableName(),
         where: 'llm_provider_id = ?',
         whereArgs: [providerId],
+        orderBy: 'seq_id ASC, id ASC', // 按seq_id升序排序，相同时按id排序
       );
       return results.map((map) => Model.fromMap(map)).toList();
     } catch (e) {
@@ -160,6 +164,65 @@ class LlmStorage {
     } catch (e) {
       debugPrint('添加自定义模型失败: $e');
       return false;
+    }
+  }
+
+  // 12. 更新模型序号
+  static Future<bool> updateModelSeqId(String id, int seqId) async {
+    try {
+      final result = await SqliteUtil.instance.update(
+        Model.tableName(),
+        {'seq_id': seqId},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return result > 0;
+    } catch (e) {
+      debugPrint('更新模型序号失败: $e');
+      return false;
+    }
+  }
+
+  // 13. 更新提供商序号
+  static Future<bool> updateProviderSeqId(String id, int seqId) async {
+    try {
+      final result = await SqliteUtil.instance.update(
+        LlmProvider.tableName(),
+        {'seq_id': seqId},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return result > 0;
+    } catch (e) {
+      debugPrint('更新提供商序号失败: $e');
+      return false;
+    }
+  }
+
+  // 14. 获取最大模型序号
+  static Future<int> getMaxModelSeqId(String providerId) async {
+    try {
+      final result = await SqliteUtil.instance.rawQuery(
+        'SELECT MAX(seq_id) as max_seq_id FROM ${Model.tableName()} WHERE llm_provider_id = ?',
+        [providerId],
+      );
+      return result.first['max_seq_id'] as int? ?? 0;
+    } catch (e) {
+      debugPrint('获取最大模型序号失败: $e');
+      return 0;
+    }
+  }
+
+  // 15. 获取最大提供商序号
+  static Future<int> getMaxProviderSeqId() async {
+    try {
+      final result = await SqliteUtil.instance.rawQuery(
+        'SELECT MAX(seq_id) as max_seq_id FROM ${LlmProvider.tableName()}',
+      );
+      return result.first['max_seq_id'] as int? ?? 0;
+    } catch (e) {
+      debugPrint('获取最大提供商序号失败: $e');
+      return 0;
     }
   }
 }

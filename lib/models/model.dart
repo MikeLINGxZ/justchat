@@ -25,6 +25,10 @@ class Model {
   /// 是否为自添加
   @JsonKey(defaultValue: false)
   final bool isCustom;
+  
+  /// 序号，用于排序
+  @JsonKey(defaultValue: 0)
+  final int seqId;
 
   Model({
     required this.llmProviderId,
@@ -33,6 +37,7 @@ class Model {
     required this.ownedBy,
     this.enabled = true,
     this.isCustom = false,
+    this.seqId = 0,
   });
 
   /// 表名
@@ -51,6 +56,7 @@ class Model {
         owned_by TEXT,
         enabled INTEGER NOT NULL DEFAULT 1,
         is_custom INTEGER NOT NULL DEFAULT 1,
+        seq_id INTEGER NOT NULL DEFAULT 0,
         metadata TEXT
       )
     ''';
@@ -71,6 +77,7 @@ class Model {
       'owned_by': ownedBy,
       'enabled': enabled ? 1 : 0, // SQLite 中布尔用 0/1 表示
       'is_custom': isCustom ? 1 : 0,
+      'seq_id': seqId,
     };
   }
 
@@ -83,6 +90,7 @@ class Model {
       ownedBy: map['owned_by'],
       enabled: map['enabled'] == 1,
       isCustom: map['is_custom'] == 1,
+      seqId: map['seq_id'] ?? 0,
     );
   }
 }

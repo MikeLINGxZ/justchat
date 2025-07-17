@@ -14,7 +14,7 @@ import 'dart:io';
 /// 负责数据库的初始化、表创建和版本升级
 class SqliteDatabaseInitializer {
   static const String _databaseName = "lemon_tea.db";
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2; // 更新数据库版本
   
   Database? _database;
   final _initDBCompleter = Completer<Database>();
@@ -95,8 +95,52 @@ class SqliteDatabaseInitializer {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // 处理数据库版本升级
     debugPrint('升级数据库: $oldVersion -> $newVersion');
+    
     if (oldVersion < 2) {
-      // 未来版本2的升级代码
+      // 版本2: 添加seq_id字段到llm_providers和models表
+      try {
+        // 添加seq_id字段到llm_providers表
+        await db.execute('ALTER TABLE ${LlmProvider.tableName()} ADD COLUMN seq_id INTEGER NOT NULL DEFAULT 0');
+        debugPrint('llm_providers表添加seq_id字段成功');
+        
+        // 添加seq_id字段到models表
+        await db.execute('ALTER TABLE ${Model.tableName()} ADD COLUMN seq_id INTEGER NOT NULL DEFAULT 0');
+        debugPrint('models表添加seq_id字段成功');
+        
+        // 更新现有记录的seq_id
+        int providerSeqId = 1;
+        final providers = await db.query(LlmProvider.tableName());
+        for (var provider in providers) {
+          await db.update(
+            LlmProvider.tableName(),
+            {'seq_id': providerSeqId++},
+            where: 'id = ?',
+            whereArgs: [provider['id']],
+          );
+          
+          // 更新该提供商下的所有模型
+          int modelSeqId = 1;
+          final models = await db.query(
+            Model.tableName(),
+            where: 'llm_provider_id = ?',
+            whereArgs: [provider['id']],
+          );
+          
+          for (var model in models) {
+            await db.update(
+              Model.tableName(),
+              {'seq_id': modelSeqId++},
+              where: 'id = ?',
+              whereArgs: [model['id']],
+            );
+          }
+        }
+        
+        debugPrint('更新现有记录的seq_id成功');
+      } catch (e) {
+        debugPrint('添加seq_id字段失败: $e');
+        rethrow;
+      }
     }
   }
   

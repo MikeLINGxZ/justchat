@@ -23,6 +23,9 @@ class LlmProvider {
   /// 是否验证
   @JsonKey(defaultValue: false)
   final bool checked;
+  /// 序号，用于排序
+  @JsonKey(defaultValue: 0)
+  final int seqId;
 
   LlmProvider({
     required this.id,
@@ -33,6 +36,7 @@ class LlmProvider {
     this.description,
     this.enable = true,
     this.checked = false,
+    this.seqId = 0,
   });
 
   /// 表名
@@ -51,7 +55,8 @@ class LlmProvider {
       alias TEXT,
       description TEXT,
       enable INTEGER NOT NULL DEFAULT 1,
-      checked INTEGER NOT NULL DEFAULT 0
+      checked INTEGER NOT NULL DEFAULT 0,
+      seq_id INTEGER NOT NULL DEFAULT 0
     )
     ''';
   }
@@ -73,6 +78,7 @@ class LlmProvider {
       'description': description,
       'enable': enable ? 1 : 0,
       'checked': checked ? 1 : 0,
+      'seq_id': seqId,
     };
   }
 
@@ -87,6 +93,7 @@ class LlmProvider {
       description: map['description'],
       enable: map['enable'] == 1,
       checked: map['checked'] == 1,
+      seqId: map['seq_id'] ?? 0,
     );
   }
 }

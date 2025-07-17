@@ -1153,10 +1153,14 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
       final modelMap = model.toMap();
       // 添加name字段
       modelMap['name'] = name;
-      // 注意：数据库中字段名是llm_provider_id，不是provider_id
       
-      // 使用LlmStorage的原始SQL插入方法
-      return await LlmStorage.addModelWithCustomFields(modelMap);
+      // 获取当前最大seq_id并设置新模型的seq_id为最大值+1
+      final maxSeqId = await LlmStorage.getMaxModelSeqId(model.llmProviderId);
+      modelMap['seq_id'] = maxSeqId + 1;
+      
+      // 插入数据库
+      final result = await LlmStorage.addModelWithCustomFields(modelMap);
+      return result;
     } catch (e) {
       debugPrint('添加模型失败: $e');
       return false;
