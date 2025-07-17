@@ -294,13 +294,23 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             tabs: [
               Tab(
                 icon: const Icon(Icons.cloud),
-                text: '模型供应商',
+                child: Text(
+                  '模型供应商',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
                 iconMargin: const EdgeInsets.only(bottom: 4),
                 height: 64,
               ),
               Tab(
                 icon: const Icon(Icons.text_fields),
-                text: '提示词',
+                child: Text(
+                  '提示词',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
                 iconMargin: const EdgeInsets.only(bottom: 4),
                 height: 64,
               ),
