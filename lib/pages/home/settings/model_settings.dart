@@ -142,14 +142,28 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     )).then((success) {
       if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('更新模型状态失败，请稍后重试')),
+          SnackBar(
+            content: Text(
+              '更新模型状态失败，请稍后重试',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
         );
       }
     }).catchError((e) {
       debugPrint('更新模型出错: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('更新模型状态出错: $e')),
+          SnackBar(
+            content: Text(
+              '更新模型状态出错: $e',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
         );
       }
     });
@@ -174,14 +188,28 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     )).then((success) {
       if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('更新供应商状态失败，请稍后重试')),
+          SnackBar(
+            content: Text(
+              '更新供应商状态失败，请稍后重试',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
         );
       }
     }).catchError((e) {
       debugPrint('更新供应商出错: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('更新供应商状态出错: $e')),
+          SnackBar(
+            content: Text(
+              '更新供应商状态出错: $e',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
         );
       }
     });
@@ -283,7 +311,15 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('加载失败: $error')),
+      error: (error, stack) => Center(
+        child: Text(
+          '加载失败: $error',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getBodySize(ref),
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      ),
     );
   }
 
@@ -375,23 +411,34 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit),
-                          SizedBox(width: 8),
-                          Text('编辑'),
+                          const Icon(Icons.edit),
+                          const SizedBox(width: 8),
+                          Text(
+                            '编辑',
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getBodySize(ref),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('删除', style: TextStyle(color: Colors.red)),
+                          const Icon(Icons.delete, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Text(
+                            '删除', 
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getBodySize(ref),
+                              color: Colors.red,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -413,57 +460,269 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
 
   // 显示模型列表对话框
   void _showModelsDialog(LlmProvider provider) {
+    // 创建本地状态副本，用于UI显示
+    final Map<String, bool> localModelStates = {};
+    
+    // 预先加载模型状态
+    ref.read(modelsProvider(provider.id)).whenData((models) {
+      for (final model in models) {
+        final key = '${model.llmProviderId}_${model.id}';
+        localModelStates[key] = getModelEnabledState(model);
+      }
+    });
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, dialogSetState) {
+          return AlertDialog(
+            title: Text(
+              '${provider.name} 模型列表',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: SizedBox(
+              width: 460, // 设置固定宽度，使对话框更窄
+              child: ref.watch(modelsProvider(provider.id)).when(
+                data: (models) {
+                  if (models.isEmpty) {
+                    return Center(
+                      child: Text(
+                        '暂无模型',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: models.length,
+                    itemBuilder: (context, index) {
+                      final model = models[index];
+                      final key = '${model.llmProviderId}_${model.id}';
+                      // 确保本地状态存在
+                      if (!localModelStates.containsKey(key)) {
+                        localModelStates[key] = getModelEnabledState(model);
+                      }
+                      
+                      return ListTile(
+                        title: Text(
+                          model.id,
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
+                        subtitle: Text(
+                          '提供者: ${model.ownedBy}',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getSmallSize(ref),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 20),
+                              tooltip: '编辑模型',
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _showEditModelDialog(model);
+                              },
+                            ),
+                            Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: localModelStates[key]!,
+                                onChanged: (value) {
+                                  // 更新本地状态和UI
+                                  dialogSetState(() {
+                                    localModelStates[key] = value;
+                                  });
+                                  // 更新数据库
+                                  updateModelEnabledState(model, value);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(
+                  child: Text(
+                    '加载模型失败: $error',
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8), // 设置弹窗圆角为8
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), // 设置按钮圆角为8
+                  ),
+                ),
+                child: Text(
+                  '关闭',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  // 显示编辑模型对话框
+  void _showEditModelDialog(Model model) {
+    final TextEditingController modelIdController = TextEditingController(text: model.id);
+    final TextEditingController ownedByController = TextEditingController(text: model.ownedBy);
+    bool isEnabled = model.enabled;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${provider.name} 模型列表'),
+        title: Text(
+          '编辑模型',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: SizedBox(
-          width: 460, // 设置固定宽度，使对话框更窄
-          child: ref.watch(modelsProvider(provider.id)).when(
-            data: (models) {
-              if (models.isEmpty) {
-                return const Center(child: Text('暂无模型'));
-              }
-              
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: models.length,
-                itemBuilder: (context, index) {
-                  final model = models[index];
-                  final isEnabled = getModelEnabledState(model);
-                  
-                  return ListTile(
-                    title: Text(model.id),
-                    subtitle: Text('提供者: ${model.ownedBy}'),
-                    trailing: Transform.scale(
-                      scale: 0.8,
-                      child: Switch(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: modelIdController,
+                decoration: InputDecoration(
+                  labelText: '模型ID',
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ownedByController,
+                decoration: InputDecoration(
+                  labelText: '提供者',
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    '启用状态',
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  const Spacer(),
+                  StatefulBuilder(
+                    builder: (BuildContext context, StateSetter setState) {
+                      return Switch(
                         value: isEnabled,
                         onChanged: (value) {
-                          updateModelEnabledState(model, value);
-                          // 强制对话框内容刷新
-                          setState(() {});
+                          setState(() {
+                            isEnabled = value;
+                          });
                         },
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('加载模型失败: $error')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8), // 设置弹窗圆角为8
+          borderRadius: BorderRadius.circular(8),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('关闭'),
             style: TextButton.styleFrom(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8), // 设置按钮圆角为8
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final updatedModel = Model(
+                llmProviderId: model.llmProviderId,
+                id: modelIdController.text.trim(),
+                object: model.object,
+                ownedBy: ownedByController.text.trim(),
+                enabled: isEnabled,
+                isCustom: model.isCustom,
+              );
+              
+              final success = await LlmStorage.updateModel(updatedModel);
+              Navigator.of(context).pop();
+              
+              if (success) {
+                // 刷新模型列表
+                ref.refresh(modelsProvider(model.llmProviderId));
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '更新模型失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '保存',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
               ),
             ),
           ),
@@ -477,12 +736,36 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('编辑供应商'),
-        content: const Text('此功能尚未实现'),
+        title: Text(
+          '编辑供应商',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '此功能尚未实现',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getBodySize(ref),
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('关闭'),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '关闭',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
           ),
         ],
       ),
@@ -493,12 +776,36 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('删除供应商'),
-        content: Text('确定要删除 ${provider.name} 吗？此操作不可恢复。'),
+        title: Text(
+          '删除供应商',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          '确定要删除 ${provider.name} 吗？此操作不可恢复。',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getBodySize(ref),
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -510,12 +817,30 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               } else {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('删除失败')),
+                    SnackBar(
+                      content: Text(
+                        '删除失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
                   );
                 }
               }
             },
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '删除',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+                color: Colors.red,
+              ),
+            ),
           ),
         ],
       ),

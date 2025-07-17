@@ -22,12 +22,17 @@ class Model {
   @JsonKey(defaultValue: true)
   final bool enabled;
 
+  /// 是否为自添加
+  @JsonKey(defaultValue: false)
+  final bool isCustom;
+
   Model({
     required this.llmProviderId,
     required this.id,
     this.object = "model",
     required this.ownedBy,
     this.enabled = true,
+    this.isCustom = false,
   });
 
   /// 表名
@@ -45,6 +50,7 @@ class Model {
         object TEXT,
         owned_by TEXT,
         enabled INTEGER NOT NULL DEFAULT 1,
+        is_custom INTEGER NOT NULL DEFAULT 1,
         metadata TEXT
       )
     ''';
@@ -64,6 +70,7 @@ class Model {
       'object': object,
       'owned_by': ownedBy,
       'enabled': enabled ? 1 : 0, // SQLite 中布尔用 0/1 表示
+      'is_custom': isCustom ? 1 : 0,
     };
   }
 
@@ -75,6 +82,7 @@ class Model {
       object: map['object'] ?? "model",
       ownedBy: map['owned_by'],
       enabled: map['enabled'] == 1,
+      isCustom: map['is_custom'] == 1,
     );
   }
 }
