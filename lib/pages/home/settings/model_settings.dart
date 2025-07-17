@@ -516,63 +516,71 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                             fontSize: FontSizeUtils.getBodySize(ref),
                           ),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '提供者: ${model.ownedBy}',
-                              style: TextStyle(
-                                fontSize: FontSizeUtils.getSmallSize(ref),
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            if (model.isCustom)
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '自定义',
-                                  style: TextStyle(
-                                    fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        subtitle: Text(
+                          '提供者: ${model.ownedBy}',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getSmallSize(ref),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        trailing: SizedBox(
+                          height: 48, // 固定高度确保垂直居中
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center, // 水平居中
+                            crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中
+                            children: [
+                              // 自定义标签放在编辑按钮前面
+                              if (model.isCustom)
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '自定义',
+                                    style: TextStyle(
+                                      fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
                                   ),
                                 ),
+                              // 只对自定义模型显示编辑按钮
+                              if (model.isCustom)
+                                SizedBox(
+                                  height: 40,
+                                  width: 40,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.edit, size: 20),
+                                    tooltip: '编辑模型',
+                                    padding: EdgeInsets.zero,
+                                    alignment: Alignment.center,
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      _showEditModelDialog(model);
+                                    },
+                                  ),
+                                ),
+                              Transform.scale(
+                                scale: 0.8,
+                                child: Switch(
+                                  value: localModelStates[key]!,
+                                  onChanged: (value) {
+                                    // 更新本地状态和UI
+                                    dialogSetState(() {
+                                      localModelStates[key] = value;
+                                    });
+                                    // 更新数据库
+                                    updateModelEnabledState(model, value);
+                                  },
+                                ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // 只对自定义模型显示编辑按钮
-                            if (model.isCustom)
-                              IconButton(
-                                icon: const Icon(Icons.edit, size: 20),
-                                tooltip: '编辑模型',
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  _showEditModelDialog(model);
-                                },
-                              ),
-                            Transform.scale(
-                              scale: 0.8,
-                              child: Switch(
-                                value: localModelStates[key]!,
-                                onChanged: (value) {
-                                  // 更新本地状态和UI
-                                  dialogSetState(() {
-                                    localModelStates[key] = value;
-                                  });
-                                  // 更新数据库
-                                  updateModelEnabledState(model, value);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       );
                     },
                   );
@@ -1059,6 +1067,15 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               if (success) {
                 // 刷新模型列表
                 ref.refresh(modelsProvider(providerId));
+                
+                // 延迟一点时间后重新打开模型列表对话框以显示更新后的列表
+                Future.delayed(const Duration(milliseconds: 300), () async {
+                  // 获取提供商对象
+                  final provider = await LlmStorage.getProviderById(providerId);
+                  if (provider != null && mounted) {
+                    _showModelsDialog(provider);
+                  }
+                });
               } else {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
