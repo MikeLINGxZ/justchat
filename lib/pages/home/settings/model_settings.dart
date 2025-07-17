@@ -644,8 +644,8 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                                             Navigator.of(context).pop();
                                             _showEditModelDialog(model);
                                           } else if (value == 'delete') {
-                                            Navigator.of(context).pop();
-                                            _showDeleteModelDialog(model);
+                                            // 不关闭模型列表，直接显示删除确认对话框
+                                            _showDeleteModelDialog(model, context);
                                           }
                                         },
                                       ),
@@ -1205,9 +1205,9 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
   }
 
   // 显示删除模型对话框
-  void _showDeleteModelDialog(Model model) {
+  void _showDeleteModelDialog(Model model, BuildContext parentContext) {
     showDialog(
-      context: context,
+      context: parentContext, // 使用父对话框的context，而不是全局context
       builder: (dialogContext) => AlertDialog(
         title: Text(
           '删除模型',
@@ -1248,15 +1248,6 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               if (success) {
                 // 刷新模型列表
                 ref.refresh(modelsProvider(model.llmProviderId));
-                
-                // 延迟一点时间后重新打开模型列表对话框以显示更新后的列表
-                Future.delayed(const Duration(milliseconds: 300), () async {
-                  // 获取提供商对象
-                  final provider = await LlmStorage.getProviderById(model.llmProviderId);
-                  if (provider != null && mounted) {
-                    _showModelsDialog(provider);
-                  }
-                });
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
