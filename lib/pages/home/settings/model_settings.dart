@@ -615,62 +615,68 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                                       },
                                     ),
                                   ),
-                                  // 只对自定义模型显示更多操作按钮
-                                  if (model.isCustom)
-                                    SizedBox(
-                                      height: 40,
-                                      width: 40,
-                                      child: PopupMenuButton<String>(
-                                        padding: EdgeInsets.zero,
-                                        icon: const Icon(Icons.more_vert, size: 20),
-                                        tooltip: '更多操作',
-                                        // 调整菜单位置，使其不遮挡按钮但更贴合
-                                        offset: const Offset(0, 10),
-                                        position: PopupMenuPosition.under,
-                                        itemBuilder: (context) => [
-                                          PopupMenuItem<String>(
-                                            value: 'edit',
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.edit, size: 18),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '编辑',
-                                                  style: TextStyle(
-                                                    fontSize: FontSizeUtils.getBodySize(ref),
-                                                  ),
+                                  // 所有模型都显示更多操作按钮
+                                  SizedBox(
+                                    height: 40,
+                                    width: 40,
+                                    child: PopupMenuButton<String>(
+                                      padding: EdgeInsets.zero,
+                                      icon: const Icon(Icons.more_vert, size: 20),
+                                      tooltip: '更多操作',
+                                      offset: const Offset(0, 10),
+                                      position: PopupMenuPosition.under,
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem<String>(
+                                          value: 'edit',
+                                          enabled: model.isCustom,
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.edit, 
+                                                size: 18, 
+                                                color: model.isCustom 
+                                                    ? null 
+                                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '编辑',
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                                  color: model.isCustom 
+                                                      ? null 
+                                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
-                                          PopupMenuItem<String>(
-                                            value: 'delete',
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.delete, color: Colors.red, size: 18),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '删除',
-                                                  style: TextStyle(
-                                                    fontSize: FontSizeUtils.getBodySize(ref),
-                                                    color: Colors.red,
-                                                  ),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.delete, color: Colors.red, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '删除', 
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                                  color: Colors.red,
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                        onSelected: (value) {
-                                          if (value == 'edit') {
-                                            Navigator.of(context).pop();
-                                            _showEditModelDialog(model);
-                                          } else if (value == 'delete') {
-                                            // 不关闭模型列表，直接显示删除确认对话框
-                                            _showDeleteModelDialog(model, context);
-                                          }
-                                        },
-                                      ),
+                                        ),
+                                      ],
+                                      onSelected: (value) {
+                                        if (value == 'edit' && model.isCustom) {
+                                          Navigator.of(context).pop();
+                                          _showEditModelDialog(model);
+                                        } else if (value == 'delete') {
+                                          _showDeleteModelDialog(model, context);
+                                        }
+                                      },
                                     ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -737,20 +743,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
 
   // 显示编辑模型对话框
   void _showEditModelDialog(Model model) {
-    // 只允许编辑自定义模型
-    if (!model.isCustom) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '只有自定义模型可以编辑',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
-          ),
-        ),
-      );
-      return;
-    }
+    // 由于在UI中已经禁用了非自定义模型的编辑选项，这里不再需要额外检查
     
     final TextEditingController modelIdController = TextEditingController(text: model.id);
     final TextEditingController ownedByController = TextEditingController(text: model.ownedBy);
