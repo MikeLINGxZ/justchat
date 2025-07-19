@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/rpc/service.pb.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
+import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
@@ -15,72 +17,12 @@ final providersProvider = FutureProvider<List<LlmProvider>>((ref) async {
 final modelsProvider = FutureProvider.family<List<Model>, String>((ref, providerId) async {
   try {
     final models = await LlmStorage.getModelsByProviderId(providerId);
-    if (models.isNotEmpty) {
-      return models;
-    }
-    // 如果没有数据，返回模拟数据
-    return _createMockModels(providerId);
+    return models; // 直接返回数据库中的模型列表，可能为空
   } catch (e) {
-    // 出错时返回模拟数据
-    return _createMockModels(providerId);
+    debugPrint('获取模型列表出错: $e');
+    return []; // 出错时返回空列表
   }
 });
-
-// 创建模拟模型数据
-List<Model> _createMockModels(String providerId) {
-  if (providerId.contains('openai')) {
-    return [
-      Model(
-        llmProviderId: providerId,
-        id: 'gpt-4-turbo',
-        ownedBy: 'OpenAI',
-        enabled: true,
-      ),
-      Model(
-        llmProviderId: providerId,
-        id: 'gpt-4',
-        ownedBy: 'OpenAI',
-        enabled: true,
-      ),
-      Model(
-        llmProviderId: providerId,
-        id: 'gpt-3.5-turbo',
-        ownedBy: 'OpenAI',
-        enabled: true,
-      ),
-    ];
-  } else if (providerId.contains('anthropic')) {
-    return [
-      Model(
-        llmProviderId: providerId,
-        id: 'claude-3-opus',
-        ownedBy: 'Anthropic',
-        enabled: true,
-      ),
-      Model(
-        llmProviderId: providerId,
-        id: 'claude-3-sonnet',
-        ownedBy: 'Anthropic',
-        enabled: true,
-      ),
-      Model(
-        llmProviderId: providerId,
-        id: 'claude-3-haiku',
-        ownedBy: 'Anthropic',
-        enabled: true,
-      ),
-    ];
-  } else {
-    return [
-      Model(
-        llmProviderId: providerId,
-        id: 'default-model',
-        ownedBy: '未知提供商',
-        enabled: true,
-      ),
-    ];
-  }
-}
 
 class ModelSettings extends ConsumerStatefulWidget {
   const ModelSettings({super.key});
@@ -1464,14 +1406,23 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed:  () async {
+              debugPrint("xxx");
+              try {
+                final request = ModelsRequest(name: nameController.text,apiKey: apiKeyController.text,baseUrl: baseUrlController.text);
+                ModelsResponse response = await Client().stub!.models(request);
+                debugPrint(response.models.toString());
+              }catch (e) {
+                debugPrint(e.toString());
+              }
+            },
             style: TextButton.styleFrom(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: Text(
-              '取消',
+              '验证',
               style: TextStyle(
                 fontSize: FontSizeUtils.getBodySize(ref),
               ),
@@ -1485,7 +1436,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               final apiKey = apiKeyController.text.trim();
               final alias = aliasController.text.trim();
               final description = descriptionController.text.trim();
-              
+
               if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1499,7 +1450,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 );
                 return;
               }
-              
+
               // 创建供应商对象
               final newProvider = LlmProvider(
                 id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
@@ -1511,15 +1462,15 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 enable: isEnabled,
                 checked: false, // 新添加的供应商默认未验证
               );
-              
+
               // 添加供应商到数据库
               final success = await LlmStorage.addProvider(newProvider);
               Navigator.of(context).pop();
-              
+
               if (success) {
                 // 刷新供应商列表
                 ref.refresh(providersProvider);
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -1553,6 +1504,20 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             ),
             child: Text(
               '添加',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
               style: TextStyle(
                 fontSize: FontSizeUtils.getBodySize(ref),
               ),
