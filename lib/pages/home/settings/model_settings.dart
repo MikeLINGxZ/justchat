@@ -332,29 +332,57 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
   }
 
   Widget _buildProvidersTab() {
-    return ref.watch(providersProvider).when(
-      data: (providers) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, 
-            children: [
-              for (final provider in providers)
-                _buildProviderCard(provider),
-            ],
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text(
-          '加载失败: $error',
-          style: TextStyle(
-            fontSize: FontSizeUtils.getBodySize(ref),
-            color: Theme.of(context).colorScheme.error,
+    return Stack(
+      children: [
+        ref.watch(providersProvider).when(
+          data: (providers) {
+            return SingleChildScrollView(
+              // 添加顶部边距，为添加按钮留出空间
+              padding: const EdgeInsets.fromLTRB(24, 70, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, 
+                children: [
+                  for (final provider in providers)
+                    _buildProviderCard(provider),
+                ],
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Text(
+              '加载失败: $error',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
           ),
         ),
-      ),
+        // 添加按钮放在左上角
+        Align(
+          alignment: Alignment.topLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 16, left: 24),
+            child: ElevatedButton.icon(
+              onPressed: () => _showAddProviderDialog(),
+              icon: const Icon(Icons.add),
+              label: Text(
+                '添加供应商',
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                elevation: 0, // 去掉阴影
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1297,6 +1325,234 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
             ),
             child: Text(
               '删除',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // 显示添加供应商对话框
+  void _showAddProviderDialog() {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController baseUrlController = TextEditingController();
+    final TextEditingController apiKeyController = TextEditingController();
+    final TextEditingController aliasController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    bool isEnabled = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          '添加模型供应商',
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: '供应商名称 *',
+                    hintText: '例如: OpenAI',
+                    labelStyle: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: baseUrlController,
+                  decoration: InputDecoration(
+                    labelText: '基础URL *',
+                    hintText: '例如: https://api.openai.com/v1',
+                    labelStyle: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: apiKeyController,
+                  decoration: InputDecoration(
+                    labelText: 'API密钥 *',
+                    hintText: '您的API密钥',
+                    labelStyle: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: aliasController,
+                  decoration: InputDecoration(
+                    labelText: '别名',
+                    hintText: '可选',
+                    labelStyle: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: '描述',
+                    hintText: '可选',
+                    labelStyle: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      '启用状态',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    const Spacer(),
+                    StatefulBuilder(
+                      builder: (BuildContext context, StateSetter setState) {
+                        return Switch(
+                          value: isEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              isEnabled = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              // 验证输入
+              final name = nameController.text.trim();
+              final baseUrl = baseUrlController.text.trim();
+              final apiKey = apiKeyController.text.trim();
+              final alias = aliasController.text.trim();
+              final description = descriptionController.text.trim();
+              
+              if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '请填写所有必填字段',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                  ),
+                );
+                return;
+              }
+              
+              // 创建供应商对象
+              final newProvider = LlmProvider(
+                id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
+                name: name,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                alias: alias.isEmpty ? null : alias,
+                description: description.isEmpty ? null : description,
+                enable: isEnabled,
+                checked: false, // 新添加的供应商默认未验证
+              );
+              
+              // 添加供应商到数据库
+              final success = await LlmStorage.addProvider(newProvider);
+              Navigator.of(context).pop();
+              
+              if (success) {
+                // 刷新供应商列表
+                ref.refresh(providersProvider);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '供应商已添加',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '添加供应商失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '添加',
               style: TextStyle(
                 fontSize: FontSizeUtils.getBodySize(ref),
               ),
