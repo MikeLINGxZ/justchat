@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
-import 'package:lemon_tea/utils/llm/models/message.dart';
+import 'package:lemon_tea/utils/llm/models/message.dart' as llm_message;
+import 'package:lemon_tea/models/message.dart' as db_message;
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
@@ -141,6 +143,116 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
       _filteredConversations = conversations;
     } else {
       _filteredConversations = widget.conversationManager.searchConversations(_searchQuery);
+    }
+  }
+
+  /// 转换数据库消息为 LLM 消息
+  List<llm_message.Message> _convertDbMessagesToLlmMessages(List<db_message.Message> dbMessages) {
+    return dbMessages.map((dbMsg) => llm_message.Message(
+      role: dbMsg.role,
+      content: dbMsg.content,
+    )).toList();
+  }
+
+  /// 显示对话详情对话框
+  Future<void> _showConversationDetailDialog(Conversation conversation) async {
+    try {
+      final dbMessages = await ChatStorage.getMessagesByConversationId(conversation.id);
+      final llmMessages = _convertDbMessagesToLlmMessages(dbMessages);
+      
+      if (!mounted) return;
+      
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => _ConversationDetailDialog(
+          conversation: conversation,
+          messages: llmMessages,
+          onContinueConversation: () {
+            Navigator.of(context).pop();
+            widget.onConversationSelected(conversation);
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint('加载对话详情失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加载对话详情失败: $e')),
+        );
+      }
+    }
+  }
+
+  /// 显示更多操作菜单
+  Future<void> _showMoreActionsMenu(BuildContext context, Conversation conversation) async {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final String? action = await showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<String>(
+          value: 'view',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.visibility_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              const Text('查看'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'continue',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.chat_bubble_outline, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              const Text('继续对话'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: Colors.red[600]),
+              const SizedBox(width: 12),
+              Text('删除', style: TextStyle(color: Colors.red[600])),
+            ],
+          ),
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 8,
+    );
+
+    if (action != null) {
+      switch (action) {
+        case 'view':
+          _showConversationDetailDialog(conversation);
+          break;
+        case 'continue':
+          widget.onConversationSelected(conversation);
+          break;
+        case 'delete':
+          _handleDeleteConversation(conversation.id);
+          break;
+      }
     }
   }
 
@@ -354,7 +466,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => widget.onConversationSelected(conversation),
+              onTap: () => _showConversationDetailDialog(conversation),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -437,20 +549,22 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                       ),
                     ),
                     
-                    // 删除按钮
+                    // 更多操作按钮
                     const SizedBox(width: 8),
                     AnimatedOpacity(
                       opacity: isHovered ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 200),
-                      child: IconButton(
-                        onPressed: () => _handleDeleteConversation(conversation.id),
-                        icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                        tooltip: S.of(context).deleteConversation,
-                        style: IconButton.styleFrom(
-                          foregroundColor: Colors.red[600],
-                          backgroundColor: Colors.red[50],
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(32, 32),
+                      child: Builder(
+                        builder: (context) => IconButton(
+                          onPressed: () => _showMoreActionsMenu(context, conversation),
+                          icon: const Icon(Icons.more_vert_rounded, size: 18),
+                          tooltip: '更多操作',
+                          style: IconButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: const Size(32, 32),
+                          ),
                         ),
                       ),
                     ),
@@ -568,5 +682,179 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     } else {
       return '${date.month}-${date.day}';
     }
+  }
+}
+
+/// 对话详情对话框
+class _ConversationDetailDialog extends StatelessWidget {
+  final Conversation conversation;
+  final List<llm_message.Message> messages;
+  final VoidCallback onContinueConversation;
+
+  const _ConversationDetailDialog({
+    required this.conversation,
+    required this.messages,
+    required this.onContinueConversation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.chat_bubble_rounded,
+                    size: 24,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          conversation.title,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${messages.length} 条消息',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // 消息列表
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '暂无消息',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : MessageView(messages),
+              ),
+            ),
+            
+            // 底部按钮栏
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('关闭'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: onContinueConversation,
+                    icon: const Icon(Icons.chat_rounded, size: 18),
+                    label: const Text('继续对话'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      elevation: 2,
+                      shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 } 
