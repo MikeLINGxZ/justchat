@@ -225,4 +225,108 @@ class LlmStorage {
       return 0;
     }
   }
+
+  // ==================== 对话历史相关功能 ====================
+
+  // 16. 获取所有历史对话（按更新时间倒序）
+  static Future<List<Map<String, dynamic>>> getAllConversations() async {
+    try {
+      final results = await SqliteUtil.instance.query(
+        'conversations',
+        where: 'deleted = ?',
+        whereArgs: [0],
+        orderBy: 'updated_at DESC',
+      );
+      return results;
+    } catch (e) {
+      debugPrint('获取所有对话失败: $e');
+      return [];
+    }
+  }
+
+  // 17. 获取对话的消息数量
+  static Future<int> getConversationMessageCount(String conversationId) async {
+    try {
+      final result = await SqliteUtil.instance.count(
+        'messages',
+        where: 'conversation_id = ? AND deleted = ?',
+        whereArgs: [conversationId, 0],
+      );
+      return result;
+    } catch (e) {
+      debugPrint('获取对话消息数量失败: $e');
+      return 0;
+    }
+  }
+
+  // 18. 获取对话的最新消息预览
+  static Future<String> getConversationPreview(String conversationId) async {
+    try {
+      final results = await SqliteUtil.instance.query(
+        'messages',
+        where: 'conversation_id = ? AND deleted = ? AND role = ?',
+        whereArgs: [conversationId, 0, 'user'],
+        orderBy: 'created_at DESC',
+        limit: 1,
+      );
+      
+      if (results.isNotEmpty) {
+        final content = results.first['content'] as String;
+        // 限制预览长度，去除换行符
+        final preview = content.replaceAll('\n', ' ').trim();
+        if (preview.length > 50) {
+          return '${preview.substring(0, 50)}...';
+        }
+        return preview.isEmpty ? '暂无内容' : preview;
+      }
+      return '暂无消息';
+    } catch (e) {
+      debugPrint('获取对话预览失败: $e');
+      return '加载失败';
+    }
+  }
+
+  // 19. 获取对话详细信息（包含消息数量和预览）
+  static Future<Map<String, dynamic>?> getConversationWithDetails(String conversationId) async {
+    try {
+      final conversationResults = await SqliteUtil.instance.query(
+        'conversations',
+        where: 'id = ? AND deleted = ?',
+        whereArgs: [conversationId, 0],
+      );
+      
+      if (conversationResults.isEmpty) {
+        return null;
+      }
+      
+      final conversation = conversationResults.first;
+      final messageCount = await getConversationMessageCount(conversationId);
+      final preview = await getConversationPreview(conversationId);
+      
+      return {
+        ...conversation,
+        'message_count': messageCount,
+        'preview': preview,
+      };
+    } catch (e) {
+      debugPrint('获取对话详细信息失败: $e');
+      return null;
+    }
+  }
+
+  // 20. 搜索对话（根据标题）
+  static Future<List<Map<String, dynamic>>> searchConversations(String query) async {
+    try {
+      final results = await SqliteUtil.instance.query(
+        'conversations',
+        where: 'deleted = ? AND title LIKE ?',
+        whereArgs: [0, '%$query%'],
+        orderBy: 'updated_at DESC',
+      );
+      return results;
+    } catch (e) {
+      debugPrint('搜索对话失败: $e');
+      return [];
+    }
+  }
 }

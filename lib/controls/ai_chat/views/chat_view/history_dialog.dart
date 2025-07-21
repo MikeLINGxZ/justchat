@@ -3,6 +3,7 @@ import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
+import 'package:lemon_tea/storage/llm_storage.dart';
 
 class HistoryDialog extends StatefulWidget {
   final ConversationManager conversationManager;
@@ -23,11 +24,17 @@ class HistoryDialog extends StatefulWidget {
 }
 
 class _HistoryDialogState extends State<HistoryDialog> {
+  Map<String, int> _messageCountCache = {};
+  Map<String, String> _previewCache = {};
+  bool _isLoadingDetails = false;
+
   @override
   void initState() {
     super.initState();
     // 监听 ConversationManager 的变化
     widget.conversationManager.addListener(_onConversationManagerChanged);
+    // 异步加载对话详情
+    _loadConversationDetails();
   }
 
   @override
@@ -37,9 +44,64 @@ class _HistoryDialogState extends State<HistoryDialog> {
   }
 
   void _onConversationManagerChanged() {
-    // 当 ConversationManager 发生变化时，刷新UI
+    // 当 ConversationManager 发生变化时，刷新UI并重新加载详情
     if (mounted) {
       setState(() {});
+      _loadConversationDetails();
+    }
+  }
+
+  /// 加载所有对话的详情信息（消息数量和预览）
+  Future<void> _loadConversationDetails() async {
+    if (_isLoadingDetails) return;
+    
+    setState(() {
+      _isLoadingDetails = true;
+    });
+
+    try {
+      final conversations = widget.conversationManager.conversations;
+      
+      // 并行加载所有对话的详情
+      final futures = conversations.map((conversation) async {
+        try {
+          final messageCount = await LlmStorage.getConversationMessageCount(conversation.id);
+          final preview = await LlmStorage.getConversationPreview(conversation.id);
+          
+          return {
+            'id': conversation.id,
+            'messageCount': messageCount,
+            'preview': preview,
+          };
+        } catch (e) {
+          debugPrint('加载对话 ${conversation.id} 详情失败: $e');
+          return {
+            'id': conversation.id,
+            'messageCount': 0,
+            'preview': '加载失败',
+          };
+        }
+      });
+
+      final results = await Future.wait(futures);
+      
+      // 更新缓存
+      for (final result in results) {
+        _messageCountCache[result['id'] as String] = result['messageCount'] as int;
+        _previewCache[result['id'] as String] = result['preview'] as String;
+      }
+      
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('加载对话详情失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDetails = false;
+        });
+      }
     }
   }
 
@@ -66,6 +128,13 @@ class _HistoryDialogState extends State<HistoryDialog> {
                   ),
                 ),
                 const Spacer(),
+                if (_isLoadingDetails)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                const SizedBox(width: 8),
                 if (widget.onNewConversation != null)
                   TextButton.icon(
                     onPressed: () {
@@ -99,6 +168,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                       itemBuilder: (context, index) {
                         final conversation = conversations[index];
                         final isCurrent = currentConversation?.id == conversation.id;
+                        final messageCount = _messageCountCache[conversation.id] ?? 0;
+                        final preview = _previewCache[conversation.id] ?? '加载中...';
                         
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -118,7 +189,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '暂无预览', // 临时替代方案，因为新模型不直接包含消息
+                                  preview,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 12),
@@ -137,7 +208,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '0条消息', // 临时替代方案，因为新模型不直接包含消息
+                                  '${messageCount}条消息',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey,
@@ -145,7 +216,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  onPressed: () => widget.onConversationDeleted(conversation.id),
+                                  onPressed: () => _showDeleteConfirmDialog(context, conversation),
                                   icon: const Icon(Icons.delete_outline, size: 18),
                                   tooltip: '删除对话',
                                   style: IconButton.styleFrom(
@@ -170,8 +241,35 @@ class _HistoryDialogState extends State<HistoryDialog> {
     );
   }
 
-  // _getPreviewText 方法已删除，因为新的 Conversation 模型不直接包含消息
-  // 如果需要预览功能，可以通过 ChatStorage 异步获取消息
+  /// 显示删除确认对话框
+  void _showDeleteConfirmDialog(BuildContext context, Conversation conversation) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('确认删除'),
+          content: Text('确定要删除对话"${conversation.title}"吗？此操作不可恢复。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onConversationDeleted(conversation.id);
+                // 从缓存中移除
+                _messageCountCache.remove(conversation.id);
+                _previewCache.remove(conversation.id);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

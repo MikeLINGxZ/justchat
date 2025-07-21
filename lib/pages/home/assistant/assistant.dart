@@ -494,6 +494,26 @@ def hello():
         });
       }
       
+      // 确保AI回复消息被保存：如果有内容但还没保存，就保存它
+      if (!isTemporaryConversation && fullResponse.isNotEmpty && aiMessageId == null && !hasError) {
+        try {
+          final savedAiMessage = await ChatStorage.addMessage(
+            conversationId: _currentConversation!.id,
+            role: 'assistant',
+            content: fullResponse,
+          );
+          
+          if (savedAiMessage != null) {
+            aiMessageId = savedAiMessage.id;
+            debugPrint('AI回复补充保存成功（流式中断情况）: ${savedAiMessage.id}');
+          } else {
+            debugPrint('警告：AI回复补充保存失败');
+          }
+        } catch (e) {
+          debugPrint('补充保存AI回复时发生异常: $e');
+        }
+      }
+      
       // 确保在异常情况下，如果AI消息仍然为空，则移除它
       if (mounted && _historyMessages.isNotEmpty && _historyMessages.last.content.isEmpty && !hasError) {
         setState(() {
@@ -505,6 +525,8 @@ def hello():
       // 如果成功保存了消息，记录一下
       if (aiMessageId != null) {
         debugPrint('对话记录保存完成 - 用户消息和AI回复(ID: $aiMessageId)');
+      } else if (fullResponse.isNotEmpty && !isTemporaryConversation) {
+        debugPrint('警告：AI回复有内容但未能保存到数据库');
       }
     }
   }
