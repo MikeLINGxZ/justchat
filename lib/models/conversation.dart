@@ -91,4 +91,25 @@ class Conversation {
       defaultModelId: map['default_model_id'],
     );
   }
+
+  /// 创建当前对象的副本，可选择性地替换指定字段
+  Conversation copyWith({
+    String? id,
+    String? title,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    String? defaultProviderId,
+    String? defaultModelId,
+  }) {
+    return Conversation(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
+      defaultProviderId: defaultProviderId ?? this.defaultProviderId,
+      defaultModelId: defaultModelId ?? this.defaultModelId,
+    );
+  }
 }

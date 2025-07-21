@@ -32,6 +32,8 @@ class _AssistantPage extends State<AssistantPage> {
   String _currentTitle = 'AI 助手';
   Conversation? _currentConversation;
   final Client _grpcClient = Client();
+  String? _selectedProviderId;
+  String? _selectedModelId;
 
   @override
   void initState() {
@@ -183,6 +185,8 @@ def hello():
     setState(() {
       _currentTitle = conversation.title;
       _historyMessages = messages;
+      _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
+      _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
     });
   }
 
@@ -241,6 +245,8 @@ def hello():
           role: MessageRole.assistant,
           content: welcomeContent,
         )];
+        _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
+        _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
       });
     }
   }
@@ -366,8 +372,8 @@ def hello():
   Future<void> _handleNewConversation() async {
     final conversation = await ChatStorage.createConversation(
       title: '新对话',
-      defaultProviderId: 'deepseek',
-      defaultModelId: 'deepseek-chat',
+      defaultProviderId: _selectedProviderId ?? 'deepseek',
+      defaultModelId: _selectedModelId ?? 'deepseek-chat',
     );
     
     if (conversation != null) {
@@ -375,7 +381,37 @@ def hello():
         _currentConversation = conversation;
         _currentTitle = conversation.title;
         _historyMessages = [];
+        _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
+        _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
       });
+    }
+  }
+
+  Future<void> _handleModelSelected(String providerId, String modelId) async {
+    setState(() {
+      _selectedProviderId = providerId;
+      _selectedModelId = modelId;
+    });
+
+    // 如果有当前对话，更新对话的默认模型配置
+    if (_currentConversation != null) {
+      try {
+        await ChatStorage.updateConversationModel(
+          _currentConversation!.id,
+          providerId,
+          modelId,
+        );
+        
+        // 更新本地对话对象
+        _currentConversation = _currentConversation!.copyWith(
+          defaultProviderId: providerId,
+          defaultModelId: modelId,
+        );
+        
+        debugPrint('已更新对话模型配置: providerId=$providerId, modelId=$modelId');
+      } catch (e) {
+        debugPrint('更新对话模型配置失败: $e');
+      }
     }
   }
 
@@ -397,6 +433,9 @@ def hello():
               onSend: _handleSendMessage,
               onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
               currentTitle: _currentTitle,
+              selectedProviderId: _selectedProviderId,
+              selectedModelId: _selectedModelId,
+              onModelSelected: _handleModelSelected,
             ),
       rightChild: Text("data"),
       leftWidth: 500.0,

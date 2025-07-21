@@ -113,6 +113,26 @@ class ChatStorage {
     }
   }
 
+  /// 更新对话的默认模型配置
+  static Future<bool> updateConversationModel(String conversationId, String providerId, String modelId) async {
+    try {
+      final result = await SqliteUtil.instance.update(
+        Conversation.tableName(),
+        {
+          'default_provider_id': providerId,
+          'default_model_id': modelId,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [conversationId],
+      );
+      return result > 0;
+    } catch (e) {
+      debugPrint('更新对话模型配置失败: $e');
+      return false;
+    }
+  }
+
   /// 软删除对话
   static Future<bool> deleteConversation(String id) async {
     try {

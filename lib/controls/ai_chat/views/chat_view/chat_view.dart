@@ -13,6 +13,9 @@ class ChatView extends StatefulWidget {
     required this.historyMessages,
     this.onNewConversation,
     this.currentTitle = '',
+    this.selectedProviderId,
+    this.selectedModelId,
+    this.onModelSelected,
   });
 
   final Function(String)? onFileSelected;
@@ -20,6 +23,9 @@ class ChatView extends StatefulWidget {
   final List<Message> historyMessages;
   final VoidCallback? onNewConversation;
   final String currentTitle;
+  final String? selectedProviderId;
+  final String? selectedModelId;
+  final Function(String providerId, String modelId)? onModelSelected;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -47,9 +53,17 @@ class _ChatView extends State<ChatView> {
           Expanded(child: MessageView(widget.historyMessages)),
 
           // 底部部件
-          SizedBox(child: InputView(onFileSelected: widget.onFileSelected, onSend: (msg) {
-            widget.onSend?.call(msg);
-          })),
+          SizedBox(
+            child: InputView(
+              onFileSelected: widget.onFileSelected,
+              onSend: (msg) {
+                widget.onSend?.call(msg);
+              },
+              selectedProviderId: widget.selectedProviderId,
+              selectedModelId: widget.selectedModelId,
+              onModelSelected: widget.onModelSelected,
+            ),
+          ),
         ],
       ),
     );

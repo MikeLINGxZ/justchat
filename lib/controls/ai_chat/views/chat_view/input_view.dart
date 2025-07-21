@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lemon_tea/controls/input.dart';
 import 'package:lemon_tea/generated/l10n.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/model_selector.dart';
 
 class InputView extends StatefulWidget {
   final Function(String)? onFileSelected;
   final Function(String)? onSend;
+  final String? selectedProviderId;
+  final String? selectedModelId;
+  final Function(String providerId, String modelId)? onModelSelected;
 
   const InputView({
     super.key,
     this.onFileSelected,
     this.onSend,
+    this.selectedProviderId,
+    this.selectedModelId,
+    this.onModelSelected,
   });
 
   @override
@@ -138,9 +145,19 @@ class _InputView extends State<InputView> {
                   );
                 },
               ),
-              _buildIconButton(
-                icon: Icons.arrow_forward,
-                onTap: _handleSend,
+              Row(
+                children: [
+                  ModelSelector(
+                    selectedProviderId: widget.selectedProviderId,
+                    selectedModelId: widget.selectedModelId,
+                    onModelSelected: widget.onModelSelected,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildIconButton(
+                    icon: Icons.arrow_forward,
+                    onTap: _handleSend,
+                  ),
+                ],
               ),
             ],
           ),
