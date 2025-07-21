@@ -70,7 +70,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
               children: [
                 // 分组：基本信息
                 Container(
-                  margin: const EdgeInsets.only(bottom: 24),
+                  margin: const EdgeInsets.only(bottom: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -82,9 +82,9 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
@@ -121,7 +121,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 
                 // 分组：连接信息
                 Container(
-                  margin: const EdgeInsets.only(bottom: 24),
+                  margin: const EdgeInsets.only(bottom: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -133,9 +133,9 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
@@ -163,7 +163,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                 fontSize: FontSizeUtils.getBodySize(ref),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             TextField(
                               controller: apiKeyController,
                               decoration: InputDecoration(
@@ -197,7 +197,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 
                 // 分组：附加信息
                 Container(
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -209,9 +209,9 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
@@ -238,9 +238,9 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                               style: TextStyle(
                                 fontSize: FontSizeUtils.getBodySize(ref),
                               ),
-                              maxLines: 3,
+                              maxLines: 1,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             SwitchListTile(
                               title: Text(
                                 '启用此供应商',
@@ -279,8 +279,8 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 // 验证结果显示区域
                 if (verificationSuccess || verificationFailed || (!verificationSuccess && !verificationFailed))
                   Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(top: 6),
                     decoration: BoxDecoration(
                       color: verificationSuccess 
                           ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)
@@ -389,90 +389,218 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                             ),
                           ),
                         ),
-                        if (verificationSuccess && showModelList)
+                                                if (verificationSuccess && showModelList)
                           Container(
                             margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                                color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
                                 width: 1,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  availableModels.isNotEmpty 
-                                    ? '可用模型列表 (${availableModels.length}个)'
-                                    : '模型列表',
-                                  style: TextStyle(
-                                    fontSize: FontSizeUtils.getSmallSize(ref),
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
+                                // 标题栏
+                                Container(
+                                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(12),
+                                      topRight: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.psychology,
+                                        size: 18,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        availableModels.isNotEmpty 
+                                          ? '可用模型列表 (${availableModels.length}个)'
+                                          : '模型列表',
+                                        style: TextStyle(
+                                          fontSize: FontSizeUtils.getBodySize(ref),
+                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      if (availableModels.isNotEmpty) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '${availableModels.where((m) => !m.isCustom).length}个官方',
+                                            style: TextStyle(
+                                              fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                              color: Theme.of(context).colorScheme.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        if (availableModels.any((m) => m.isCustom)) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '${availableModels.where((m) => m.isCustom).length}个自定义',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                                color: Theme.of(context).colorScheme.secondary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                // 模型列表内容
                                 Container(
-                                  constraints: const BoxConstraints(maxHeight: 150),
+                                  constraints: const BoxConstraints(maxHeight: 300),
                                   child: availableModels.isNotEmpty
-                                    ? SingleChildScrollView(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                children: availableModels.map((model) => Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 2),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.circle,
-                                              size: 6,
-                                              color: model.isCustom 
-                                                  ? Theme.of(context).colorScheme.secondary
-                                                  : Theme.of(context).colorScheme.primary,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: RichText(
-                                                text: TextSpan(
-                                                  children: [
-                                                    TextSpan(
-                                                      text: model.id,
-                                                      style: TextStyle(
-                                                        fontSize: FontSizeUtils.getSmallSize(ref),
-                                                        color: Theme.of(context).colorScheme.onSurface,
-                                                      ),
+                                    ? ScrollConfiguration(
+                                        behavior: ScrollConfiguration.of(context).copyWith(
+                                          scrollbars: false,
+                                          overscroll: false,
+                                          physics: const ClampingScrollPhysics(),
+                                        ),
+                                        child: ListView.separated(
+                                          padding: const EdgeInsets.all(10),
+                                          itemCount: availableModels.length,
+                                          separatorBuilder: (context, index) => const SizedBox(height: 6),
+                                          physics: const ClampingScrollPhysics(),
+                                          itemBuilder: (context, index) {
+                                            final model = availableModels[index];
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: model.isCustom 
+                                                    ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3)
+                                                    : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: model.isCustom 
+                                                      ? Theme.of(context).colorScheme.secondary.withOpacity(0.2)
+                                                      : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 20,
+                                                    height: 20,
+                                                    decoration: BoxDecoration(
+                                                      color: model.isCustom 
+                                                          ? Theme.of(context).colorScheme.secondary
+                                                          : Theme.of(context).colorScheme.primary,
+                                                      borderRadius: BorderRadius.circular(10),
                                                     ),
-                                                    if (model.isCustom)
-                                                      TextSpan(
-                                                        text: ' 自定义',
+                                                    child: Icon(
+                                                      model.isCustom ? Icons.person : Icons.smart_toy,
+                                                      size: 12,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          model.id,
+                                                          style: TextStyle(
+                                                            fontSize: FontSizeUtils.getSmallSize(ref),
+                                                            fontWeight: FontWeight.w500,
+                                                            color: Theme.of(context).colorScheme.onSurface,
+                                                          ),
+                                                        ),
+                                                        if (model.ownedBy.isNotEmpty && model.ownedBy != 'unknown') ...[
+                                                          const SizedBox(height: 2),
+                                                          Text(
+                                                            'by ${model.ownedBy}',
+                                                            style: TextStyle(
+                                                              fontSize: FontSizeUtils.getSmallSize(ref) - 2,
+                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  if (model.isCustom)
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                      child: Text(
+                                                        '自定义',
                                                         style: TextStyle(
-                                                          fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                                          fontSize: FontSizeUtils.getSmallSize(ref) - 2,
                                                           color: Theme.of(context).colorScheme.secondary,
                                                           fontWeight: FontWeight.bold,
                                                         ),
                                                       ),
-                                                  ],
-                                                ),
+                                                    ),
+                                                ],
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      )).toList(),
+                                            );
+                                          },
                                         ),
                                       )
-                                    : Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            '暂无模型数据，请点击"重新验证"获取模型列表',
-                                            style: TextStyle(
-                                              fontSize: FontSizeUtils.getSmallSize(ref),
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    : Container(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.psychology_outlined,
+                                              size: 48,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                                             ),
-                                            textAlign: TextAlign.center,
-                                          ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              '暂无模型数据',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getBodySize(ref),
+                                                fontWeight: FontWeight.w500,
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '请点击"重新验证"获取模型列表',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getSmallSize(ref),
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                 ),
