@@ -85,44 +85,54 @@ class _AssistantPage extends State<AssistantPage> {
       }
     } catch (e) {
       debugPrint('Failed to initialize conversation: $e');
-      // 如果初始化失败，创建一个本地欢迎消息
-      _historyMessages = [
-        Message(
-          role: MessageRole.assistant,
-          content: """# 欢迎使用 Markdown
+      
+      // 如果初始化失败，尝试创建一个离线模式的对话记录
+      try {
+        debugPrint('尝试创建离线模式的对话记录...');
+        await _createWelcomeConversation();
+        debugPrint('离线模式对话创建成功');
+      } catch (offlineError) {
+        debugPrint('离线模式对话创建也失败: $offlineError');
+        
+        // 最后的备选方案：创建一个临时的本地对话记录和消息
+        // 注意：这种情况下消息不会被保存到数据库，但至少应用不会崩溃
+        debugPrint('使用临时本地模式');
+        
+        _currentConversation = Conversation(
+          id: 'temp-conversation-${DateTime.now().millisecondsSinceEpoch}',
+          title: 'AI 助手 (离线模式)',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          defaultProviderId: 'deepseek',
+          defaultModelId: 'deepseek-chat',
+        );
+        
+        final welcomeContent = """# AI 助手 (离线模式)
 
-这是一个简单的 Markdown 示例文档，展示常用语法：
+数据库连接失败，当前运行在离线模式下。
+您的对话记录可能无法正常保存，请检查应用权限或重启应用。
 
-## 标题层级
-二级标题 (`##`) 到六级标题 (`######`)
+## 可用功能
+- 基础聊天功能
+- Markdown 显示
 
-## 文字样式
-- **加粗文本** (`**加粗**`)
-- *斜体文本* (`*斜体*`)
-- ~~删除线~~ (`~~删除线~~`)
-- `行内代码` (`` `行内代码` ``)
+## 注意事项
+- 消息可能无法保存
+- 重启应用后对话记录可能丢失""";
 
-## 列表
-### 无序列表
-- 项目一
-- 项目二
-  - 子项目 (缩进两个空格)
-
-### 有序列表
-1. 第一项
-2. 第二项
-   1. 子项 (缩进三个空格)
-
-## 链接与图片
-[百度链接](https://www.baidu.com)  
-![示例图片](https://via.placeholder.com/150 "悬浮提示")
-
-## 代码块
-```python
-def hello():
-    print("代码高亮示例")""",
-        ),
-      ];
+        _historyMessages = [
+          Message(
+            role: MessageRole.assistant,
+            content: welcomeContent,
+          ),
+        ];
+        
+        setState(() {
+          _currentTitle = _currentConversation!.title;
+          _selectedProviderId = 'deepseek';
+          _selectedModelId = 'deepseek-chat';
+        });
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -192,16 +202,18 @@ def hello():
   }
 
   Future<void> _createWelcomeConversation() async {
-    final conversation = await ChatStorage.createConversation(
-      title: '欢迎对话',
-      defaultProviderId: 'deepseek',
-      defaultModelId: 'deepseek-chat',
-    );
-    
-    if (conversation != null) {
-      _currentConversation = conversation;
+    try {
+      final conversation = await ChatStorage.createConversation(
+        title: '欢迎对话',
+        defaultProviderId: 'deepseek',
+        defaultModelId: 'deepseek-chat',
+      );
       
-      const welcomeContent = """# 欢迎使用 Markdown
+      if (conversation != null) {
+        _currentConversation = conversation;
+        debugPrint('欢迎对话创建成功: ${conversation.id}');
+        
+        const welcomeContent = """# 欢迎使用 Markdown
 
 这是一个简单的 Markdown 示例文档，展示常用语法：
 
@@ -233,27 +245,47 @@ def hello():
 ```python
 def hello():
     print("代码高亮示例")""";
-      
-      await ChatStorage.addMessage(
-        conversationId: conversation.id,
-        role: 'assistant',
-        content: welcomeContent,
-      );
-      
-      setState(() {
-        _currentTitle = conversation.title;
-        _historyMessages = [Message(
-          role: MessageRole.assistant,
+        
+        // 保存欢迎消息到数据库，并检查结果
+        final savedWelcomeMessage = await ChatStorage.addMessage(
+          conversationId: conversation.id,
+          role: 'assistant',
           content: welcomeContent,
-        )];
-        _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
-        _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
-      });
+        );
+        
+        if (savedWelcomeMessage != null) {
+          debugPrint('欢迎消息保存成功: ${savedWelcomeMessage.id}');
+        } else {
+          debugPrint('警告：欢迎消息保存失败');
+        }
+        
+        setState(() {
+          _currentTitle = conversation.title;
+          _historyMessages = [Message(
+            role: MessageRole.assistant,
+            content: welcomeContent,
+          )];
+          _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
+          _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
+        });
+      } else {
+        debugPrint('错误：创建欢迎对话失败');
+        throw Exception('创建欢迎对话失败');
+      }
+    } catch (e) {
+      debugPrint('创建欢迎对话时发生异常: $e');
+      rethrow; // 重新抛出异常，让调用方处理
     }
   }
 
   Future<void> _handleSendMessage(String message) async {
     if (message.trim().isEmpty || _currentConversation == null) return;
+
+    // 检查是否为临时对话模式
+    final isTemporaryConversation = _currentConversation!.id.startsWith('temp-');
+    if (isTemporaryConversation) {
+      debugPrint('警告：当前为临时对话模式，消息将不会被保存到数据库');
+    }
 
     // 添加用户消息到界面
     final userMessage = Message(role: MessageRole.user, content: message);
@@ -261,21 +293,57 @@ def hello():
       _historyMessages.add(userMessage);
     });
 
-    // 保存用户消息到数据库
-    await ChatStorage.addMessage(
-      conversationId: _currentConversation!.id,
-      role: 'user',
-      content: message,
-    );
+    // 保存用户消息到数据库，增加错误处理
+    if (!isTemporaryConversation) {
+      try {
+        final savedUserMessage = await ChatStorage.addMessage(
+          conversationId: _currentConversation!.id,
+          role: 'user',
+          content: message,
+        );
+        
+        if (savedUserMessage == null) {
+          debugPrint('警告：用户消息保存失败');
+          // 可以在这里添加UI提示，比如显示一个警告图标
+        } else {
+          debugPrint('用户消息保存成功: ${savedUserMessage.id}');
+        }
+      } catch (e) {
+        debugPrint('保存用户消息时发生异常: $e');
+        // 保存失败不应该阻止继续发送请求
+      }
+    } else {
+      debugPrint('跳过用户消息保存（临时对话模式）');
+    }
 
     // 如果是第一条用户消息，更新对话标题
-    final messageCount = await ChatStorage.getMessageCountByConversationId(_currentConversation!.id);
-    if (messageCount == 2) { // 1条欢迎消息 + 1条用户消息
-      final title = _generateTitleFromMessage(message);
-      await ChatStorage.updateConversationTitle(_currentConversation!.id, title);
-      setState(() {
-        _currentTitle = title;
-      });
+    if (!isTemporaryConversation) {
+      try {
+        final messageCount = await ChatStorage.getMessageCountByConversationId(_currentConversation!.id);
+        if (messageCount >= 2) { // 可能包含欢迎消息 + 用户消息
+          final title = _generateTitleFromMessage(message);
+          final titleUpdated = await ChatStorage.updateConversationTitle(_currentConversation!.id, title);
+          if (titleUpdated) {
+            setState(() {
+              _currentTitle = title;
+            });
+            debugPrint('对话标题更新成功: $title');
+          } else {
+            debugPrint('对话标题更新失败');
+          }
+        }
+      } catch (e) {
+        debugPrint('更新对话标题时发生异常: $e');
+      }
+    } else {
+      // 临时对话模式下也可以更新标题，只是不保存到数据库
+      if (_historyMessages.length == 1) { // 只有欢迎消息时
+        final title = _generateTitleFromMessage(message);
+        setState(() {
+          _currentTitle = title;
+        });
+        debugPrint('更新临时对话标题: $title');
+      }
     }
 
     // 立即添加一个空的AI消息用于流式显示
@@ -290,6 +358,7 @@ def hello():
 
     String fullResponse = '';
     bool hasError = false;
+    String? aiMessageId; // 用于记录AI消息的ID
 
     try {
       // 检查gRPC客户端
@@ -313,7 +382,7 @@ def hello():
       }).toList();
       
       // 创建聊天请求
-      final providerId = _currentConversation!.defaultProviderId ?? '3c64dc4d-ffa7-408f-be2b-91f1bb150e82';
+      final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
       final modelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
       
       debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');
@@ -356,11 +425,28 @@ def hello():
         
         if (response.isDone) {
           // 聊天完成，保存AI回复到数据库
-          await ChatStorage.addMessage(
-            conversationId: _currentConversation!.id,
-            role: 'assistant',
-            content: fullResponse,
-          );
+          if (!isTemporaryConversation) {
+            try {
+              final savedAiMessage = await ChatStorage.addMessage(
+                conversationId: _currentConversation!.id,
+                role: 'assistant',
+                content: fullResponse,
+              );
+              
+              if (savedAiMessage != null) {
+                aiMessageId = savedAiMessage.id;
+                debugPrint('AI回复保存成功: ${savedAiMessage.id}');
+              } else {
+                debugPrint('警告：AI回复保存失败');
+                // 可以在这里添加UI提示
+              }
+            } catch (e) {
+              debugPrint('保存AI回复时发生异常: $e');
+              // 保存失败不应该影响显示
+            }
+          } else {
+            debugPrint('跳过AI回复保存（临时对话模式）');
+          }
           break;
         }
       }
@@ -381,14 +467,24 @@ def hello():
       }
       
       // 保存错误消息到数据库
-      try {
-        await ChatStorage.addMessage(
-          conversationId: _currentConversation!.id,
-          role: 'assistant',
-          content: errorContent,
-        );
-      } catch (dbError) {
-        debugPrint('保存错误消息到数据库失败: $dbError');
+      if (!isTemporaryConversation) {
+        try {
+          final savedErrorMessage = await ChatStorage.addMessage(
+            conversationId: _currentConversation!.id,
+            role: 'assistant',
+            content: errorContent,
+          );
+          
+          if (savedErrorMessage != null) {
+            debugPrint('错误消息保存成功: ${savedErrorMessage.id}');
+          } else {
+            debugPrint('警告：错误消息保存失败');
+          }
+        } catch (dbError) {
+          debugPrint('保存错误消息到数据库失败: $dbError');
+        }
+      } else {
+        debugPrint('跳过错误消息保存（临时对话模式）');
       }
     } finally {
       // 结束流式显示
@@ -403,6 +499,12 @@ def hello():
         setState(() {
           _historyMessages.removeLast();
         });
+        debugPrint('移除了空的AI消息');
+      }
+      
+      // 如果成功保存了消息，记录一下
+      if (aiMessageId != null) {
+        debugPrint('对话记录保存完成 - 用户消息和AI回复(ID: $aiMessageId)');
       }
     }
   }
