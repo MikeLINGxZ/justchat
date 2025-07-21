@@ -21,9 +21,24 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
   bool verificationSuccess = provider?.checked ?? false;
   bool verificationFailed = false;
   String verificationMessage = provider?.checked ?? false ? '已验证' : '待验证';
-  List<String> availableModels = [];
+  List<Model> availableModels = [];
   bool showModelList = false;
   bool isLoadingModels = false;
+
+  // 如果是编辑模式且已验证，初始化时预加载模型列表
+  if (isEditMode && provider != null && verificationSuccess) {
+    LlmStorage.getModelsByProviderId(provider.id).then((models) {
+      models.sort((a, b) {
+        if (a.isCustom == b.isCustom) {
+          return a.id.compareTo(b.id);
+        }
+        return a.isCustom ? 1 : -1;
+      });
+      availableModels = models;
+    }).catchError((e) {
+      debugPrint('预加载模型列表失败: $e');
+    });
+  }
 
   showDialog(
     context: context,
@@ -287,35 +302,37 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                         InkWell(
                           onTap: verificationSuccess ? () async {
                             if (availableModels.isEmpty && !isLoadingModels) {
-                              // 如果模型列表为空，尝试获取模型列表
-                              final name = nameController.text.trim();
-                              final baseUrl = baseUrlController.text.trim();
-                              final apiKey = apiKeyController.text.trim();
-                              
-                              if (name.isNotEmpty && baseUrl.isNotEmpty && apiKey.isNotEmpty) {
+                              // 如果模型列表为空，从数据库查询模型列表
+                              if (isEditMode && provider != null) {
                                 setState(() {
                                   isLoadingModels = true;
                                 });
                                 
-                                try {
-                                  final request = ModelsRequest(
-                                    name: name,
-                                    apiKey: apiKey,
-                                    baseUrl: baseUrl
-                                  );
-                                  ModelsResponse response = await Client().stub!.models(request);
-                                  
-                                  setState(() {
-                                    availableModels = response.models.map((model) => model.id).toList();
-                                    isLoadingModels = false;
-                                    showModelList = true;
-                                  });
-                                } catch (e) {
+                                                                  try {
+                                   final models = await LlmStorage.getModelsByProviderId(provider.id);
+                                   // 排序：非自定义模型在前，自定义模型在后
+                                   models.sort((a, b) {
+                                     if (a.isCustom == b.isCustom) {
+                                       return a.id.compareTo(b.id); // 同类型按id排序
+                                     }
+                                     return a.isCustom ? 1 : -1; // 非自定义在前
+                                   });
+                                   
+                                    setState(() {
+                                     availableModels = models;
+                                     isLoadingModels = false;
+                                     showModelList = true;
+                                   });
+                                  } catch (e) {
                                   setState(() {
                                     isLoadingModels = false;
                                     showModelList = true; // 仍然显示，但显示错误信息
                                   });
                                 }
+                              } else {
+                                setState(() {
+                                  showModelList = !showModelList;
+                                });
                               }
                             } else {
                               setState(() {
@@ -404,28 +421,45 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                     ? SingleChildScrollView(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: availableModels.map((model) => Padding(
-                                            padding: const EdgeInsets.symmetric(vertical: 2),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.circle,
-                                                  size: 6,
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    model,
-                                                    style: TextStyle(
-                                                      fontSize: FontSizeUtils.getSmallSize(ref),
-                                                      color: Theme.of(context).colorScheme.onSurface,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                                                                                children: availableModels.map((model) => Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 2),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.circle,
+                                              size: 6,
+                                              color: model.isCustom 
+                                                  ? Theme.of(context).colorScheme.secondary
+                                                  : Theme.of(context).colorScheme.primary,
                                             ),
-                                          )).toList(),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: model.id,
+                                                      style: TextStyle(
+                                                        fontSize: FontSizeUtils.getSmallSize(ref),
+                                                        color: Theme.of(context).colorScheme.onSurface,
+                                                      ),
+                                                    ),
+                                                    if (model.isCustom)
+                                                      TextSpan(
+                                                        text: ' 自定义',
+                                                        style: TextStyle(
+                                                          fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                                          color: Theme.of(context).colorScheme.secondary,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )).toList(),
                                         ),
                                       )
                                     : Center(
@@ -496,12 +530,40 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                   await _updateProviderModels(provider.id, response.models);
                 }
                 
+                // 如果是编辑模式，从数据库重新查询模型列表
+                List<Model> updatedModels = [];
+                if (isEditMode && provider != null) {
+                  try {
+                    final dbModels = await LlmStorage.getModelsByProviderId(provider.id);
+                    dbModels.sort((a, b) {
+                      if (a.isCustom == b.isCustom) {
+                        return a.id.compareTo(b.id);
+                      }
+                      return a.isCustom ? 1 : -1;
+                    });
+                    updatedModels = dbModels;
+                  } catch (e) {
+                    debugPrint('查询数据库模型失败: $e');
+                  }
+                } else {
+                  // 新建模式，创建临时Model对象用于显示
+                  updatedModels = response.models.map((apiModel) => Model(
+                    llmProviderId: 'temp',
+                    id: apiModel.id,
+                    object: apiModel.object ?? 'model',
+                    ownedBy: apiModel.ownedBy ?? 'unknown',
+                    enabled: apiModel.enabled ?? true,
+                    isCustom: false,
+                    seqId: 0,
+                  )).toList();
+                }
+                
                 setState(() {
                   isVerifying = false;
                   verificationSuccess = true;
                   verificationFailed = false;
                   verificationMessage = '验证成功! 发现 ${response.models.length} 个模型';
-                  availableModels = response.models.map((model) => model.id).toList();
+                  availableModels = updatedModels;
                   showModelList = false; // 重新验证后收起模型列表
                 });
               } catch (e) {
