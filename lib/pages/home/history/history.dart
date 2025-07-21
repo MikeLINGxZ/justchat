@@ -6,6 +6,7 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
+import 'package:lemon_tea/storage/chat_storage.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
@@ -28,6 +29,9 @@ class HistoryPage extends ConsumerStatefulWidget {
 class _HistoryPageState extends ConsumerState<HistoryPage> {
   String _searchQuery = '';
   List<Conversation> _filteredConversations = [];
+  Map<String, int> _messageCountCache = {};
+  Map<String, String> _previewCache = {};
+  bool _isLoadingDetails = false;
 
   @override
   void initState() {
@@ -35,6 +39,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     // 监听 ConversationManager 的变化
     widget.conversationManager.addListener(_onConversationManagerChanged);
     _updateFilteredConversations();
+    // 异步加载对话详情
+    _loadConversationDetails();
   }
 
   @override
@@ -44,11 +50,80 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   }
 
   void _onConversationManagerChanged() {
-    // 当 ConversationManager 发生变化时，刷新UI
+    // 当 ConversationManager 发生变化时，刷新UI并重新加载详情
     if (mounted) {
       setState(() {
         _updateFilteredConversations();
       });
+      _loadConversationDetails();
+    }
+  }
+
+  /// 加载所有对话的详情信息（消息数量和预览）
+  Future<void> _loadConversationDetails() async {
+    if (_isLoadingDetails) return;
+    
+    setState(() {
+      _isLoadingDetails = true;
+    });
+
+    try {
+      final conversations = widget.conversationManager.conversations;
+      
+      // 并行加载所有对话的详情
+      final futures = conversations.map((conversation) async {
+        try {
+          final messages = await ChatStorage.getMessagesByConversationId(conversation.id);
+          final messageCount = messages.length;
+          String preview = '暂无消息';
+          
+          if (messages.isNotEmpty) {
+            // 获取最后一条用户或助手消息作为预览
+            final lastMessage = messages.lastWhere(
+              (msg) => msg.role == 'user' || msg.role == 'assistant',
+              orElse: () => messages.last,
+            );
+            preview = lastMessage.content.length > 50 
+                ? '${lastMessage.content.substring(0, 50)}...' 
+                : lastMessage.content;
+            // 移除换行符和多余空格
+            preview = preview.replaceAll('\n', ' ').trim();
+          }
+          
+          return {
+            'id': conversation.id,
+            'messageCount': messageCount,
+            'preview': preview,
+          };
+        } catch (e) {
+          debugPrint('加载对话 ${conversation.id} 详情失败: $e');
+          return {
+            'id': conversation.id,
+            'messageCount': 0,
+            'preview': '加载失败',
+          };
+        }
+      });
+
+      final results = await Future.wait(futures);
+      
+      // 更新缓存
+      for (final result in results) {
+        _messageCountCache[result['id'] as String] = result['messageCount'] as int;
+        _previewCache[result['id'] as String] = result['preview'] as String;
+      }
+      
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('加载对话详情失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDetails = false;
+        });
+      }
     }
   }
 
@@ -112,6 +187,15 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 ),
               ),
               const Spacer(),
+              if (_isLoadingDetails)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
               if (widget.onNewConversation != null)
                 ElevatedButton.icon(
                   onPressed: widget.onNewConversation,
@@ -198,7 +282,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '暂无预览', // 临时替代方案，因为新模型不直接包含消息
+                                _previewCache[conversation.id] ?? '加载中...',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 12),
@@ -217,7 +301,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                S.of(context).messagesCount(0), // 临时替代方案，因为新模型不直接包含消息
+                                S.of(context).messagesCount(_messageCountCache[conversation.id] ?? 0),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -247,9 +331,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       ),
     );
   }
-
-  // _getPreviewText 方法已删除，因为新的 Conversation 模型不直接包含消息
-  // 如果需要预览功能，可以通过 ChatStorage 异步获取消息
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

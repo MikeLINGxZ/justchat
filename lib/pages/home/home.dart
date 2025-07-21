@@ -29,6 +29,8 @@ class _HomePage extends State<HomePage> {
     super.initState();
     _conversationManager = ConversationManager();
     _initializePages();
+    // 初始化ConversationManager，加载对话历史
+    _conversationManager.initialize();
   }
 
   void _initializePages() {
