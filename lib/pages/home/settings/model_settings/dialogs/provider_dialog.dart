@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/rpc/service.pb.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
+import 'package:lemon_tea/models/model.dart';
 import '../model_settings.dart';
 
 void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provider}) {
@@ -13,13 +15,15 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
   final TextEditingController nameController = TextEditingController(text: provider?.name ?? '');
   final TextEditingController baseUrlController = TextEditingController(text: provider?.baseUrl ?? '');
   final TextEditingController apiKeyController = TextEditingController(text: provider?.apiKey ?? '');
-  final TextEditingController aliasController = TextEditingController(text: provider?.alias ?? '');
   final TextEditingController descriptionController = TextEditingController(text: provider?.description ?? '');
   bool isEnabled = provider?.enable ?? true;
   bool isVerifying = false;
   bool verificationSuccess = provider?.checked ?? false;
   bool verificationFailed = false;
-  String verificationMessage = provider?.checked ?? false ? '已验证' : '';
+  String verificationMessage = provider?.checked ?? false ? '已验证' : '待验证';
+  List<String> availableModels = [];
+  bool showModelList = false;
+  bool isLoadingModels = false;
 
   showDialog(
     context: context,
@@ -82,24 +86,6 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                 labelText: '供应商名称 *',
                                 hintText: '例如: OpenAI',
                                 prefixIcon: const Icon(Icons.business),
-                                labelStyle: TextStyle(
-                                  fontSize: FontSizeUtils.getBodySize(ref),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              style: TextStyle(
-                                fontSize: FontSizeUtils.getBodySize(ref),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: aliasController,
-                              decoration: InputDecoration(
-                                labelText: '别名',
-                                hintText: '可选，用于显示的友好名称',
-                                prefixIcon: const Icon(Icons.label),
                                 labelStyle: TextStyle(
                                   fontSize: FontSizeUtils.getBodySize(ref),
                                 ),
@@ -276,42 +262,189 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 ),
                 
                 // 验证结果显示区域
-                if (verificationSuccess || verificationFailed)
+                if (verificationSuccess || verificationFailed || (!verificationSuccess && !verificationFailed))
                   Container(
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
                       color: verificationSuccess 
                           ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)
-                          : Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+                          : verificationFailed 
+                              ? Theme.of(context).colorScheme.errorContainer.withOpacity(0.5)
+                              : Theme.of(context).colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: verificationSuccess 
                             ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-                            : Theme.of(context).colorScheme.error.withOpacity(0.5),
+                            : verificationFailed 
+                                ? Theme.of(context).colorScheme.error.withOpacity(0.5)
+                                : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
                         width: 1,
                       ),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Icon(
-                          verificationSuccess ? Icons.check_circle : Icons.error,
-                          color: verificationSuccess 
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            verificationMessage,
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getSmallSize(ref),
-                              color: verificationSuccess 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.error,
+                        InkWell(
+                          onTap: verificationSuccess ? () async {
+                            if (availableModels.isEmpty && !isLoadingModels) {
+                              // 如果模型列表为空，尝试获取模型列表
+                              final name = nameController.text.trim();
+                              final baseUrl = baseUrlController.text.trim();
+                              final apiKey = apiKeyController.text.trim();
+                              
+                              if (name.isNotEmpty && baseUrl.isNotEmpty && apiKey.isNotEmpty) {
+                                setState(() {
+                                  isLoadingModels = true;
+                                });
+                                
+                                try {
+                                  final request = ModelsRequest(
+                                    name: name,
+                                    apiKey: apiKey,
+                                    baseUrl: baseUrl
+                                  );
+                                  ModelsResponse response = await Client().stub!.models(request);
+                                  
+                                  setState(() {
+                                    availableModels = response.models.map((model) => model.id).toList();
+                                    isLoadingModels = false;
+                                    showModelList = true;
+                                  });
+                                } catch (e) {
+                                  setState(() {
+                                    isLoadingModels = false;
+                                    showModelList = true; // 仍然显示，但显示错误信息
+                                  });
+                                }
+                              }
+                            } else {
+                              setState(() {
+                                showModelList = !showModelList;
+                              });
+                            }
+                          } : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  verificationSuccess 
+                                      ? Icons.check_circle 
+                                      : verificationFailed 
+                                          ? Icons.error
+                                          : Icons.help_outline,
+                                  color: verificationSuccess 
+                                      ? Theme.of(context).colorScheme.primary
+                                      : verificationFailed 
+                                          ? Theme.of(context).colorScheme.error
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    verificationMessage,
+                                    style: TextStyle(
+                                      fontSize: FontSizeUtils.getSmallSize(ref),
+                                      color: verificationSuccess 
+                                          ? Theme.of(context).colorScheme.primary
+                                          : verificationFailed 
+                                              ? Theme.of(context).colorScheme.error
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                if (verificationSuccess)
+                                  isLoadingModels 
+                                    ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      )
+                                    : Icon(
+                                        showModelList ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                              ],
                             ),
                           ),
                         ),
+                        if (verificationSuccess && showModelList)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  availableModels.isNotEmpty 
+                                    ? '可用模型列表 (${availableModels.length}个)'
+                                    : '模型列表',
+                                  style: TextStyle(
+                                    fontSize: FontSizeUtils.getSmallSize(ref),
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  constraints: const BoxConstraints(maxHeight: 150),
+                                  child: availableModels.isNotEmpty
+                                    ? SingleChildScrollView(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: availableModels.map((model) => Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 2),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.circle,
+                                                  size: 6,
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    model,
+                                                    style: TextStyle(
+                                                      fontSize: FontSizeUtils.getSmallSize(ref),
+                                                      color: Theme.of(context).colorScheme.onSurface,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )).toList(),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Text(
+                                            '暂无模型数据，请点击"重新验证"获取模型列表',
+                                            style: TextStyle(
+                                              fontSize: FontSizeUtils.getSmallSize(ref),
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -335,6 +468,8 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                   verificationFailed = true;
                   verificationSuccess = false;
                   verificationMessage = '请填写所有必填字段后再验证';
+                  availableModels.clear(); // 清空模型列表
+                  showModelList = false; // 隐藏模型列表
                 });
                 return;
               }
@@ -344,6 +479,8 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 verificationSuccess = false;
                 verificationFailed = false;
                 verificationMessage = '';
+                availableModels.clear(); // 清空之前的模型列表
+                showModelList = false; // 隐藏模型列表
               });
 
               try {
@@ -354,11 +491,18 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                 );
                 ModelsResponse response = await Client().stub!.models(request);
                 
+                // 如果是编辑模式且供应商存在，更新数据库中的模型列表
+                if (isEditMode && provider != null) {
+                  await _updateProviderModels(provider.id, response.models);
+                }
+                
                 setState(() {
                   isVerifying = false;
                   verificationSuccess = true;
                   verificationFailed = false;
                   verificationMessage = '验证成功! 发现 ${response.models.length} 个模型';
+                  availableModels = response.models.map((model) => model.id).toList();
+                  showModelList = false; // 重新验证后收起模型列表
                 });
               } catch (e) {
                 setState(() {
@@ -366,6 +510,8 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                   verificationSuccess = false;
                   verificationFailed = true;
                   verificationMessage = '验证失败: ${e.toString()}';
+                  availableModels.clear(); // 清空模型列表
+                  showModelList = false; // 隐藏模型列表
                 });
               }
             },
@@ -380,7 +526,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                   )
                 : const Icon(Icons.verified),
             label: Text(
-              isVerifying ? '验证中...' : '验证连接',
+              isVerifying ? '验证中...' : (verificationSuccess ? '重新验证' : '验证连接'),
               style: TextStyle(
                 fontSize: FontSizeUtils.getBodySize(ref),
               ),
@@ -401,7 +547,6 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                   final name = nameController.text.trim();
                   final baseUrl = baseUrlController.text.trim();
                   final apiKey = apiKeyController.text.trim();
-                  final alias = aliasController.text.trim();
                   final description = descriptionController.text.trim();
 
                   if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
@@ -426,7 +571,6 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                       name: name,
                       baseUrl: baseUrl,
                       apiKey: apiKey,
-                      alias: alias.isEmpty ? null : alias,
                       description: description.isEmpty ? null : description,
                       enable: isEnabled,
                       checked: verificationSuccess, // 根据验证结果设置checked状态
@@ -441,14 +585,29 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                       name: name,
                       baseUrl: baseUrl,
                       apiKey: apiKey,
-                      alias: alias.isEmpty ? null : alias,
                       description: description.isEmpty ? null : description,
                       enable: isEnabled,
                       checked: verificationSuccess, // 根据验证结果设置checked状态
                     );
 
-                    // 添加供应商到数据库
-                    success = await LlmStorage.addProvider(newProvider);
+                                    // 添加供应商到数据库
+                success = await LlmStorage.addProvider(newProvider);
+                
+                // 如果验证成功且有模型数据，添加模型到数据库
+                if (success && verificationSuccess && availableModels.isNotEmpty) {
+                  try {
+                    // 获取API模型数据（需要重新调用API获取完整信息）
+                    final modelsRequest = ModelsRequest(
+                      name: name,
+                      apiKey: apiKey,
+                      baseUrl: baseUrl
+                    );
+                    final modelsResponse = await Client().stub!.models(modelsRequest);
+                    await _updateProviderModels(newProvider.id, modelsResponse.models);
+                  } catch (e) {
+                    debugPrint('添加模型失败，但供应商已创建: $e');
+                  }
+                }
                   }
 
                   Navigator.of(context).pop();
@@ -457,18 +616,20 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                     // 刷新供应商列表
                     ref.refresh(providersProvider);
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isEditMode ? '供应商已更新' : '供应商已添加',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                          ),
-                        ),
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                        duration: const Duration(seconds: 2),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditMode 
+                        ? '供应商已更新${verificationSuccess && availableModels.isNotEmpty ? '，模型列表已同步' : ''}' 
+                        : '供应商已添加${verificationSuccess && availableModels.isNotEmpty ? '，模型列表已同步' : ''}',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                    );
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -532,4 +693,45 @@ void showAddProviderDialog(BuildContext context, WidgetRef ref) {
 // 便捷函数：显示编辑供应商对话框
 void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
   showProviderDialog(context, ref, provider: provider);
+}
+
+// 更新供应商模型列表的私有函数
+Future<void> _updateProviderModels(String providerId, List<dynamic> apiModels) async {
+  try {
+    // 1. 获取该供应商下的所有模型
+    final existingModels = await LlmStorage.getModelsByProviderId(providerId);
+    
+    // 2. 删除所有非自定义模型（isCustom = false）
+    final nonCustomModels = existingModels.where((model) => !model.isCustom).toList();
+    for (final model in nonCustomModels) {
+      await LlmStorage.deleteModel(model.id);
+    }
+    
+    // 3. 获取当前最大序号，用于新模型的序号分配
+    int maxSeqId = await LlmStorage.getMaxModelSeqId(providerId);
+    
+    // 4. 添加新获取的模型（标记为非自定义）
+    for (int i = 0; i < apiModels.length; i++) {
+      final apiModel = apiModels[i];
+      
+      // 直接构造包含name字段的Map，避免Model类缺少name字段的问题
+      final modelMap = {
+        'llm_provider_id': providerId,
+        'id': apiModel.id,
+        'name': apiModel.id, // 使用模型id作为name
+        'object': apiModel.object ?? 'model',
+        'owned_by': apiModel.ownedBy ?? 'unknown',
+        'enabled': (apiModel.enabled ?? true) ? 1 : 0,
+        'is_custom': 0, // 标记为非自定义模型
+        'seq_id': maxSeqId + i + 1, // 分配序号
+      };
+      
+      await LlmStorage.addModelWithCustomFields(modelMap);
+    }
+    
+    debugPrint('成功更新供应商 $providerId 的模型列表，删除 ${nonCustomModels.length} 个旧模型，添加 ${apiModels.length} 个新模型');
+  } catch (e) {
+    debugPrint('更新供应商模型列表失败: $e');
+    rethrow;
+  }
 } 
