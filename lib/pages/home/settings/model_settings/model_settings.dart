@@ -401,7 +401,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
               icon: const Icon(Icons.list),
               tooltip: '查看模型列表',
               onPressed: () {
-                showModelsDialog(context, ref, provider, _preloadModels, getModelEnabledState, updateModelEnabledState);
+                showModelsDialog(context, ref, provider);
               },
             ),
             SizedBox(

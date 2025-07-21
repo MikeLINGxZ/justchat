@@ -6,708 +6,969 @@ import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 import '../model_settings.dart';
 
-void showModelsDialog(
-  BuildContext context, 
-  WidgetRef ref, 
-  LlmProvider provider,
-  Function(String) preloadModels,
-  bool Function(Model) getModelEnabledState,
-  void Function(Model, bool) updateModelEnabledState,
-) {
-  // 确保模型数据已预加载
-  preloadModels(provider.id);
-  
-  // 创建本地状态副本，用于UI显示
-  final Map<String, bool> localModelStates = {};
-  
-  // 预先加载模型状态
-  ref.read(modelsProvider(provider.id)).whenData((models) {
-    for (final model in models) {
-      final key = '${model.llmProviderId}_${model.id}';
-      localModelStates[key] = getModelEnabledState(model);
-    }
-  });
-  
+void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+  List<Model> availableModels = [];
+  bool isLoadingModels = false;
+
   showDialog(
     context: context,
     builder: (context) => StatefulBuilder(
-      builder: (context, dialogSetState) {
-        // 使用Consumer直接访问模型数据，避免loading状态
-        return AlertDialog(
-          title: Text(
-            '${provider.name} 模型列表',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getSubheadingSize(ref),
-              fontWeight: FontWeight.bold,
+      builder: (context, setState) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.psychology,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
             ),
-          ),
-          content: SizedBox(
-            width: 460, // 设置固定宽度，使对话框更窄
-            height: 400, // 设置固定高度，确保对话框不会过大
-            child: Consumer(
-              builder: (context, ref, child) {
-                // 强制刷新模型数据
-                final modelsAsync = ref.watch(modelsProvider(provider.id));
-                
-                return modelsAsync.when(
-                  data: (models) {
-                    if (models.isEmpty) {
-                      return Center(
-                        child: Text(
-                          '暂无模型',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                          ),
-                        ),
-                      );
-                    }
-                    
-                    return ListView.builder(
-                      shrinkWrap: false, // 不收缩，允许滚动
-                      physics: const AlwaysScrollableScrollPhysics(), // 始终可滚动
-                      itemCount: models.length,
-                      itemBuilder: (context, index) {
-                        final model = models[index];
-                        final key = '${model.llmProviderId}_${model.id}';
-                        // 确保本地状态存在
-                        if (!localModelStates.containsKey(key)) {
-                          localModelStates[key] = getModelEnabledState(model);
-                        }
-                        
-                        return ListTile(
-                          title: Text(
-                            model.id,
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getBodySize(ref),
-                            ),
-                          ),
-                          subtitle: Text(
-                            '提供者: ${model.ownedBy}',
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getSmallSize(ref),
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: SizedBox(
-                            height: 48, // 固定高度确保垂直居中
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center, // 水平居中
-                              crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中
-                              children: [
-                                // 自定义标签放在编辑按钮前面
-                                if (model.isCustom)
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      '自定义',
-                                      style: TextStyle(
-                                        fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                Transform.scale(
-                                  scale: 0.8,
-                                  child: Switch(
-                                    value: localModelStates[key]!,
-                                    onChanged: (value) {
-                                      // 更新本地状态和UI
-                                      dialogSetState(() {
-                                        localModelStates[key] = value;
-                                      });
-                                      // 更新数据库
-                                      updateModelEnabledState(model, value);
-                                    },
-                                  ),
-                                ),
-                                // 所有模型都显示更多操作按钮
-                                SizedBox(
-                                  height: 40,
-                                  width: 40,
-                                  child: PopupMenuButton<String>(
-                                    padding: EdgeInsets.zero,
-                                    icon: const Icon(Icons.more_vert, size: 20),
-                                    tooltip: '更多操作',
-                                    offset: const Offset(0, 10),
-                                    position: PopupMenuPosition.under,
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem<String>(
-                                        value: 'edit',
-                                        enabled: model.isCustom,
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.edit, 
-                                              size: 18, 
-                                              color: model.isCustom 
-                                                  ? null 
-                                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              '编辑',
-                                              style: TextStyle(
-                                                fontSize: FontSizeUtils.getBodySize(ref),
-                                                color: model.isCustom 
-                                                    ? null 
-                                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      PopupMenuItem<String>(
-                                        value: 'delete',
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.delete, color: Colors.red, size: 18),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              '删除', 
-                                              style: TextStyle(
-                                                fontSize: FontSizeUtils.getBodySize(ref),
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                    onSelected: (value) {
-                                      if (value == 'edit' && model.isCustom) {
-                                        Navigator.of(context).pop();
-                                        _showEditModelDialog(context, ref, model, provider);
-                                      } else if (value == 'delete') {
-                                        _showDeleteModelDialog(model, context, ref);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(
-                    child: Text(
-                      '加载模型失败: $error',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+            const SizedBox(width: 12),
+            Text(
+              '${provider.name} - 模型列表',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 600,
+          height: 500,
+          child: FutureBuilder<List<Model>>(
+            future: _loadModels(provider.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8), // 设置弹窗圆角为8
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                // 不再关闭当前对话框，直接打开添加模型对话框
-                _showAddModelDialog(context, ref, provider.id, provider);
-              },
-              style: TextButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                '添加模型',
-                style: TextStyle(
-                  fontSize: FontSizeUtils.getBodySize(ref),
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                '关闭',
-                style: TextStyle(
-                  fontSize: FontSizeUtils.getBodySize(ref),
-                ),
-              ),
-            ),
-          ],
-        );
-      }
-    ),
-  );
-}
-
-// 显示添加模型对话框
-void _showAddModelDialog(BuildContext context, WidgetRef ref, String providerId, LlmProvider provider) {
-  final TextEditingController modelIdController = TextEditingController();
-  final TextEditingController modelNameController = TextEditingController();
-  final TextEditingController ownedByController = TextEditingController();
-  bool isEnabled = true;
-
-  showDialog(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(
-        '添加自定义模型',
-        style: TextStyle(
-          fontSize: FontSizeUtils.getSubheadingSize(ref),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: modelIdController,
-              decoration: InputDecoration(
-                labelText: '模型ID *',
-                hintText: '例如: gpt-4-turbo',
-                labelStyle: TextStyle(
-                  fontSize: FontSizeUtils.getBodySize(ref),
-                ),
-              ),
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: modelNameController,
-              decoration: InputDecoration(
-                labelText: '模型名称 *',
-                hintText: '例如: GPT-4 Turbo',
-                labelStyle: TextStyle(
-                  fontSize: FontSizeUtils.getBodySize(ref),
-                ),
-              ),
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: ownedByController,
-              decoration: InputDecoration(
-                labelText: '提供者 *',
-                hintText: '例如: OpenAI',
-                labelStyle: TextStyle(
-                  fontSize: FontSizeUtils.getBodySize(ref),
-                ),
-              ),
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  '启用状态',
-                  style: TextStyle(
-                    fontSize: FontSizeUtils.getBodySize(ref),
-                  ),
-                ),
-                const Spacer(),
-                StatefulBuilder(
-                  builder: (BuildContext context, StateSetter setState) {
-                    return Switch(
-                      value: isEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          isEnabled = value;
-                        });
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            '取消',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: () async {
-            // 验证输入
-            final modelId = modelIdController.text.trim();
-            final modelName = modelNameController.text.trim();
-            final ownedBy = ownedByController.text.trim();
-            
-            if (modelId.isEmpty || modelName.isEmpty || ownedBy.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '请填写所有必填字段',
-                    style: TextStyle(
-                      fontSize: FontSizeUtils.getBodySize(ref),
-                    ),
-                  ),
-                ),
-              );
-              return;
-            }
-            
-            // 创建模型对象
-            final newModel = Model(
-              llmProviderId: providerId,
-              id: modelId,
-              ownedBy: ownedBy,
-              enabled: isEnabled,
-              isCustom: true,
-            );
-            
-            // 添加模型到数据库，使用自定义方法处理name字段
-            final success = await _addModelWithName(newModel, modelName);
-            Navigator.of(dialogContext).pop();
-            
-            if (success) {
-              // 刷新模型列表
-              ref.refresh(modelsProvider(providerId));
-              
-              // 延迟一点时间后重新打开模型列表对话框以显示更新后的列表
-              Future.delayed(const Duration(milliseconds: 300), () async {
-                if (context.mounted) {
-                  showModelsDialog(
-                    context, 
-                    ref, 
-                    provider, 
-                    (String id) {}, // 空实现，因为已经刷新了
-                    (Model model) {
-                      final key = '${model.llmProviderId}_${model.id}';
-                      return model.enabled; // 直接返回模型状态
-                    },
-                    (Model model, bool value) {
-                      // 这里可以实现状态更新逻辑
-                    },
-                  );
-                }
-              });
-            } else {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '添加模型失败，可能模型ID已存在',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                      const SizedBox(height: 12),
+                      Text(
+                        '加载模型失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${snapshot.error}',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getSmallSize(ref),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 );
               }
-            }
-          },
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            '添加',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
+
+              final models = snapshot.data ?? [];
+              availableModels = models;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 标题栏
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.psychology,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          availableModels.isNotEmpty 
+                            ? '可用模型列表 (${availableModels.length}个)'
+                            : '模型列表',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (availableModels.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${availableModels.where((m) => !m.isCustom).length}个官方',
+                              style: TextStyle(
+                                fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (availableModels.any((m) => m.isCustom)) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${availableModels.where((m) => m.isCustom).length}个自定义',
+                                style: TextStyle(
+                                  fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                        ],
+                        // 添加模型按钮
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showAddModelDialog(context, ref, provider, setState, availableModels),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    size: 14,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '添加模型',
+                                    style: TextStyle(
+                                      fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // 模型列表内容
+                  Expanded(
+                    child: availableModels.isNotEmpty
+                      ? ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context).copyWith(
+                            scrollbars: false,
+                            overscroll: false,
+                            physics: const ClampingScrollPhysics(),
+                          ),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(10),
+                            itemCount: availableModels.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 6),
+                            physics: const ClampingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final model = availableModels[index];
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: model.isCustom 
+                                      ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3)
+                                      : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: model.isCustom 
+                                        ? Theme.of(context).colorScheme.secondary.withOpacity(0.2)
+                                        : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: model.isCustom 
+                                            ? Theme.of(context).colorScheme.secondary
+                                            : Theme.of(context).colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        model.isCustom ? Icons.person : Icons.smart_toy,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            model.id,
+                                            style: TextStyle(
+                                              fontSize: FontSizeUtils.getSmallSize(ref),
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          if (model.ownedBy.isNotEmpty && model.ownedBy != 'unknown') ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'by ${model.ownedBy}',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getSmallSize(ref) - 2,
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    if (model.isCustom)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '自定义',
+                                          style: TextStyle(
+                                            fontSize: FontSizeUtils.getSmallSize(ref) - 2,
+                                            color: Theme.of(context).colorScheme.secondary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(width: 8),
+                                    // 启用开关
+                                    Transform.scale(
+                                      scale: 0.8,
+                                      child: Switch(
+                                        value: model.enabled,
+                                        onChanged: (value) async {
+                                          // 更新模型启用状态
+                                          final updatedModel = Model(
+                                            llmProviderId: model.llmProviderId,
+                                            id: model.id,
+                                            object: model.object,
+                                            ownedBy: model.ownedBy,
+                                            enabled: value,
+                                            isCustom: model.isCustom,
+                                            seqId: model.seqId,
+                                          );
+                                          
+                                          final success = await LlmStorage.updateModel(updatedModel);
+                                          if (success) {
+                                            setState(() {
+                                              availableModels[index] = updatedModel;
+                                            });
+                                            // 刷新 provider 数据
+                                            ref.refresh(modelsProvider(provider.id));
+                                          }
+                                        },
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    // 更多按钮
+                                    PopupMenuButton<String>(
+                                      onSelected: (value) async {
+                                        if (value == 'edit' && model.isCustom) {
+                                          _showEditModelDialog(context, ref, model, provider, setState, availableModels, index);
+                                        } else if (value == 'delete') {
+                                          // 删除模型
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text(
+                                                '确认删除',
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getSubheadingSize(ref),
+                                                ),
+                                              ),
+                                              content: Text(
+                                                '确定要删除模型 "${model.id}" 吗？',
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(context).pop(false),
+                                                  child: Text(
+                                                    '取消',
+                                                    style: TextStyle(
+                                                      fontSize: FontSizeUtils.getBodySize(ref),
+                                                    ),
+                                                  ),
+                                                ),
+                                                FilledButton(
+                                                  onPressed: () => Navigator.of(context).pop(true),
+                                                  child: Text(
+                                                    '删除',
+                                                    style: TextStyle(
+                                                      fontSize: FontSizeUtils.getBodySize(ref),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          
+                                          if (confirmed == true) {
+                                            final success = await LlmStorage.deleteModel(model.id);
+                                            if (success) {
+                                              setState(() {
+                                                availableModels.removeAt(index);
+                                              });
+                                              // 刷新 provider 数据
+                                              ref.refresh(modelsProvider(provider.id));
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    '模型已删除',
+                                                    style: TextStyle(
+                                                      fontSize: FontSizeUtils.getBodySize(ref),
+                                                    ),
+                                                  ),
+                                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem<String>(
+                                          value: 'edit',
+                                          enabled: model.isCustom,
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit,
+                                                size: 16,
+                                                color: model.isCustom
+                                                    ? Theme.of(context).colorScheme.onSurface
+                                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '编辑',
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getSmallSize(ref),
+                                                  color: model.isCustom
+                                                      ? Theme.of(context).colorScheme.onSurface
+                                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete,
+                                                size: 16,
+                                                color: Theme.of(context).colorScheme.error,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '删除',
+                                                style: TextStyle(
+                                                  fontSize: FontSizeUtils.getSmallSize(ref),
+                                                  color: Theme.of(context).colorScheme.error,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        size: 16,
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      iconSize: 16,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.all(40),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.psychology_outlined,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '暂无模型数据',
+                                style: TextStyle(
+                                  fontSize: FontSizeUtils.getBodySize(ref),
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '点击右上角"添加模型"按钮可添加自定义模型',
+                                style: TextStyle(
+                                  fontSize: FontSizeUtils.getSmallSize(ref),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
-      ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close),
+            label: Text(
+              '关闭',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+        ],
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
     ),
   );
 }
 
-// 添加模型到数据库，处理name字段
-Future<bool> _addModelWithName(Model model, String name) async {
+// 加载模型数据
+Future<List<Model>> _loadModels(String providerId) async {
   try {
-    // 获取模型的Map数据
-    final modelMap = model.toMap();
-    // 添加name字段
-    modelMap['name'] = name;
-    
-    // 获取当前最大seq_id并设置新模型的seq_id为最大值+1
-    final maxSeqId = await LlmStorage.getMaxModelSeqId(model.llmProviderId);
-    modelMap['seq_id'] = maxSeqId + 1;
-    
-    // 插入数据库
-    final result = await LlmStorage.addModelWithCustomFields(modelMap);
-    return result;
+    final models = await LlmStorage.getModelsByProviderId(providerId);
+    // 排序：非自定义模型在前，自定义模型在后
+    models.sort((a, b) {
+      if (a.isCustom == b.isCustom) {
+        return a.id.compareTo(b.id);
+      }
+      return a.isCustom ? 1 : -1;
+    });
+    return models;
   } catch (e) {
-    debugPrint('添加模型失败: $e');
-    return false;
+    debugPrint('加载模型失败: $e');
+    rethrow;
   }
 }
 
-// 显示编辑模型对话框
-void _showEditModelDialog(BuildContext context, WidgetRef ref, Model model, LlmProvider provider) {
-  final TextEditingController modelIdController = TextEditingController(text: model.id);
-  final TextEditingController ownedByController = TextEditingController(text: model.ownedBy);
-  bool isEnabled = model.enabled;
+// 显示添加模型对话框
+void _showAddModelDialog(BuildContext context, WidgetRef ref, LlmProvider provider, 
+    void Function(void Function()) setState, List<Model> availableModels) {
+  final TextEditingController modelIdController = TextEditingController();
+  final TextEditingController modelNameController = TextEditingController();
+  final TextEditingController ownedByController = TextEditingController(text: 'custom');
+  bool modelEnabled = true;
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(
-        '编辑模型',
-        style: TextStyle(
-          fontSize: FontSizeUtils.getSubheadingSize(ref),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: Row(
           children: [
-            TextField(
-              controller: modelIdController,
-              decoration: InputDecoration(
-                labelText: '模型ID',
-                labelStyle: TextStyle(
+            Icon(
+              Icons.add_circle,
+              color: Theme.of(context).colorScheme.secondary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '添加自定义模型',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: modelIdController,
+                decoration: InputDecoration(
+                  labelText: '模型ID *',
+                  hintText: '例如: my-custom-model',
+                  prefixIcon: const Icon(Icons.psychology),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
                   fontSize: FontSizeUtils.getBodySize(ref),
                 ),
               ),
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: ownedByController,
-              decoration: InputDecoration(
-                labelText: '提供者',
-                labelStyle: TextStyle(
+              const SizedBox(height: 16),
+              TextField(
+                controller: modelNameController,
+                decoration: InputDecoration(
+                  labelText: '模型名称',
+                  hintText: '例如: My Custom Model (可选，默认使用ID)',
+                  prefixIcon: const Icon(Icons.label),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
                   fontSize: FontSizeUtils.getBodySize(ref),
                 ),
               ),
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ownedByController,
+                decoration: InputDecoration(
+                  labelText: '拥有者',
+                  hintText: '例如: custom, user, organization',
+                  prefixIcon: const Icon(Icons.person),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  '启用状态',
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: Text(
+                  '启用此模型',
                   style: TextStyle(
                     fontSize: FontSizeUtils.getBodySize(ref),
                   ),
                 ),
-                const Spacer(),
-                StatefulBuilder(
-                  builder: (BuildContext context, StateSetter setState) {
-                    return Switch(
-                      value: isEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          isEnabled = value;
-                        });
-                      },
-                    );
-                  },
+                subtitle: Text(
+                  '关闭后将不会在模型选择中显示',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getSmallSize(ref),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            '取消',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
+                value: modelEnabled,
+                onChanged: (value) {
+                  setDialogState(() {
+                    modelEnabled = value;
+                  });
+                },
+                secondary: Icon(
+                  modelEnabled ? Icons.toggle_on : Icons.toggle_off,
+                  color: modelEnabled ? Theme.of(context).colorScheme.secondary : null,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
           ),
         ),
-        TextButton(
-          onPressed: () async {
-            final updatedModel = Model(
-              llmProviderId: model.llmProviderId,
-              id: modelIdController.text.trim(),
-              object: model.object,
-              ownedBy: ownedByController.text.trim(),
-              enabled: isEnabled,
-              isCustom: model.isCustom,
-            );
-            
-            final success = await LlmStorage.updateModel(updatedModel);
-            Navigator.of(context).pop();
-            
-            if (success) {
-              // 刷新模型列表
-              ref.refresh(modelsProvider(model.llmProviderId));
-              
-              // 重新打开模型列表对话框
-              Future.delayed(const Duration(milliseconds: 300), () async {
-                if (context.mounted) {
-                  showModelsDialog(
-                    context, 
-                    ref, 
-                    provider, 
-                    (String id) {}, // 空实现
-                    (Model model) => model.enabled,
-                    (Model model, bool value) {},
-                  );
-                }
-              });
-            } else {
-              if (context.mounted) {
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final modelId = modelIdController.text.trim();
+              final modelName = modelNameController.text.trim();
+              final ownedBy = ownedByController.text.trim();
+
+              if (modelId.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '更新模型失败',
+                      '请输入模型ID',
                       style: TextStyle(
                         fontSize: FontSizeUtils.getBodySize(ref),
                       ),
                     ),
                   ),
                 );
+                return;
               }
-            }
-          },
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+
+              // 检查模型ID是否已存在
+              final existingModel = availableModels.firstWhere(
+                (model) => model.id == modelId,
+                orElse: () => Model(
+                  llmProviderId: '',
+                  id: '',
+                  object: '',
+                  ownedBy: '',
+                  enabled: false,
+                  isCustom: false,
+                  seqId: 0,
+                ),
+              );
+
+              if (existingModel.id.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '模型ID已存在，请使用其他ID',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              try {
+                // 获取最大序号
+                final maxSeqId = await LlmStorage.getMaxModelSeqId(provider.id);
+
+                // 创建模型数据
+                final modelMap = {
+                  'llm_provider_id': provider.id,
+                  'id': modelId,
+                  'name': modelName.isEmpty ? modelId : modelName,
+                  'object': 'model',
+                  'owned_by': ownedBy.isEmpty ? 'custom' : ownedBy,
+                  'enabled': modelEnabled ? 1 : 0,
+                  'is_custom': 1, // 标记为自定义模型
+                  'seq_id': maxSeqId + 1,
+                };
+
+                // 添加到数据库
+                await LlmStorage.addModelWithCustomFields(modelMap);
+
+                // 创建Model对象并添加到列表
+                final newModel = Model(
+                  llmProviderId: provider.id,
+                  id: modelId,
+                  object: 'model',
+                  ownedBy: ownedBy.isEmpty ? 'custom' : ownedBy,
+                  enabled: modelEnabled,
+                  isCustom: true,
+                  seqId: maxSeqId + 1,
+                );
+
+                // 更新UI状态
+                setState(() {
+                  availableModels.add(newModel);
+                  // 重新排序：非自定义模型在前，自定义模型在后
+                  availableModels.sort((a, b) {
+                    if (a.isCustom == b.isCustom) {
+                      return a.id.compareTo(b.id);
+                    }
+                    return a.isCustom ? 1 : -1;
+                  });
+                });
+
+                // 刷新 provider 数据
+                ref.refresh(modelsProvider(provider.id));
+
+                Navigator.of(context).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '自定义模型已添加',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '添加模型失败: $e',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              '添加',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
             ),
           ),
-          child: Text(
-            '保存',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
 
-// 显示删除模型对话框
-void _showDeleteModelDialog(Model model, BuildContext parentContext, WidgetRef ref) {
+// 显示编辑模型对话框
+void _showEditModelDialog(BuildContext context, WidgetRef ref, Model model, LlmProvider provider,
+    void Function(void Function()) setState, List<Model> availableModels, int index) {
+  final TextEditingController modelIdController = TextEditingController(text: model.id);
+  final TextEditingController ownedByController = TextEditingController(text: model.ownedBy);
+  bool modelEnabled = model.enabled;
+
   showDialog(
-    context: parentContext, // 使用父对话框的context，而不是全局context
-    builder: (dialogContext) => AlertDialog(
-      title: Text(
-        '删除模型',
-        style: TextStyle(
-          fontSize: FontSizeUtils.getSubheadingSize(ref),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Text(
-        '确定要删除模型 ${model.id} 吗？此操作不可恢复。',
-        style: TextStyle(
-          fontSize: FontSizeUtils.getBodySize(ref),
-        ),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.edit,
+              color: Theme.of(context).colorScheme.secondary,
+              size: 24,
             ),
-          ),
-          child: Text(
-            '取消',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
+            const SizedBox(width: 12),
+            Text(
+              '编辑自定义模型',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+          ],
         ),
-        TextButton(
-          onPressed: () async {
-            final success = await LlmStorage.deleteModel(model.id);
-            Navigator.of(dialogContext).pop();
-            
-            if (success) {
-              // 刷新模型列表
-              ref.refresh(modelsProvider(model.llmProviderId));
-              
-              ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '模型已删除',
-                    style: TextStyle(
-                      fontSize: FontSizeUtils.getBodySize(ref),
-                    ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: modelIdController,
+                decoration: InputDecoration(
+                  labelText: '模型ID *',
+                  prefixIcon: const Icon(Icons.psychology),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
                   ),
-                  duration: const Duration(seconds: 2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              );
-            } else {
-              if (parentContext.mounted) {
-                ScaffoldMessenger.of(parentContext).showSnackBar(
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ownedByController,
+                decoration: InputDecoration(
+                  labelText: '拥有者',
+                  prefixIcon: const Icon(Icons.person),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: Text(
+                  '启用此模型',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                subtitle: Text(
+                  '关闭后将不会在模型选择中显示',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getSmallSize(ref),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: modelEnabled,
+                onChanged: (value) {
+                  setDialogState(() {
+                    modelEnabled = value;
+                  });
+                },
+                secondary: Icon(
+                  modelEnabled ? Icons.toggle_on : Icons.toggle_off,
+                  color: modelEnabled ? Theme.of(context).colorScheme.secondary : null,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final modelId = modelIdController.text.trim();
+              final ownedBy = ownedByController.text.trim();
+
+              if (modelId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '删除模型失败',
+                      '请输入模型ID',
                       style: TextStyle(
                         fontSize: FontSizeUtils.getBodySize(ref),
                       ),
                     ),
                   ),
                 );
+                return;
               }
-            }
-          },
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+
+              try {
+                // 更新模型
+                final updatedModel = Model(
+                  llmProviderId: model.llmProviderId,
+                  id: modelId,
+                  object: model.object,
+                  ownedBy: ownedBy.isEmpty ? 'custom' : ownedBy,
+                  enabled: modelEnabled,
+                  isCustom: model.isCustom,
+                  seqId: model.seqId,
+                );
+
+                final success = await LlmStorage.updateModel(updatedModel);
+                if (success) {
+                  setState(() {
+                    availableModels[index] = updatedModel;
+                  });
+                  // 刷新 provider 数据
+                  ref.refresh(modelsProvider(provider.id));
+                }
+
+                Navigator.of(context).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? '模型已更新' : '更新模型失败',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: success 
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '更新模型失败: $e',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              '保存',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
             ),
-            foregroundColor: Colors.red,
           ),
-          child: Text(
-            '删除',
-            style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 } 
