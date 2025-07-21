@@ -1,1 +1,1 @@
-export 'model_setting/model_settings.dart';
+export 'model_settings/model_settings.dart';
