@@ -180,12 +180,6 @@ class _MessageViewState extends State<MessageView> {
                               ? _customDarkConfig
                               : _customLightConfig,
                         ),
-                        // 只在正在流式显示时显示光标
-                        if (isStreamingMessage)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: _buildTypingIndicator(),
-                          ),
                       ],
                     ),
                   ),
@@ -234,29 +228,5 @@ class _MessageViewState extends State<MessageView> {
     );
   }
 
-  Widget _buildTypingIndicator() {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 800),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value > 0.5 ? 1.0 : 0.3,
-          child: Container(
-            width: 8,
-            height: 16,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-        );
-      },
-      onEnd: () {
-        // 重新启动动画
-        if (mounted) {
-          setState(() {});
-        }
-      },
-    );
-  }
+
 }
