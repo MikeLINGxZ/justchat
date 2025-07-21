@@ -5,8 +5,7 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
-import 'dialogs/add_provider_dialog.dart';
-import 'dialogs/edit_provider_dialog.dart';
+import 'dialogs/provider_dialog.dart';
 import 'dialogs/models_dialog.dart';
 
 // 创建提供商列表的Provider

@@ -7,17 +7,19 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import '../model_settings.dart';
 
-void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
-  final TextEditingController nameController = TextEditingController(text: provider.name);
-  final TextEditingController baseUrlController = TextEditingController(text: provider.baseUrl);
-  final TextEditingController apiKeyController = TextEditingController(text: provider.apiKey);
-  final TextEditingController aliasController = TextEditingController(text: provider.alias ?? '');
-  final TextEditingController descriptionController = TextEditingController(text: provider.description ?? '');
-  bool isEnabled = provider.enable;
+void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provider}) {
+  final bool isEditMode = provider != null;
+  
+  final TextEditingController nameController = TextEditingController(text: provider?.name ?? '');
+  final TextEditingController baseUrlController = TextEditingController(text: provider?.baseUrl ?? '');
+  final TextEditingController apiKeyController = TextEditingController(text: provider?.apiKey ?? '');
+  final TextEditingController aliasController = TextEditingController(text: provider?.alias ?? '');
+  final TextEditingController descriptionController = TextEditingController(text: provider?.description ?? '');
+  bool isEnabled = provider?.enable ?? true;
   bool isVerifying = false;
-  bool verificationSuccess = provider.checked;
+  bool verificationSuccess = provider?.checked ?? false;
   bool verificationFailed = false;
-  String verificationMessage = provider.checked ? '已验证' : '';
+  String verificationMessage = provider?.checked ?? false ? '已验证' : '';
 
   showDialog(
     context: context,
@@ -26,13 +28,13 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
         title: Row(
           children: [
             Icon(
-              Icons.edit,
+              isEditMode ? Icons.edit : Icons.add_circle,
               color: Theme.of(context).colorScheme.primary,
               size: 28,
             ),
             const SizedBox(width: 12),
             Text(
-              '编辑模型供应商',
+              isEditMode ? '编辑模型供应商' : '添加模型供应商',
               style: TextStyle(
                 fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.bold,
@@ -429,20 +431,39 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
                 return;
               }
 
-              // 更新供应商对象
-              final updatedProvider = LlmProvider(
-                id: provider.id, // 保持原ID不变
-                name: name,
-                baseUrl: baseUrl,
-                apiKey: apiKey,
-                alias: alias.isEmpty ? null : alias,
-                description: description.isEmpty ? null : description,
-                enable: isEnabled,
-                checked: verificationSuccess, // 根据验证结果设置checked状态
-              );
+              bool success;
+              if (isEditMode) {
+                // 更新供应商对象
+                final updatedProvider = LlmProvider(
+                  id: provider!.id, // 保持原ID不变
+                  name: name,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  alias: alias.isEmpty ? null : alias,
+                  description: description.isEmpty ? null : description,
+                  enable: isEnabled,
+                  checked: verificationSuccess, // 根据验证结果设置checked状态
+                );
 
-              // 更新供应商到数据库
-              final success = await LlmStorage.updateProvider(updatedProvider);
+                // 更新供应商到数据库
+                success = await LlmStorage.updateProvider(updatedProvider);
+              } else {
+                // 创建供应商对象
+                final newProvider = LlmProvider(
+                  id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
+                  name: name,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  alias: alias.isEmpty ? null : alias,
+                  description: description.isEmpty ? null : description,
+                  enable: isEnabled,
+                  checked: verificationSuccess, // 根据验证结果设置checked状态
+                );
+
+                // 添加供应商到数据库
+                success = await LlmStorage.addProvider(newProvider);
+              }
+
               Navigator.of(context).pop();
 
               if (success) {
@@ -452,7 +473,7 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '供应商已更新',
+                      isEditMode ? '供应商已更新' : '供应商已添加',
                       style: TextStyle(
                         fontSize: FontSizeUtils.getBodySize(ref),
                       ),
@@ -465,7 +486,7 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '更新供应商失败',
+                      isEditMode ? '更新供应商失败' : '添加供应商失败',
                       style: TextStyle(
                         fontSize: FontSizeUtils.getBodySize(ref),
                       ),
@@ -475,9 +496,9 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
                 );
               }
             },
-            icon: const Icon(Icons.save),
+            icon: Icon(isEditMode ? Icons.save : Icons.add),
             label: Text(
-              '保存修改',
+              isEditMode ? '保存修改' : '添加供应商',
               style: TextStyle(
                 fontSize: FontSizeUtils.getBodySize(ref),
               ),
@@ -495,4 +516,14 @@ void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider pro
       ),
     ),
   );
+}
+
+// 便捷函数：显示添加供应商对话框
+void showAddProviderDialog(BuildContext context, WidgetRef ref) {
+  showProviderDialog(context, ref);
+}
+
+// 便捷函数：显示编辑供应商对话框
+void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
+  showProviderDialog(context, ref, provider: provider);
 } 
