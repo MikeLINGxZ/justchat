@@ -28,7 +28,12 @@ class Message {
     required this.content,
     this.toolCalls,
     this.toolCallId,
-  }) : assert(content.isNotEmpty);
+  }) : assert(
+    // 允许assistant和tool角色的content为空（用于流式输出和工具调用）
+    role == MessageRole.assistant || 
+    role == MessageRole.tool ||
+    content.isNotEmpty
+  );
 
   factory Message.fromJson(Map<String, dynamic> json) =>
       _$MessageFromJson(json);

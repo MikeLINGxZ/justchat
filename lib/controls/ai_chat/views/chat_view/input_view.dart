@@ -10,6 +10,7 @@ class InputView extends StatefulWidget {
   final String? selectedProviderId;
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
+  final bool isStreaming;
 
   const InputView({
     super.key,
@@ -18,6 +19,7 @@ class InputView extends StatefulWidget {
     this.selectedProviderId,
     this.selectedModelId,
     this.onModelSelected,
+    this.isStreaming = false,
   });
 
   @override

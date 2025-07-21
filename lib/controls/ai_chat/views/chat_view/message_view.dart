@@ -5,7 +5,13 @@ import 'package:markdown_widget/markdown_widget.dart';
 
 class MessageView extends StatefulWidget {
   final List<Message> historyMessages;
-  const MessageView(this.historyMessages, {super.key});
+  final bool isStreaming;
+  
+  const MessageView(
+    this.historyMessages, {
+    super.key,
+    this.isStreaming = false,
+  });
 
   @override
   State<StatefulWidget> createState() => _MessageViewState();
@@ -14,6 +20,7 @@ class MessageView extends StatefulWidget {
 class _MessageViewState extends State<MessageView> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0;
+  String _lastMessageContent = '';
 
   // 自定义 Markdown 配置，所有文字大小减少2
   late final MarkdownConfig _customLightConfig;
@@ -23,6 +30,9 @@ class _MessageViewState extends State<MessageView> {
   void initState() {
     super.initState();
     _lastMessageCount = widget.historyMessages.length;
+    _lastMessageContent = widget.historyMessages.isNotEmpty 
+        ? widget.historyMessages.last.content 
+        : '';
 
     // 创建自定义配置
     _customLightConfig = MarkdownConfig(
@@ -74,7 +84,7 @@ class _MessageViewState extends State<MessageView> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollToBottom();
     });
   }
 
@@ -84,16 +94,36 @@ class _MessageViewState extends State<MessageView> {
     super.dispose();
   }
 
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+  }
+
   @override
   void didUpdateWidget(MessageView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // 当有新消息到达时滚动到底部
-    if (widget.historyMessages.length > _lastMessageCount) {
-      _lastMessageCount = widget.historyMessages.length;
-      Future.delayed(Duration(milliseconds: 300), () {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      });
+    final currentMessageCount = widget.historyMessages.length;
+    final currentLastContent = widget.historyMessages.isNotEmpty 
+        ? widget.historyMessages.last.content 
+        : '';
+
+    // 检查是否有新消息或最后一条消息内容发生变化（流式更新）
+    if (currentMessageCount > _lastMessageCount || 
+        (_lastMessageContent != currentLastContent && currentLastContent.isNotEmpty)) {
+      
+      _lastMessageCount = currentMessageCount;
+      _lastMessageContent = currentLastContent;
+      
+      // 滚动到底部
+      _scrollToBottom();
     }
   }
 
@@ -104,11 +134,15 @@ class _MessageViewState extends State<MessageView> {
       itemCount: widget.historyMessages.length,
       itemBuilder: (context, index) {
         final message = widget.historyMessages[index];
+        final isLastMessage = index == widget.historyMessages.length - 1;
+        final isStreamingMessage = isLastMessage && 
+                                  message.role == MessageRole.assistant && 
+                                  widget.isStreaming;
+        
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            // mainAxisAlignment: message.role == MessageRole.user ? MainAxisAlignment.start : MainAxisAlignment.end,
             children: [
               if (message.role != MessageRole.user) ...[
                 CircleAvatar(
@@ -128,7 +162,6 @@ class _MessageViewState extends State<MessageView> {
                   child: Container(
                     constraints: const BoxConstraints(
                       minWidth: 0,
-                      // maxWidth: 400, // 限制最大宽度，避免过宽
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -138,12 +171,22 @@ class _MessageViewState extends State<MessageView> {
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: MarkdownBlock(
-                      data: message.content,
-                      config:
-                          Theme.of(context).brightness == Brightness.dark
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        MarkdownBlock(
+                          data: message.content.isEmpty ? ' ' : message.content,
+                          config: Theme.of(context).brightness == Brightness.dark
                               ? _customDarkConfig
                               : _customLightConfig,
+                        ),
+                        // 只在正在流式显示时显示光标
+                        if (isStreamingMessage)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _buildTypingIndicator(),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -153,7 +196,7 @@ class _MessageViewState extends State<MessageView> {
                 Container(
                   constraints: const BoxConstraints(
                     minWidth: 0,
-                    maxWidth: 300, // 限制最大宽度，避免过宽
+                    maxWidth: 300,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -165,10 +208,9 @@ class _MessageViewState extends State<MessageView> {
                   ),
                   child: MarkdownBlock(
                     data: message.content,
-                    config:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? _customDarkConfig
-                            : _customLightConfig,
+                    config: Theme.of(context).brightness == Brightness.dark
+                        ? _customDarkConfig
+                        : _customLightConfig,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -188,6 +230,32 @@ class _MessageViewState extends State<MessageView> {
             ],
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 800),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value > 0.5 ? 1.0 : 0.3,
+          child: Container(
+            width: 8,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        // 重新启动动画
+        if (mounted) {
+          setState(() {});
+        }
       },
     );
   }

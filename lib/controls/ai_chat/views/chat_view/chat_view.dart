@@ -16,6 +16,7 @@ class ChatView extends StatefulWidget {
     this.selectedProviderId,
     this.selectedModelId,
     this.onModelSelected,
+    this.isStreaming = false,
   });
 
   final Function(String)? onFileSelected;
@@ -26,6 +27,7 @@ class ChatView extends StatefulWidget {
   final String? selectedProviderId;
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
+  final bool isStreaming;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -50,7 +52,12 @@ class _ChatView extends State<ChatView> {
             ),
           ),
 
-          Expanded(child: MessageView(widget.historyMessages)),
+          Expanded(
+            child: MessageView(
+              widget.historyMessages,
+              isStreaming: widget.isStreaming,
+            ),
+          ),
 
           // 底部部件
           SizedBox(
@@ -62,6 +69,7 @@ class _ChatView extends State<ChatView> {
               selectedProviderId: widget.selectedProviderId,
               selectedModelId: widget.selectedModelId,
               onModelSelected: widget.onModelSelected,
+              isStreaming: widget.isStreaming,
             ),
           ),
         ],

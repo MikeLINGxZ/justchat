@@ -34,6 +34,7 @@ class _AssistantPage extends State<AssistantPage> {
   final Client _grpcClient = Client();
   String? _selectedProviderId;
   String? _selectedModelId;
+  bool _isStreaming = false; // 添加流式状态标记
 
   @override
   void initState() {
@@ -277,6 +278,19 @@ def hello():
       });
     }
 
+    // 立即添加一个空的AI消息用于流式显示
+    final aiMessage = Message(
+      role: MessageRole.assistant,
+      content: '',
+    );
+    setState(() {
+      _historyMessages.add(aiMessage);
+      _isStreaming = true; // 开始流式显示
+    });
+
+    String fullResponse = '';
+    bool hasError = false;
+
     try {
       // 检查gRPC客户端
       if (_grpcClient.stub == null) {
@@ -286,8 +300,10 @@ def hello():
         }
       }
       
-      // 准备历史消息
-      List<grpc_common.Message> grpcMessages = _historyMessages.map((msg) {
+      // 准备历史消息（排除刚添加的空AI消息）
+      List<grpc_common.Message> grpcMessages = _historyMessages
+          .where((msg) => msg.content.isNotEmpty)
+          .map((msg) {
         return grpc_common.Message(
           role: msg.role == MessageRole.user 
               ? grpc_enum.MessageRole.MESSAGE_ROLE_USER 
@@ -321,7 +337,6 @@ def hello():
       // 调用gRPC聊天接口
       final responseStream = _grpcClient.stub!.chat(controller.stream);
       
-      String fullResponse = '';
       await for (final response in responseStream) {
         if (response.errorMessage.isNotEmpty) {
           throw Exception(response.errorMessage);
@@ -329,17 +344,18 @@ def hello():
         
         fullResponse += response.content;
         
-        if (response.isDone) {
-          // 聊天完成，添加AI回复到界面
-          final aiMessage = Message(
-            role: MessageRole.assistant,
-            content: fullResponse,
-          );
+        // 实时更新AI消息内容
+        if (mounted) {
           setState(() {
-            _historyMessages.add(aiMessage);
+            _historyMessages.last = Message(
+              role: MessageRole.assistant,
+              content: fullResponse,
+            );
           });
-          
-          // 保存AI回复到数据库
+        }
+        
+        if (response.isDone) {
+          // 聊天完成，保存AI回复到数据库
           await ChatStorage.addMessage(
             conversationId: _currentConversation!.id,
             role: 'assistant',
@@ -349,23 +365,45 @@ def hello():
         }
       }
     } catch (e) {
+      hasError = true;
       debugPrint('Error during chat: $e');
       
-      // 发生错误时，添加错误消息到界面
-      final errorMessage = Message(
-        role: MessageRole.assistant,
-        content: '抱歉，处理您的请求时发生错误：${e.toString()}',
-      );
-      setState(() {
-        _historyMessages.add(errorMessage);
-      });
+      // 发生错误时，更新AI消息为错误内容
+      final errorContent = '抱歉，处理您的请求时发生错误：${e.toString()}';
+      
+      if (mounted) {
+        setState(() {
+          _historyMessages.last = Message(
+            role: MessageRole.assistant,
+            content: errorContent,
+          );
+        });
+      }
       
       // 保存错误消息到数据库
-      await ChatStorage.addMessage(
-        conversationId: _currentConversation!.id,
-        role: 'assistant',
-        content: '抱歉，处理您的请求时发生错误：${e.toString()}',
-      );
+      try {
+        await ChatStorage.addMessage(
+          conversationId: _currentConversation!.id,
+          role: 'assistant',
+          content: errorContent,
+        );
+      } catch (dbError) {
+        debugPrint('保存错误消息到数据库失败: $dbError');
+      }
+    } finally {
+      // 结束流式显示
+      if (mounted) {
+        setState(() {
+          _isStreaming = false;
+        });
+      }
+      
+      // 确保在异常情况下，如果AI消息仍然为空，则移除它
+      if (mounted && _historyMessages.isNotEmpty && _historyMessages.last.content.isEmpty && !hasError) {
+        setState(() {
+          _historyMessages.removeLast();
+        });
+      }
     }
   }
 
@@ -436,6 +474,7 @@ def hello():
               selectedProviderId: _selectedProviderId,
               selectedModelId: _selectedModelId,
               onModelSelected: _handleModelSelected,
+              isStreaming: _isStreaming,
             ),
       rightChild: Text("data"),
       leftWidth: 500.0,
