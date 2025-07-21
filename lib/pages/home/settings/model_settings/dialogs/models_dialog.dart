@@ -357,24 +357,29 @@ void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider)
                                           
                                           if (confirmed == true) {
                                             final success = await LlmStorage.deleteModel(model.id);
-                                            if (success) {
-                                              setState(() {
-                                                availableModels.removeAt(index);
-                                              });
-                                              // 刷新 provider 数据
-                                              ref.refresh(modelsProvider(provider.id));
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    '模型已删除',
-                                                    style: TextStyle(
-                                                      fontSize: FontSizeUtils.getBodySize(ref),
-                                                    ),
-                                                  ),
-                                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                                ),
-                                              );
-                                            }
+                                                                        if (success) {
+                              setState(() {
+                                availableModels.removeAt(index);
+                              });
+                              // 刷新 provider 数据
+                              ref.refresh(modelsProvider(provider.id));
+                              // 延迟显示通知，确保不被对话框遮住
+                              Future.delayed(const Duration(milliseconds: 100), () {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '模型已删除',
+                                        style: TextStyle(
+                                          fontSize: FontSizeUtils.getBodySize(ref),
+                                        ),
+                                      ),
+                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                    ),
+                                  );
+                                }
+                              });
+                            }
                                           }
                                         }
                                       },
@@ -506,33 +511,43 @@ void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider)
                 // 刷新 provider 数据
                 ref.refresh(modelsProvider(provider.id));
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '模型列表已更新! 发现 ${response.models.length} 个模型',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                // 延迟显示通知，确保不被对话框遮住
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '模型列表已更新! 发现 ${response.models.length} 个模型',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                       ),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                );
+                    );
+                  }
+                });
               } catch (e) {
                 setState(() {
                   isVerifying = false;
                 });
                 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '重新验证失败: ${e.toString()}',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                // 延迟显示通知，确保不被对话框遮住
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '重新验证失败: ${e.toString()}',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
                       ),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                  ),
-                );
+                    );
+                  }
+                });
               }
             },
             icon: isVerifying 
@@ -826,29 +841,36 @@ void _showAddModelDialog(BuildContext context, WidgetRef ref, LlmProvider provid
 
                 Navigator.of(context).pop();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '自定义模型已添加',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                // 等待对话框完全关闭
+                await Future.delayed(const Duration(milliseconds: 100));
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '自定义模型已添加',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
                       ),
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                );
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '添加模型失败: $e',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '添加模型失败: $e',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
                       ),
+                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                  ),
-                );
+                  );
+                }
               }
             },
             child: Text(
@@ -1058,31 +1080,38 @@ void _showEditModelDialog(BuildContext context, WidgetRef ref, Model model, LlmP
 
                 Navigator.of(context).pop();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '模型已更新' : '更新模型失败',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                // 等待对话框完全关闭
+                await Future.delayed(const Duration(milliseconds: 100));
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success ? '模型已更新' : '更新模型失败',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
                       ),
+                      backgroundColor: success 
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.errorContainer,
                     ),
-                    backgroundColor: success 
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.errorContainer,
-                  ),
-                );
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '更新模型失败: $e',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '更新模型失败: $e',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
                       ),
+                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                  ),
-                );
+                  );
+                }
               }
             },
             child: Text(

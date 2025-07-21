@@ -507,10 +507,24 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
+              // 等待对话框完全关闭
+              await Future.delayed(const Duration(milliseconds: 100));
               final success = await LlmStorage.deleteProvider(provider.id);
               if (success) {
                 // 刷新提供商列表
                 ref.refresh(providersProvider);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '删除成功',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                        ),
+                      ),
+                    ),
+                  );
+                }
               } else {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
