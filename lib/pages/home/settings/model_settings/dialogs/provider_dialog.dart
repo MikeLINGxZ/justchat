@@ -24,6 +24,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
   List<Model> availableModels = [];
   bool showModelList = false;
   bool isLoadingModels = false;
+  final ScrollController dialogScrollController = ScrollController();
 
   // 如果是编辑模式且已验证，初始化时预加载模型列表
   if (isEditMode && provider != null && verificationSuccess) {
@@ -64,6 +65,7 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
         content: SizedBox(
           width: 500,
           child: SingleChildScrollView(
+            controller: dialogScrollController,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,6 +325,17 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                      isLoadingModels = false;
                                      showModelList = true;
                                    });
+                                   
+                                   // 滚动到底部以显示模型列表
+                                   WidgetsBinding.instance.addPostFrameCallback((_) {
+                                     if (dialogScrollController.hasClients) {
+                                       dialogScrollController.animateTo(
+                                         dialogScrollController.position.maxScrollExtent,
+                                         duration: const Duration(milliseconds: 300),
+                                         curve: Curves.easeOut,
+                                       );
+                                     }
+                                   });
                                   } catch (e) {
                                   setState(() {
                                     isLoadingModels = false;
@@ -330,14 +343,42 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                   });
                                 }
                               } else {
+                                final wasHidden = !showModelList;
                                 setState(() {
                                   showModelList = !showModelList;
                                 });
+                                
+                                // 如果是从隐藏变为显示，滚动到底部
+                                if (wasHidden && showModelList) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (dialogScrollController.hasClients) {
+                                      dialogScrollController.animateTo(
+                                        dialogScrollController.position.maxScrollExtent,
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeOut,
+                                      );
+                                    }
+                                  });
+                                }
                               }
                             } else {
+                              final wasHidden = !showModelList;
                               setState(() {
                                 showModelList = !showModelList;
                               });
+                              
+                              // 如果是从隐藏变为显示，滚动到底部
+                              if (wasHidden && showModelList) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (dialogScrollController.hasClients) {
+                                    dialogScrollController.animateTo(
+                                      dialogScrollController.position.maxScrollExtent,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                });
+                              }
                             }
                           } : null,
                           borderRadius: BorderRadius.circular(8),
