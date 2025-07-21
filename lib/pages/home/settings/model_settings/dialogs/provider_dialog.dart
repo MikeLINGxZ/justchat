@@ -385,27 +385,27 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                           child: Padding(
                             padding: const EdgeInsets.all(4),
                             child: Row(
-                              children: [
-                                Icon(
+                      children: [
+                        Icon(
                                   verificationSuccess 
                                       ? Icons.check_circle 
                                       : verificationFailed 
                                           ? Icons.error
                                           : Icons.help_outline,
-                                  color: verificationSuccess 
-                                      ? Theme.of(context).colorScheme.primary
+                          color: verificationSuccess 
+                              ? Theme.of(context).colorScheme.primary
                                       : verificationFailed 
                                           ? Theme.of(context).colorScheme.error
                                           : Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    verificationMessage,
-                                    style: TextStyle(
-                                      fontSize: FontSizeUtils.getSmallSize(ref),
-                                      color: verificationSuccess 
-                                          ? Theme.of(context).colorScheme.primary
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            verificationMessage,
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getSmallSize(ref),
+                              color: verificationSuccess 
+                                  ? Theme.of(context).colorScheme.primary
                                           : verificationFailed 
                                               ? Theme.of(context).colorScheme.error
                                               : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -514,7 +514,47 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                             ),
                                           ),
                                         ],
+                                        const SizedBox(width: 8),
                                       ],
+                                      // 添加模型按钮
+                                      if (isEditMode && provider != null)
+                                        Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () => _showAddModelDialog(context, ref, provider!, setState, availableModels),
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.6),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.add,
+                                                    size: 14,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    '添加模型',
+                                                    style: TextStyle(
+                                                      fontSize: FontSizeUtils.getSmallSize(ref) - 1,
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -608,6 +648,166 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                                         ),
                                                       ),
                                                     ),
+                                                  const SizedBox(width: 8),
+                                                  // 启用开关
+                                                  Transform.scale(
+                                                    scale: 0.8,
+                                                    child: Switch(
+                                                      value: model.enabled,
+                                                      onChanged: (value) async {
+                                                        // 更新模型启用状态
+                                                        final updatedModel = Model(
+                                                          llmProviderId: model.llmProviderId,
+                                                          id: model.id,
+                                                          object: model.object,
+                                                          ownedBy: model.ownedBy,
+                                                          enabled: value,
+                                                          isCustom: model.isCustom,
+                                                          seqId: model.seqId,
+                                                        );
+                                                        
+                                                        final success = await LlmStorage.updateModel(updatedModel);
+                                                        if (success) {
+                                                          setState(() {
+                                                            availableModels[index] = updatedModel;
+                                                          });
+                                                        }
+                                                      },
+                                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  // 更多按钮
+                                                  PopupMenuButton<String>(
+                                                    onSelected: (value) async {
+                                                      if (value == 'edit' && model.isCustom) {
+                                                        // TODO: 实现编辑模型功能
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                              '编辑模型功能开发中...',
+                                                              style: TextStyle(
+                                                                fontSize: FontSizeUtils.getBodySize(ref),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      } else if (value == 'delete') {
+                                                        // 删除模型
+                                                        final confirmed = await showDialog<bool>(
+                                                          context: context,
+                                                          builder: (context) => AlertDialog(
+                                                            title: Text(
+                                                              '确认删除',
+                                                              style: TextStyle(
+                                                                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                                                              ),
+                                                            ),
+                                                            content: Text(
+                                                              '确定要删除模型 "${model.id}" 吗？',
+                                                              style: TextStyle(
+                                                                fontSize: FontSizeUtils.getBodySize(ref),
+                                                              ),
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () => Navigator.of(context).pop(false),
+                                                                child: Text(
+                                                                  '取消',
+                                                                  style: TextStyle(
+                                                                    fontSize: FontSizeUtils.getBodySize(ref),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              FilledButton(
+                                                                onPressed: () => Navigator.of(context).pop(true),
+                                                                child: Text(
+                                                                  '删除',
+                                                                  style: TextStyle(
+                                                                    fontSize: FontSizeUtils.getBodySize(ref),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                        
+                                                        if (confirmed == true) {
+                                                          final success = await LlmStorage.deleteModel(model.id);
+                                                          if (success) {
+                                                            setState(() {
+                                                              availableModels.removeAt(index);
+                                                            });
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              SnackBar(
+                                                                content: Text(
+                                                                  '模型已删除',
+                                                                  style: TextStyle(
+                                                                    fontSize: FontSizeUtils.getBodySize(ref),
+                                                                  ),
+                                                                ),
+                                                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                                              ),
+                                                            );
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    itemBuilder: (context) => [
+                                                      PopupMenuItem<String>(
+                                                        value: 'edit',
+                                                        enabled: model.isCustom,
+                                                        child: Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons.edit,
+                                                              size: 16,
+                                                              color: model.isCustom
+                                                                  ? Theme.of(context).colorScheme.onSurface
+                                                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                                            ),
+                                                            const SizedBox(width: 8),
+                                                            Text(
+                                                              '编辑',
+                                                              style: TextStyle(
+                                                                fontSize: FontSizeUtils.getSmallSize(ref),
+                                                                color: model.isCustom
+                                                                    ? Theme.of(context).colorScheme.onSurface
+                                                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      PopupMenuItem<String>(
+                                                        value: 'delete',
+                                                        child: Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons.delete,
+                                                              size: 16,
+                                                              color: Theme.of(context).colorScheme.error,
+                                                            ),
+                                                            const SizedBox(width: 8),
+                                                            Text(
+                                                              '删除',
+                                                              style: TextStyle(
+                                                                fontSize: FontSizeUtils.getSmallSize(ref),
+                                                                color: Theme.of(context).colorScheme.error,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    icon: Icon(
+                                                      Icons.more_vert,
+                                                      size: 16,
+                                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                                    ),
+                                                    padding: EdgeInsets.zero,
+                                                    iconSize: 16,
+                                                  ),
                                                 ],
                                               ),
                                             );
@@ -646,8 +846,8 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                                       ),
                                 ),
                               ],
-                            ),
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -772,56 +972,56 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              FilledButton.icon(
-                onPressed: () async {
-                  // 验证输入
-                  final name = nameController.text.trim();
-                  final baseUrl = baseUrlController.text.trim();
-                  final apiKey = apiKeyController.text.trim();
-                  final description = descriptionController.text.trim();
+          FilledButton.icon(
+            onPressed: () async {
+              // 验证输入
+              final name = nameController.text.trim();
+              final baseUrl = baseUrlController.text.trim();
+              final apiKey = apiKeyController.text.trim();
+              final description = descriptionController.text.trim();
 
-                  if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '请填写所有必填字段',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                          ),
-                        ),
+              if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '请填写所有必填字段',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                    );
-                    return;
-                  }
+                    ),
+                  ),
+                );
+                return;
+              }
 
-                  bool success;
-                  if (isEditMode) {
-                    // 更新供应商对象
-                    final updatedProvider = LlmProvider(
-                      id: provider!.id, // 保持原ID不变
-                      name: name,
-                      baseUrl: baseUrl,
-                      apiKey: apiKey,
-                      description: description.isEmpty ? null : description,
-                      enable: isEnabled,
-                      checked: verificationSuccess, // 根据验证结果设置checked状态
-                    );
+              bool success;
+              if (isEditMode) {
+                // 更新供应商对象
+                final updatedProvider = LlmProvider(
+                  id: provider!.id, // 保持原ID不变
+                  name: name,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  description: description.isEmpty ? null : description,
+                  enable: isEnabled,
+                  checked: verificationSuccess, // 根据验证结果设置checked状态
+                );
 
-                    // 更新供应商到数据库
-                    success = await LlmStorage.updateProvider(updatedProvider);
-                  } else {
-                    // 创建供应商对象
-                    final newProvider = LlmProvider(
-                      id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
-                      name: name,
-                      baseUrl: baseUrl,
-                      apiKey: apiKey,
-                      description: description.isEmpty ? null : description,
-                      enable: isEnabled,
-                      checked: verificationSuccess, // 根据验证结果设置checked状态
-                    );
+                // 更新供应商到数据库
+                success = await LlmStorage.updateProvider(updatedProvider);
+              } else {
+                // 创建供应商对象
+                final newProvider = LlmProvider(
+                  id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
+                  name: name,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  description: description.isEmpty ? null : description,
+                  enable: isEnabled,
+                  checked: verificationSuccess, // 根据验证结果设置checked状态
+                );
 
-                                    // 添加供应商到数据库
+                // 添加供应商到数据库
                 success = await LlmStorage.addProvider(newProvider);
                 
                 // 如果验证成功且有模型数据，添加模型到数据库
@@ -839,15 +1039,15 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                     debugPrint('添加模型失败，但供应商已创建: $e');
                   }
                 }
-                  }
+              }
 
-                  Navigator.of(context).pop();
+              Navigator.of(context).pop();
 
-                  if (success) {
-                    // 刷新供应商列表
-                    ref.refresh(providersProvider);
+              if (success) {
+                // 刷新供应商列表
+                ref.refresh(providersProvider);
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       isEditMode 
@@ -861,33 +1061,33 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
                     duration: const Duration(seconds: 3),
                   ),
                 );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isEditMode ? '更新供应商失败' : '添加供应商失败',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                          ),
-                        ),
-                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditMode ? '更新供应商失败' : '添加供应商失败',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                    );
-                  }
-                },
-                icon: Icon(isEditMode ? Icons.save : Icons.add),
-                label: Text(
-                  isEditMode ? '保存修改' : '添加供应商',
-                  style: TextStyle(
-                    fontSize: FontSizeUtils.getBodySize(ref),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
                   ),
-                ),
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
+                );
+              }
+            },
+            icon: Icon(isEditMode ? Icons.save : Icons.add),
+            label: Text(
+              isEditMode ? '保存修改' : '添加供应商',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
               ),
               const SizedBox(width: 8),
               TextButton.icon(
@@ -924,6 +1124,268 @@ void showAddProviderDialog(BuildContext context, WidgetRef ref) {
 // 便捷函数：显示编辑供应商对话框
 void showEditProviderDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
   showProviderDialog(context, ref, provider: provider);
+}
+
+// 显示添加模型对话框的私有函数
+void _showAddModelDialog(BuildContext context, WidgetRef ref, LlmProvider provider, 
+    void Function(void Function()) setState, List<Model> availableModels) {
+  final TextEditingController modelIdController = TextEditingController();
+  final TextEditingController modelNameController = TextEditingController();
+  final TextEditingController ownedByController = TextEditingController(text: 'custom');
+  bool modelEnabled = true;
+
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.add_circle,
+              color: Theme.of(context).colorScheme.secondary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '添加自定义模型',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: modelIdController,
+                decoration: InputDecoration(
+                  labelText: '模型ID *',
+                  hintText: '例如: my-custom-model',
+                  prefixIcon: const Icon(Icons.psychology),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: modelNameController,
+                decoration: InputDecoration(
+                  labelText: '模型名称',
+                  hintText: '例如: My Custom Model (可选，默认使用ID)',
+                  prefixIcon: const Icon(Icons.label),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ownedByController,
+                decoration: InputDecoration(
+                  labelText: '拥有者',
+                  hintText: '例如: custom, user, organization',
+                  prefixIcon: const Icon(Icons.person),
+                  labelStyle: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: Text(
+                  '启用此模型',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                subtitle: Text(
+                  '关闭后将不会在模型选择中显示',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getSmallSize(ref),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: modelEnabled,
+                onChanged: (value) {
+                  setDialogState(() {
+                    modelEnabled = value;
+                  });
+                },
+                secondary: Icon(
+                  modelEnabled ? Icons.toggle_on : Icons.toggle_off,
+                  color: modelEnabled ? Theme.of(context).colorScheme.secondary : null,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '取消',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final modelId = modelIdController.text.trim();
+              final modelName = modelNameController.text.trim();
+              final ownedBy = ownedByController.text.trim();
+
+              if (modelId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '请输入模型ID',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              // 检查模型ID是否已存在
+              final existingModel = availableModels.firstWhere(
+                (model) => model.id == modelId,
+                orElse: () => Model(
+                  llmProviderId: '',
+                  id: '',
+                  object: '',
+                  ownedBy: '',
+                  enabled: false,
+                  isCustom: false,
+                  seqId: 0,
+                ),
+              );
+
+              if (existingModel.id.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '模型ID已存在，请使用其他ID',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              try {
+                // 获取最大序号
+                final maxSeqId = await LlmStorage.getMaxModelSeqId(provider.id);
+
+                // 创建模型数据
+                final modelMap = {
+                  'llm_provider_id': provider.id,
+                  'id': modelId,
+                  'name': modelName.isEmpty ? modelId : modelName,
+                  'object': 'model',
+                  'owned_by': ownedBy.isEmpty ? 'custom' : ownedBy,
+                  'enabled': modelEnabled ? 1 : 0,
+                  'is_custom': 1, // 标记为自定义模型
+                  'seq_id': maxSeqId + 1,
+                };
+
+                // 添加到数据库
+                await LlmStorage.addModelWithCustomFields(modelMap);
+
+                // 创建Model对象并添加到列表
+                final newModel = Model(
+                  llmProviderId: provider.id,
+                  id: modelId,
+                  object: 'model',
+                  ownedBy: ownedBy.isEmpty ? 'custom' : ownedBy,
+                  enabled: modelEnabled,
+                  isCustom: true,
+                  seqId: maxSeqId + 1,
+                );
+
+                // 更新UI状态
+                setState(() {
+                  availableModels.add(newModel);
+                  // 重新排序：非自定义模型在前，自定义模型在后
+                  availableModels.sort((a, b) {
+                    if (a.isCustom == b.isCustom) {
+                      return a.id.compareTo(b.id);
+                    }
+                    return a.isCustom ? 1 : -1;
+                  });
+                });
+
+                Navigator.of(context).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '自定义模型已添加',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '添加模型失败: $e',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              '添加',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 // 更新供应商模型列表的私有函数
