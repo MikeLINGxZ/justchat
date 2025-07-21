@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/models/conversation_v0.dart';
+import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
@@ -9,7 +9,7 @@ import 'package:lemon_tea/generated/l10n.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
-  final Function(Conversation_v0) onConversationSelected;
+  final Function(Conversation) onConversationSelected;
   final Function(String) onConversationDeleted;
   final VoidCallback? onNewConversation;
 
@@ -27,7 +27,7 @@ class HistoryPage extends ConsumerStatefulWidget {
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
   String _searchQuery = '';
-  List<Conversation_v0> _filteredConversations = [];
+  List<Conversation> _filteredConversations = [];
 
   @override
   void initState() {
@@ -198,7 +198,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _getPreviewText(conversation.messages),
+                                '暂无预览', // 临时替代方案，因为新模型不直接包含消息
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 12),
@@ -217,7 +217,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                S.of(context).messagesCount(conversation.messages.length),
+                                S.of(context).messagesCount(0), // 临时替代方案，因为新模型不直接包含消息
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -248,21 +248,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     );
   }
 
-  String _getPreviewText(List<Message> messages) {
-    if (messages.isEmpty) return S.of(context).conversation;
-    
-    // 获取最后一条用户消息作为预览
-    for (int i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role == MessageRole.user) {
-        final content = messages[i].content;
-        return content.length > 50 ? '${content.substring(0, 50)}...' : content;
-      }
-    }
-    
-    // 如果没有用户消息，使用第一条消息
-    final content = messages.first.content;
-    return content.length > 50 ? '${content.substring(0, 50)}...' : content;
-  }
+  // _getPreviewText 方法已删除，因为新的 Conversation 模型不直接包含消息
+  // 如果需要预览功能，可以通过 ChatStorage 异步获取消息
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

@@ -47,7 +47,7 @@ class Message {
         role TEXT NOT NULL,
         content TEXT NOT NULL,
         created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
+        deleted INTEGER NOT NULL DEFAULT 0,
         metadata TEXT,
         FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
       )
@@ -68,6 +68,7 @@ class Message {
       'role': role.toString().split('.').last, // MessageRole.user => 'user'
       'content': content,
       'created_at': createdAt.millisecondsSinceEpoch,
+      'updated_at': createdAt.millisecondsSinceEpoch, // 兼容现有表结构
       'deleted': deleted ? 1 : 0,
     };
   }
@@ -80,7 +81,7 @@ class Message {
       role: MessageRole.values.byName(map['role']),
       content: map['content'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']),
-      deleted: map['deleted'] == 1,
+      deleted: (map['deleted'] ?? 0) == 1,
     );
   }
 }

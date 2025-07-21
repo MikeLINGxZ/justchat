@@ -4,7 +4,16 @@ import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
-import 'package:lemon_tea/utils/ffi/example_ffi_chat/example_ffi_chat.dart' as ffi_chat;
+import 'package:lemon_tea/utils/cli/client/client.dart';
+import 'package:lemon_tea/rpc/service.pb.dart' as grpc_service;
+import 'package:lemon_tea/rpc/common.pb.dart' as grpc_common;
+import 'package:lemon_tea/rpc/common.pbenum.dart' as grpc_enum;
+import 'package:lemon_tea/storage/chat_storage.dart';
+import 'package:lemon_tea/storage/llm_storage.dart';
+import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/llm_provider.dart';
+import 'package:lemon_tea/models/model.dart';
+import 'dart:async';
 import 'dart:io' show Platform;
 
 class AssistantPage extends StatefulWidget {
@@ -21,6 +30,8 @@ class _AssistantPage extends State<AssistantPage> {
   List<Message> _historyMessages = [];
   bool _isLoading = false;
   String _currentTitle = 'AI 助手';
+  Conversation? _currentConversation;
+  final Client _grpcClient = Client();
 
   @override
   void initState() {
@@ -41,7 +52,7 @@ class _AssistantPage extends State<AssistantPage> {
     // 当 ConversationManager 发生变化时，更新UI
     if (mounted) {
       setState(() {
-        _historyMessages = _conversationManager.currentConversation?.messages ?? [];
+        _historyMessages = _conversationManager.messages;
         _currentTitle = _conversationManager.currentConversation?.title ?? 'AI 助手';
       });
     }
@@ -53,15 +64,21 @@ class _AssistantPage extends State<AssistantPage> {
     });
 
     try {
-      await _conversationManager.initialize();
+      // 初始化gRPC客户端
+      await _grpcClient.init();
       
-      // 如果没有对话，创建一个新的欢迎对话
-      if (_conversationManager.conversations.isEmpty) {
+      // 确保有基本的LLM配置
+      await _ensureLlmConfiguration();
+      
+      // 获取所有对话
+      final conversations = await ChatStorage.getAllConversations();
+      
+      if (conversations.isEmpty) {
+        // 如果没有对话，创建一个新的欢迎对话
         await _createWelcomeConversation();
       } else {
         // 加载最新的对话
-        final latestConversation = _conversationManager.conversations.first;
-        await _conversationManager.loadConversation(latestConversation.id);
+        await _loadConversation(conversations.first);
       }
     } catch (e) {
       debugPrint('Failed to initialize conversation: $e');
@@ -110,10 +127,76 @@ def hello():
     }
   }
 
+  /// 确保有基本的LLM配置
+  Future<void> _ensureLlmConfiguration() async {
+    try {
+      // 检查是否已有LLM提供商配置
+      final providers = await LlmStorage.getAllProviders();
+      
+      if (providers.isEmpty) {
+        debugPrint('未找到LLM提供商配置，创建默认配置');
+        
+        // 创建默认的DeepSeek提供商
+        final defaultProvider = LlmProvider(
+          id: 'deepseek',
+          name: 'DeepSeek',
+          baseUrl: 'https://api.deepseek.com/v1',
+          apiKey: Platform.environment['DEEPSEEK_API_KEY'] ?? '',
+          alias: 'DeepSeek AI',
+          description: 'DeepSeek AI 服务',
+          seqId: 1,
+        );
+        
+        await LlmStorage.addProvider(defaultProvider);
+        
+        // 创建默认模型
+        final defaultModel = Model(
+          id: 'deepseek-chat',
+          object: 'model',
+          ownedBy: 'deepseek',
+          enabled: true,
+          llmProviderId: 'deepseek',
+          seqId: 1,
+        );
+        
+        await LlmStorage.addModel(defaultModel);
+        
+        debugPrint('默认LLM配置创建完成');
+      } else {
+        debugPrint('找到${providers.length}个LLM提供商配置');
+      }
+    } catch (e) {
+      debugPrint('配置LLM提供商失败: $e');
+    }
+  }
+
+  Future<void> _loadConversation(Conversation conversation) async {
+    _currentConversation = conversation;
+    final dbMessages = await ChatStorage.getMessagesByConversationId(conversation.id);
+    
+    // 转换数据库Message为LLM Message
+    final messages = dbMessages.map((dbMsg) => Message(
+      role: dbMsg.role,
+      content: dbMsg.content,
+    )).toList();
+    
+    setState(() {
+      _currentTitle = conversation.title;
+      _historyMessages = messages;
+    });
+  }
+
   Future<void> _createWelcomeConversation() async {
-    final welcomeMessage = Message(
-      role: MessageRole.assistant,
-      content: """# 欢迎使用 Markdown
+    final conversation = await ChatStorage.createConversation(
+      title: '欢迎对话',
+      defaultProviderId: 'deepseek',
+      defaultModelId: 'deepseek-chat',
+    );
+    
+    if (conversation != null) {
+      _currentConversation = conversation;
+      
+      const welcomeContent = """# 欢迎使用 Markdown
 
 这是一个简单的 Markdown 示例文档，展示常用语法：
 
@@ -144,90 +227,164 @@ def hello():
 ## 代码块
 ```python
 def hello():
-    print("代码高亮示例")""",
-    );
-
-    await _conversationManager.createConversation(
-      title: '欢迎对话',
-      initialMessages: [welcomeMessage],
-    );
+    print("代码高亮示例")""";
+      
+      await ChatStorage.addMessage(
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: welcomeContent,
+      );
+      
+      setState(() {
+        _currentTitle = conversation.title;
+        _historyMessages = [Message(
+          role: MessageRole.assistant,
+          content: welcomeContent,
+        )];
+      });
+    }
   }
 
   Future<void> _handleSendMessage(String message) async {
-    if (message.trim().isEmpty) return;
+    if (message.trim().isEmpty || _currentConversation == null) return;
 
+    // 添加用户消息到界面
     final userMessage = Message(role: MessageRole.user, content: message);
-    
-    // 保存到存储
-    await _conversationManager.addMessageToCurrent(userMessage);
+    setState(() {
+      _historyMessages.add(userMessage);
+    });
+
+    // 保存用户消息到数据库
+    await ChatStorage.addMessage(
+      conversationId: _currentConversation!.id,
+      role: 'user',
+      content: message,
+    );
 
     // 如果是第一条用户消息，更新对话标题
-    if (_conversationManager.currentConversation?.messages.length == 2) {
-      final title = _conversationManager.generateTitleFromMessage(message);
-      await _conversationManager.updateConversationTitle(
-        _conversationManager.currentConversation!.id,
-        title,
-      );
+    final messageCount = await ChatStorage.getMessageCountByConversationId(_currentConversation!.id);
+    if (messageCount == 2) { // 1条欢迎消息 + 1条用户消息
+      final title = _generateTitleFromMessage(message);
+      await ChatStorage.updateConversationTitle(_currentConversation!.id, title);
+      setState(() {
+        _currentTitle = title;
+      });
     }
 
     try {
-      // 从环境变量获取API密钥
-      String? apiKey = Platform.environment['DEEPSEEK_API_KEY'];
-      
-      // 如果环境变量中没有API密钥，显示错误
-      if (apiKey == null || apiKey.isEmpty) {
-        throw Exception("未设置环境变量DEEPSEEK_API_KEY，请先设置API密钥");
+      // 检查gRPC客户端
+      if (_grpcClient.stub == null) {
+        await _grpcClient.init();
+        if (_grpcClient.stub == null) {
+          throw Exception("gRPC客户端初始化失败，请检查服务是否启动");
+        }
       }
       
-      // 准备聊天历史记录
-      List<ffi_chat.Message> chatMessages = _historyMessages.map((msg) {
-        return ffi_chat.Message(
-          role: msg.role == MessageRole.user ? "user" : "assistant",
+      // 准备历史消息
+      List<grpc_common.Message> grpcMessages = _historyMessages.map((msg) {
+        return grpc_common.Message(
+          role: msg.role == MessageRole.user 
+              ? grpc_enum.MessageRole.MESSAGE_ROLE_USER 
+              : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
           content: msg.content,
         );
       }).toList();
       
       // 创建聊天请求
-      final chatRequest = ffi_chat.ChatRequest(
-        systemPrompt: "你是一个有用的AI助手。",
-        messages: chatMessages,
-        apiKey: apiKey, // 使用环境变量中的API密钥
-        baseURL: "https://api.deepseek.com/v1", // 从配置中获取
-        model: "deepseek-chat", // 从配置中获取或使用默认值
+      final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
+      final modelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
+      
+      debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');
+      
+      final chatRequest = grpc_service.ChatRequest(
+        llmProviderId: providerId,
+        modelId: modelId,
+        historyMessages: grpcMessages,
+        message: grpc_common.Message(
+          role: grpc_enum.MessageRole.MESSAGE_ROLE_USER,
+          content: message,
+        ),
+        prompt: "你是一个有用的AI助手。",
       );
       
-      // 调用FFI聊天接口
-      final chatResponse = ffi_chat.ExampleFfiChat.chat(chatRequest);
+      // 创建请求流
+      final controller = StreamController<grpc_service.ChatRequest>();
+      controller.add(chatRequest);
+      controller.close();
       
-      // 检查是否有错误
-      if (chatResponse.error != null && chatResponse.error!.isNotEmpty) {
-        throw Exception(chatResponse.error);
+      // 调用gRPC聊天接口
+      final responseStream = _grpcClient.stub!.chat(controller.stream);
+      
+      String fullResponse = '';
+      await for (final response in responseStream) {
+        if (response.errorMessage.isNotEmpty) {
+          throw Exception(response.errorMessage);
+        }
+        
+        fullResponse += response.content;
+        
+        if (response.isDone) {
+          // 聊天完成，添加AI回复到界面
+          final aiMessage = Message(
+            role: MessageRole.assistant,
+            content: fullResponse,
+          );
+          setState(() {
+            _historyMessages.add(aiMessage);
+          });
+          
+          // 保存AI回复到数据库
+          await ChatStorage.addMessage(
+            conversationId: _currentConversation!.id,
+            role: 'assistant',
+            content: fullResponse,
+          );
+          break;
+        }
       }
-      
-      // 创建AI回复消息
-      final aiMessage = Message(
-        role: MessageRole.assistant,
-        content: chatResponse.content,
-      );
-      
-      // 保存到存储
-      await _conversationManager.addMessageToCurrent(aiMessage);
     } catch (e) {
       debugPrint('Error during chat: $e');
       
-      // 发生错误时，添加错误消息
+      // 发生错误时，添加错误消息到界面
       final errorMessage = Message(
         role: MessageRole.assistant,
         content: '抱歉，处理您的请求时发生错误：${e.toString()}',
       );
+      setState(() {
+        _historyMessages.add(errorMessage);
+      });
       
-      // 保存错误消息到存储
-      await _conversationManager.addMessageToCurrent(errorMessage);
+      // 保存错误消息到数据库
+      await ChatStorage.addMessage(
+        conversationId: _currentConversation!.id,
+        role: 'assistant',
+        content: '抱歉，处理您的请求时发生错误：${e.toString()}',
+      );
     }
   }
 
   Future<void> _handleNewConversation() async {
-    await _conversationManager.createConversation(title: '新对话');
+    final conversation = await ChatStorage.createConversation(
+      title: '新对话',
+      defaultProviderId: 'deepseek',
+      defaultModelId: 'deepseek-chat',
+    );
+    
+    if (conversation != null) {
+      setState(() {
+        _currentConversation = conversation;
+        _currentTitle = conversation.title;
+        _historyMessages = [];
+      });
+    }
+  }
+
+  String _generateTitleFromMessage(String message) {
+    // 简单的标题生成逻辑
+    if (message.length <= 20) {
+      return message;
+    }
+    return '${message.substring(0, 17)}...';
   }
 
   @override

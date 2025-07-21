@@ -14,7 +14,7 @@ import 'dart:io';
 /// 负责数据库的初始化、表创建和版本升级
 class SqliteDatabaseInitializer {
   static const String _databaseName = "lemon_tea.db";
-  static const int _databaseVersion = 2; // 更新数据库版本
+  static const int _databaseVersion = 3; // 更新数据库版本以添加deleted列
   
   Database? _database;
   final _initDBCompleter = Completer<Database>();
@@ -139,6 +139,43 @@ class SqliteDatabaseInitializer {
         debugPrint('更新现有记录的seq_id成功');
       } catch (e) {
         debugPrint('添加seq_id字段失败: $e');
+        rethrow;
+      }
+    }
+    
+    if (oldVersion < 3) {
+      // 版本3: 添加deleted字段到conversations和messages表
+      try {
+        // 检查conversations表是否存在deleted列
+        final conversationTableInfo = await db.rawQuery("PRAGMA table_info(${Conversation.tableName()})");
+        final conversationHasDeleted = conversationTableInfo.any((column) => column['name'] == 'deleted');
+        
+        if (!conversationHasDeleted) {
+          // 添加deleted字段到conversations表
+          await db.execute('ALTER TABLE ${Conversation.tableName()} ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0');
+          debugPrint('conversations表添加deleted字段成功');
+        }
+        
+        // 检查messages表是否存在deleted列
+        final messageTableInfo = await db.rawQuery("PRAGMA table_info(${Message.tableName()})");
+        final messageHasDeleted = messageTableInfo.any((column) => column['name'] == 'deleted');
+        
+        if (!messageHasDeleted) {
+          // 添加deleted字段到messages表
+          await db.execute('ALTER TABLE ${Message.tableName()} ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0');
+          debugPrint('messages表添加deleted字段成功');
+        }
+        
+        // 检查messages表的updated_at列
+        final messageHasUpdatedAt = messageTableInfo.any((column) => column['name'] == 'updated_at');
+        if (messageHasUpdatedAt) {
+          // SQLite不支持直接删除列，我们保持兼容并在代码中处理
+          debugPrint('messages表包含updated_at列，代码已兼容处理');
+        }
+        
+        debugPrint('数据库升级到版本3完成');
+      } catch (e) {
+        debugPrint('升级到版本3失败: $e');
         rethrow;
       }
     }

@@ -49,11 +49,12 @@ class Conversation {
         title TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
+        deleted INTEGER NOT NULL DEFAULT 0,
         model_id TEXT,
         provider_id TEXT,
         system_prompt TEXT,
-        default_provider_id TEXT NOT NULL,
-        default_model_id TEXT NOT NULL,
+        default_provider_id TEXT,
+        default_model_id TEXT,
         metadata TEXT
       )
     ''';
@@ -85,7 +86,7 @@ class Conversation {
       title: map['title'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at']),
-      deleted: map['deleted'] == 1,
+      deleted: (map['deleted'] ?? 0) == 1,
       defaultProviderId: map['default_provider_id'],
       defaultModelId: map['default_model_id'],
     );

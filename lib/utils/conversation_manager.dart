@@ -1,25 +1,28 @@
 import 'package:flutter/foundation.dart';
-import 'package:lemon_tea/models/conversation_v0.dart';
+import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/models/message.dart' as db_message;
 import 'package:lemon_tea/utils/llm/models/message.dart';
-import 'package:lemon_tea/utils/storage/storage_interface.dart';
-import 'package:lemon_tea/utils/storage/local_storage.dart';
+import 'package:lemon_tea/storage/chat_storage.dart';
 
 /// 对话管理器，负责管理对话的创建、保存、加载等操作
+/// 现在使用新的SQLite存储系统
 class ConversationManager extends ChangeNotifier {
-  final StorageInterface _storage;
   
-  List<Conversation_v0> _conversations = [];
-  Conversation_v0? _currentConversation;
+  List<Conversation> _conversations = [];
+  Conversation? _currentConversation;
+  List<Message> _currentMessages = [];
   bool _isLoading = false;
 
-  ConversationManager({StorageInterface? storage}) 
-      : _storage = storage ?? LocalStorage();
+  ConversationManager();
 
   /// 获取所有对话
-  List<Conversation_v0> get conversations => List.unmodifiable(_conversations);
+  List<Conversation> get conversations => List.unmodifiable(_conversations);
   
   /// 获取当前对话
-  Conversation_v0? get currentConversation => _currentConversation;
+  Conversation? get currentConversation => _currentConversation;
+  
+  /// 获取当前对话的消息（兼容旧接口）
+  List<Message> get messages => List.unmodifiable(_currentMessages);
   
   /// 是否正在加载
   bool get isLoading => _isLoading;
@@ -28,7 +31,7 @@ class ConversationManager extends ChangeNotifier {
   Future<void> initialize() async {
     _setLoading(true);
     try {
-      _conversations = await _storage.getAllConversations();
+      _conversations = await ChatStorage.getAllConversations();
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to load conversations: $e');
@@ -38,31 +41,50 @@ class ConversationManager extends ChangeNotifier {
   }
 
   /// 创建新对话
-  Future<Conversation_v0> createConversation({
+  Future<Conversation?> createConversation({
     String title = '新对话',
     List<Message> initialMessages = const [],
+    String? defaultProviderId,
+    String? defaultModelId,
   }) async {
-    final conversation = Conversation_v0.create(
+    final conversation = await ChatStorage.createConversation(
       title: title,
-      messages: initialMessages,
+      defaultProviderId: defaultProviderId ?? 'deepseek',
+      defaultModelId: defaultModelId ?? 'deepseek-chat',
     );
     
-    // 只有当有初始消息时才保存到存储
-    if (initialMessages.isNotEmpty) {
-      await _storage.saveConversation(conversation);
+    if (conversation != null) {
+      // 如果有初始消息，保存它们
+      for (final message in initialMessages) {
+        await ChatStorage.addMessage(
+          conversationId: conversation.id,
+          role: message.role.toString().split('.').last,
+          content: message.content,
+        );
+      }
+      
       _conversations.insert(0, conversation);
+      _currentConversation = conversation;
+      _currentMessages = initialMessages;
+      notifyListeners();
     }
     
-    _currentConversation = conversation;
-    notifyListeners();
     return conversation;
   }
 
   /// 加载对话
   Future<void> loadConversation(String id) async {
-    final conversation = await _storage.getConversationById(id);
+    final conversation = await ChatStorage.getConversationById(id);
     if (conversation != null) {
       _currentConversation = conversation;
+      
+      // 加载对话的消息并转换为LLM Message
+      final dbMessages = await ChatStorage.getMessagesByConversationId(id);
+      _currentMessages = dbMessages.map((dbMsg) => Message(
+        role: dbMsg.role,
+        content: dbMsg.content,
+      )).toList();
+      
       notifyListeners();
     }
   }
@@ -75,44 +97,49 @@ class ConversationManager extends ChangeNotifier {
       return;
     }
 
-    final updatedConversation = _currentConversation!.addMessage(message);
+    // 保存到数据库
+    await ChatStorage.addMessage(
+      conversationId: _currentConversation!.id,
+      role: message.role.toString().split('.').last,
+      content: message.content,
+    );
     
-    // 如果这是第一条消息，需要保存对话到存储
-    if (_currentConversation!.messages.isEmpty) {
-      await _storage.saveConversation(updatedConversation);
-      _conversations.insert(0, updatedConversation);
-    } else {
-      // 如果已经有消息，更新存储
-      await _storage.saveConversation(updatedConversation);
-      // 将更新的对话移到列表顶部
-      final index = _conversations.indexWhere((c) => c.id == updatedConversation.id);
-      if (index != -1) {
-        _conversations.removeAt(index);
-        _conversations.insert(0, updatedConversation);
-      }
-    }
+    // 更新内存中的消息列表
+    _currentMessages.add(message);
     
-    // 更新当前对话
-    _currentConversation = updatedConversation;
+    // 更新对话的最后更新时间
+    _currentConversation!.updatedAt = DateTime.now();
+    
     notifyListeners();
   }
 
   /// 更新对话标题
   Future<void> updateConversationTitle(String id, String newTitle) async {
-    final conversation = await _storage.getConversationById(id);
-    if (conversation != null) {
-      final updatedConversation = conversation.updateTitle(newTitle);
-      await _storage.saveConversation(updatedConversation);
-      
+    final success = await ChatStorage.updateConversationTitle(id, newTitle);
+    if (success) {
       // 更新列表中的对话
       final index = _conversations.indexWhere((c) => c.id == id);
       if (index != -1) {
-        _conversations[index] = updatedConversation;
+        _conversations[index] = Conversation(
+          id: _conversations[index].id,
+          title: newTitle,
+          createdAt: _conversations[index].createdAt,
+          updatedAt: DateTime.now(),
+          defaultProviderId: _conversations[index].defaultProviderId,
+          defaultModelId: _conversations[index].defaultModelId,
+        );
       }
       
       // 如果是当前对话，也要更新
       if (_currentConversation?.id == id) {
-        _currentConversation = updatedConversation;
+        _currentConversation = Conversation(
+          id: _currentConversation!.id,
+          title: newTitle,
+          createdAt: _currentConversation!.createdAt,
+          updatedAt: DateTime.now(),
+          defaultProviderId: _currentConversation!.defaultProviderId,
+          defaultModelId: _currentConversation!.defaultModelId,
+        );
       }
       
       notifyListeners();
@@ -121,43 +148,26 @@ class ConversationManager extends ChangeNotifier {
 
   /// 删除对话
   Future<void> deleteConversation(String id) async {
-    await _storage.deleteConversation(id);
-    
-    // 从列表中移除
-    _conversations.removeWhere((c) => c.id == id);
-    
-    // 如果删除的是当前对话，清空当前对话
-    if (_currentConversation?.id == id) {
-      _currentConversation = null;
+    final success = await ChatStorage.deleteConversation(id);
+    if (success) {
+      // 从列表中移除
+      _conversations.removeWhere((c) => c.id == id);
+      
+      // 如果删除的是当前对话，清空当前对话
+      if (_currentConversation?.id == id) {
+        _currentConversation = null;
+        _currentMessages.clear();
+      }
+      
+      notifyListeners();
     }
-    
-    notifyListeners();
-  }
-
-  /// 永久删除对话
-  Future<void> permanentlyDeleteConversation(String id) async {
-    await _storage.permanentlyDeleteConversation(id);
-    
-    // 从列表中移除
-    _conversations.removeWhere((c) => c.id == id);
-    
-    // 如果删除的是当前对话，清空当前对话
-    if (_currentConversation?.id == id) {
-      _currentConversation = null;
-    }
-    
-    notifyListeners();
   }
 
   /// 清空当前对话
   void clearCurrentConversation() {
     _currentConversation = null;
+    _currentMessages.clear();
     notifyListeners();
-  }
-
-  /// 获取存储统计信息
-  Future<StorageStats> getStorageStats() async {
-    return await _storage.getStorageStats();
   }
 
   /// 设置加载状态
@@ -181,7 +191,7 @@ class ConversationManager extends ChangeNotifier {
   }
 
   /// 搜索对话
-  List<Conversation_v0> searchConversations(String query) {
+  List<Conversation> searchConversations(String query) {
     if (query.isEmpty) {
       return _conversations;
     }
@@ -191,13 +201,6 @@ class ConversationManager extends ChangeNotifier {
       // 搜索标题
       if (conversation.title.toLowerCase().contains(lowercaseQuery)) {
         return true;
-      }
-      
-      // 搜索消息内容
-      for (final message in conversation.messages) {
-        if (message.content.toLowerCase().contains(lowercaseQuery)) {
-          return true;
-        }
       }
       
       return false;

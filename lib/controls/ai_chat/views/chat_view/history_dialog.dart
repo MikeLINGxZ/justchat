@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:lemon_tea/models/conversation_v0.dart';
+import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 
 class HistoryDialog extends StatefulWidget {
   final ConversationManager conversationManager;
-  final Function(Conversation_v0) onConversationSelected;
+  final Function(Conversation) onConversationSelected;
   final Function(String) onConversationDeleted;
   final VoidCallback? onNewConversation;
 
@@ -118,7 +118,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _getPreviewText(conversation.messages),
+                                  '暂无预览', // 临时替代方案，因为新模型不直接包含消息
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 12),
@@ -137,7 +137,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${conversation.messages.length}条消息',
+                                  '0条消息', // 临时替代方案，因为新模型不直接包含消息
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey,
@@ -170,21 +170,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     );
   }
 
-  String _getPreviewText(List<Message> messages) {
-    if (messages.isEmpty) return '空对话';
-    
-    // 获取最后一条用户消息作为预览
-    for (int i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role == MessageRole.user) {
-        final content = messages[i].content;
-        return content.length > 50 ? '${content.substring(0, 50)}...' : content;
-      }
-    }
-    
-    // 如果没有用户消息，使用第一条消息
-    final content = messages.first.content;
-    return content.length > 50 ? '${content.substring(0, 50)}...' : content;
-  }
+  // _getPreviewText 方法已删除，因为新的 Conversation 模型不直接包含消息
+  // 如果需要预览功能，可以通过 ChatStorage 异步获取消息
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
