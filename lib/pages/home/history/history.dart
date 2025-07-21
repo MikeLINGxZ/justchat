@@ -178,14 +178,19 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
       debugPrint('加载对话详情失败: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载对话详情失败: $e')),
+          SnackBar(
+            content: Text(
+              '加载对话详情失败: $e',
+              style: const TextStyle(fontSize: 14), // SnackBar 默认使用固定大小
+            ),
+          ),
         );
       }
     }
   }
 
   /// 显示更多操作菜单
-  Future<void> _showMoreActionsMenu(BuildContext context, Conversation conversation) async {
+  Future<void> _showMoreActionsMenu(BuildContext context, WidgetRef ref, Conversation conversation) async {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
@@ -207,7 +212,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             children: [
               Icon(Icons.visibility_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 12),
-              const Text('查看'),
+              Text('查看', style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref))),
             ],
           ),
         ),
@@ -218,7 +223,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             children: [
               Icon(Icons.chat_bubble_outline, size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 12),
-              const Text('继续对话'),
+              Text('继续对话', style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref))),
             ],
           ),
         ),
@@ -230,7 +235,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             children: [
               Icon(Icons.delete_outline, size: 18, color: Colors.red[600]),
               const SizedBox(width: 12),
-              Text('删除', style: TextStyle(color: Colors.red[600])),
+              Text('删除', style: TextStyle(
+                color: Colors.red[600],
+                fontSize: FontSizeUtils.getSmallSize(ref),
+              )),
             ],
           ),
         ),
@@ -277,8 +285,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             const SizedBox(width: 12),
             Text(
               S.of(context).confirmDelete,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -286,10 +294,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
         ),
         content: Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: Text(
+          child:           Text(
             S.of(context).confirmDeleteConversation,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: FontSizeUtils.getBodySize(ref),
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
               height: 1.4,
             ),
@@ -302,7 +310,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
               foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: Text(S.of(context).cancel),
+            child: Text(S.of(context).cancel, style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
           ),
           const SizedBox(width: 8),
           ElevatedButton(
@@ -316,7 +324,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text(S.of(context).delete),
+            child: Text(S.of(context).delete, style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
           ),
         ],
         actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -349,7 +357,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
           hintText: S.of(context).searchConversations,
           hintStyle: TextStyle(
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            fontSize: 14,
+            fontSize: FontSizeUtils.getBodySize(ref),
           ),
           prefixIcon: Icon(
             Icons.search_rounded,
@@ -359,7 +367,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
@@ -394,7 +402,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             Text(
               _searchQuery.isEmpty ? S.of(context).noConversationHistory : '未找到相关对话',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.w500,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
               ),
@@ -404,7 +412,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
               Text(
                 '开始一个新的对话吧',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: FontSizeUtils.getBodySize(ref),
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
@@ -413,7 +421,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                 ElevatedButton.icon(
                   onPressed: widget.onNewConversation,
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: Text(S.of(context).newConversation),
+                  label: Text(S.of(context).newConversation, style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -498,7 +506,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                           Text(
                             conversation.title,
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: FontSizeUtils.getBodySize(ref),
                               fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
                               color: Theme.of(context).colorScheme.onSurface,
                               height: 1.3,
@@ -512,7 +520,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: FontSizeUtils.getSmallSize(ref),
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               height: 1.4,
                             ),
@@ -529,7 +537,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                                 child: Text(
                                   S.of(context).messagesCount(_messageCountCache[conversation.id] ?? 0),
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: FontSizeUtils.getSmallSize(ref) - 2,
                                     fontWeight: FontWeight.w500,
                                     color: Theme.of(context).colorScheme.primary,
                                   ),
@@ -539,7 +547,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                               Text(
                                 _formatDate(conversation.updatedAt),
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: FontSizeUtils.getSmallSize(ref) - 2,
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 ),
                               ),
@@ -556,7 +564,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                       duration: const Duration(milliseconds: 200),
                       child: Builder(
                         builder: (context) => IconButton(
-                          onPressed: () => _showMoreActionsMenu(context, conversation),
+                          onPressed: () => _showMoreActionsMenu(context, ref, conversation),
                           icon: const Icon(Icons.more_vert_rounded, size: 18),
                           tooltip: '更多操作',
                           style: IconButton.styleFrom(
@@ -619,7 +627,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                     ElevatedButton.icon(
                       onPressed: widget.onNewConversation,
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: Text(S.of(context).newConversation),
+                      label: Text(S.of(context).newConversation, style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -686,7 +694,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
 }
 
 /// 对话详情对话框
-class _ConversationDetailDialog extends StatelessWidget {
+class _ConversationDetailDialog extends ConsumerWidget {
   final Conversation conversation;
   final List<llm_message.Message> messages;
   final VoidCallback onContinueConversation;
@@ -698,7 +706,7 @@ class _ConversationDetailDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -747,7 +755,7 @@ class _ConversationDetailDialog extends StatelessWidget {
                         Text(
                           conversation.title,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: FontSizeUtils.getSubheadingSize(ref),
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -758,7 +766,7 @@ class _ConversationDetailDialog extends StatelessWidget {
                         Text(
                           '${messages.length} 条消息',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: FontSizeUtils.getBodySize(ref),
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
@@ -796,7 +804,7 @@ class _ConversationDetailDialog extends StatelessWidget {
                             Text(
                               '暂无消息',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: FontSizeUtils.getSubheadingSize(ref),
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                             ),
@@ -831,13 +839,13 @@ class _ConversationDetailDialog extends StatelessWidget {
                       foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
-                    child: const Text('关闭'),
+                    child: Text('关闭', style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: onContinueConversation,
                     icon: const Icon(Icons.chat_rounded, size: 18),
-                    label: const Text('继续对话'),
+                    label: Text('继续对话', style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
