@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/rpc/service.pb.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
+import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
@@ -9,6 +11,9 @@ import '../model_settings.dart';
 void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
   List<Model> availableModels = [];
   bool isLoadingModels = false;
+  bool isVerifying = false;
+  // 用于强制重新构建FutureBuilder的key
+  GlobalKey<State<StatefulWidget>> futureBuilderKey = GlobalKey();
 
   showDialog(
     context: context,
@@ -35,6 +40,7 @@ void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider)
           width: 600,
           height: 500,
           child: FutureBuilder<List<Model>>(
+            key: futureBuilderKey,
             future: _loadModels(provider.id),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -475,6 +481,84 @@ void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider)
         ),
         actions: [
           TextButton.icon(
+            onPressed: isVerifying ? null : () async {
+              setState(() {
+                isVerifying = true;
+              });
+
+              try {
+                final request = ModelsRequest(
+                  name: provider.name,
+                  apiKey: provider.apiKey,
+                  baseUrl: provider.baseUrl
+                );
+                final response = await Client().stub!.models(request);
+                
+                // 更新数据库中的模型列表
+                await _updateProviderModels(provider.id, response.models);
+                
+                // 强制重新构建FutureBuilder
+                setState(() {
+                  futureBuilderKey = GlobalKey();
+                  isVerifying = false;
+                });
+
+                // 刷新 provider 数据
+                ref.refresh(modelsProvider(provider.id));
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '模型列表已更新! 发现 ${response.models.length} 个模型',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  ),
+                );
+              } catch (e) {
+                setState(() {
+                  isVerifying = false;
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '重新验证失败: ${e.toString()}',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
+              }
+            },
+            icon: isVerifying 
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            label: Text(
+              isVerifying ? '验证中...' : '重新验证',
+              style: TextStyle(
+                fontSize: FontSizeUtils.getBodySize(ref),
+              ),
+            ),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+          TextButton.icon(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close),
             label: Text(
@@ -778,6 +862,47 @@ void _showAddModelDialog(BuildContext context, WidgetRef ref, LlmProvider provid
       ),
     ),
   );
+}
+
+// 更新供应商模型列表的私有函数
+Future<void> _updateProviderModels(String providerId, List<dynamic> apiModels) async {
+  try {
+    // 1. 获取该供应商下的所有模型
+    final existingModels = await LlmStorage.getModelsByProviderId(providerId);
+    
+    // 2. 删除所有非自定义模型（isCustom = false）
+    final nonCustomModels = existingModels.where((model) => !model.isCustom).toList();
+    for (final model in nonCustomModels) {
+      await LlmStorage.deleteModel(model.id);
+    }
+    
+    // 3. 获取当前最大序号，用于新模型的序号分配
+    int maxSeqId = await LlmStorage.getMaxModelSeqId(providerId);
+    
+    // 4. 添加新获取的模型（标记为非自定义）
+    for (int i = 0; i < apiModels.length; i++) {
+      final apiModel = apiModels[i];
+      
+      // 直接构造包含name字段的Map，避免Model类缺少name字段的问题
+      final modelMap = {
+        'llm_provider_id': providerId,
+        'id': apiModel.id,
+        'name': apiModel.id, // 使用模型id作为name
+        'object': apiModel.object ?? 'model',
+        'owned_by': apiModel.ownedBy ?? 'unknown',
+        'enabled': (apiModel.enabled ?? true) ? 1 : 0,
+        'is_custom': 0, // 标记为非自定义模型
+        'seq_id': maxSeqId + i + 1, // 分配序号
+      };
+      
+      await LlmStorage.addModelWithCustomFields(modelMap);
+    }
+    
+    debugPrint('成功更新供应商 $providerId 的模型列表，删除 ${nonCustomModels.length} 个旧模型，添加 ${apiModels.length} 个新模型');
+  } catch (e) {
+    debugPrint('更新供应商模型列表失败: $e');
+    rethrow;
+  }
 }
 
 // 显示编辑模型对话框
