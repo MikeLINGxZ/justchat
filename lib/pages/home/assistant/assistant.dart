@@ -291,7 +291,7 @@ def hello():
       }).toList();
       
       // 创建聊天请求
-      final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
+      final providerId = _currentConversation!.defaultProviderId ?? '3c64dc4d-ffa7-408f-be2b-91f1bb150e82';
       final modelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
       
       debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');

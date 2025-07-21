@@ -195,8 +195,11 @@ class Server {
   /// 返回服务端口号，如果启动失败则返回null
   Future<int?> startService() async {
     try {
+      debugPrint('开始启动SERVER服务...');
+      
       // 如果服务已经在运行，直接返回当前端口
       if (_isRunning && _port != null) {
+        debugPrint('SERVER服务已在运行，端口: $_port');
         return _port;
       }
 
@@ -207,38 +210,59 @@ class Server {
       if (_isDebugMode() || await DebugStorage.isEnableDebug()) {
         port = int.tryParse(await DebugStorage.getConfig(DebugKey.serverPort) ?? "");
         binaryPath = await DebugStorage.getConfig(DebugKey.serverBinaryPath);
+        debugPrint('调试模式 - 配置端口: $port, 二进制路径: $binaryPath');
       }
 
       // 如果没有从本地存储获取到有效端口，则查找空闲端口
       if (port == null) {
+        debugPrint('正在查找空闲端口...');
         port = await System.findFreePort();
         if (port == null) {
-          debugPrint('无法获取空闲端口');
+          debugPrint('错误: 无法获取空闲端口');
           return null;
+        }
+        debugPrint('找到空闲端口: $port');
+      } else {
+        // 如果指定了端口，先检查端口是否可用
+        debugPrint('检查指定端口 $port 是否可用...');
+        final isPortAvailable = await System.isPortAvailable(port);
+        if (!isPortAvailable) {
+          debugPrint('警告: 指定端口 $port 已被占用，正在查找替代端口...');
+          port = await System.findFreePort();
+          if (port == null) {
+            debugPrint('错误: 无法获取空闲端口');
+            return null;
+          }
+          debugPrint('使用替代端口: $port');
+        } else {
+          debugPrint('端口 $port 可用');
         }
       }
 
       binaryPath ??= _getSERVERBinaryPath();
 
       debugPrint('最终使用的二进制文件路径: $binaryPath');
+      debugPrint('最终使用的端口: $port');
 
       final File binaryFile = File(binaryPath);
 
       // 检查二进制文件是否存在
       if (!await binaryFile.exists()) {
-        debugPrint('SERVER二进制文件不存在: $binaryPath');
+        debugPrint('错误: SERVER二进制文件不存在: $binaryPath');
         return null;
       }
 
       // 确保二进制文件有执行权限（仅在非Windows平台）
       if (!System.isWindows) {
         try {
+          debugPrint('设置二进制文件执行权限...');
           await Process.run('chmod', ['+x', binaryPath]);
         } catch (e) {
-          debugPrint('设置执行权限失败: $e');
+          debugPrint('警告: 设置执行权限失败: $e');
         }
       }
 
+      debugPrint('启动SERVER进程...');
       // 直接启动进程，不使用脚本
       _process = await Process.start(binaryPath, [
         '--port',
@@ -249,6 +273,7 @@ class Server {
 
       // 保存进程ID
       _processId = _process!.pid;
+      debugPrint('SERVER进程已启动，PID: $_processId');
 
       // 记录进程ID到退出文件
       _updateExitFile();
@@ -273,15 +298,26 @@ class Server {
       });
 
       // 等待一小段时间确保进程启动成功
+      debugPrint('等待进程启动...');
       await Future.delayed(const Duration(seconds: 1));
 
-      // 检查服务是否可用
-      if (!await _isServiceAvailable(port)) {
-        debugPrint('SERVER服务启动失败，无法连接到端口: $port');
+      // 检查服务是否可用（增加超时控制）
+      debugPrint('检查服务是否可用...');
+      final isServiceAvailable = await _isServiceAvailable(port).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('错误: 检查服务可用性超时');
+          return false;
+        },
+      );
+      
+      if (!isServiceAvailable) {
+        debugPrint('错误: SERVER服务启动失败，无法连接到端口: $port');
         _forceKillProcess();
         return null;
       }
 
+      debugPrint('SERVER服务启动成功，端口: $port');
       _isRunning = true;
       _port = port;
 
@@ -299,6 +335,7 @@ class Server {
       // 调用全局方法更新LLM配置
       await updateLlmConfig();
 
+      debugPrint('SERVER服务完全初始化完成');
       return port;
     } catch (e) {
       debugPrint('启动SERVER服务失败: $e');
@@ -418,23 +455,31 @@ done
 
   /// 检查服务是否可用
   Future<bool> _isServiceAvailable(int port) async {
-    try {
-      // 尝试连接服务
-      final socket = await Socket.connect(
-        'localhost',
-        port,
-        timeout: const Duration(seconds: 2),
-      ).catchError((e) => null);
+    // 快速重试机制，避免长时间等待
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        // 尝试连接服务，缩短超时时间
+        final socket = await Socket.connect(
+          'localhost',
+          port,
+          timeout: const Duration(milliseconds: 800),
+        ).catchError((e) => null);
 
-      if (socket != null) {
-        await socket.close();
-        return true;
+        if (socket != null) {
+          await socket.close();
+          return true;
+        }
+      } catch (e) {
+        debugPrint('连接尝试 ${attempt + 1}/3 失败: $e');
       }
-
-      return false;
-    } catch (e) {
-      return false;
+      
+      // 如果不是最后一次尝试，等待一下再重试
+      if (attempt < 2) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
     }
+
+    return false;
   }
 
   /// 清理进程资源

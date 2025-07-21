@@ -42,24 +42,33 @@ Future<void> _initializeDatabase() async {
 
 /// 启动CLI服务
 Future<void> _startLemonTeaService(ProviderContainer container) async {
-  // 启动CLI服务
+  // 启动CLI服务（非阻塞模式）
   final localServer = Server();
-  final port = await localServer.startService();
   
-  if (port != null) {
-    debugPrint('CLI服务已启动，端口: $port');
-    
-    // 初始化RPC客户端
-    final client = Client();
-    final initialized = await client.init();
-    if (initialized) {
-      debugPrint('RPC客户端初始化成功');
-    } else {
-      debugPrint('RPC客户端初始化失败');
+  // 使用Future.microtask在下一个事件循环中启动服务，避免阻塞UI
+  Future.microtask(() async {
+    try {
+      debugPrint('正在启动CLI服务...');
+      final port = await localServer.startService();
+      
+      if (port != null) {
+        debugPrint('CLI服务已启动，端口: $port');
+        
+        // 初始化RPC客户端
+        final client = Client();
+        final initialized = await client.init();
+        if (initialized) {
+          debugPrint('RPC客户端初始化成功');
+        } else {
+          debugPrint('RPC客户端初始化失败');
+        }
+      } else {
+        debugPrint('CLI服务启动失败 - 请检查端口是否被占用');
+      }
+    } catch (e) {
+      debugPrint('启动CLI服务时发生错误: $e');
     }
-  } else {
-    debugPrint('CLI服务启动失败');
-  }
+  });
 }
 
 void main() async {

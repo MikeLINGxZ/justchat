@@ -2,55 +2,52 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
-import 'package:lemon_tea/utils/storage/local_storage.dart';
+import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/rpc/common.pb.dart' as $1;
 import 'package:lemon_tea/rpc/service.pb.dart';
 
 /// 更新LLM配置到服务器
 Future<void> updateLlmConfig() async {
   try {
-    // 获取本地存储的LLM提供商信息
-    final LocalStorage localStorage = LocalStorage();
-    final providerManagerJson = await localStorage.getString('llm_providers');
+    // 从SQLite数据库获取LLM提供商信息
+    final providers = await LlmStorage.getAllProviders();
     
-    if (providerManagerJson != null && Client().stub != null) {
-      final List<dynamic> jsonList = jsonDecode(providerManagerJson);
-      final providers = jsonList
-          .map((json) => json as Map<String, dynamic>)
-          .toList();
-          
+    if (providers.isNotEmpty && Client().stub != null) {
       // 转换为gRPC请求对象
-      final llmProviders = providers.map((providerJson) {
-        // 从JSON创建LlmProvider对象
-        final provider = $1.LlmProvider(
-          id: providerJson['name'] ?? '',
-          name: providerJson['name'] ?? '',
-          baseUrl: providerJson['baseUrl'] ?? '',
-          apiKey: providerJson['apiKey'] ?? '',
-          alias: providerJson['alias'],
-          description: providerJson['description'],
+      final llmProviders = <$1.LlmProvider>[];
+      
+      for (final provider in providers) {
+        // 从数据库创建LlmProvider对象
+        final grpcProvider = $1.LlmProvider(
+          id: provider.id,
+          name: provider.name,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey ?? '',
+          alias: provider.alias,
+          description: provider.description,
         );
         
-        // 添加模型信息
-        if (providerJson['models'] != null) {
-          final modelsList = (providerJson['models'] as List).map((modelJson) {
-            return $1.Model(
-              id: modelJson['id'] ?? '',
-              object: modelJson['object'] ?? '',
-              ownedBy: modelJson['ownedBy'] ?? '',
-              enabled: modelJson['enabled'] ?? true,
-            );
-          }).toList();
-          provider.models.addAll(modelsList);
-        }
+        // 获取该提供商的所有模型
+        final models = await LlmStorage.getModelsByProviderId(provider.id);
+        final modelsList = models.map((model) {
+          return $1.Model(
+            id: model.id,
+            object: model.object,
+            ownedBy: model.ownedBy,
+            enabled: model.enabled,
+          );
+        }).toList();
         
-        return provider;
-      }).toList();
+        grpcProvider.models.addAll(modelsList);
+        llmProviders.add(grpcProvider);
+      }
       
       // 创建请求并发送
       final request = UpdateLlmConfigRequest(llmProviders: llmProviders);
       await Client().stub!.updateLlmConfig(request);
-      debugPrint('LLM配置已更新到服务器');
+      debugPrint('LLM配置已更新到服务器，包含${providers.length}个提供商和${llmProviders.fold(0, (sum, p) => sum + p.models.length)}个模型');
+    } else {
+      debugPrint('未找到LLM提供商配置或gRPC客户端未初始化');
     }
   } catch (e) {
     debugPrint('更新LLM配置失败: $e');
