@@ -392,123 +392,129 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
           ),
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.cancel),
-            label: Text(
-              '取消',
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
-            ),
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
-          FilledButton.icon(
-            onPressed: () async {
-              // 验证输入
-              final name = nameController.text.trim();
-              final baseUrl = baseUrlController.text.trim();
-              final apiKey = apiKeyController.text.trim();
-              final alias = aliasController.text.trim();
-              final description = descriptionController.text.trim();
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton.icon(
+                onPressed: () async {
+                  // 验证输入
+                  final name = nameController.text.trim();
+                  final baseUrl = baseUrlController.text.trim();
+                  final apiKey = apiKeyController.text.trim();
+                  final alias = aliasController.text.trim();
+                  final description = descriptionController.text.trim();
 
-              if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '请填写所有必填字段',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                  if (name.isEmpty || baseUrl.isEmpty || apiKey.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '请填写所有必填字段',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                );
-                return;
-              }
+                    );
+                    return;
+                  }
 
-              bool success;
-              if (isEditMode) {
-                // 更新供应商对象
-                final updatedProvider = LlmProvider(
-                  id: provider!.id, // 保持原ID不变
-                  name: name,
-                  baseUrl: baseUrl,
-                  apiKey: apiKey,
-                  alias: alias.isEmpty ? null : alias,
-                  description: description.isEmpty ? null : description,
-                  enable: isEnabled,
-                  checked: verificationSuccess, // 根据验证结果设置checked状态
-                );
+                  bool success;
+                  if (isEditMode) {
+                    // 更新供应商对象
+                    final updatedProvider = LlmProvider(
+                      id: provider!.id, // 保持原ID不变
+                      name: name,
+                      baseUrl: baseUrl,
+                      apiKey: apiKey,
+                      alias: alias.isEmpty ? null : alias,
+                      description: description.isEmpty ? null : description,
+                      enable: isEnabled,
+                      checked: verificationSuccess, // 根据验证结果设置checked状态
+                    );
 
-                // 更新供应商到数据库
-                success = await LlmStorage.updateProvider(updatedProvider);
-              } else {
-                // 创建供应商对象
-                final newProvider = LlmProvider(
-                  id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
-                  name: name,
-                  baseUrl: baseUrl,
-                  apiKey: apiKey,
-                  alias: alias.isEmpty ? null : alias,
-                  description: description.isEmpty ? null : description,
-                  enable: isEnabled,
-                  checked: verificationSuccess, // 根据验证结果设置checked状态
-                );
+                    // 更新供应商到数据库
+                    success = await LlmStorage.updateProvider(updatedProvider);
+                  } else {
+                    // 创建供应商对象
+                    final newProvider = LlmProvider(
+                      id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
+                      name: name,
+                      baseUrl: baseUrl,
+                      apiKey: apiKey,
+                      alias: alias.isEmpty ? null : alias,
+                      description: description.isEmpty ? null : description,
+                      enable: isEnabled,
+                      checked: verificationSuccess, // 根据验证结果设置checked状态
+                    );
 
-                // 添加供应商到数据库
-                success = await LlmStorage.addProvider(newProvider);
-              }
+                    // 添加供应商到数据库
+                    success = await LlmStorage.addProvider(newProvider);
+                  }
 
-              Navigator.of(context).pop();
+                  Navigator.of(context).pop();
 
-              if (success) {
-                // 刷新供应商列表
-                ref.refresh(providersProvider);
+                  if (success) {
+                    // 刷新供应商列表
+                    ref.refresh(providersProvider);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isEditMode ? '供应商已更新' : '供应商已添加',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isEditMode ? '供应商已更新' : '供应商已添加',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        duration: const Duration(seconds: 2),
                       ),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isEditMode ? '更新供应商失败' : '添加供应商失败',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isEditMode ? '更新供应商失败' : '添加供应商失败',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(ref),
+                          ),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
                       ),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                    );
+                  }
+                },
+                icon: Icon(isEditMode ? Icons.save : Icons.add),
+                label: Text(
+                  isEditMode ? '保存修改' : '添加供应商',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
                   ),
-                );
-              }
-            },
-            icon: Icon(isEditMode ? Icons.save : Icons.add),
-            label: Text(
-              isEditMode ? '保存修改' : '添加供应商',
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
               ),
-            ),
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.cancel),
+                label: Text(
+                  '取消',
+                  style: TextStyle(
+                    fontSize: FontSizeUtils.getBodySize(ref),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
+            ],
           ),
         ],
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
