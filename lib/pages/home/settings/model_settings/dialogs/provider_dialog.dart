@@ -573,44 +573,37 @@ void showProviderDialog(BuildContext context, WidgetRef ref, {LlmProvider? provi
               }
 
               Navigator.of(context).pop();
-              
-              // 等待对话框完全关闭
-              await Future.delayed(const Duration(milliseconds: 100));
 
               if (success) {
                 // 刷新供应商列表
                 ref.refresh(providersProvider);
 
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isEditMode 
-                          ? '供应商已更新${verificationSuccess ? '，模型列表已同步' : ''}' 
-                          : '供应商已添加${verificationSuccess ? '，模型列表已同步' : ''}',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                        ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditMode 
+                        ? '供应商已更新${verificationSuccess ? '，模型列表已同步' : ''}' 
+                        : '供应商已添加${verificationSuccess ? '，模型列表已同步' : ''}',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      duration: const Duration(seconds: 3),
                     ),
-                  );
-                }
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
               } else {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isEditMode ? '更新供应商失败' : '添加供应商失败',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                        ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditMode ? '更新供应商失败' : '添加供应商失败',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
                     ),
-                  );
-                }
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
               }
             },
             icon: Icon(isEditMode ? Icons.save : Icons.add),
@@ -888,36 +881,29 @@ void _showAddModelDialog(BuildContext context, WidgetRef ref, LlmProvider provid
 
                 Navigator.of(context).pop();
 
-                // 等待对话框完全关闭
-                await Future.delayed(const Duration(milliseconds: 100));
-                
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '自定义模型已添加',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                        ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '自定义模型已添加',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     ),
-                  );
-                }
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  ),
+                );
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '添加模型失败: $e',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                        ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '添加模型失败: $e',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(ref),
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
                     ),
-                  );
-                }
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                );
               }
             },
             child: Text(
