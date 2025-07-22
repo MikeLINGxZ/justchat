@@ -118,14 +118,15 @@ class LemonTea extends ConsumerWidget {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFFFD700), // 柠檬黄色
+        seedColor: Colors.blue, // 柠檬黄色
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+      scaffoldBackgroundColor: Colors.white,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFededed),
         elevation: 0,
       ),
+      dividerColor: Color(0xFFEBEEF1),
       cardTheme: CardTheme(
         elevation: 0.5,
         shape: RoundedRectangleBorder(
@@ -142,11 +143,11 @@ class LemonTea extends ConsumerWidget {
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
@@ -224,7 +225,7 @@ class LemonTea extends ConsumerWidget {
       supportedLocales: S.delegate.supportedLocales,
       title: "Lemon Tea",
       locale: settings.language == 'English' ? const Locale('en', 'US') : const Locale('zh', 'CN'),
-      theme: ThemeData.light(),
+      theme: _lightTheme(),
       darkTheme: ThemeData.dark(),
       themeMode: flutterThemeMode,
       // home: Scaffold(backgroundColor: Colors.white, body: ViewWidget(LoginPage())),

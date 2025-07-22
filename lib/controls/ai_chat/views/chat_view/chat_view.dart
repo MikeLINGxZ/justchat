@@ -51,7 +51,6 @@ class _ChatView extends State<ChatView> {
               onAddTap: widget.onNewConversation,
             ),
           ),
-
           Expanded(
             child: MessageView(
               widget.historyMessages,

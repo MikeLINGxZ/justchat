@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/message_role.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 
-class MessageView extends StatefulWidget {
+class MessageView extends ConsumerStatefulWidget {
   final List<Message> historyMessages;
   final bool isStreaming;
   
@@ -14,18 +16,14 @@ class MessageView extends StatefulWidget {
   });
 
   @override
-  State<StatefulWidget> createState() => _MessageViewState();
+  ConsumerState<MessageView> createState() => _MessageViewState();
 }
 
-class _MessageViewState extends State<MessageView> {
+class _MessageViewState extends ConsumerState<MessageView> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0;
   String _lastMessageContent = '';
   final Map<int, bool> _reasoningExpanded = {}; // 跟踪每个消息的思考过程展开状态
-
-  // 自定义 Markdown 配置，所有文字大小减少2
-  late final MarkdownConfig _customLightConfig;
-  late final MarkdownConfig _customDarkConfig;
 
   @override
   void initState() {
@@ -35,59 +33,12 @@ class _MessageViewState extends State<MessageView> {
         ? widget.historyMessages.last.content 
         : '';
 
-    // 创建自定义配置
-    _customLightConfig = MarkdownConfig(
-      configs: [
-        PConfig(textStyle: const TextStyle(fontSize: 14)), // 13 -> 14
-        H1Config(
-          style: const TextStyle(fontSize: 30, height: 38 / 30),
-        ), // 29 -> 30
-        H2Config(
-          style: const TextStyle(fontSize: 22, height: 28 / 22),
-        ), // 21 -> 22
-        H3Config(
-          style: const TextStyle(fontSize: 18, height: 23 / 18),
-        ), // 17 -> 18
-        H4Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-        H5Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-        H6Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-      ],
-    );
-
-    _customDarkConfig = MarkdownConfig(
-      configs: [
-        PConfig(textStyle: const TextStyle(fontSize: 14)), // 13 -> 14
-        H1Config(
-          style: const TextStyle(fontSize: 30, height: 38 / 30),
-        ), // 29 -> 30
-        H2Config(
-          style: const TextStyle(fontSize: 22, height: 28 / 22),
-        ), // 21 -> 22
-        H3Config(
-          style: const TextStyle(fontSize: 18, height: 23 / 18),
-        ), // 17 -> 18
-        H4Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-        H5Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-        H6Config(
-          style: const TextStyle(fontSize: 14, height: 18 / 14),
-        ), // 13 -> 14
-      ],
-    );
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
   }
+
+
 
   @override
   void dispose() {
@@ -192,7 +143,7 @@ class _MessageViewState extends State<MessageView> {
                   Text(
                     '思考过程',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: FontSizeUtils.getSmallSize(ref),
                       color: Colors.orange.shade800,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
@@ -267,7 +218,7 @@ class _MessageViewState extends State<MessageView> {
                             Text(
                               'AI 思考过程',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: FontSizeUtils.getXSmallSize(ref),
                                 color: Colors.orange.shade700,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.3,
@@ -299,14 +250,14 @@ class _MessageViewState extends State<MessageView> {
       configs: [
         PConfig(
           textStyle: TextStyle(
-            fontSize: 13,
+            fontSize: FontSizeUtils.getSmallSize(ref),
             color: Colors.orange.shade800,
             height: 1.5,
           ),
         ),
         H1Config(
           style: TextStyle(
-            fontSize: 24,
+            fontSize: FontSizeUtils.getTitleLargeSize(ref),
             height: 1.3,
             color: Colors.orange.shade900,
             fontWeight: FontWeight.bold,
@@ -314,7 +265,7 @@ class _MessageViewState extends State<MessageView> {
         ),
         H2Config(
           style: TextStyle(
-            fontSize: 20,
+            fontSize: FontSizeUtils.getHeadingSize(ref),
             height: 1.3,
             color: Colors.orange.shade900,
             fontWeight: FontWeight.w600,
@@ -322,7 +273,7 @@ class _MessageViewState extends State<MessageView> {
         ),
         H3Config(
           style: TextStyle(
-            fontSize: 16,
+            fontSize: FontSizeUtils.getBodyLargeSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w600,
@@ -330,7 +281,7 @@ class _MessageViewState extends State<MessageView> {
         ),
         H4Config(
           style: TextStyle(
-            fontSize: 14,
+            fontSize: FontSizeUtils.getBodySize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
@@ -338,7 +289,7 @@ class _MessageViewState extends State<MessageView> {
         ),
         H5Config(
           style: TextStyle(
-            fontSize: 13,
+            fontSize: FontSizeUtils.getSmallSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
@@ -346,13 +297,66 @@ class _MessageViewState extends State<MessageView> {
         ),
         H6Config(
           style: TextStyle(
-            fontSize: 13,
+            fontSize: FontSizeUtils.getSmallSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
           ),
-                 ),
+        ),
        ],
+    );
+  }
+
+  // 动态创建 Markdown 配置
+  MarkdownConfig _buildLightConfig() {
+    return MarkdownConfig(
+      configs: [
+        PConfig(textStyle: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
+        H1Config(
+          style: TextStyle(fontSize: FontSizeUtils.getTitleLargeSize(ref) + 6, height: 38 / 30),
+        ),
+        H2Config(
+          style: TextStyle(fontSize: FontSizeUtils.getTitleSize(ref), height: 28 / 22),
+        ),
+        H3Config(
+          style: TextStyle(fontSize: FontSizeUtils.getSubheadingSize(ref), height: 23 / 18),
+        ),
+        H4Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+        H5Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+        H6Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+      ],
+    );
+  }
+
+  MarkdownConfig _buildDarkConfig() {
+    return MarkdownConfig(
+      configs: [
+        PConfig(textStyle: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
+        H1Config(
+          style: TextStyle(fontSize: FontSizeUtils.getTitleLargeSize(ref) + 6, height: 38 / 30),
+        ),
+        H2Config(
+          style: TextStyle(fontSize: FontSizeUtils.getTitleSize(ref), height: 28 / 22),
+        ),
+        H3Config(
+          style: TextStyle(fontSize: FontSizeUtils.getSubheadingSize(ref), height: 23 / 18),
+        ),
+        H4Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+        H5Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+        H6Config(
+          style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref), height: 18 / 14),
+        ),
+      ],
     );
   }
 
@@ -369,7 +373,7 @@ class _MessageViewState extends State<MessageView> {
                                   widget.isStreaming;
         
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -377,11 +381,11 @@ class _MessageViewState extends State<MessageView> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: Colors.green,
-                  child: const Text(
+                  child: Text(
                     'A',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: FontSizeUtils.getSubheadingSize(ref),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -394,31 +398,26 @@ class _MessageViewState extends State<MessageView> {
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      vertical: 2,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 显示思考过程（如果有的话）
-                        if (message.reasoningContent != null && 
+                        if (message.reasoningContent != null &&
                             message.reasoningContent!.isNotEmpty)
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: _buildReasoningSection(index, message.reasoningContent!),
                           ),
-                        
+
                         // 显示主要内容
                         Container(
-                          width: double.infinity,
                           child: MarkdownBlock(
                             data: message.content.isEmpty ? ' ' : message.content,
                             config: Theme.of(context).brightness == Brightness.dark
-                                ? _customDarkConfig
-                                : _customLightConfig,
+                                ? _buildDarkConfig()
+                                : _buildLightConfig(),
                           ),
                         ),
                       ],
@@ -431,32 +430,31 @@ class _MessageViewState extends State<MessageView> {
                 Container(
                   constraints: const BoxConstraints(
                     minWidth: 0,
-                    maxWidth: 300,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 8,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: MarkdownBlock(
                     data: message.content,
                     config: Theme.of(context).brightness == Brightness.dark
-                        ? _customDarkConfig
-                        : _customLightConfig,
+                        ? _buildDarkConfig()
+                        : _buildLightConfig(),
                   ),
                 ),
                 const SizedBox(width: 12),
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: Colors.blue,
-                  child: const Text(
+                  child: Text(
                     'U',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: FontSizeUtils.getSubheadingSize(ref),
                       fontWeight: FontWeight.bold,
                     ),
                   ),

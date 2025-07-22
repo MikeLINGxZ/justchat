@@ -48,7 +48,6 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
   }
 
   Widget _buildTitleBar() {
-    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onPanStart: (details) {
@@ -56,22 +55,22 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
       },
       child: Container(
         height: _titleBarHeight,
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: colorScheme.onSurface.withValues(alpha: 0.2),
-              width: 1.0,
-            ),
-          ),
-        ),
         child: Row(
           children: [
+            // 右侧占位，保持对称
+            const SizedBox(width: 32),
+            // 中间标题
+            Expanded(
+              child: Center(
+                child: Text(widget.title),
+              ),
+            ),
             // 左侧服务状态指示器
             Padding(
-              padding: const EdgeInsets.only(left: 12.0),
+              padding: const EdgeInsets.only(left: 12.0,right: 12.0),
               child: Tooltip(
-                message: _isServerRunning 
-                    ? '服务正在运行 (端口: $_serverPort)' 
+                message: _isServerRunning
+                    ? '服务正在运行 (端口: $_serverPort)'
                     : '服务未运行',
                 child: Container(
                   width: 8,
@@ -83,14 +82,6 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
                 ),
               ),
             ),
-            // 中间标题
-            Expanded(
-              child: Center(
-                child: Text(widget.title),
-              ),
-            ),
-            // 右侧占位，保持对称
-            const SizedBox(width: 32),
           ],
         ),
       ),
@@ -101,7 +92,7 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
   Widget build(BuildContext context) {
     return SizedBox(
       height: _titleBarHeight,
-      child: Scaffold(body: Column(children: [_buildTitleBar()])),
+      child: Scaffold(body: Column(children: [_buildTitleBar()]),backgroundColor: Theme.of(context).appBarTheme.backgroundColor),
     );
   }
 }

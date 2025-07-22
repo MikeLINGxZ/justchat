@@ -610,7 +610,6 @@ def hello():
       rightChild: Text("data"),
       leftWidth: 500.0,
       minLeftWidth: 400.0,
-      maxLeftWidth: 800.0,
       dividerWidth: 1.0,
     );
   }

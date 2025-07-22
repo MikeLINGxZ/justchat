@@ -21,7 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePage extends State<HomePage> {
   int _selectedIndex = 0;
   late ConversationManager _conversationManager;
-  
+
   final List<Widget> _pages = [];
 
   @override
@@ -46,12 +46,12 @@ class _HomePage extends State<HomePage> {
       ),
       const PluginsPage(),
     ]);
-    
+
     // 在debug模式下添加debug页面
     if (kDebugMode) {
       _pages.add(const DebugPage());
     }
-    
+
     // 最后添加settings页面
     _pages.add(const SettingsPage());
   }
@@ -78,88 +78,99 @@ class _HomePage extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       body: Column(
         children: [
           const WindowTitleBar(title: "Lemon Tea"),
           Expanded(
-            child: Row(
-              children: [
-                // 侧边栏
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
-                  child: Column(
-                    children: [
-                      SidebarIconButton(
-                        icon: Icons.chat_bubble_outline,
-                        isSelected: _selectedIndex == 0,
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = 0;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      SidebarIconButton(
-                        icon: Icons.task_outlined,
-                        isSelected: _selectedIndex == 1,
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = 1;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      SidebarIconButton(
-                        icon: Icons.history,
-                        isSelected: _selectedIndex == 2,
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = 2;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      SidebarIconButton(
-                        icon: Icons.extension,
-                        isSelected: _selectedIndex == 3,
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = 3;
-                          });
-                        },
-                      ),
-                      const Spacer(),
-                      // 在debug模式下显示debug按钮
-                      if (kDebugMode) ...[
-                        SidebarIconButton(
-                          icon: Icons.bug_report,
-                          isSelected: _selectedIndex == 4,
-                          onPressed: () {
-                            setState(() {
-                              _selectedIndex = 4;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      SidebarIconButton(
-                        icon: Icons.settings,
-                        isSelected: _selectedIndex == (kDebugMode ? 5 : 4),
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = kDebugMode ? 5 : 4;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(4, 0, 4, 4),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).scaffoldBackgroundColor,
                 ),
-                const VerticalDivider(thickness: 1, width: 1),
-                // 内容区域
-                Expanded(
-                  child: _pages[_selectedIndex],
+                child: Row(
+                  children: [
+                    // 侧边栏
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20.0,
+                        horizontal: 12.0,
+                      ),
+                      child: Column(
+                        children: [
+                          SidebarIconButton(
+                            icon: Icons.chat_bubble_outline,
+                            isSelected: _selectedIndex == 0,
+                            onPressed: () {
+                              setState(() {
+                                _selectedIndex = 0;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          SidebarIconButton(
+                            icon: Icons.task_outlined,
+                            isSelected: _selectedIndex == 1,
+                            onPressed: () {
+                              setState(() {
+                                _selectedIndex = 1;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          SidebarIconButton(
+                            icon: Icons.history,
+                            isSelected: _selectedIndex == 2,
+                            onPressed: () {
+                              setState(() {
+                                _selectedIndex = 2;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          SidebarIconButton(
+                            icon: Icons.extension,
+                            isSelected: _selectedIndex == 3,
+                            onPressed: () {
+                              setState(() {
+                                _selectedIndex = 3;
+                              });
+                            },
+                          ),
+                          const Spacer(),
+                          // 在debug模式下显示debug按钮
+                          if (kDebugMode) ...[
+                            SidebarIconButton(
+                              icon: Icons.bug_report,
+                              isSelected: _selectedIndex == 4,
+                              onPressed: () {
+                                setState(() {
+                                  _selectedIndex = 4;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+                          SidebarIconButton(
+                            icon: Icons.settings,
+                            isSelected: _selectedIndex == (kDebugMode ? 5 : 4),
+                            onPressed: () {
+                              setState(() {
+                                _selectedIndex = kDebugMode ? 5 : 4;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    VerticalDivider(thickness: 1, width: 1,color: Theme.of(context).dividerColor),
+                    // 内容区域
+                    Expanded(child: _pages[_selectedIndex]),
+                  ],
                 ),
-              ],
+              )
             ),
           ),
         ],

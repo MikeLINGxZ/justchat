@@ -19,6 +19,7 @@ class TitleBarView extends ConsumerWidget {
     required IconData icon,
     required VoidCallback onTap,
     Color? color,
+    String? title,
   }) {
     return Material(
       color: Colors.transparent,
@@ -27,11 +28,21 @@ class TitleBarView extends ConsumerWidget {
         borderRadius: BorderRadius.circular(4.0),
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: Icon(icon, size: 21, color: color),
+          child: title == null || title.isEmpty
+              ? Icon(icon, size: 21, color: color)
+              : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 21, color: color),
+              const SizedBox(width: 4.0),
+              Text(title),
+            ],
+          ),
         ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,16 +51,15 @@ class TitleBarView extends ConsumerWidget {
     final displayTitle = title.isEmpty ? S.of(context).aiAssistant : title;
 
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withAlpha(77),
-            width: 1.0,
-          ),
-        ),
+        // color: Theme.of(context).colorScheme.surface,
+        // border: Border(
+        //   bottom: BorderSide(
+        //     color: Theme.of(context).dividerColor,
+        //     width: 0.8,
+        //   ),
+        // ),
       ),
       child: Row(
         children: [
@@ -72,15 +82,16 @@ class TitleBarView extends ConsumerWidget {
             child: Text(
               displayTitle,
               style: TextStyle(
-                fontSize: FontSizeUtils.getSubheadingSize(ref),
-                fontWeight: FontWeight.bold,
+                fontSize: FontSizeUtils.getBodySize(ref),
+                fontWeight: FontWeight.w900,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           if (onAddTap != null) ...[
             _buildIconButton(
-              icon: Icons.add_circle_outline,
+              title: "新建对话",
+              icon: Icons.add,
               onTap: onAddTap!,
             ),
           ],

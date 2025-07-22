@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/controls/input.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/model_selector.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
-class InputView extends StatefulWidget {
+class InputView extends ConsumerStatefulWidget {
   final Function(String)? onFileSelected;
   final Function(String)? onSend;
   final String? selectedProviderId;
@@ -23,10 +25,10 @@ class InputView extends StatefulWidget {
   });
 
   @override
-  State<StatefulWidget> createState() => _InputView();
+  ConsumerState<InputView> createState() => _InputView();
 }
 
-class _InputView extends State<InputView> {
+class _InputView extends ConsumerState<InputView> {
   final GlobalKey _inputViewKey = GlobalKey();
   final MenuController _menuController = MenuController();
   final TextEditingController _textController = TextEditingController();
@@ -80,15 +82,28 @@ class _InputView extends State<InputView> {
         key: _inputViewKey,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Input(
+          TextFormField(
             controller: _textController,
             minLines: 2,
             maxLines: 4,
-            hintText: S.of(context).inputMessage,
+            cursorWidth: 1.5,
+            decoration: InputDecoration(
+              hintText: S.of(context).inputMessage,
+              hintStyle: TextStyle(
+                fontSize: FontSizeUtils.getSmallSize(ref),
+                textBaseline: TextBaseline.alphabetic
+              ),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey, width: 0.5),
+                borderRadius:  BorderRadius.all(Radius.circular(10.0)),
+              ),
+              focusColor: Theme.of(context).scaffoldBackgroundColor,
+              hoverColor: Theme.of(context).scaffoldBackgroundColor,
+            ),
             onChanged: (value) {
               if (value.endsWith('\n')) {
                 final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-                
+
                 if (!isShiftPressed) {
                   final text = value.substring(0, value.length - 1);
                   _textController.text = text;
