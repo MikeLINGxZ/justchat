@@ -148,10 +148,18 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
 
   /// 转换数据库消息为 LLM 消息
   List<llm_message.Message> _convertDbMessagesToLlmMessages(List<db_message.Message> dbMessages) {
-    return dbMessages.map((dbMsg) => llm_message.Message(
-      role: dbMsg.role,
-      content: dbMsg.content,
-    )).toList();
+    return dbMessages.map((dbMsg) {
+      // 调试输出：检查是否有思考过程
+      if (dbMsg.reasoningContent != null && dbMsg.reasoningContent!.isNotEmpty) {
+        debugPrint('转换消息时发现思考过程: ${dbMsg.reasoningContent!.substring(0, dbMsg.reasoningContent!.length > 50 ? 50 : dbMsg.reasoningContent!.length)}...');
+      }
+      
+      return llm_message.Message(
+        role: dbMsg.role,
+        content: dbMsg.content,
+        reasoningContent: dbMsg.reasoningContent,
+      );
+    }).toList();
   }
 
   /// 显示对话详情对话框

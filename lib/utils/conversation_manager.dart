@@ -60,6 +60,7 @@ class ConversationManager extends ChangeNotifier {
           conversationId: conversation.id,
           role: message.role.toString().split('.').last,
           content: message.content,
+          reasoningContent: message.reasoningContent,
         );
       }
       
@@ -83,6 +84,7 @@ class ConversationManager extends ChangeNotifier {
       _currentMessages = dbMessages.map((dbMsg) => Message(
         role: dbMsg.role,
         content: dbMsg.content,
+        reasoningContent: dbMsg.reasoningContent,
       )).toList();
       
       notifyListeners();
@@ -102,6 +104,7 @@ class ConversationManager extends ChangeNotifier {
       conversationId: _currentConversation!.id,
       role: message.role.toString().split('.').last,
       content: message.content,
+      reasoningContent: message.reasoningContent,
     );
     
     // 更新内存中的消息列表

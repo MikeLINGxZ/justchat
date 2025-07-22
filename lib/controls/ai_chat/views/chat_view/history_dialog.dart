@@ -26,6 +26,8 @@ class HistoryDialog extends StatefulWidget {
 class _HistoryDialogState extends State<HistoryDialog> {
   Map<String, int> _messageCountCache = {};
   Map<String, String> _previewCache = {};
+  Map<String, bool> _hasReasoningCache = {}; // 缓存思考过程信息
+  Map<String, int> _reasoningCountCache = {}; // 缓存思考过程数量
   bool _isLoadingDetails = false;
 
   @override
@@ -66,12 +68,14 @@ class _HistoryDialogState extends State<HistoryDialog> {
       final futures = conversations.map((conversation) async {
         try {
           final messageCount = await LlmStorage.getConversationMessageCount(conversation.id);
-          final preview = await LlmStorage.getConversationPreview(conversation.id);
+          final detailedPreview = await LlmStorage.getConversationDetailedPreview(conversation.id);
           
           return {
             'id': conversation.id,
             'messageCount': messageCount,
-            'preview': preview,
+            'preview': detailedPreview['preview'],
+            'hasReasoning': detailedPreview['hasReasoning'],
+            'reasoningCount': detailedPreview['reasoningCount'],
           };
         } catch (e) {
           debugPrint('加载对话 ${conversation.id} 详情失败: $e');
@@ -79,6 +83,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
             'id': conversation.id,
             'messageCount': 0,
             'preview': '加载失败',
+            'hasReasoning': false,
+            'reasoningCount': 0,
           };
         }
       });
@@ -89,6 +95,13 @@ class _HistoryDialogState extends State<HistoryDialog> {
       for (final result in results) {
         _messageCountCache[result['id'] as String] = result['messageCount'] as int;
         _previewCache[result['id'] as String] = result['preview'] as String;
+        _hasReasoningCache[result['id'] as String] = result['hasReasoning'] as bool;
+        _reasoningCountCache[result['id'] as String] = result['reasoningCount'] as int;
+        
+        // 调试输出
+        if (result['hasReasoning'] as bool) {
+          debugPrint('对话 ${result['id']} 包含 ${result['reasoningCount']} 个思考过程');
+        }
       }
       
       if (mounted) {
@@ -170,6 +183,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                         final isCurrent = currentConversation?.id == conversation.id;
                         final messageCount = _messageCountCache[conversation.id] ?? 0;
                         final preview = _previewCache[conversation.id] ?? '加载中...';
+                        final hasReasoning = _hasReasoningCache[conversation.id] ?? false;
+                        final reasoningCount = _reasoningCountCache[conversation.id] ?? 0;
                         
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -177,13 +192,60 @@ class _HistoryDialogState extends State<HistoryDialog> {
                               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                               : null,
                           child: ListTile(
-                            title: Text(
-                              conversation.title,
-                              style: TextStyle(
-                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    conversation.title,
+                                    style: TextStyle(
+                                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (hasReasoning) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.orange.withOpacity(0.8),
+                                          Colors.orange.withOpacity(0.6),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.orange.withOpacity(0.3),
+                                          blurRadius: 2,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.psychology_outlined,
+                                          size: 12,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '$reasoningCount',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,6 +323,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 // 从缓存中移除
                 _messageCountCache.remove(conversation.id);
                 _previewCache.remove(conversation.id);
+                _hasReasoningCache.remove(conversation.id);
+                _reasoningCountCache.remove(conversation.id);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('删除'),

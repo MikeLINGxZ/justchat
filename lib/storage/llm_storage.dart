@@ -286,6 +286,55 @@ class LlmStorage {
     }
   }
 
+  // 新增：获取对话的详细预览信息（包含思考过程统计）
+  static Future<Map<String, dynamic>> getConversationDetailedPreview(String conversationId) async {
+    try {
+      // 获取最新用户消息
+      final userResults = await SqliteUtil.instance.query(
+        'messages',
+        where: 'conversation_id = ? AND deleted = ? AND role = ?',
+        whereArgs: [conversationId, 0, 'user'],
+        orderBy: 'created_at DESC',
+        limit: 1,
+      );
+      
+      String preview = '暂无消息';
+      if (userResults.isNotEmpty) {
+        final content = userResults.first['content'] as String;
+        final cleanContent = content.replaceAll('\n', ' ').trim();
+        if (cleanContent.length > 50) {
+          preview = '${cleanContent.substring(0, 50)}...';
+        } else {
+          preview = cleanContent.isEmpty ? '暂无内容' : cleanContent;
+        }
+      }
+      
+      // 统计包含思考过程的消息数量
+      final reasoningCountResult = await SqliteUtil.instance.rawQuery(
+        'SELECT COUNT(*) as count FROM messages WHERE conversation_id = ? AND deleted = ? AND reasoning_content IS NOT NULL AND reasoning_content != ""',
+        [conversationId, 0],
+      );
+      
+      final reasoningCount = reasoningCountResult.first['count'] as int? ?? 0;
+      
+      // 调试输出
+      debugPrint('getConversationDetailedPreview: conversationId=$conversationId, reasoningCount=$reasoningCount');
+      
+      return {
+        'preview': preview,
+        'hasReasoning': reasoningCount > 0,
+        'reasoningCount': reasoningCount,
+      };
+    } catch (e) {
+      debugPrint('获取对话详细预览失败: $e');
+      return {
+        'preview': '加载失败',
+        'hasReasoning': false,
+        'reasoningCount': 0,
+      };
+    }
+  }
+
   // 19. 获取对话详细信息（包含消息数量和预览）
   static Future<Map<String, dynamic>?> getConversationWithDetails(String conversationId) async {
     try {
