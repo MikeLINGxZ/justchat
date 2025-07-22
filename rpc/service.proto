@@ -47,7 +47,8 @@ message ChatRequest {
 
 message ChatResponse {
   string content = 1;         // 返回的内容片段
-  bool is_done = 2;           // 是否完成
-  string request_id = 3;      // 请求ID，用于关联请求和响应
-  string error_message = 4;   // 错误信息，如果有
+  string reasoning_content = 2; // 思维连内容
+  bool is_done = 3;           // 是否完成
+  string request_id = 4;      // 请求ID，用于关联请求和响应
+  string error_message = 5;   // 错误信息，如果有
 }

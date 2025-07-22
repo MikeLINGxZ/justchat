@@ -14,7 +14,7 @@ import 'dart:io';
 /// 负责数据库的初始化、表创建和版本升级
 class SqliteDatabaseInitializer {
   static const String _databaseName = "lemon_tea.db";
-  static const int _databaseVersion = 3; // 更新数据库版本以添加deleted列
+  static const int _databaseVersion = 4; // 更新数据库版本以添加reasoning_content列
   
   Database? _database;
   final _initDBCompleter = Completer<Database>();
@@ -176,6 +176,26 @@ class SqliteDatabaseInitializer {
         debugPrint('数据库升级到版本3完成');
       } catch (e) {
         debugPrint('升级到版本3失败: $e');
+        rethrow;
+      }
+    }
+    
+    if (oldVersion < 4) {
+      // 版本4: 添加reasoning_content字段到messages表
+      try {
+        // 检查messages表是否存在reasoning_content列
+        final messageTableInfo = await db.rawQuery("PRAGMA table_info(${Message.tableName()})");
+        final messageHasReasoningContent = messageTableInfo.any((column) => column['name'] == 'reasoning_content');
+        
+        if (!messageHasReasoningContent) {
+          // 添加reasoning_content字段到messages表
+          await db.execute('ALTER TABLE ${Message.tableName()} ADD COLUMN reasoning_content TEXT');
+          debugPrint('messages表添加reasoning_content字段成功');
+        }
+        
+        debugPrint('数据库升级到版本4完成');
+      } catch (e) {
+        debugPrint('升级到版本4失败: $e');
         rethrow;
       }
     }

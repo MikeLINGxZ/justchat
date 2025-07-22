@@ -191,6 +191,7 @@ class _AssistantPage extends State<AssistantPage> {
     final messages = dbMessages.map((dbMsg) => Message(
       role: dbMsg.role,
       content: dbMsg.content,
+      reasoningContent: dbMsg.reasoningContent,
     )).toList();
     
     setState(() {
@@ -357,6 +358,7 @@ def hello():
     });
 
     String fullResponse = '';
+    String fullReasoningContent = ''; // 添加思考过程内容
     bool hasError = false;
     String? aiMessageId; // 用于记录AI消息的ID
 
@@ -412,6 +414,7 @@ def hello():
         }
         
         fullResponse += response.content;
+        fullReasoningContent += response.reasoningContent; // 累积思考过程内容
         
         // 实时更新AI消息内容
         if (mounted) {
@@ -419,6 +422,7 @@ def hello():
             _historyMessages.last = Message(
               role: MessageRole.assistant,
               content: fullResponse,
+              reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
             );
           });
         }
@@ -431,6 +435,7 @@ def hello():
                 conversationId: _currentConversation!.id,
                 role: 'assistant',
                 content: fullResponse,
+                reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
               );
               
               if (savedAiMessage != null) {
@@ -473,6 +478,7 @@ def hello():
             conversationId: _currentConversation!.id,
             role: 'assistant',
             content: errorContent,
+            reasoningContent: null,
           );
           
           if (savedErrorMessage != null) {
@@ -501,6 +507,7 @@ def hello():
             conversationId: _currentConversation!.id,
             role: 'assistant',
             content: fullResponse,
+            reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
           );
           
           if (savedAiMessage != null) {

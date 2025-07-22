@@ -9,6 +9,7 @@ part of 'message.dart';
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(
   role: $enumDecode(_$MessageRoleEnumMap, json['role']),
   content: json['content'] as String,
+  reasoningContent: json['reasoningContent'] as String?,
   toolCalls:
       (json['toolCalls'] as List<dynamic>?)
           ?.map((e) => ToolCall.fromJson(e as Map<String, dynamic>))
@@ -19,6 +20,7 @@ Message _$MessageFromJson(Map<String, dynamic> json) => Message(
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'role': _$MessageRoleEnumMap[instance.role]!,
   'content': instance.content,
+  'reasoningContent': instance.reasoningContent,
   'toolCalls': instance.toolCalls,
   'toolCallId': instance.toolCallId,
 };

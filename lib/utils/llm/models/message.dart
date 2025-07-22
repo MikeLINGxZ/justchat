@@ -4,8 +4,6 @@ import 'package:lemon_tea/utils/llm/models/tool_call.dart';
 
 part 'message.g.dart';
 
-
-
 @JsonSerializable()
 class Message {
   /// 消息角色
@@ -13,6 +11,9 @@ class Message {
 
   /// 消息内容（对于function角色可能是空字符串）
   final String content;
+
+  /// 思考过程内容（思维链模型返回的思考过程）
+  final String? reasoningContent;
 
   /// 函数调用信息（role为assistant时可能存在）
   final List<ToolCall>? toolCalls;
@@ -26,6 +27,7 @@ class Message {
   Message({
     required this.role,
     required this.content,
+    this.reasoningContent,
     this.toolCalls,
     this.toolCallId,
   }) : assert(
@@ -42,11 +44,13 @@ class Message {
   Message copyWith({
     MessageRole? role,
     String? content,
+    String? reasoningContent,
     List<ToolCall>? toolCalls,
     String? toolCallId,
   }) => Message(
     role: role ?? this.role,
     content: content ?? this.content,
+    reasoningContent: reasoningContent ?? this.reasoningContent,
     toolCalls: toolCalls ?? this.toolCalls,
     toolCallId: this.toolCallId,
   );

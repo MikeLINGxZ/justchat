@@ -21,6 +21,7 @@ class _MessageViewState extends State<MessageView> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0;
   String _lastMessageContent = '';
+  final Map<int, bool> _reasoningExpanded = {}; // 跟踪每个消息的思考过程展开状态
 
   // 自定义 Markdown 配置，所有文字大小减少2
   late final MarkdownConfig _customLightConfig;
@@ -127,6 +128,76 @@ class _MessageViewState extends State<MessageView> {
     }
   }
 
+  Widget _buildReasoningSection(int index, String reasoningContent) {
+    final isExpanded = _reasoningExpanded[index] ?? false;
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _reasoningExpanded[index] = !isExpanded;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '思考过程',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: MarkdownBlock(
+                data: reasoningContent,
+                config: Theme.of(context).brightness == Brightness.dark
+                    ? _customDarkConfig
+                    : _customLightConfig,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -174,6 +245,12 @@ class _MessageViewState extends State<MessageView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 显示思考过程（如果有的话）
+                        if (message.reasoningContent != null && 
+                            message.reasoningContent!.isNotEmpty)
+                          _buildReasoningSection(index, message.reasoningContent!),
+                        
+                        // 显示主要内容
                         MarkdownBlock(
                           data: message.content.isEmpty ? ' ' : message.content,
                           config: Theme.of(context).brightness == Brightness.dark

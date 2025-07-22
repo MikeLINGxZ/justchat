@@ -11,6 +11,7 @@ Message _$MessageFromJson(Map<String, dynamic> json) => Message(
   id: json['id'] as String,
   role: $enumDecode(_$MessageRoleEnumMap, json['role']),
   content: json['content'] as String,
+  reasoningContent: json['reasoningContent'] as String?,
   createdAt: DateTime.parse(json['createdAt'] as String),
   deleted: json['deleted'] as bool? ?? false,
 );
@@ -20,6 +21,7 @@ Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'id': instance.id,
   'role': _$MessageRoleEnumMap[instance.role]!,
   'content': instance.content,
+  'reasoningContent': instance.reasoningContent,
   'createdAt': instance.createdAt.toIso8601String(),
   'deleted': instance.deleted,
 };

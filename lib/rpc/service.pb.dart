@@ -291,12 +291,14 @@ class ChatRequest extends $pb.GeneratedMessage {
 class ChatResponse extends $pb.GeneratedMessage {
   factory ChatResponse({
     $core.String? content,
+    $core.String? reasoningContent,
     $core.bool? isDone,
     $core.String? requestId,
     $core.String? errorMessage,
   }) {
     final result = create();
     if (content != null) result.content = content;
+    if (reasoningContent != null) result.reasoningContent = reasoningContent;
     if (isDone != null) result.isDone = isDone;
     if (requestId != null) result.requestId = requestId;
     if (errorMessage != null) result.errorMessage = errorMessage;
@@ -310,9 +312,10 @@ class ChatResponse extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ChatResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'content')
-    ..aOB(2, _omitFieldNames ? '' : 'isDone')
-    ..aOS(3, _omitFieldNames ? '' : 'requestId')
-    ..aOS(4, _omitFieldNames ? '' : 'errorMessage')
+    ..aOS(2, _omitFieldNames ? '' : 'reasoningContent')
+    ..aOB(3, _omitFieldNames ? '' : 'isDone')
+    ..aOS(4, _omitFieldNames ? '' : 'requestId')
+    ..aOS(5, _omitFieldNames ? '' : 'errorMessage')
     ..hasRequiredFields = false
   ;
 
@@ -343,31 +346,40 @@ class ChatResponse extends $pb.GeneratedMessage {
   void clearContent() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.bool get isDone => $_getBF(1);
+  $core.String get reasoningContent => $_getSZ(1);
   @$pb.TagNumber(2)
-  set isDone($core.bool value) => $_setBool(1, value);
+  set reasoningContent($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
-  $core.bool hasIsDone() => $_has(1);
+  $core.bool hasReasoningContent() => $_has(1);
   @$pb.TagNumber(2)
-  void clearIsDone() => $_clearField(2);
+  void clearReasoningContent() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $core.String get requestId => $_getSZ(2);
+  $core.bool get isDone => $_getBF(2);
   @$pb.TagNumber(3)
-  set requestId($core.String value) => $_setString(2, value);
+  set isDone($core.bool value) => $_setBool(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasRequestId() => $_has(2);
+  $core.bool hasIsDone() => $_has(2);
   @$pb.TagNumber(3)
-  void clearRequestId() => $_clearField(3);
+  void clearIsDone() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $core.String get errorMessage => $_getSZ(3);
+  $core.String get requestId => $_getSZ(3);
   @$pb.TagNumber(4)
-  set errorMessage($core.String value) => $_setString(3, value);
+  set requestId($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasErrorMessage() => $_has(3);
+  $core.bool hasRequestId() => $_has(3);
   @$pb.TagNumber(4)
-  void clearErrorMessage() => $_clearField(4);
+  void clearRequestId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get errorMessage => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set errorMessage($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasErrorMessage() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearErrorMessage() => $_clearField(5);
 }
 
 

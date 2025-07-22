@@ -174,6 +174,7 @@ class ChatStorage {
     required String conversationId,
     required String role,
     required String content,
+    String? reasoningContent,
   }) async {
     try {
       final now = DateTime.now();
@@ -182,6 +183,7 @@ class ChatStorage {
         id: _uuid.v4(),
         role: role == 'user' ? MessageRole.user : MessageRole.assistant,
         content: content,
+        reasoningContent: reasoningContent,
         createdAt: now,
       );
       

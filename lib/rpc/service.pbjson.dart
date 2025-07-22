@@ -89,15 +89,17 @@ const ChatResponse$json = {
   '1': 'ChatResponse',
   '2': [
     {'1': 'content', '3': 1, '4': 1, '5': 9, '10': 'content'},
-    {'1': 'is_done', '3': 2, '4': 1, '5': 8, '10': 'isDone'},
-    {'1': 'request_id', '3': 3, '4': 1, '5': 9, '10': 'requestId'},
-    {'1': 'error_message', '3': 4, '4': 1, '5': 9, '10': 'errorMessage'},
+    {'1': 'reasoning_content', '3': 2, '4': 1, '5': 9, '10': 'reasoningContent'},
+    {'1': 'is_done', '3': 3, '4': 1, '5': 8, '10': 'isDone'},
+    {'1': 'request_id', '3': 4, '4': 1, '5': 9, '10': 'requestId'},
+    {'1': 'error_message', '3': 5, '4': 1, '5': 9, '10': 'errorMessage'},
   ],
 };
 
 /// Descriptor for `ChatResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List chatResponseDescriptor = $convert.base64Decode(
-    'CgxDaGF0UmVzcG9uc2USGAoHY29udGVudBgBIAEoCVIHY29udGVudBIXCgdpc19kb25lGAIgAS'
-    'gIUgZpc0RvbmUSHQoKcmVxdWVzdF9pZBgDIAEoCVIJcmVxdWVzdElkEiMKDWVycm9yX21lc3Nh'
-    'Z2UYBCABKAlSDGVycm9yTWVzc2FnZQ==');
+    'CgxDaGF0UmVzcG9uc2USGAoHY29udGVudBgBIAEoCVIHY29udGVudBIrChFyZWFzb25pbmdfY2'
+    '9udGVudBgCIAEoCVIQcmVhc29uaW5nQ29udGVudBIXCgdpc19kb25lGAMgASgIUgZpc0RvbmUS'
+    'HQoKcmVxdWVzdF9pZBgEIAEoCVIJcmVxdWVzdElkEiMKDWVycm9yX21lc3NhZ2UYBSABKAlSDG'
+    'Vycm9yTWVzc2FnZQ==');
 

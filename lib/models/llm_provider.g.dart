@@ -15,6 +15,7 @@ LlmProvider _$LlmProviderFromJson(Map<String, dynamic> json) => LlmProvider(
   description: json['description'] as String?,
   enable: json['enable'] as bool? ?? true,
   checked: json['checked'] as bool? ?? false,
+  seqId: (json['seqId'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$LlmProviderToJson(LlmProvider instance) =>
@@ -27,4 +28,5 @@ Map<String, dynamic> _$LlmProviderToJson(LlmProvider instance) =>
       'description': instance.description,
       'enable': instance.enable,
       'checked': instance.checked,
+      'seqId': instance.seqId,
     };

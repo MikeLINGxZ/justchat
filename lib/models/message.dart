@@ -17,6 +17,9 @@ class Message {
   /// 消息内容（对于function角色可能是空字符串）
   final String content;
 
+  /// 思考过程内容（思维链模型返回的思考过程）
+  final String? reasoningContent;
+
   /// 创建时间
   final DateTime createdAt;
 
@@ -29,6 +32,7 @@ class Message {
     required this.id,
     required this.role,
     required this.content,
+    this.reasoningContent,
     required this.createdAt,
     this.deleted = false,
   });
@@ -46,6 +50,7 @@ class Message {
         conversation_id TEXT NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        reasoning_content TEXT,
         created_at INTEGER NOT NULL,
         deleted INTEGER NOT NULL DEFAULT 0,
         metadata TEXT,
@@ -67,6 +72,7 @@ class Message {
       'id': id,
       'role': role.toString().split('.').last, // MessageRole.user => 'user'
       'content': content,
+      'reasoning_content': reasoningContent,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': createdAt.millisecondsSinceEpoch, // 兼容现有表结构
       'deleted': deleted ? 1 : 0,
@@ -80,6 +86,7 @@ class Message {
       id: map['id'],
       role: MessageRole.values.byName(map['role']),
       content: map['content'],
+      reasoningContent: map['reasoning_content'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']),
       deleted: (map['deleted'] ?? 0) == 1,
     );

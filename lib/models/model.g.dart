@@ -13,6 +13,7 @@ Model _$ModelFromJson(Map<String, dynamic> json) => Model(
   ownedBy: json['owned_by'] as String,
   enabled: json['enabled'] as bool? ?? true,
   isCustom: json['isCustom'] as bool? ?? false,
+  seqId: (json['seqId'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$ModelToJson(Model instance) => <String, dynamic>{
@@ -22,4 +23,5 @@ Map<String, dynamic> _$ModelToJson(Model instance) => <String, dynamic>{
   'owned_by': instance.ownedBy,
   'enabled': instance.enabled,
   'isCustom': instance.isCustom,
+  'seqId': instance.seqId,
 };
