@@ -15,18 +15,49 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
   final Server _server = Server();
   bool _isServerRunning = false;
   int? _serverPort;
+  bool _isMaximized = false;
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
     _initializeServerStatus();
+    _checkWindowState();
   }
 
   @override
   void dispose() {
     windowManager.removeListener(this);
     super.dispose();
+  }
+
+  @override
+  void onWindowMaximize() {
+    setState(() {
+      _isMaximized = true;
+    });
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    setState(() {
+      _isMaximized = false;
+    });
+  }
+
+  void _checkWindowState() async {
+    final isMaximized = await windowManager.isMaximized();
+    setState(() {
+      _isMaximized = isMaximized;
+    });
+  }
+
+  void _toggleMaximize() async {
+    if (_isMaximized) {
+      await windowManager.unmaximize();
+    } else {
+      await windowManager.maximize();
+    }
   }
 
   void _initializeServerStatus() {
@@ -53,6 +84,7 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
       onPanStart: (details) {
         windowManager.startDragging();
       },
+      onDoubleTap: _toggleMaximize,
       child: Container(
         height: _titleBarHeight,
         child: Row(

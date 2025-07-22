@@ -594,23 +594,53 @@ def hello():
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final sideWidget = _buildSide();
+    
+    // 如果侧边栏为空，只显示聊天界面
+    if (sideWidget == null) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: ChatView(
+            historyMessages: _historyMessages,
+            onSend: _handleSendMessage,
+            onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
+            currentTitle: _currentTitle,
+            selectedProviderId: _selectedProviderId,
+            selectedModelId: _selectedModelId,
+            onModelSelected: _handleModelSelected,
+            isStreaming: _isStreaming,
+          ),
+        ),
+      );
+    }
+    
+    // 如果侧边栏不为空，显示分割布局
     return ResizableDivider(
-      leftChild: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ChatView(
-              historyMessages: _historyMessages,
-              onSend: _handleSendMessage,
-              onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
-              currentTitle: _currentTitle,
-              selectedProviderId: _selectedProviderId,
-              selectedModelId: _selectedModelId,
-              onModelSelected: _handleModelSelected,
-              isStreaming: _isStreaming,
-            ),
-      rightChild: Text("data"),
+      leftChild: ChatView(
+        historyMessages: _historyMessages,
+        onSend: _handleSendMessage,
+        onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
+        currentTitle: _currentTitle,
+        selectedProviderId: _selectedProviderId,
+        selectedModelId: _selectedModelId,
+        onModelSelected: _handleModelSelected,
+        isStreaming: _isStreaming,
+      ),
+      rightChild: sideWidget,
       leftWidth: 500.0,
       minLeftWidth: 400.0,
       dividerWidth: 1.0,
     );
+  }
+
+  Widget? _buildSide() {
+    // 当需要显示侧边栏时，返回具体的 widget
+    // 当不需要显示侧边栏时，返回 null
+    return null; // 目前返回 null，只显示对话界面
   }
 }
