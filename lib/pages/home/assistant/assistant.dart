@@ -57,6 +57,13 @@ class _AssistantPage extends State<AssistantPage> {
       setState(() {
         _historyMessages = _conversationManager.messages;
         _currentTitle = _conversationManager.currentConversation?.title ?? 'AI 助手';
+        _currentConversation = _conversationManager.currentConversation;
+        
+        // 同步模型配置
+        if (_currentConversation != null) {
+          _selectedProviderId = _currentConversation!.defaultProviderId ?? 'deepseek';
+          _selectedModelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
+        }
       });
     }
   }
@@ -73,15 +80,22 @@ class _AssistantPage extends State<AssistantPage> {
       // 确保有基本的LLM配置
       await _ensureLlmConfiguration();
       
-      // 获取所有对话
-      final conversations = await ChatStorage.getAllConversations();
-      
-      if (conversations.isEmpty) {
-        // 如果没有对话，创建一个新的欢迎对话
-        await _createWelcomeConversation();
+      // 检查ConversationManager是否已经有当前对话
+      if (_conversationManager.currentConversation != null) {
+        // 如果已经有当前对话，直接使用它
+        await _loadConversation(_conversationManager.currentConversation!);
+        debugPrint('使用已有的当前对话: ${_conversationManager.currentConversation!.title}');
       } else {
-        // 加载最新的对话
-        await _loadConversation(conversations.first);
+        // 获取所有对话
+        final conversations = await ChatStorage.getAllConversations();
+        
+        if (conversations.isEmpty) {
+          // 如果没有对话，创建一个新的欢迎对话
+          await _createWelcomeConversation();
+        } else {
+          // 加载最新的对话
+          await _loadConversation(conversations.first);
+        }
       }
     } catch (e) {
       debugPrint('Failed to initialize conversation: $e');
