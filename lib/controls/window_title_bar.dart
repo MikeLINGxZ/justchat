@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:lemon_tea/utils/style.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/utils/setting/theme_manager.dart';
 
-class WindowTitleBar extends StatefulWidget {
+class WindowTitleBar extends ConsumerStatefulWidget {
   final String title;
   const WindowTitleBar({super.key, required this.title});
 
   @override
-  _WindowTitleBar createState() => _WindowTitleBar();
+  ConsumerState<WindowTitleBar> createState() => _WindowTitleBar();
 }
 
-class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
+class _WindowTitleBar extends ConsumerState<WindowTitleBar> with WindowListener {
   final double _titleBarHeight = 30;
   final Server _server = Server();
   bool _isServerRunning = false;
@@ -61,6 +63,16 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
     }
   }
 
+  /// 检查是否处于调试模式
+  bool _isDebugMode() {
+    bool inDebugMode = false;
+    assert(() {
+      inDebugMode = true;
+      return true;
+    }());
+    return inDebugMode;
+  }
+
   void _initializeServerStatus() {
     // 初始化服务状态
     setState(() {
@@ -77,6 +89,58 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
         });
       }
     });
+  }
+
+  /// 构建主题切换按钮
+  Widget _buildThemeButton() {
+    final themeMode = ref.watch(themeManagerProvider);
+    final themeManager = ref.read(themeManagerProvider.notifier);
+    
+    // 根据主题模式显示不同的图标
+    IconData getThemeIcon() {
+      switch (themeMode) {
+        case ThemeMode.light:
+          return Icons.light_mode;
+        case ThemeMode.dark:
+          return Icons.dark_mode;
+        case ThemeMode.system:
+          return Icons.settings_brightness;
+      }
+    }
+    
+    // 获取主题模式提示文本
+    String getThemeTooltip() {
+      switch (themeMode) {
+        case ThemeMode.light:
+          return '当前：浅色模式\n点击切换到深色模式';
+        case ThemeMode.dark:
+          return '当前：深色模式\n点击切换到跟随系统';
+        case ThemeMode.system:
+          return '当前：跟随系统\n点击切换到浅色模式';
+      }
+    }
+    
+    return Tooltip(
+      message: getThemeTooltip(),
+      child: GestureDetector(
+        onTap: () {
+          themeManager.toggleTheme();
+        },
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: Colors.transparent,
+          ),
+          child: Icon(
+            getThemeIcon(),
+            size: 16,
+            color: Theme.of(context).iconTheme.color?.withOpacity(0.8),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTitleBar() {
@@ -99,22 +163,33 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
                 child: Text(widget.title),
               ),
             ),
-            // 左侧服务状态指示器
-            Padding(
-              padding: const EdgeInsets.only(left: 12.0,right: 12.0),
-              child: Tooltip(
-                message: _isServerRunning
-                    ? '服务正在运行 (端口: $_serverPort)'
-                    : '服务未运行',
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isServerRunning ? Colors.green : Colors.red,
+            // 右侧控件区域
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 调试模式下显示主题切换按钮
+                if (_isDebugMode()) ...[
+                  _buildThemeButton(),
+                  const SizedBox(width: 8),
+                ],
+                // 服务状态指示器
+                Padding(
+                  padding: const EdgeInsets.only(left: 12.0, right: 12.0),
+                  child: Tooltip(
+                    message: _isServerRunning
+                        ? '服务正在运行 (端口: $_serverPort)'
+                        : '服务未运行',
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isServerRunning ? Colors.green : Colors.red,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

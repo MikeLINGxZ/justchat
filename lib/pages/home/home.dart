@@ -10,6 +10,7 @@ import 'package:lemon_tea/pages/home/plugins/plugins.dart';
 import 'package:lemon_tea/pages/home/debug/debug.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -78,7 +79,7 @@ class _HomePage extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Style.secondaryBackground(context),
       body: Column(
         children: [
           const WindowTitleBar(title: "Lemon Tea"),
@@ -87,13 +88,20 @@ class _HomePage extends State<HomePage> {
               padding: EdgeInsets.fromLTRB(4, 0, 4, 4),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(Style.radiusLv1),
+                  color: Style.primaryBackground(context),
                 ),
                 child: Row(
                   children: [
                     // 侧边栏
                     Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(Style.radiusLv1),
+                          bottomLeft: Radius.circular(Style.radiusLv1),
+                        ),
+                        color: Style.sidebarBackground(context),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         vertical: 20.0,
                         horizontal: 12.0,
@@ -165,7 +173,7 @@ class _HomePage extends State<HomePage> {
                         ],
                       ),
                     ),
-                    VerticalDivider(thickness: 1, width: 1,color: Theme.of(context).dividerColor),
+                    VerticalDivider(thickness: 1, width: 1,color: Style.divider(context)),
                     // 内容区域
                     Expanded(child: _pages[_selectedIndex]),
                   ],

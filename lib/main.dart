@@ -113,86 +113,6 @@ void main() async {
 class LemonTea extends ConsumerWidget {
   const LemonTea({super.key});
 
-  // 定义浅色主题
-  ThemeData _lightTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.blue, // 柠檬黄色
-        brightness: Brightness.light,
-      ),
-      scaffoldBackgroundColor: Colors.white,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: const Color(0xFFededed),
-        elevation: 0,
-      ),
-      dividerColor: Color(0xFFEBEEF1),
-      cardTheme: CardTheme(
-        elevation: 0.5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    );
-  }
-
-  // 定义深色主题
-  ThemeData _darkTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFFFD700), // 柠檬黄色
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: const Color(0xFF1E1E1E),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF2D2D2D),
-        elevation: 0,
-      ),
-      cardTheme: CardTheme(
-        elevation: 0.5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        color: const Color(0xFF2D2D2D),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: const Color(0xFF3D3D3D),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    );
-  }
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -225,7 +145,7 @@ class LemonTea extends ConsumerWidget {
       supportedLocales: S.delegate.supportedLocales,
       title: "Lemon Tea",
       locale: settings.language == 'English' ? const Locale('en', 'US') : const Locale('zh', 'CN'),
-      theme: _lightTheme(),
+      theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: flutterThemeMode,
       // home: Scaffold(backgroundColor: Colors.white, body: ViewWidget(LoginPage())),

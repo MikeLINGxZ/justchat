@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
+import 'package:lemon_tea/utils/style.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 
 class MessageView extends ConsumerStatefulWidget {
@@ -413,6 +414,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
                         // 显示主要内容
                         Container(
+                          color: Style.assistantChatBubble(context),
                           child: MarkdownBlock(
                             data: message.content.isEmpty ? ' ' : message.content,
                             config: Theme.of(context).brightness == Brightness.dark
@@ -436,7 +438,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color:  Style.userChatBubble(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: MarkdownBlock(

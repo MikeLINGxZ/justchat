@@ -25,15 +25,15 @@ class Style {
   /// 主背景色
   static Color primaryBackground(BuildContext context) {
     return isDarkTheme(context) 
-        ? const Color(0xFF121212)  // 暗黑主题
+        ? const Color(0xFF171717)  // 暗黑主题
         : const Color(0xFFFFFFFF); // 明亮主题
   }
 
   /// 次要背景色
   static Color secondaryBackground(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF1E1E1E)  // 暗黑主题
-        : const Color(0xFFF5F5F5); // 明亮主题
+        ? const Color(0xFF282828)  // 暗黑主题
+        : const Color(0xFFededed); // 明亮主题
   }
 
   /// 卡片背景色
@@ -120,7 +120,7 @@ class Style {
   /// 分割线颜色
   static Color divider(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF333333)  // 暗黑主题
+        ? const Color(0xFF26303d)  // 暗黑主题
         : const Color(0xFFE8E8E8); // 明亮主题
   }
 
@@ -189,29 +189,29 @@ class Style {
   /// 侧边栏背景色
   static Color sidebarBackground(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF1A1A1A)  // 暗黑主题
-        : const Color(0xFFFAFAFA); // 明亮主题
+        ? const Color(0xFF0d0d0d)  // 暗黑主题
+        : const Color(0xFFffffff); // 明亮主题
   }
 
   /// 标题栏背景色
   static Color titleBarBackground(BuildContext context) {
     return isDarkTheme(context)
         ? const Color(0xFF282828)  // 暗黑主题
-        : const Color(0xFFFFFFFF); // 明亮主题
+        : const Color(0xFFededed); // 明亮主题
   }
 
   /// 聊天气泡背景色（用户）
   static Color userChatBubble(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF1976D2)  // 暗黑主题
-        : const Color(0xFF2196F3); // 明亮主题
+        ? const Color(0xFF262626)  // 暗黑主题
+        : const Color(0xFFf9f9f9); // 明亮主题
   }
 
   /// 聊天气泡背景色（助手）
   static Color assistantChatBubble(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF2D2D2D)  // 暗黑主题
-        : const Color(0xFFF5F5F5); // 明亮主题
+        ? const Color(0x00FFFFFF)  // 暗黑主题
+        : const Color(0x00FFFFFF); // 明亮主题
   }
 
   /// 代码块背景色
@@ -278,25 +278,5 @@ class Style {
     return primaryButton(context).withOpacity(opacity);
   }
 
-  // ==================== 实用方法 ====================
-
-  /// 根据主题返回两个值中的一个
-  static T themeValue<T>(BuildContext context, T lightValue, T darkValue) {
-    return isDarkTheme(context) ? darkValue : lightValue;
-  }
-
-  /// 获取与当前背景形成对比的颜色
-  static Color contrastColor(BuildContext context) {
-    return isDarkTheme(context) ? Colors.white : Colors.black;
-  }
-
-  /// 获取当前主题的原色（跟随系统主题色）
-  static Color systemPrimaryColor(BuildContext context) {
-    return Theme.of(context).primaryColor;
-  }
-
-  /// 获取当前主题的强调色
-  static Color systemAccentColor(BuildContext context) {
-    return Theme.of(context).colorScheme.secondary;
-  }
+  static double radiusLv1 = 10.0;
 }
