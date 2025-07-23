@@ -438,7 +438,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
                                   ),
                                 ),
                                 if (message.role == MessageRole.assistant && widget.messageToolBar != null)
-                                  widget.messageToolBar!.setMessage(message, visible: _messageHovered[index] ?? false),
+                                  widget.messageToolBar!.setMessage(message, visible: !widget.isStreaming && (_messageHovered[index] ?? false)),
                               ],
                             ),
                           ),

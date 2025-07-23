@@ -635,6 +635,411 @@ def hello():
     return '${message.substring(0, 17)}...';
   }
 
+  // MessageToolbar 回调函数实现
+  void _handleCopyMessage(Message message) {
+    // 复制消息内容（包含Markdown格式）
+    Clipboard.setData(ClipboardData(text: message.content));
+    
+    // 显示复制成功提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已复制到剪贴板'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _handleCopyPlainText(Message message) {
+    // 复制纯文本内容（去除Markdown格式）
+    String plainText = _stripMarkdown(message.content);
+    Clipboard.setData(ClipboardData(text: plainText));
+    
+    // 显示复制成功提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已复制纯文本到剪贴板'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _handleRegenerateMessage(Message message) async {
+    // 只能重新生成AI助手的消息
+    if (message.role != MessageRole.assistant) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('只能重新生成AI助手的回复'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 找到该消息在历史记录中的位置
+    final messageIndex = _historyMessages.indexOf(message);
+    if (messageIndex == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('未找到要重新生成的消息'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 找到该AI消息对应的用户消息
+    if (messageIndex == 0 || _historyMessages[messageIndex - 1].role != MessageRole.user) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('无法找到对应的用户消息'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final userMessage = _historyMessages[messageIndex - 1];
+    
+    // 删除当前AI消息及其之后的所有消息
+    final messagesToRemove = _historyMessages.sublist(messageIndex);
+    setState(() {
+      _historyMessages.removeRange(messageIndex, _historyMessages.length);
+    });
+
+    // 从数据库中删除这些消息
+    if (_currentConversation != null && !_currentConversation!.id.startsWith('temp-')) {
+      try {
+        for (final msg in messagesToRemove) {
+          // 这里需要根据消息内容查找并删除数据库中的消息
+          // 由于没有消息ID，我们可能需要根据内容和时间戳来匹配
+          await ChatStorage.deleteMessagesByContent(
+            _currentConversation!.id,
+            msg.content,
+            msg.role.name,
+          );
+        }
+      } catch (e) {
+        debugPrint('删除重新生成的消息时出错: $e');
+      }
+    }
+
+    // 直接触发AI回复，不重新添加用户消息
+    await _regenerateAIResponse(userMessage.content);
+  }
+
+  Future<void> _handleDeleteMessage(Message message) async {
+    // 显示确认对话框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除消息'),
+        content: const Text('确定要删除这条消息吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 找到消息在历史记录中的位置
+    final messageIndex = _historyMessages.indexOf(message);
+    if (messageIndex == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('未找到要删除的消息'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 从界面中移除消息
+    setState(() {
+      _historyMessages.removeAt(messageIndex);
+    });
+
+    // 从数据库中删除消息
+    if (_currentConversation != null && !_currentConversation!.id.startsWith('temp-')) {
+      try {
+        await ChatStorage.deleteMessagesByContent(
+          _currentConversation!.id,
+          message.content,
+          message.role.name,
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('消息已删除'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        debugPrint('删除消息时出错: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('删除消息失败'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('消息已删除（临时对话模式）'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 重新生成AI回复的方法（不添加用户消息）
+  Future<void> _regenerateAIResponse(String userMessageContent) async {
+    if (_currentConversation == null) return;
+
+    // 检查是否为临时对话模式
+    final isTemporaryConversation = _currentConversation!.id.startsWith('temp-');
+
+    // 立即添加一个空的AI消息用于流式显示
+    final aiMessage = Message(role: MessageRole.assistant, content: '');
+    setState(() {
+      _historyMessages.add(aiMessage);
+      _isStreaming = true; // 开始流式显示
+    });
+
+    String fullResponse = '';
+    String fullReasoningContent = '';
+    bool hasError = false;
+    String? aiMessageId;
+
+    try {
+      // 检查gRPC客户端
+      if (_grpcClient.stub == null) {
+        await _grpcClient.init();
+        if (_grpcClient.stub == null) {
+          throw Exception("gRPC客户端初始化失败，请检查服务是否启动");
+        }
+      }
+
+      // 准备历史消息（排除刚添加的空AI消息）
+      List<grpc_common.Message> grpcMessages =
+          _historyMessages.where((msg) => msg.content.isNotEmpty).map((msg) {
+            return grpc_common.Message(
+              role:
+                  msg.role == MessageRole.user
+                      ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
+                      : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
+              content: msg.content,
+            );
+          }).toList();
+
+      // 创建聊天请求
+      final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
+      final modelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
+
+      debugPrint('重新生成使用模型配置: providerId=$providerId, modelId=$modelId');
+
+      final chatRequest = grpc_service.ChatRequest(
+        llmProviderId: providerId,
+        modelId: modelId,
+        historyMessages: grpcMessages,
+        message: grpc_common.Message(
+          role: grpc_enum.MessageRole.MESSAGE_ROLE_USER,
+          content: userMessageContent,
+        ),
+        prompt: "你是一个有用的AI助手。",
+      );
+
+      // 创建请求流
+      final controller = StreamController<grpc_service.ChatRequest>();
+      controller.add(chatRequest);
+      controller.close();
+
+      // 调用gRPC聊天接口
+      final responseStream = _grpcClient.stub!.chat(controller.stream);
+
+      await for (final response in responseStream) {
+        if (response.errorMessage.isNotEmpty) {
+          throw Exception(response.errorMessage);
+        }
+
+        fullResponse += response.content;
+        fullReasoningContent += response.reasoningContent;
+
+        // 实时更新AI消息内容
+        if (mounted) {
+          setState(() {
+            _historyMessages.last = Message(
+              role: MessageRole.assistant,
+              content: fullResponse,
+              reasoningContent:
+                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+            );
+          });
+        }
+
+        if (response.isDone) {
+          // 聊天完成，保存AI回复到数据库
+          if (!isTemporaryConversation) {
+            try {
+              final savedAiMessage = await ChatStorage.addMessage(
+                conversationId: _currentConversation!.id,
+                role: 'assistant',
+                content: fullResponse,
+                reasoningContent:
+                    fullReasoningContent.isNotEmpty
+                        ? fullReasoningContent
+                        : null,
+              );
+
+              if (savedAiMessage != null) {
+                aiMessageId = savedAiMessage.id;
+                debugPrint('重新生成的AI回复保存成功: ${savedAiMessage.id}');
+              } else {
+                debugPrint('警告：重新生成的AI回复保存失败');
+              }
+            } catch (e) {
+              debugPrint('保存重新生成的AI回复时发生异常: $e');
+            }
+          } else {
+            debugPrint('跳过重新生成的AI回复保存（临时对话模式）');
+          }
+          break;
+        }
+      }
+    } catch (e) {
+      hasError = true;
+      debugPrint('重新生成时发生错误: $e');
+
+      // 发生错误时，更新AI消息为错误内容
+      final errorContent = '抱歉，重新生成时发生错误：${e.toString()}';
+
+      if (mounted) {
+        setState(() {
+          _historyMessages.last = Message(
+            role: MessageRole.assistant,
+            content: errorContent,
+          );
+        });
+      }
+
+      // 保存错误消息到数据库
+      if (!isTemporaryConversation) {
+        try {
+          final savedErrorMessage = await ChatStorage.addMessage(
+            conversationId: _currentConversation!.id,
+            role: 'assistant',
+            content: errorContent,
+            reasoningContent: null,
+          );
+
+          if (savedErrorMessage != null) {
+            debugPrint('重新生成的错误消息保存成功: ${savedErrorMessage.id}');
+          } else {
+            debugPrint('警告：重新生成的错误消息保存失败');
+          }
+        } catch (dbError) {
+          debugPrint('保存重新生成的错误消息到数据库失败: $dbError');
+        }
+      } else {
+        debugPrint('跳过重新生成的错误消息保存（临时对话模式）');
+      }
+    } finally {
+      // 结束流式显示
+      if (mounted) {
+        setState(() {
+          _isStreaming = false;
+        });
+      }
+
+      // 确保AI回复消息被保存
+      if (!isTemporaryConversation &&
+          fullResponse.isNotEmpty &&
+          aiMessageId == null &&
+          !hasError) {
+        try {
+          final savedAiMessage = await ChatStorage.addMessage(
+            conversationId: _currentConversation!.id,
+            role: 'assistant',
+            content: fullResponse,
+            reasoningContent:
+                fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+          );
+
+          if (savedAiMessage != null) {
+            aiMessageId = savedAiMessage.id;
+            debugPrint('重新生成的AI回复补充保存成功: ${savedAiMessage.id}');
+          } else {
+            debugPrint('警告：重新生成的AI回复补充保存失败');
+          }
+        } catch (e) {
+          debugPrint('补充保存重新生成的AI回复时发生异常: $e');
+        }
+      }
+
+      // 确保在异常情况下，如果AI消息仍然为空，则移除它
+      if (mounted &&
+          _historyMessages.isNotEmpty &&
+          _historyMessages.last.content.isEmpty &&
+          !hasError) {
+        setState(() {
+          _historyMessages.removeLast();
+        });
+        debugPrint('移除了空的重新生成AI消息');
+      }
+
+      if (aiMessageId != null) {
+        debugPrint('重新生成完成 - AI回复(ID: $aiMessageId)');
+      } else if (fullResponse.isNotEmpty && !isTemporaryConversation) {
+        debugPrint('警告：重新生成的AI回复有内容但未能保存到数据库');
+      }
+    }
+  }
+
+  // 辅助函数：去除Markdown格式
+  String _stripMarkdown(String markdown) {
+    String text = markdown;
+    
+    // 移除代码块
+    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+    text = text.replaceAll(RegExp(r'`[^`]*`'), '');
+    
+    // 移除标题标记
+    text = text.replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '');
+    
+    // 移除粗体和斜体
+    text = text.replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1');
+    text = text.replaceAll(RegExp(r'\*([^*]+)\*'), r'$1');
+    text = text.replaceAll(RegExp(r'__([^_]+)__'), r'$1');
+    text = text.replaceAll(RegExp(r'_([^_]+)_'), r'$1');
+    
+    // 移除删除线
+    text = text.replaceAll(RegExp(r'~~([^~]+)~~'), r'$1');
+    
+    // 移除链接
+    text = text.replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1');
+    
+    // 移除图片
+    text = text.replaceAll(RegExp(r'!\[([^\]]*)\]\([^)]+\)'), r'$1');
+    
+    // 移除列表标记
+    text = text.replaceAll(RegExp(r'^\s*[-*+]\s+', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), '');
+    
+    // 清理多余的空行
+    text = text.replaceAll(RegExp(r'\n\s*\n'), '\n\n');
+    text = text.trim();
+    
+    return text;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -660,18 +1065,11 @@ def hello():
             isStreaming: _isStreaming,
             visibleWidth: Style.messageViewWidth,
             messageToolBar: MessageToolbar(
-              onCopy: (Message message) {
-
-              },
-              onCopyPlainText: (Message message) {
-
-              },
-              onRegenerate: (Message message) {
-
-              },
-              onDelete: (Message message) {
-
-              }
+              onCopy: _handleCopyMessage,
+              onCopyPlainText: _handleCopyPlainText,
+              onRegenerate: _handleRegenerateMessage,
+              onDelete: _handleDeleteMessage,
+              isVisible: !_isStreaming, // 流式生成过程中隐藏工具栏
             ),
           ),
         ),
@@ -690,6 +1088,14 @@ def hello():
         selectedModelId: _selectedModelId,
         onModelSelected: _handleModelSelected,
         isStreaming: _isStreaming,
+        visibleWidth: Style.messageViewWidth,
+        messageToolBar: MessageToolbar(
+          onCopy: _handleCopyMessage,
+          onCopyPlainText: _handleCopyPlainText,
+          onRegenerate: _handleRegenerateMessage,
+          onDelete: _handleDeleteMessage,
+          isVisible: !_isStreaming, // 流式生成过程中隐藏工具栏
+        ),
       ),
       rightChild: sideWidget,
       leftWidth: 500.0,

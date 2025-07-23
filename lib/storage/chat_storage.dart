@@ -271,4 +271,24 @@ class ChatStorage {
       return 0;
     }
   }
-} 
+
+  /// 根据内容和角色删除消息（用于重新生成和删除功能）
+  static Future<bool> deleteMessagesByContent(
+    String conversationId,
+    String content,
+    String role,
+  ) async {
+    try {
+      final result = await SqliteUtil.instance.update(
+        Message.tableName(),
+        {'deleted': 1},
+        where: 'conversation_id = ? AND content = ? AND role = ? AND deleted = ?',
+        whereArgs: [conversationId, content, role, 0],
+      );
+      return result > 0;
+    } catch (e) {
+      debugPrint('根据内容删除消息失败: $e');
+      return false;
+    }
+  }
+}

@@ -58,18 +58,21 @@ class MessageToolbar extends ConsumerWidget {
               tooltip: '复制内容',
               onPressed: isVisible ? () => onCopy?.call(message!) : null,
               ref: ref,
+              showTooltip: isVisible,
             ),
             _ToolbarButton(
               icon: Icons.text_fields_rounded,
               tooltip: '复制纯文本',
               onPressed: isVisible ? () => onCopyPlainText?.call(message!) : null,
               ref: ref,
+              showTooltip: isVisible,
             ),
             _ToolbarButton(
               icon: Icons.refresh_rounded,
               tooltip: '重新生成',
               onPressed: isVisible ? () => onRegenerate?.call(message!) : null,
               ref: ref,
+              showTooltip: isVisible,
             ),
             _ToolbarButton(
               icon: Icons.delete_outline_rounded,
@@ -77,6 +80,7 @@ class MessageToolbar extends ConsumerWidget {
               onPressed: isVisible ? () => onDelete?.call(message!) : null,
               ref: ref,
               isDestructive: true,
+              showTooltip: isVisible,
             ),
           ],
         ),
@@ -91,6 +95,7 @@ class _ToolbarButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final WidgetRef ref;
   final bool isDestructive;
+  final bool showTooltip;
 
   const _ToolbarButton({
     required this.icon,
@@ -98,6 +103,7 @@ class _ToolbarButton extends StatefulWidget {
     required this.onPressed,
     required this.ref,
     this.isDestructive = false,
+    this.showTooltip = true,
   });
 
   @override
@@ -141,62 +147,68 @@ class _ToolbarButtonState extends State<_ToolbarButton>
             ? Colors.white.withOpacity(0.8)
             : Colors.black.withOpacity(0.7);
 
-    return Tooltip(
-      message: widget.tooltip,
-      textStyle: TextStyle(
-        fontSize: FontSizeUtils.getCaptionSize(widget.ref),
-        color: Colors.white,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: GestureDetector(
-          onTapDown: (_) => _animationController.forward(),
-          onTapUp: (_) => _animationController.reverse(),
-          onTapCancel: () => _animationController.reverse(),
-          child: AnimatedBuilder(
-            animation: _scaleAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _scaleAnimation.value,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
-                  height: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      widget.icon,
-                      size: FontSizeUtils.getSubheadingSize(widget.ref),
-                      color: _isHovered
-                          ? (widget.isDestructive
-                              ? Colors.red.shade500
-                              : isDark
-                                  ? Colors.white.withOpacity(0.9)
-                                  : Colors.black.withOpacity(0.8))
-                          : iconColor,
-                    ),
-                    onPressed: widget.onPressed,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    splashRadius: FontSizeUtils.getSubheadingSize(widget.ref),
-                    hoverColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                  ),
+    Widget child = MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => _animationController.forward(),
+        onTapUp: (_) => _animationController.reverse(),
+        onTapCancel: () => _animationController.reverse(),
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
+                height: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              );
-            },
-          ),
+                child: IconButton(
+                  icon: Icon(
+                    widget.icon,
+                    size: FontSizeUtils.getSubheadingSize(widget.ref),
+                    color: _isHovered
+                        ? (widget.isDestructive
+                            ? Colors.red.shade500
+                            : isDark
+                                ? Colors.white.withOpacity(0.9)
+                                : Colors.black.withOpacity(0.8))
+                        : iconColor,
+                  ),
+                  onPressed: widget.onPressed,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: FontSizeUtils.getSubheadingSize(widget.ref),
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
+    
+    if (widget.showTooltip) {
+      return Tooltip(
+        message: widget.tooltip,
+        textStyle: TextStyle(
+          fontSize: FontSizeUtils.getCaptionSize(widget.ref),
+          color: Colors.white,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: child,
+      );
+    } else {
+      return child;
+    }
   }
 }
