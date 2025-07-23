@@ -231,17 +231,7 @@ class _AssistantPage extends State<AssistantPage> {
 
   Future<void> _createWelcomeConversation() async {
     try {
-      final conversation = await ChatStorage.createConversation(
-        title: '欢迎对话',
-        defaultProviderId: 'deepseek',
-        defaultModelId: 'deepseek-chat',
-      );
-
-      if (conversation != null) {
-        _currentConversation = conversation;
-        debugPrint('欢迎对话创建成功: ${conversation.id}');
-
-        const welcomeContent = """# 欢迎使用 Markdown
+      const welcomeContent = """# 欢迎使用 Markdown
 
 这是一个简单的 Markdown 示例文档，展示常用语法：
 
@@ -274,18 +264,17 @@ class _AssistantPage extends State<AssistantPage> {
 def hello():
     print("代码高亮示例")""";
 
-        // 保存欢迎消息到数据库，并检查结果
-        final savedWelcomeMessage = await ChatStorage.addMessage(
-          conversationId: conversation.id,
-          role: 'assistant',
-          content: welcomeContent,
-        );
+      // 通过 ConversationManager 创建欢迎对话，这样会自动更新对话列表并通知监听者
+      final conversation = await _conversationManager.createConversation(
+        title: '欢迎对话',
+        initialMessages: [Message(role: MessageRole.assistant, content: welcomeContent)],
+        defaultProviderId: 'deepseek',
+        defaultModelId: 'deepseek-chat',
+      );
 
-        if (savedWelcomeMessage != null) {
-          debugPrint('欢迎消息保存成功: ${savedWelcomeMessage.id}');
-        } else {
-          debugPrint('警告：欢迎消息保存失败');
-        }
+      if (conversation != null) {
+        _currentConversation = conversation;
+        debugPrint('欢迎对话创建成功: ${conversation.id}');
 
         setState(() {
           _currentTitle = conversation.title;
@@ -582,13 +571,15 @@ def hello():
   }
 
   Future<void> _handleNewConversation() async {
-    final conversation = await ChatStorage.createConversation(
+    // 通过 ConversationManager 创建新对话，这样会自动更新对话列表并通知监听者
+    final conversation = await _conversationManager.createConversation(
       title: '新对话',
       defaultProviderId: _selectedProviderId ?? 'deepseek',
       defaultModelId: _selectedModelId ?? 'deepseek-chat',
     );
 
     if (conversation != null) {
+      // ConversationManager 已经设置了当前对话，这里只需要更新UI状态
       setState(() {
         _currentConversation = conversation;
         _currentTitle = conversation.title;
