@@ -291,4 +291,53 @@ class ChatStorage {
       return false;
     }
   }
+
+  /// 根据内容和角色查找消息（用于重新生成功能）
+  static Future<Message?> findMessageByContent(
+    String conversationId,
+    String content,
+    String role,
+  ) async {
+    try {
+      final results = await SqliteUtil.instance.query(
+        Message.tableName(),
+        where: 'conversation_id = ? AND content = ? AND role = ? AND deleted = ?',
+        whereArgs: [conversationId, content, role, 0],
+        limit: 1,
+      );
+      
+      if (results.isNotEmpty) {
+        return Message.fromMap(results.first);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('根据内容查找消息失败: $e');
+      return null;
+    }
+  }
+
+  /// 根据内容更新消息（用于重新生成功能）
+  static Future<bool> updateMessageByContent(
+    String conversationId,
+    String oldContent,
+    String role,
+    String newContent,
+    String? newReasoningContent,
+  ) async {
+    try {
+      final result = await SqliteUtil.instance.update(
+        Message.tableName(),
+        {
+          'content': newContent,
+          'reasoning_content': newReasoningContent,
+        },
+        where: 'conversation_id = ? AND content = ? AND role = ? AND deleted = ?',
+        whereArgs: [conversationId, oldContent, role, 0],
+      );
+      return result > 0;
+    } catch (e) {
+      debugPrint('根据内容更新消息失败: $e');
+      return false;
+    }
+  }
 }

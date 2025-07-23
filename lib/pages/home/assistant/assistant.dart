@@ -664,18 +664,18 @@ def hello():
   }
 
   Future<void> _handleRegenerateMessage(Message message) async {
-    // 只能重新生成AI助手的消息
+    // 检查消息角色，只有AI消息才能重新生成
     if (message.role != MessageRole.assistant) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('只能重新生成AI助手的回复'),
+          content: Text('只能重新生成AI回复消息'),
           duration: Duration(seconds: 2),
         ),
       );
       return;
     }
 
-    // 找到该消息在历史记录中的位置
+    // 找到消息在历史记录中的位置
     final messageIndex = _historyMessages.indexOf(message);
     if (messageIndex == -1) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -687,44 +687,59 @@ def hello():
       return;
     }
 
-    // 找到该AI消息对应的用户消息
-    if (messageIndex == 0 || _historyMessages[messageIndex - 1].role != MessageRole.user) {
+    // 找到对应的用户消息（通常是前一条消息）
+    String? userMessageContent;
+    for (int i = messageIndex - 1; i >= 0; i--) {
+      if (_historyMessages[i].role == MessageRole.user) {
+        userMessageContent = _historyMessages[i].content;
+        break;
+      }
+    }
+
+    if (userMessageContent == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('无法找到对应的用户消息'),
+          content: Text('未找到对应的用户消息'),
           duration: Duration(seconds: 2),
         ),
       );
       return;
     }
 
-    final userMessage = _historyMessages[messageIndex - 1];
-    
-    // 删除当前AI消息及其之后的所有消息
-    final messagesToRemove = _historyMessages.sublist(messageIndex);
+    // 显示确认对话框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重新生成'),
+        content: const Text('确定要重新生成这条AI回复吗？原回复将被替换。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('重新生成'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 记录原始消息内容，用于后续的数据库更新
+    final originalContent = message.content;
+
+    // 将当前位置的消息设置为空的AI消息，准备重新生成
     setState(() {
-      _historyMessages.removeRange(messageIndex, _historyMessages.length);
+      _historyMessages[messageIndex] = Message(
+        role: MessageRole.assistant, 
+        content: '',
+      );
     });
 
-    // 从数据库中删除这些消息
-    if (_currentConversation != null && !_currentConversation!.id.startsWith('temp-')) {
-      try {
-        for (final msg in messagesToRemove) {
-          // 这里需要根据消息内容查找并删除数据库中的消息
-          // 由于没有消息ID，我们可能需要根据内容和时间戳来匹配
-          await ChatStorage.deleteMessagesByContent(
-            _currentConversation!.id,
-            msg.content,
-            msg.role.name,
-          );
-        }
-      } catch (e) {
-        debugPrint('删除重新生成的消息时出错: $e');
-      }
-    }
-
-    // 直接触发AI回复，不重新添加用户消息
-    await _regenerateAIResponse(userMessage.content);
+    // 调用重新生成方法，传入用户消息内容、要替换的索引和原始内容
+    await _regenerateAIResponse(userMessageContent, messageIndex, originalContent);
   }
 
   Future<void> _handleDeleteMessage(Message message) async {
@@ -801,17 +816,15 @@ def hello():
   }
 
   // 重新生成AI回复的方法（不添加用户消息）
-  Future<void> _regenerateAIResponse(String userMessageContent) async {
+  Future<void> _regenerateAIResponse(String userMessageContent, [int? replaceIndex, String? originalContent]) async {
     if (_currentConversation == null) return;
 
     // 检查是否为临时对话模式
     final isTemporaryConversation = _currentConversation!.id.startsWith('temp-');
 
-    // 立即添加一个空的AI消息用于流式显示
-    final aiMessage = Message(role: MessageRole.assistant, content: '');
+    // 开始流式显示（目标位置的空消息已经在调用前设置好了）
     setState(() {
-      _historyMessages.add(aiMessage);
-      _isStreaming = true; // 开始流式显示
+      _isStreaming = true;
     });
 
     String fullResponse = '';
@@ -828,17 +841,25 @@ def hello():
         }
       }
 
-      // 准备历史消息（排除刚添加的空AI消息）
-      List<grpc_common.Message> grpcMessages =
-          _historyMessages.where((msg) => msg.content.isNotEmpty).map((msg) {
-            return grpc_common.Message(
-              role:
-                  msg.role == MessageRole.user
-                      ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
-                      : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-              content: msg.content,
-            );
-          }).toList();
+      // 准备历史消息（如果指定了replaceIndex，则只使用该索引之前的消息）
+      List<Message> historyToUse;
+      if (replaceIndex != null) {
+        // 使用重新生成位置之前的历史消息（包含对应的用户消息，不包含要重新生成的AI消息）
+        historyToUse = _historyMessages.sublist(0, replaceIndex);
+      } else {
+        // 使用所有非空消息（排除最后一个空AI消息）
+        historyToUse = _historyMessages.where((msg) => msg.content.isNotEmpty).toList();
+      }
+      
+      List<grpc_common.Message> grpcMessages = historyToUse.map((msg) {
+        return grpc_common.Message(
+          role:
+              msg.role == MessageRole.user
+                  ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
+                  : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
+          content: msg.content,
+        );
+      }).toList();
 
       // 创建聊天请求
       final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
@@ -876,37 +897,61 @@ def hello():
         // 实时更新AI消息内容
         if (mounted) {
           setState(() {
-            _historyMessages.last = Message(
+            final newMessage = Message(
               role: MessageRole.assistant,
               content: fullResponse,
               reasoningContent:
                   fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
             );
+            
+            if (replaceIndex != null) {
+              _historyMessages[replaceIndex] = newMessage;
+            } else {
+              _historyMessages.last = newMessage;
+            }
           });
         }
 
         if (response.isDone) {
-          // 聊天完成，保存AI回复到数据库
+          // 聊天完成，更新AI回复到数据库（如果有原始内容）或保存新的AI回复
           if (!isTemporaryConversation) {
             try {
-              final savedAiMessage = await ChatStorage.addMessage(
-                conversationId: _currentConversation!.id,
-                role: 'assistant',
-                content: fullResponse,
-                reasoningContent:
-                    fullReasoningContent.isNotEmpty
-                        ? fullReasoningContent
-                        : null,
-              );
+              if (originalContent != null) {
+                // 更新现有消息而不是创建新消息
+                final updateResult = await ChatStorage.updateMessageByContent(
+                  _currentConversation!.id,
+                  originalContent,
+                  'assistant',
+                  fullResponse,
+                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+                );
 
-              if (savedAiMessage != null) {
-                aiMessageId = savedAiMessage.id;
-                debugPrint('重新生成的AI回复保存成功: ${savedAiMessage.id}');
+                if (updateResult) {
+                  debugPrint('重新生成的AI回复更新成功');
+                } else {
+                  debugPrint('警告：重新生成的AI回复更新失败');
+                }
               } else {
-                debugPrint('警告：重新生成的AI回复保存失败');
+                // 原始逻辑：添加新消息
+                final savedAiMessage = await ChatStorage.addMessage(
+                  conversationId: _currentConversation!.id,
+                  role: 'assistant',
+                  content: fullResponse,
+                  reasoningContent:
+                      fullReasoningContent.isNotEmpty
+                          ? fullReasoningContent
+                          : null,
+                );
+
+                if (savedAiMessage != null) {
+                  aiMessageId = savedAiMessage.id;
+                  debugPrint('重新生成的AI回复保存成功: ${savedAiMessage.id}');
+                } else {
+                  debugPrint('警告：重新生成的AI回复保存失败');
+                }
               }
             } catch (e) {
-              debugPrint('保存重新生成的AI回复时发生异常: $e');
+              debugPrint('保存/更新重新生成的AI回复时发生异常: $e');
             }
           } else {
             debugPrint('跳过重新生成的AI回复保存（临时对话模式）');
@@ -923,30 +968,54 @@ def hello():
 
       if (mounted) {
         setState(() {
-          _historyMessages.last = Message(
+          final errorMessage = Message(
             role: MessageRole.assistant,
             content: errorContent,
           );
+          
+          if (replaceIndex != null) {
+            _historyMessages[replaceIndex] = errorMessage;
+          } else {
+            _historyMessages.last = errorMessage;
+          }
         });
       }
 
       // 保存错误消息到数据库
       if (!isTemporaryConversation) {
         try {
-          final savedErrorMessage = await ChatStorage.addMessage(
-            conversationId: _currentConversation!.id,
-            role: 'assistant',
-            content: errorContent,
-            reasoningContent: null,
-          );
+          if (originalContent != null) {
+            // 更新现有消息而不是创建新消息
+            final updateResult = await ChatStorage.updateMessageByContent(
+              _currentConversation!.id,
+              originalContent,
+              'assistant',
+              errorContent,
+              null,
+            );
 
-          if (savedErrorMessage != null) {
-            debugPrint('重新生成的错误消息保存成功: ${savedErrorMessage.id}');
+            if (updateResult) {
+              debugPrint('重新生成的错误消息更新成功');
+            } else {
+              debugPrint('警告：重新生成的错误消息更新失败');
+            }
           } else {
-            debugPrint('警告：重新生成的错误消息保存失败');
+            // 原始逻辑：添加新消息
+            final savedErrorMessage = await ChatStorage.addMessage(
+              conversationId: _currentConversation!.id,
+              role: 'assistant',
+              content: errorContent,
+              reasoningContent: null,
+            );
+
+            if (savedErrorMessage != null) {
+              debugPrint('重新生成的错误消息保存成功: ${savedErrorMessage.id}');
+            } else {
+              debugPrint('警告：重新生成的错误消息保存失败');
+            }
           }
         } catch (dbError) {
-          debugPrint('保存重新生成的错误消息到数据库失败: $dbError');
+          debugPrint('保存/更新重新生成的错误消息到数据库失败: $dbError');
         }
       } else {
         debugPrint('跳过重新生成的错误消息保存（临时对话模式）');
@@ -965,37 +1034,60 @@ def hello():
           aiMessageId == null &&
           !hasError) {
         try {
-          final savedAiMessage = await ChatStorage.addMessage(
-            conversationId: _currentConversation!.id,
-            role: 'assistant',
-            content: fullResponse,
-            reasoningContent:
-                fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
-          );
+          if (originalContent != null) {
+            // 更新现有消息而不是创建新消息
+            final updateResult = await ChatStorage.updateMessageByContent(
+              _currentConversation!.id,
+              originalContent,
+              'assistant',
+              fullResponse,
+              fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+            );
 
-          if (savedAiMessage != null) {
-            aiMessageId = savedAiMessage.id;
-            debugPrint('重新生成的AI回复补充保存成功: ${savedAiMessage.id}');
+            if (updateResult) {
+              debugPrint('重新生成的AI回复补充更新成功');
+            } else {
+              debugPrint('警告：重新生成的AI回复补充更新失败');
+            }
           } else {
-            debugPrint('警告：重新生成的AI回复补充保存失败');
+            // 原始逻辑：添加新消息
+            final savedAiMessage = await ChatStorage.addMessage(
+              conversationId: _currentConversation!.id,
+              role: 'assistant',
+              content: fullResponse,
+              reasoningContent:
+                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+            );
+
+            if (savedAiMessage != null) {
+              aiMessageId = savedAiMessage.id;
+              debugPrint('重新生成的AI回复补充保存成功: ${savedAiMessage.id}');
+            } else {
+              debugPrint('警告：重新生成的AI回复补充保存失败');
+            }
           }
         } catch (e) {
-          debugPrint('补充保存重新生成的AI回复时发生异常: $e');
+          debugPrint('补充保存/更新重新生成的AI回复时发生异常: $e');
         }
       }
 
       // 确保在异常情况下，如果AI消息仍然为空，则移除它
       if (mounted &&
           _historyMessages.isNotEmpty &&
-          _historyMessages.last.content.isEmpty &&
           !hasError) {
-        setState(() {
-          _historyMessages.removeLast();
-        });
-        debugPrint('移除了空的重新生成AI消息');
+        final targetIndex = replaceIndex ?? (_historyMessages.length - 1);
+        if (targetIndex < _historyMessages.length && 
+            _historyMessages[targetIndex].content.isEmpty) {
+          setState(() {
+            _historyMessages.removeAt(targetIndex);
+          });
+          debugPrint('移除了空的重新生成AI消息');
+        }
       }
 
-      if (aiMessageId != null) {
+      if (originalContent != null) {
+        debugPrint('重新生成完成 - AI回复已更新');
+      } else if (aiMessageId != null) {
         debugPrint('重新生成完成 - AI回复(ID: $aiMessageId)');
       } else if (fullResponse.isNotEmpty && !isTemporaryConversation) {
         debugPrint('警告：重新生成的AI回复有内容但未能保存到数据库');
