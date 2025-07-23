@@ -9,11 +9,13 @@ import 'package:markdown_widget/markdown_widget.dart';
 class MessageView extends ConsumerStatefulWidget {
   final List<Message> historyMessages;
   final bool isStreaming;
-  
+  final double visibleWidth;
+
   const MessageView(
     this.historyMessages, {
     super.key,
     this.isStreaming = false,
+    this.visibleWidth = double.infinity,
   });
 
   @override
@@ -363,109 +365,117 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: widget.historyMessages.length,
-      itemBuilder: (context, index) {
-        final message = widget.historyMessages[index];
-        final isLastMessage = index == widget.historyMessages.length - 1;
-        final isStreamingMessage = isLastMessage && 
-                                  message.role == MessageRole.assistant && 
-                                  widget.isStreaming;
-        
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (message.role != MessageRole.user) ...[
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.green,
-                  child: Text(
-                    'A',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: FontSizeUtils.getSubheadingSize(ref),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 0,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 2,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 显示思考过程（如果有的话）
-                        if (message.reasoningContent != null &&
-                            message.reasoningContent!.isNotEmpty)
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: _buildReasoningSection(index, message.reasoningContent!),
-                          ),
+    return SizedBox(
+      width: double.infinity,
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: widget.historyMessages.length,
+        itemBuilder: (context, index) {
+          final message = widget.historyMessages[index];
+          final isLastMessage = index == widget.historyMessages.length - 1;
+          final isStreamingMessage = isLastMessage &&
+              message.role == MessageRole.assistant &&
+              widget.isStreaming;
 
-                        // 显示主要内容
-                        Container(
-                          color: Style.assistantChatBubble(context),
-                          child: MarkdownBlock(
-                            data: message.content.isEmpty ? ' ' : message.content,
-                            config: Theme.of(context).brightness == Brightness.dark
-                                ? _buildDarkConfig()
-                                : _buildLightConfig(),
+          return Center(
+            child: SizedBox(
+              width: widget.visibleWidth,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (message.role != MessageRole.user) ...[
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.green,
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: FontSizeUtils.getSubheadingSize(ref),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 0,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 2,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 显示思考过程（如果有的话）
+                              if (message.reasoningContent != null &&
+                                  message.reasoningContent!.isNotEmpty)
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: _buildReasoningSection(index, message.reasoningContent!),
+                                ),
+
+                              // 显示主要内容
+                              Container(
+                                color: Style.assistantChatBubble(context),
+                                child: MarkdownBlock(
+                                  data: message.content.isEmpty ? ' ' : message.content,
+                                  config: Theme.of(context).brightness == Brightness.dark
+                                      ? _buildDarkConfig()
+                                      : _buildLightConfig(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (message.role == MessageRole.user) ...[
+                      const Spacer(),
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 0,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color:  Style.userChatBubble(context),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: MarkdownBlock(
+                          data: message.content,
+                          config: Theme.of(context).brightness == Brightness.dark
+                              ? _buildDarkConfig()
+                              : _buildLightConfig(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.blue,
+                        child: Text(
+                          'U',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: FontSizeUtils.getSubheadingSize(ref),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              if (message.role == MessageRole.user) ...[
-                const Spacer(),
-                Container(
-                  constraints: const BoxConstraints(
-                    minWidth: 0,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color:  Style.userChatBubble(context),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: MarkdownBlock(
-                    data: message.content,
-                    config: Theme.of(context).brightness == Brightness.dark
-                        ? _buildDarkConfig()
-                        : _buildLightConfig(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.blue,
-                  child: Text(
-                    'U',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: FontSizeUtils.getSubheadingSize(ref),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

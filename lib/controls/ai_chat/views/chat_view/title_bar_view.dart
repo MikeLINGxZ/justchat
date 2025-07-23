@@ -7,12 +7,14 @@ class TitleBarView extends ConsumerWidget {
   final String tag;
   final String title;
   final VoidCallback? onAddTap;
+  final double visibleWidth;
 
   const TitleBarView({
     super.key,
     this.tag = '',
     this.title = '',
     this.onAddTap,
+    this.visibleWidth = double.infinity,
   });
 
   Widget _buildIconButton({
@@ -52,6 +54,7 @@ class TitleBarView extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      width: this.visibleWidth,
       decoration: BoxDecoration(
         // color: Theme.of(context).colorScheme.surface,
         // border: Border(

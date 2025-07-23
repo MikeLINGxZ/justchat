@@ -17,6 +17,7 @@ class ChatView extends StatefulWidget {
     this.selectedModelId,
     this.onModelSelected,
     this.isStreaming = false,
+    this.visibleWidth = double.infinity
   });
 
   final Function(String)? onFileSelected;
@@ -28,6 +29,7 @@ class ChatView extends StatefulWidget {
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
   final bool isStreaming;
+  final double visibleWidth;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -40,7 +42,7 @@ class _ChatView extends State<ChatView> {
     
     return ConstrainedBox(
       constraints: const BoxConstraints(
-        minWidth: 400.0,
+        minWidth: 300.0,
       ),
       child: Column(
         children: [
@@ -49,17 +51,20 @@ class _ChatView extends State<ChatView> {
             child: TitleBarView(
               title: displayTitle,
               onAddTap: widget.onNewConversation,
+              visibleWidth: widget.visibleWidth,
             ),
           ),
           Expanded(
             child: MessageView(
               widget.historyMessages,
               isStreaming: widget.isStreaming,
+              visibleWidth: widget.visibleWidth,
             ),
           ),
 
           // 底部部件
           SizedBox(
+            width: widget.visibleWidth,
             child: InputView(
               onFileSelected: widget.onFileSelected,
               onSend: (msg) {

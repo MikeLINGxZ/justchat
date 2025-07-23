@@ -16,6 +16,8 @@ import 'package:lemon_tea/models/model.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:lemon_tea/utils/style.dart';
+
 class AssistantPage extends StatefulWidget {
   final ConversationManager? conversationManager;
   
@@ -618,7 +620,7 @@ def hello():
     if (sideWidget == null) {
       return Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
+          constraints: BoxConstraints(maxWidth: double.infinity),
           child: ChatView(
             historyMessages: _historyMessages,
             onSend: _handleSendMessage,
@@ -628,6 +630,7 @@ def hello():
             selectedModelId: _selectedModelId,
             onModelSelected: _handleModelSelected,
             isStreaming: _isStreaming,
+            visibleWidth: Style.messageViewWidth,
           ),
         ),
       );
