@@ -49,15 +49,7 @@ class MessageToolbar extends ConsumerWidget {
       child: Container(
         // margin: const EdgeInsets.only(top: 12),
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -67,21 +59,18 @@ class MessageToolbar extends ConsumerWidget {
               onPressed: isVisible ? () => onCopy?.call(message!) : null,
               ref: ref,
             ),
-            SizedBox(width: FontSizeUtils.getXSmallSize(ref) * 0.4),
             _ToolbarButton(
               icon: Icons.text_fields_rounded,
               tooltip: '复制纯文本',
               onPressed: isVisible ? () => onCopyPlainText?.call(message!) : null,
               ref: ref,
             ),
-            SizedBox(width: FontSizeUtils.getXSmallSize(ref) * 0.4),
             _ToolbarButton(
               icon: Icons.refresh_rounded,
               tooltip: '重新生成',
               onPressed: isVisible ? () => onRegenerate?.call(message!) : null,
               ref: ref,
             ),
-            SizedBox(width: FontSizeUtils.getXSmallSize(ref) * 0.4),
             _ToolbarButton(
               icon: Icons.delete_outline_rounded,
               tooltip: '删除消息',
@@ -176,27 +165,11 @@ class _ToolbarButtonState extends State<_ToolbarButton>
                 scale: _scaleAnimation.value,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: FontSizeUtils.getSubheadingSize(widget.ref) * 2,
-                  height: FontSizeUtils.getSubheadingSize(widget.ref) * 2,
+                  width: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
+                  height: FontSizeUtils.getSubheadingSize(widget.ref) * 1.8,
                   decoration: BoxDecoration(
-                    color: _isHovered
-                        ? (widget.isDestructive
-                            ? Colors.red.withOpacity(0.1)
-                            : isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.black.withOpacity(0.06))
-                        : Colors.transparent,
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
-                    border: _isHovered
-                        ? Border.all(
-                            color: widget.isDestructive
-                                ? Colors.red.withOpacity(0.2)
-                                : isDark
-                                    ? Colors.white.withOpacity(0.15)
-                                    : Colors.black.withOpacity(0.1),
-                            width: 0.5,
-                          )
-                        : null,
                   ),
                   child: IconButton(
                     icon: Icon(
@@ -214,6 +187,9 @@ class _ToolbarButtonState extends State<_ToolbarButton>
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     splashRadius: FontSizeUtils.getSubheadingSize(widget.ref),
+                    hoverColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    splashColor: Colors.transparent,
                   ),
                 ),
               );
