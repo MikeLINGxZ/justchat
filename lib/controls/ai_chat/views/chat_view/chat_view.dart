@@ -17,7 +17,8 @@ class ChatView extends StatefulWidget {
     this.selectedModelId,
     this.onModelSelected,
     this.isStreaming = false,
-    this.visibleWidth = double.infinity
+    this.visibleWidth = double.infinity,
+    this.messageToolBar
   });
 
   final Function(String)? onFileSelected;
@@ -30,6 +31,7 @@ class ChatView extends StatefulWidget {
   final Function(String providerId, String modelId)? onModelSelected;
   final bool isStreaming;
   final double visibleWidth;
+  final Widget? messageToolBar;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -59,6 +61,7 @@ class _ChatView extends State<ChatView> {
               widget.historyMessages,
               isStreaming: widget.isStreaming,
               visibleWidth: widget.visibleWidth,
+              messageToolBar: widget.messageToolBar,
             ),
           ),
 

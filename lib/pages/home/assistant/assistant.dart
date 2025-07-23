@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/chat_view.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_toolbar.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
@@ -631,6 +633,15 @@ def hello():
             onModelSelected: _handleModelSelected,
             isStreaming: _isStreaming,
             visibleWidth: Style.messageViewWidth,
+            messageToolBar: MessageToolbar(onCopy: () {
+
+            }, onRegenerate: () {
+
+            }, onDelete: () {
+
+            }, onCopyPlainText: () {  }
+
+            ),
           ),
         ),
       );

@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_toolbar.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/utils/style.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:flutter/services.dart';
 
 class MessageView extends ConsumerStatefulWidget {
   final List<Message> historyMessages;
   final bool isStreaming;
   final double visibleWidth;
+  final Widget? messageToolBar;
 
   const MessageView(
     this.historyMessages, {
     super.key,
     this.isStreaming = false,
     this.visibleWidth = double.infinity,
+    this.messageToolBar
   });
 
   @override
@@ -429,6 +433,8 @@ class _MessageViewState extends ConsumerState<MessageView> {
                                       : _buildLightConfig(),
                                 ),
                               ),
+                              if (message.role == MessageRole.assistant && widget.messageToolBar != null)
+                                widget.messageToolBar!,
                             ],
                           ),
                         ),
@@ -481,3 +487,4 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
 
 }
+
