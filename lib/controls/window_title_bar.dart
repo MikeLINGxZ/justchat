@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:lemon_tea/utils/style.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
