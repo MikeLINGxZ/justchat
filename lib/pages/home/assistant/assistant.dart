@@ -670,7 +670,7 @@ def hello():
 
               },
               onDelete: (Message message) {
-                debugPrint("xx");
+
               }
             ),
           ),

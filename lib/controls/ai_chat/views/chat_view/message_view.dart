@@ -31,6 +31,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
   int _lastMessageCount = 0;
   String _lastMessageContent = '';
   final Map<int, bool> _reasoningExpanded = {}; // 跟踪每个消息的思考过程展开状态
+  final Map<int, bool> _messageHovered = {}; // 跟踪每个消息的悬停状态
 
   @override
   void initState() {
@@ -404,38 +405,42 @@ class _MessageViewState extends ConsumerState<MessageView> {
                       ),
                       const SizedBox(width: 12),
                       Flexible(
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 0,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 2,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 显示思考过程（如果有的话）
-                              if (message.reasoningContent != null &&
-                                  message.reasoningContent!.isNotEmpty)
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  child: _buildReasoningSection(index, message.reasoningContent!),
-                                ),
+                        child: MouseRegion(
+                          onEnter: (_) => setState(() => _messageHovered[index] = true),
+                          onExit: (_) => setState(() => _messageHovered[index] = false),
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 0,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 显示思考过程（如果有的话）
+                                if (message.reasoningContent != null &&
+                                    message.reasoningContent!.isNotEmpty)
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: _buildReasoningSection(index, message.reasoningContent!),
+                                  ),
 
-                              // 显示主要内容
-                              Container(
-                                color: Style.assistantChatBubble(context),
-                                child: MarkdownBlock(
-                                  data: message.content.isEmpty ? ' ' : message.content,
-                                  config: Theme.of(context).brightness == Brightness.dark
-                                      ? _buildDarkConfig()
-                                      : _buildLightConfig(),
+                                // 显示主要内容
+                                Container(
+                                  color: Style.assistantChatBubble(context),
+                                  child: MarkdownBlock(
+                                    data: message.content.isEmpty ? ' ' : message.content,
+                                    config: Theme.of(context).brightness == Brightness.dark
+                                        ? _buildDarkConfig()
+                                        : _buildLightConfig(),
+                                  ),
                                 ),
-                              ),
-                              if (message.role == MessageRole.assistant && widget.messageToolBar != null)
-                                widget.messageToolBar!.setMessage(message),
-                            ],
+                                if (message.role == MessageRole.assistant && widget.messageToolBar != null)
+                                  widget.messageToolBar!.setMessage(message, visible: _messageHovered[index] ?? false),
+                              ],
+                            ),
                           ),
                         ),
                       ),
