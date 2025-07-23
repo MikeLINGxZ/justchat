@@ -47,19 +47,9 @@ class MessageToolbar extends ConsumerWidget {
       opacity: isVisible ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 200),
       child: Container(
-        margin: const EdgeInsets.only(top: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        // margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.08)
-              : Colors.black.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.08),
-            width: 0.5,
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
