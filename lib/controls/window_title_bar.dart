@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lemon_tea/utils/style.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:lemon_tea/utils/cli/server/server.dart';
 
@@ -86,6 +87,7 @@ class _WindowTitleBar extends State<WindowTitleBar> with WindowListener {
       },
       onDoubleTap: _toggleMaximize,
       child: Container(
+        color: Style.titleBarBackground(context),
         height: _titleBarHeight,
         child: Row(
           children: [

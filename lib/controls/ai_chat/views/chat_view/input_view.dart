@@ -5,6 +5,7 @@ import 'package:lemon_tea/controls/input.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/model_selector.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class InputView extends ConsumerStatefulWidget {
   final Function(String)? onFileSelected;
@@ -87,18 +88,28 @@ class _InputView extends ConsumerState<InputView> {
             minLines: 2,
             maxLines: 4,
             cursorWidth: 1.5,
+            style: TextStyle(
+              fontSize: FontSizeUtils.getSmallSize(ref),
+              height: 1.5
+            ),
             decoration: InputDecoration(
+              floatingLabelBehavior: FloatingLabelBehavior.never,
               hintText: S.of(context).inputMessage,
               hintStyle: TextStyle(
                 fontSize: FontSizeUtils.getSmallSize(ref),
-                textBaseline: TextBaseline.alphabetic
+                textBaseline: TextBaseline.alphabetic,
+                color: Style.hintText(context),
               ),
               border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey, width: 0.5),
+                borderSide: BorderSide(color: Style.primaryBorder(context), width: 0.5),
                 borderRadius:  BorderRadius.all(Radius.circular(10.0)),
               ),
-              focusColor: Theme.of(context).scaffoldBackgroundColor,
-              hoverColor: Theme.of(context).scaffoldBackgroundColor,
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Style.focusedBorder(context), width: 1.0),
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              fillColor: Style.inputBackground(context),
+              filled: true,
             ),
             onChanged: (value) {
               if (value.endsWith('\n')) {
