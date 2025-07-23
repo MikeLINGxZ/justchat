@@ -22,7 +22,7 @@ import 'package:lemon_tea/utils/style.dart';
 
 class AssistantPage extends StatefulWidget {
   final ConversationManager? conversationManager;
-  
+
   const AssistantPage({super.key, this.conversationManager});
 
   @override
@@ -60,13 +60,16 @@ class _AssistantPage extends State<AssistantPage> {
     if (mounted) {
       setState(() {
         _historyMessages = _conversationManager.messages;
-        _currentTitle = _conversationManager.currentConversation?.title ?? 'AI 助手';
+        _currentTitle =
+            _conversationManager.currentConversation?.title ?? 'AI 助手';
         _currentConversation = _conversationManager.currentConversation;
-        
+
         // 同步模型配置
         if (_currentConversation != null) {
-          _selectedProviderId = _currentConversation!.defaultProviderId ?? 'deepseek';
-          _selectedModelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
+          _selectedProviderId =
+              _currentConversation!.defaultProviderId ?? 'deepseek';
+          _selectedModelId =
+              _currentConversation!.defaultModelId ?? 'deepseek-chat';
         }
       });
     }
@@ -80,19 +83,21 @@ class _AssistantPage extends State<AssistantPage> {
     try {
       // 初始化gRPC客户端
       await _grpcClient.init();
-      
+
       // 确保有基本的LLM配置
       await _ensureLlmConfiguration();
-      
+
       // 检查ConversationManager是否已经有当前对话
       if (_conversationManager.currentConversation != null) {
         // 如果已经有当前对话，直接使用它
         await _loadConversation(_conversationManager.currentConversation!);
-        debugPrint('使用已有的当前对话: ${_conversationManager.currentConversation!.title}');
+        debugPrint(
+          '使用已有的当前对话: ${_conversationManager.currentConversation!.title}',
+        );
       } else {
         // 获取所有对话
         final conversations = await ChatStorage.getAllConversations();
-        
+
         if (conversations.isEmpty) {
           // 如果没有对话，创建一个新的欢迎对话
           await _createWelcomeConversation();
@@ -103,7 +108,7 @@ class _AssistantPage extends State<AssistantPage> {
       }
     } catch (e) {
       debugPrint('Failed to initialize conversation: $e');
-      
+
       // 如果初始化失败，尝试创建一个离线模式的对话记录
       try {
         debugPrint('尝试创建离线模式的对话记录...');
@@ -111,11 +116,11 @@ class _AssistantPage extends State<AssistantPage> {
         debugPrint('离线模式对话创建成功');
       } catch (offlineError) {
         debugPrint('离线模式对话创建也失败: $offlineError');
-        
+
         // 最后的备选方案：创建一个临时的本地对话记录和消息
         // 注意：这种情况下消息不会被保存到数据库，但至少应用不会崩溃
         debugPrint('使用临时本地模式');
-        
+
         _currentConversation = Conversation(
           id: 'temp-conversation-${DateTime.now().millisecondsSinceEpoch}',
           title: 'AI 助手 (离线模式)',
@@ -124,7 +129,7 @@ class _AssistantPage extends State<AssistantPage> {
           defaultProviderId: 'deepseek',
           defaultModelId: 'deepseek-chat',
         );
-        
+
         final welcomeContent = """# AI 助手 (离线模式)
 
 数据库连接失败，当前运行在离线模式下。
@@ -139,12 +144,9 @@ class _AssistantPage extends State<AssistantPage> {
 - 重启应用后对话记录可能丢失""";
 
         _historyMessages = [
-          Message(
-            role: MessageRole.assistant,
-            content: welcomeContent,
-          ),
+          Message(role: MessageRole.assistant, content: welcomeContent),
         ];
-        
+
         setState(() {
           _currentTitle = _currentConversation!.title;
           _selectedProviderId = 'deepseek';
@@ -163,10 +165,10 @@ class _AssistantPage extends State<AssistantPage> {
     try {
       // 检查是否已有LLM提供商配置
       final providers = await LlmStorage.getAllProviders();
-      
+
       if (providers.isEmpty) {
         debugPrint('未找到LLM提供商配置，创建默认配置');
-        
+
         // 创建默认的DeepSeek提供商
         final defaultProvider = LlmProvider(
           id: 'deepseek',
@@ -177,9 +179,9 @@ class _AssistantPage extends State<AssistantPage> {
           description: 'DeepSeek AI 服务',
           seqId: 1,
         );
-        
+
         await LlmStorage.addProvider(defaultProvider);
-        
+
         // 创建默认模型
         final defaultModel = Model(
           id: 'deepseek-chat',
@@ -189,9 +191,9 @@ class _AssistantPage extends State<AssistantPage> {
           llmProviderId: 'deepseek',
           seqId: 1,
         );
-        
+
         await LlmStorage.addModel(defaultModel);
-        
+
         debugPrint('默认LLM配置创建完成');
       } else {
         debugPrint('找到${providers.length}个LLM提供商配置');
@@ -203,15 +205,22 @@ class _AssistantPage extends State<AssistantPage> {
 
   Future<void> _loadConversation(Conversation conversation) async {
     _currentConversation = conversation;
-    final dbMessages = await ChatStorage.getMessagesByConversationId(conversation.id);
-    
+    final dbMessages = await ChatStorage.getMessagesByConversationId(
+      conversation.id,
+    );
+
     // 转换数据库Message为LLM Message
-    final messages = dbMessages.map((dbMsg) => Message(
-      role: dbMsg.role,
-      content: dbMsg.content,
-      reasoningContent: dbMsg.reasoningContent,
-    )).toList();
-    
+    final messages =
+        dbMessages
+            .map(
+              (dbMsg) => Message(
+                role: dbMsg.role,
+                content: dbMsg.content,
+                reasoningContent: dbMsg.reasoningContent,
+              ),
+            )
+            .toList();
+
     setState(() {
       _currentTitle = conversation.title;
       _historyMessages = messages;
@@ -227,11 +236,11 @@ class _AssistantPage extends State<AssistantPage> {
         defaultProviderId: 'deepseek',
         defaultModelId: 'deepseek-chat',
       );
-      
+
       if (conversation != null) {
         _currentConversation = conversation;
         debugPrint('欢迎对话创建成功: ${conversation.id}');
-        
+
         const welcomeContent = """# 欢迎使用 Markdown
 
 这是一个简单的 Markdown 示例文档，展示常用语法：
@@ -264,26 +273,25 @@ class _AssistantPage extends State<AssistantPage> {
 ```python
 def hello():
     print("代码高亮示例")""";
-        
+
         // 保存欢迎消息到数据库，并检查结果
         final savedWelcomeMessage = await ChatStorage.addMessage(
           conversationId: conversation.id,
           role: 'assistant',
           content: welcomeContent,
         );
-        
+
         if (savedWelcomeMessage != null) {
           debugPrint('欢迎消息保存成功: ${savedWelcomeMessage.id}');
         } else {
           debugPrint('警告：欢迎消息保存失败');
         }
-        
+
         setState(() {
           _currentTitle = conversation.title;
-          _historyMessages = [Message(
-            role: MessageRole.assistant,
-            content: welcomeContent,
-          )];
+          _historyMessages = [
+            Message(role: MessageRole.assistant, content: welcomeContent),
+          ];
           _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
           _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
         });
@@ -301,7 +309,9 @@ def hello():
     if (message.trim().isEmpty || _currentConversation == null) return;
 
     // 检查是否为临时对话模式
-    final isTemporaryConversation = _currentConversation!.id.startsWith('temp-');
+    final isTemporaryConversation = _currentConversation!.id.startsWith(
+      'temp-',
+    );
     if (isTemporaryConversation) {
       debugPrint('警告：当前为临时对话模式，消息将不会被保存到数据库');
     }
@@ -320,7 +330,7 @@ def hello():
           role: 'user',
           content: message,
         );
-        
+
         if (savedUserMessage == null) {
           debugPrint('警告：用户消息保存失败');
           // 可以在这里添加UI提示，比如显示一个警告图标
@@ -338,10 +348,16 @@ def hello():
     // 如果是第一条用户消息，更新对话标题
     if (!isTemporaryConversation) {
       try {
-        final messageCount = await ChatStorage.getMessageCountByConversationId(_currentConversation!.id);
-        if (messageCount >= 2) { // 可能包含欢迎消息 + 用户消息
+        final messageCount = await ChatStorage.getMessageCountByConversationId(
+          _currentConversation!.id,
+        );
+        if (messageCount >= 2) {
+          // 可能包含欢迎消息 + 用户消息
           final title = _generateTitleFromMessage(message);
-          final titleUpdated = await ChatStorage.updateConversationTitle(_currentConversation!.id, title);
+          final titleUpdated = await ChatStorage.updateConversationTitle(
+            _currentConversation!.id,
+            title,
+          );
           if (titleUpdated) {
             setState(() {
               _currentTitle = title;
@@ -356,7 +372,8 @@ def hello():
       }
     } else {
       // 临时对话模式下也可以更新标题，只是不保存到数据库
-      if (_historyMessages.length == 1) { // 只有欢迎消息时
+      if (_historyMessages.length == 1) {
+        // 只有欢迎消息时
         final title = _generateTitleFromMessage(message);
         setState(() {
           _currentTitle = title;
@@ -366,10 +383,7 @@ def hello():
     }
 
     // 立即添加一个空的AI消息用于流式显示
-    final aiMessage = Message(
-      role: MessageRole.assistant,
-      content: '',
-    );
+    final aiMessage = Message(role: MessageRole.assistant, content: '');
     setState(() {
       _historyMessages.add(aiMessage);
       _isStreaming = true; // 开始流式显示
@@ -388,25 +402,25 @@ def hello():
           throw Exception("gRPC客户端初始化失败，请检查服务是否启动");
         }
       }
-      
+
       // 准备历史消息（排除刚添加的空AI消息）
-      List<grpc_common.Message> grpcMessages = _historyMessages
-          .where((msg) => msg.content.isNotEmpty)
-          .map((msg) {
-        return grpc_common.Message(
-          role: msg.role == MessageRole.user 
-              ? grpc_enum.MessageRole.MESSAGE_ROLE_USER 
-              : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-          content: msg.content,
-        );
-      }).toList();
-      
+      List<grpc_common.Message> grpcMessages =
+          _historyMessages.where((msg) => msg.content.isNotEmpty).map((msg) {
+            return grpc_common.Message(
+              role:
+                  msg.role == MessageRole.user
+                      ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
+                      : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
+              content: msg.content,
+            );
+          }).toList();
+
       // 创建聊天请求
       final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
       final modelId = _currentConversation!.defaultModelId ?? 'deepseek-chat';
-      
+
       debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');
-      
+
       final chatRequest = grpc_service.ChatRequest(
         llmProviderId: providerId,
         modelId: modelId,
@@ -417,34 +431,35 @@ def hello():
         ),
         prompt: "你是一个有用的AI助手。",
       );
-      
+
       // 创建请求流
       final controller = StreamController<grpc_service.ChatRequest>();
       controller.add(chatRequest);
       controller.close();
-      
+
       // 调用gRPC聊天接口
       final responseStream = _grpcClient.stub!.chat(controller.stream);
-      
+
       await for (final response in responseStream) {
         if (response.errorMessage.isNotEmpty) {
           throw Exception(response.errorMessage);
         }
-        
+
         fullResponse += response.content;
         fullReasoningContent += response.reasoningContent; // 累积思考过程内容
-        
+
         // 实时更新AI消息内容
         if (mounted) {
           setState(() {
             _historyMessages.last = Message(
               role: MessageRole.assistant,
               content: fullResponse,
-              reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+              reasoningContent:
+                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
             );
           });
         }
-        
+
         if (response.isDone) {
           // 聊天完成，保存AI回复到数据库
           if (!isTemporaryConversation) {
@@ -453,9 +468,12 @@ def hello():
                 conversationId: _currentConversation!.id,
                 role: 'assistant',
                 content: fullResponse,
-                reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+                reasoningContent:
+                    fullReasoningContent.isNotEmpty
+                        ? fullReasoningContent
+                        : null,
               );
-              
+
               if (savedAiMessage != null) {
                 aiMessageId = savedAiMessage.id;
                 debugPrint('AI回复保存成功: ${savedAiMessage.id}');
@@ -476,10 +494,10 @@ def hello():
     } catch (e) {
       hasError = true;
       debugPrint('Error during chat: $e');
-      
+
       // 发生错误时，更新AI消息为错误内容
       final errorContent = '抱歉，处理您的请求时发生错误：${e.toString()}';
-      
+
       if (mounted) {
         setState(() {
           _historyMessages.last = Message(
@@ -488,7 +506,7 @@ def hello():
           );
         });
       }
-      
+
       // 保存错误消息到数据库
       if (!isTemporaryConversation) {
         try {
@@ -498,7 +516,7 @@ def hello():
             content: errorContent,
             reasoningContent: null,
           );
-          
+
           if (savedErrorMessage != null) {
             debugPrint('错误消息保存成功: ${savedErrorMessage.id}');
           } else {
@@ -517,17 +535,21 @@ def hello():
           _isStreaming = false;
         });
       }
-      
+
       // 确保AI回复消息被保存：如果有内容但还没保存，就保存它
-      if (!isTemporaryConversation && fullResponse.isNotEmpty && aiMessageId == null && !hasError) {
+      if (!isTemporaryConversation &&
+          fullResponse.isNotEmpty &&
+          aiMessageId == null &&
+          !hasError) {
         try {
           final savedAiMessage = await ChatStorage.addMessage(
             conversationId: _currentConversation!.id,
             role: 'assistant',
             content: fullResponse,
-            reasoningContent: fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+            reasoningContent:
+                fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
           );
-          
+
           if (savedAiMessage != null) {
             aiMessageId = savedAiMessage.id;
             debugPrint('AI回复补充保存成功（流式中断情况）: ${savedAiMessage.id}');
@@ -538,15 +560,18 @@ def hello():
           debugPrint('补充保存AI回复时发生异常: $e');
         }
       }
-      
+
       // 确保在异常情况下，如果AI消息仍然为空，则移除它
-      if (mounted && _historyMessages.isNotEmpty && _historyMessages.last.content.isEmpty && !hasError) {
+      if (mounted &&
+          _historyMessages.isNotEmpty &&
+          _historyMessages.last.content.isEmpty &&
+          !hasError) {
         setState(() {
           _historyMessages.removeLast();
         });
         debugPrint('移除了空的AI消息');
       }
-      
+
       // 如果成功保存了消息，记录一下
       if (aiMessageId != null) {
         debugPrint('对话记录保存完成 - 用户消息和AI回复(ID: $aiMessageId)');
@@ -562,7 +587,7 @@ def hello():
       defaultProviderId: _selectedProviderId ?? 'deepseek',
       defaultModelId: _selectedModelId ?? 'deepseek-chat',
     );
-    
+
     if (conversation != null) {
       setState(() {
         _currentConversation = conversation;
@@ -588,13 +613,13 @@ def hello():
           providerId,
           modelId,
         );
-        
+
         // 更新本地对话对象
         _currentConversation = _currentConversation!.copyWith(
           defaultProviderId: providerId,
           defaultModelId: modelId,
         );
-        
+
         debugPrint('已更新对话模型配置: providerId=$providerId, modelId=$modelId');
       } catch (e) {
         debugPrint('更新对话模型配置失败: $e');
@@ -617,7 +642,7 @@ def hello():
     }
 
     final sideWidget = _buildSide();
-    
+
     // 如果侧边栏为空，只显示聊天界面
     if (sideWidget == null) {
       return Center(
@@ -626,33 +651,40 @@ def hello():
           child: ChatView(
             historyMessages: _historyMessages,
             onSend: _handleSendMessage,
-            onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
+            onNewConversation:
+                _historyMessages.isEmpty ? null : _handleNewConversation,
             currentTitle: _currentTitle,
             selectedProviderId: _selectedProviderId,
             selectedModelId: _selectedModelId,
             onModelSelected: _handleModelSelected,
             isStreaming: _isStreaming,
             visibleWidth: Style.messageViewWidth,
-            messageToolBar: MessageToolbar(onCopy: () {
+            messageToolBar: MessageToolbar(
+              onCopy: (Message message) {
 
-            }, onRegenerate: () {
+              },
+              onCopyPlainText: (Message message) {
 
-            }, onDelete: () {
+              },
+              onRegenerate: (Message message) {
 
-            }, onCopyPlainText: () {  }
-
+              },
+              onDelete: (Message message) {
+                debugPrint("xx");
+              }
             ),
           ),
         ),
       );
     }
-    
+
     // 如果侧边栏不为空，显示分割布局
     return ResizableDivider(
       leftChild: ChatView(
         historyMessages: _historyMessages,
         onSend: _handleSendMessage,
-        onNewConversation: _historyMessages.isEmpty ? null : _handleNewConversation,
+        onNewConversation:
+            _historyMessages.isEmpty ? null : _handleNewConversation,
         currentTitle: _currentTitle,
         selectedProviderId: _selectedProviderId,
         selectedModelId: _selectedModelId,

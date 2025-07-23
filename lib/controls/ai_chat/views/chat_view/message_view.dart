@@ -12,7 +12,7 @@ class MessageView extends ConsumerStatefulWidget {
   final List<Message> historyMessages;
   final bool isStreaming;
   final double visibleWidth;
-  final Widget? messageToolBar;
+  final MessageToolbar? messageToolBar;
 
   const MessageView(
     this.historyMessages, {
@@ -434,7 +434,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
                                 ),
                               ),
                               if (message.role == MessageRole.assistant && widget.messageToolBar != null)
-                                widget.messageToolBar!,
+                                widget.messageToolBar!.setMessage(message),
                             ],
                           ),
                         ),

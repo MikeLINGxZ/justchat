@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/input_view.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_toolbar.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
@@ -31,7 +32,7 @@ class ChatView extends StatefulWidget {
   final Function(String providerId, String modelId)? onModelSelected;
   final bool isStreaming;
   final double visibleWidth;
-  final Widget? messageToolBar;
+  final MessageToolbar? messageToolBar;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
