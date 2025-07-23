@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class SidebarIconButton extends StatelessWidget {
   final IconData icon;
@@ -18,11 +19,11 @@ class SidebarIconButton extends StatelessWidget {
       icon: Icon(
         icon,
         size: 22,
-        color: isSelected ? Colors.blue : Colors.grey,
+        color: isSelected ? Style.primaryColor(context) : Colors.grey,
       ),
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+        backgroundColor: isSelected ? Style.secondaryColor(context) : Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

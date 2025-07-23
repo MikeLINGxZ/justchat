@@ -108,8 +108,9 @@ class _InputView extends ConsumerState<InputView> {
                 borderSide: BorderSide(color: Style.focusedBorder(context), width: 1.0),
                 borderRadius: BorderRadius.all(Radius.circular(10.0)),
               ),
-              fillColor: Style.inputBackground(context),
+              fillColor: Style.primaryInputBackground(context),
               filled: true,
+              hoverColor: null,
             ),
             onChanged: (value) {
               if (value.endsWith('\n')) {

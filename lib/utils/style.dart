@@ -15,12 +15,21 @@ class Style {
     return Theme.of(context).brightness == Brightness.light;
   }
 
-  /// 获取当前主题的亮度
-  static Brightness getBrightness(BuildContext context) {
-    return Theme.of(context).brightness;
+  // ==================== 背景颜色 ====================
+
+  /// 主题色
+  static Color primaryColor(BuildContext context) {
+    return isDarkTheme(context)
+        ? const Color(0xFF2196f3)   // 暗黑主题
+        : const Color(0xFF2196f3);  // 明亮主题
   }
 
-  // ==================== 背景颜色 ====================
+  /// 次要主题色
+  static Color secondaryColor(BuildContext context) {
+    return isDarkTheme(context)
+        ? const Color(0x190000FF)   // 暗黑主题
+        : const Color(0xFFe8f4fe);  // 明亮主题
+  }
 
   /// 主背景色
   static Color primaryBackground(BuildContext context) {
@@ -44,10 +53,10 @@ class Style {
   }
 
   /// 输入框背景色
-  static Color inputBackground(BuildContext context) {
+  static Color primaryInputBackground(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF3D3D3D)  // 暗黑主题
-        : const Color(0xFFF8F8F8); // 明亮主题
+        ? const Color(0xFF1f1f1f)  // 暗黑主题
+        : const Color(0xFFffffff); // 明亮主题
   }
 
   /// 悬浮背景色

@@ -618,7 +618,7 @@ def hello():
     if (sideWidget == null) {
       return Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: const BoxConstraints(maxWidth: 1000),
           child: ChatView(
             historyMessages: _historyMessages,
             onSend: _handleSendMessage,
