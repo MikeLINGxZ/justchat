@@ -250,14 +250,14 @@ class _MessageViewState extends ConsumerState<MessageView> {
       configs: [
         PConfig(
           textStyle: TextStyle(
-            fontSize: FontSizeUtils.getSmallSize(ref),
+            fontSize: FontSizeUtils.getXSmallSize(ref),
             color: Colors.orange.shade800,
             height: 1.5,
           ),
         ),
         H1Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getTitleLargeSize(ref),
+            fontSize: FontSizeUtils.getTitleSize(ref),
             height: 1.3,
             color: Colors.orange.shade900,
             fontWeight: FontWeight.bold,
@@ -265,7 +265,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
         ),
         H2Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getHeadingSize(ref),
+            fontSize: FontSizeUtils.getSubheadingSize(ref),
             height: 1.3,
             color: Colors.orange.shade900,
             fontWeight: FontWeight.w600,
@@ -273,7 +273,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
         ),
         H3Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getBodyLargeSize(ref),
+            fontSize: FontSizeUtils.getBodySize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w600,
@@ -281,7 +281,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
         ),
         H4Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getBodySize(ref),
+            fontSize: FontSizeUtils.getSmallSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
@@ -289,7 +289,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
         ),
         H5Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getSmallSize(ref),
+            fontSize: FontSizeUtils.getXSmallSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
@@ -297,7 +297,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
         ),
         H6Config(
           style: TextStyle(
-            fontSize: FontSizeUtils.getSmallSize(ref),
+            fontSize: FontSizeUtils.getXSmallSize(ref),
             height: 1.3,
             color: Colors.orange.shade800,
             fontWeight: FontWeight.w500,
