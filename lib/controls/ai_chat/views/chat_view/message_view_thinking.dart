@@ -21,7 +21,7 @@ class MessageViewThinking extends ConsumerStatefulWidget {
 
 class _MessageViewThinkingState extends ConsumerState<MessageViewThinking>
     with TickerProviderStateMixin {
-  bool _isExpanded = false;
+  bool _isExpanded = true; // 修改为默认展开
   bool _isHovered = false;
   late AnimationController _animationController;
   late AnimationController _pulseController;
@@ -66,6 +66,9 @@ class _MessageViewThinkingState extends ConsumerState<MessageViewThinking>
     ));
 
     _pulseController.repeat(reverse: true);
+    
+    // 默认展开状态，所以动画控制器也应该在展开位置
+    _animationController.value = 1.0;
   }
 
   @override

@@ -146,6 +146,13 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
   @override
   Widget build(BuildContext context) {
+    // 检查是否需要显示loading：正在流式处理且最后一条消息是空的AI消息（content和reasoningContent都为空）
+    final shouldShowLoading = widget.isStreaming && 
+        widget.historyMessages.isNotEmpty && 
+        widget.historyMessages.last.role == MessageRole.assistant &&
+        widget.historyMessages.last.content.trim().isEmpty &&
+        (widget.historyMessages.last.reasoningContent?.trim().isEmpty ?? true);
+    
     return SizedBox(
       width: double.infinity,
       child: ListView.builder(
@@ -157,6 +164,11 @@ class _MessageViewState extends ConsumerState<MessageView> {
           final isStreamingMessage = isLastMessage &&
               message.role == MessageRole.assistant &&
               widget.isStreaming;
+
+          // 如果是最后一条空的AI消息且应该显示loading，则显示loading widget
+          if (isLastMessage && shouldShowLoading) {
+            return _buildLoadingMessage();
+          }
 
           return Center(
             child: SizedBox(
@@ -266,6 +278,74 @@ class _MessageViewState extends ConsumerState<MessageView> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  // 构建loading消息的Widget
+  Widget _buildLoadingMessage() {
+    return Center(
+      child: SizedBox(
+        width: widget.visibleWidth,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.green,
+                child: Text(
+                  'A',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: FontSizeUtils.getSubheadingSize(ref),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 0,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Style.assistantChatBubble(context),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '正在思考...',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(ref),
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
