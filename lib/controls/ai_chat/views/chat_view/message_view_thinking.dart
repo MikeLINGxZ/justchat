@@ -78,6 +78,24 @@ class _MessageViewThinkingState extends ConsumerState<MessageViewThinking>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(MessageViewThinking oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // 当思维链内容发生变化时，触发滚动到底部
+    if (widget.reasoningContent != oldWidget.reasoningContent && 
+        widget.reasoningContent.isNotEmpty &&
+        _isExpanded &&
+        widget.onExpansionChanged != null) {
+      // 使用短延迟确保UI已更新
+      Future.delayed(const Duration(milliseconds: 10), () {
+        if (mounted) {
+          widget.onExpansionChanged!();
+        }
+      });
+    }
+  }
+
   void _toggleExpansion() {
     setState(() {
       _isExpanded = !_isExpanded;

@@ -31,15 +31,18 @@ class _MessageViewState extends ConsumerState<MessageView> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0;
   String _lastMessageContent = '';
+  String _lastReasoningContent = ''; // 添加思维链内容跟踪
   final Map<int, bool> _messageHovered = {}; // 跟踪每个消息的悬停状态
 
   @override
   void initState() {
     super.initState();
     _lastMessageCount = widget.historyMessages.length;
-    _lastMessageContent = widget.historyMessages.isNotEmpty 
-        ? widget.historyMessages.last.content 
-        : '';
+    if (widget.historyMessages.isNotEmpty) {
+      final lastMessage = widget.historyMessages.last;
+      _lastMessageContent = lastMessage.content;
+      _lastReasoningContent = lastMessage.reasoningContent ?? '';
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -56,12 +59,15 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
+      // 使用更短的延迟和更快的滚动动画，提升流式更新时的滚动体验
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-        );
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 50), // 缩短动画时间
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
@@ -71,16 +77,24 @@ class _MessageViewState extends ConsumerState<MessageView> {
     super.didUpdateWidget(oldWidget);
 
     final currentMessageCount = widget.historyMessages.length;
-    final currentLastContent = widget.historyMessages.isNotEmpty 
-        ? widget.historyMessages.last.content 
-        : '';
+    String currentLastContent = '';
+    String currentLastReasoningContent = '';
+    
+    if (widget.historyMessages.isNotEmpty) {
+      final lastMessage = widget.historyMessages.last;
+      currentLastContent = lastMessage.content;
+      currentLastReasoningContent = lastMessage.reasoningContent ?? '';
+    }
 
-    // 检查是否有新消息或最后一条消息内容发生变化（流式更新）
-    if (currentMessageCount > _lastMessageCount || 
-        (_lastMessageContent != currentLastContent && currentLastContent.isNotEmpty)) {
-      
+    // 检查是否有新消息、最后一条消息内容发生变化，或思维链内容发生变化（流式更新）
+    final hasNewMessage = currentMessageCount > _lastMessageCount;
+    final hasContentChanged = _lastMessageContent != currentLastContent && currentLastContent.isNotEmpty;
+    final hasReasoningChanged = _lastReasoningContent != currentLastReasoningContent && currentLastReasoningContent.isNotEmpty;
+    
+    if (hasNewMessage || hasContentChanged || hasReasoningChanged) {
       _lastMessageCount = currentMessageCount;
       _lastMessageContent = currentLastContent;
+      _lastReasoningContent = currentLastReasoningContent;
       
       // 滚动到底部
       _scrollToBottom();
