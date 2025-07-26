@@ -79,118 +79,121 @@ class _InputView extends ConsumerState<InputView> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-      child: Column(
-        key: _inputViewKey,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: _textController,
-            minLines: 2,
-            maxLines: 4,
-            cursorWidth: 1.5,
-            style: TextStyle(
-              fontSize: FontSizeUtils.getSmallSize(ref),
-              height: 1.5
-            ),
-            decoration: InputDecoration(
-              floatingLabelBehavior: FloatingLabelBehavior.never,
-              hintText: S.of(context).inputMessage,
-              hintStyle: TextStyle(
-                fontSize: FontSizeUtils.getSmallSize(ref),
-                textBaseline: TextBaseline.alphabetic,
-                color: Style.hintText(context),
+      child: Container(
+        padding: EdgeInsets.all(10.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Style.primaryBorder(context)
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(10))
+        ),
+        child: Column(
+          key: _inputViewKey,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _textController,
+              minLines: 2,
+              maxLines: 4,
+              cursorWidth: 1.5,
+              style: TextStyle(
+                  fontSize: FontSizeUtils.getSmallSize(ref),
+                  height: 1.5
               ),
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Style.primaryBorder(context), width: 0.5),
-                borderRadius:  BorderRadius.all(Radius.circular(10.0)),
+              decoration: InputDecoration(
+                floatingLabelBehavior: FloatingLabelBehavior.never,
+                hintText: S.of(context).inputMessage,
+                hintStyle: TextStyle(
+                  fontSize: FontSizeUtils.getSmallSize(ref),
+                  textBaseline: TextBaseline.alphabetic,
+                  color: Style.hintText(context),
+                ),
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                fillColor: Colors.transparent,
+                filled: true,
+                hoverColor:Colors.transparent,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Style.focusedBorder(context), width: 1.0),
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              fillColor: Style.primaryInputBackground(context),
-              filled: true,
-              hoverColor: null,
-            ),
-            onChanged: (value) {
-              if (value.endsWith('\n')) {
-                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+              onChanged: (value) {
+                if (value.endsWith('\n')) {
+                  final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
 
-                if (!isShiftPressed) {
-                  final text = value.substring(0, value.length - 1);
-                  _textController.text = text;
-                  _textController.selection = TextSelection.fromPosition(
-                    TextPosition(offset: text.length),
-                  );
-                  _handleSend();
+                  if (!isShiftPressed) {
+                    final text = value.substring(0, value.length - 1);
+                    _textController.text = text;
+                    _textController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: text.length),
+                    );
+                    _handleSend();
+                  }
                 }
-              }
-            },
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              MenuAnchor(
-                controller: _menuController,
-                menuChildren: [
-                  MenuItemButton(
-                    onPressed: () {
-                      _handleFileSelection('image');
-                      _menuController.close();
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(Icons.image),
-                        const SizedBox(width: 8),
-                        Text(S.of(context).uploadImage),
-                      ],
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                MenuAnchor(
+                  controller: _menuController,
+                  menuChildren: [
+                    MenuItemButton(
+                      onPressed: () {
+                        _handleFileSelection('image');
+                        _menuController.close();
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.image),
+                          const SizedBox(width: 8),
+                          Text(S.of(context).uploadImage),
+                        ],
+                      ),
                     ),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {
-                      _handleFileSelection('file');
-                      _menuController.close();
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(Icons.insert_drive_file),
-                        const SizedBox(width: 8),
-                        Text(S.of(context).uploadFile),
-                      ],
+                    MenuItemButton(
+                      onPressed: () {
+                        _handleFileSelection('file');
+                        _menuController.close();
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.insert_drive_file),
+                          const SizedBox(width: 8),
+                          Text(S.of(context).uploadFile),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-                builder: (context, controller, child) {
-                  return _buildIconButton(
-                    icon: Icons.file_upload,
-                    onTap: () {
-                      if (controller.isOpen) {
-                        controller.close();
-                      } else {
-                        controller.open();
-                      }
-                    },
-                  );
-                },
-              ),
-              Row(
-                children: [
-                  ModelSelector(
-                    selectedProviderId: widget.selectedProviderId,
-                    selectedModelId: widget.selectedModelId,
-                    onModelSelected: widget.onModelSelected,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildIconButton(
-                    icon: Icons.arrow_forward,
-                    onTap: _handleSend,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                  ],
+                  builder: (context, controller, child) {
+                    return _buildIconButton(
+                      icon: Icons.file_upload,
+                      onTap: () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                    );
+                  },
+                ),
+                Row(
+                  children: [
+                    ModelSelector(
+                      selectedProviderId: widget.selectedProviderId,
+                      selectedModelId: widget.selectedModelId,
+                      onModelSelected: widget.onModelSelected,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Icons.arrow_forward,
+                      onTap: _handleSend,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
