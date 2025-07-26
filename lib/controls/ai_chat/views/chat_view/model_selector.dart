@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
-class ModelSelector extends StatefulWidget {
+class ModelSelector extends ConsumerStatefulWidget {
   final String? selectedProviderId;
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
@@ -16,11 +18,12 @@ class ModelSelector extends StatefulWidget {
   });
 
   @override
-  State<ModelSelector> createState() => _ModelSelectorState();
+  ConsumerState<ModelSelector> createState() => _ModelSelectorState();
 }
 
-class _ModelSelectorState extends State<ModelSelector> {
+class _ModelSelectorState extends ConsumerState<ModelSelector> {
   final MenuController _menuController = MenuController();
+  final GlobalKey _buttonKey = GlobalKey();
   List<LlmProvider> _providers = [];
   Map<String, List<Model>> _providerModels = {};
   List<_ModelItem> _allModels = [];
@@ -123,6 +126,42 @@ class _ModelSelectorState extends State<ModelSelector> {
     }
   }
 
+  double _getButtonWidth() {
+    final RenderBox? renderBox = _buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    return renderBox?.size.width ?? 200;
+  }
+
+  String _getCurrentDisplayText() {
+    if (widget.selectedProviderId != null && widget.selectedModelId != null) {
+      final provider = _providers.firstWhere(
+        (p) => p.id == widget.selectedProviderId,
+        orElse: () => LlmProvider(
+          id: '',
+          name: '未知供应商',
+          baseUrl: '',
+          apiKey: '',
+          seqId: 0,
+        ),
+      );
+      
+      final models = _providerModels[widget.selectedProviderId] ?? [];
+      final model = models.firstWhere(
+        (m) => m.id == widget.selectedModelId,
+        orElse: () => Model(
+          id: '',
+          object: '',
+          ownedBy: '',
+          enabled: true,
+          llmProviderId: '',
+          seqId: 0,
+        ),
+      );
+      
+      return '${provider.name} / ${model.id}';
+    }
+    return '选择模型';
+  }
+
   Widget _buildProviderHeader(LlmProvider provider) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -137,12 +176,64 @@ class _ModelSelectorState extends State<ModelSelector> {
           Text(
             provider.name,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: FontSizeUtils.getBodySize(ref),
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          ),
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: '搜索模型...',
+          hintStyle: TextStyle(fontSize: FontSizeUtils.getCaptionSize(ref)),
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    _filterModels('');
+                  },
+                )
+              : null,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        onChanged: _filterModels,
+        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
       ),
     );
   }
@@ -164,6 +255,7 @@ class _ModelSelectorState extends State<ModelSelector> {
         child: Text(
           _searchQuery.isNotEmpty ? '未找到匹配的模型' : '暂无可用模型',
           style: TextStyle(
+            fontSize: FontSizeUtils.getBodySize(ref),
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
@@ -214,7 +306,7 @@ class _ModelSelectorState extends State<ModelSelector> {
                 item.model.id,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
+                  fontSize: FontSizeUtils.getBodySize(ref),
                 ),
               ),
             ),
@@ -224,7 +316,7 @@ class _ModelSelectorState extends State<ModelSelector> {
               Text(
                 item.provider.name,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: FontSizeUtils.getCaptionSize(ref),
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
@@ -235,108 +327,26 @@ class _ModelSelectorState extends State<ModelSelector> {
     );
   }
 
-  String _getCurrentDisplayText() {
-    if (widget.selectedProviderId != null && widget.selectedModelId != null) {
-      final provider = _providers.firstWhere(
-        (p) => p.id == widget.selectedProviderId,
-        orElse: () => LlmProvider(
-          id: '',
-          name: '未知供应商',
-          baseUrl: '',
-          apiKey: '',
-          seqId: 0,
-        ),
-      );
-      
-      final models = _providerModels[widget.selectedProviderId] ?? [];
-      final model = models.firstWhere(
-        (m) => m.id == widget.selectedModelId,
-        orElse: () => Model(
-          id: '',
-          object: '',
-          ownedBy: '',
-          enabled: true,
-          llmProviderId: '',
-          seqId: 0,
-        ),
-      );
-      
-      return '${provider.name} / ${model.id}';
-    }
-    return '选择模型';
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-      ),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: '搜索模型...',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
-                  onPressed: () {
-                    _searchController.clear();
-                    _filterModels('');
-                  },
-                )
-              : null,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-        onChanged: _filterModels,
-        style: const TextStyle(fontSize: 14),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MenuAnchor(
       controller: _menuController,
       style: MenuStyle(
         elevation: WidgetStateProperty.all(8),
-        maximumSize: WidgetStateProperty.all(const Size(320, 450)),
+        maximumSize: WidgetStateProperty.all(Size(_getButtonWidth().clamp(250, 400), 450)),
         padding: WidgetStateProperty.all(EdgeInsets.zero),
       ),
       menuChildren: [
-        // 创建一个容器来包含搜索框和列表
+        // 创建一个容器来包含模型列表和搜索框
         Container(
-          width: 300,
+          width: _getButtonWidth().clamp(230, 380),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 搜索框在顶部
-              _buildSearchBar(),
-              // 模型列表在下方
+              // 模型列表在上方
               _buildModelList(),
+              // 搜索框在底部
+              _buildSearchBar(),
             ],
           ),
         ),
@@ -345,6 +355,7 @@ class _ModelSelectorState extends State<ModelSelector> {
         return Material(
           color: Colors.transparent,
           child: InkWell(
+            key: _buttonKey,
             onTap: () {
               if (controller.isOpen) {
                 controller.close();
@@ -378,7 +389,7 @@ class _ModelSelectorState extends State<ModelSelector> {
                     child: Text(
                       _getCurrentDisplayText(),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: FontSizeUtils.getCaptionSize(ref),
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                       overflow: TextOverflow.ellipsis,
