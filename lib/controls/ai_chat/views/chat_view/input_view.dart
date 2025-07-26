@@ -33,16 +33,24 @@ class _InputView extends ConsumerState<InputView> {
   final GlobalKey _inputViewKey = GlobalKey();
   final MenuController _menuController = MenuController();
   final TextEditingController _textController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
 
   @override
   void dispose() {
     _textController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
   }
 
   void _handleFileSelection(String type) {
@@ -83,7 +91,7 @@ class _InputView extends ConsumerState<InputView> {
         padding: EdgeInsets.all(10.0),
         decoration: BoxDecoration(
           border: Border.all(
-            color: Style.primaryBorder(context)
+            color: _isFocused ? Style.focusedBorder(context) : Style.primaryBorder(context)
           ),
           borderRadius: BorderRadius.all(Radius.circular(10))
         ),
@@ -92,6 +100,7 @@ class _InputView extends ConsumerState<InputView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
+              focusNode: _focusNode,
               controller: _textController,
               minLines: 2,
               maxLines: 4,

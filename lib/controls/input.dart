@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class Input extends StatefulWidget {
   const Input({
@@ -129,7 +130,7 @@ class _Input extends State<Input> {
           ),
           errorBorder: widget.hasError ? const OutlineInputBorder(borderSide: BorderSide(color: Colors.red, width: 0.5)) : null,
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: widget.hasError ? Colors.red : Colors.blue, width: 0.5),
+            borderSide: BorderSide(color: widget.hasError ? Colors.red : Style.focusedBorder(context), width: 0.5),
           ),
         ),
         onChanged: (value) {
