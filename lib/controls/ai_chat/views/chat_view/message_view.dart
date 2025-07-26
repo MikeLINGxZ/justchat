@@ -9,18 +9,23 @@ import 'package:lemon_tea/utils/style.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:flutter/services.dart';
 
+// 导出MessageView State类型以便其他文件可以访问
+typedef MessageViewState = _MessageViewState;
+
 class MessageView extends ConsumerStatefulWidget {
   final List<Message> historyMessages;
   final bool isStreaming;
   final double visibleWidth;
   final MessageToolbar? messageToolBar;
+  final Function(bool)? onUserScrollChanged; // 添加用户滚动状态变化回调
 
   const MessageView(
     this.historyMessages, {
     super.key,
     this.isStreaming = false,
     this.visibleWidth = double.infinity,
-    this.messageToolBar
+    this.messageToolBar,
+    this.onUserScrollChanged, // 添加回调参数
   });
 
   @override
@@ -33,35 +38,109 @@ class _MessageViewState extends ConsumerState<MessageView> {
   String _lastMessageContent = '';
   String _lastReasoningContent = ''; // 添加思维链内容跟踪
   final Map<int, bool> _messageHovered = {}; // 跟踪每个消息的悬停状态
+  
+  // 用户滚动状态管理
+  bool _userHasScrolled = false; // 用户是否手动滚动过
+  bool _wasStreaming = false; // 上次的流式状态
+  bool _isInitializing = true; // 是否正在初始化，防止初始化时误触发用户滚动检测
 
   @override
   void initState() {
     super.initState();
     _lastMessageCount = widget.historyMessages.length;
+    _wasStreaming = widget.isStreaming;
     if (widget.historyMessages.isNotEmpty) {
       final lastMessage = widget.historyMessages.last;
       _lastMessageContent = lastMessage.content;
       _lastReasoningContent = lastMessage.reasoningContent ?? '';
     }
 
+    // 添加滚动监听器来检测用户滚动
+    _scrollController.addListener(_onScrollChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
+      // 初始滚动完成后，启用用户滚动检测
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isInitializing = false;
+          });
+        }
+      });
     });
   }
 
+  // 滚动变化监听器
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients || _isInitializing) return;
+    
+    // 检查是否是用户手动滚动（不在自动滚动过程中）
+    // 如果当前位置不是最底部，说明用户向上滚动了
+    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    final currentPosition = _scrollController.position.pixels;
+    
+    // 给一个小的容差值（5像素），避免因为精度问题误判
+    if (maxScrollExtent - currentPosition > 5.0) {
+      // 用户离开了底部
+      if (!_userHasScrolled) {
+        debugPrint('检测到用户手动滚动，暂停自动滚动');
+        setState(() {
+          _userHasScrolled = true;
+        });
+        // 通知父组件用户滚动状态变化
+        widget.onUserScrollChanged?.call(true);
+      }
+    } else {
+      // 用户回到了底部
+      if (_userHasScrolled) {
+        debugPrint('用户滚动回到底部，恢复自动滚动并隐藏按钮');
+        setState(() {
+          _userHasScrolled = false;
+        });
+        // 通知父组件用户滚动状态变化
+        widget.onUserScrollChanged?.call(false);
+      }
+    }
+  }
 
+  // 添加公共方法供父组件调用，用于滚动到底部并重新启用自动滚动
+  void scrollToBottomAndResumeAutoScroll() {
+    debugPrint('手动滚动到底部，重新启用自动滚动');
+    setState(() {
+      _userHasScrolled = false;
+      _isInitializing = false; // 确保用户滚动检测已启用
+    });
+    
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+    
+    // 通知父组件用户滚动状态变化
+    widget.onUserScrollChanged?.call(false);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
+    // 如果用户已经手动滚动过，则不自动滚动
+    if (_userHasScrolled) {
+      return;
+    }
+    
     if (_scrollController.hasClients) {
       // 使用更短的延迟和更快的滚动动画，提升流式更新时的滚动体验
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
+        if (_scrollController.hasClients && !_userHasScrolled) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 50), // 缩短动画时间
@@ -75,6 +154,28 @@ class _MessageViewState extends ConsumerState<MessageView> {
   @override
   void didUpdateWidget(MessageView oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // 检测流式状态的变化
+    if (!_wasStreaming && widget.isStreaming) {
+      // 从非流式状态变为流式状态，重新启用自动滚动
+      debugPrint('开始新的流式生成，重新启用自动滚动');
+      setState(() {
+        _userHasScrolled = false;
+        _isInitializing = false; // 确保用户滚动检测已启用
+      });
+      // 通知父组件用户滚动状态变化
+      widget.onUserScrollChanged?.call(false);
+    } else if (_wasStreaming && !widget.isStreaming) {
+      // 从流式状态变为非流式状态（生成完成），恢复默认状态
+      debugPrint('生成完成，恢复默认状态（自动滚动，无按钮）');
+      setState(() {
+        _userHasScrolled = false;
+        _isInitializing = false; // 确保用户滚动检测已启用
+      });
+      // 通知父组件用户滚动状态变化
+      widget.onUserScrollChanged?.call(false);
+    }
+    _wasStreaming = widget.isStreaming;
 
     final currentMessageCount = widget.historyMessages.length;
     String currentLastContent = '';
@@ -96,7 +197,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
       _lastMessageContent = currentLastContent;
       _lastReasoningContent = currentLastReasoningContent;
       
-      // 滚动到底部
+      // 滚动到底部（如果用户没有手动滚动过的话）
       _scrollToBottom();
     }
   }

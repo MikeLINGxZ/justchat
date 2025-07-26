@@ -43,10 +43,26 @@ class ChatView extends StatefulWidget {
 
 class _ChatView extends State<ChatView> {
   final GlobalKey<InputViewState> _inputViewKey = GlobalKey<InputViewState>();
+  final GlobalKey<MessageViewState> _messageViewKey = GlobalKey<MessageViewState>(); // 添加MessageView的key
+  bool _showScrollToBottomButton = false; // 控制是否显示滚动到底部按钮
 
   // 添加公共方法来请求输入框聚焦
   void requestInputFocus() {
     _inputViewKey.currentState?.requestFocus();
+  }
+
+  // 处理用户滚动状态变化
+  void _onUserScrollChanged(bool userHasScrolled) {
+    if (_showScrollToBottomButton != userHasScrolled) {
+      setState(() {
+        _showScrollToBottomButton = userHasScrolled;
+      });
+    }
+  }
+
+  // 滚动到底部按钮点击处理
+  void _onScrollToBottomTapped() {
+    _messageViewKey.currentState?.scrollToBottomAndResumeAutoScroll();
   }
 
   @override
@@ -69,12 +85,54 @@ class _ChatView extends State<ChatView> {
           ),
           Expanded(
             child: MessageView(
+              key: _messageViewKey, // 添加key
               widget.historyMessages,
               isStreaming: widget.isStreaming,
               visibleWidth: widget.visibleWidth,
               messageToolBar: widget.messageToolBar,
+              onUserScrollChanged: _onUserScrollChanged, // 传递回调函数
             ),
           ),
+
+          // 滚动到底部按钮（在输入框上方）
+          if (_showScrollToBottomButton)
+            Container(
+              width: widget.visibleWidth,
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              child: Center(
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface,
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    onTap: _onScrollToBottomTapped,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '滚动到底部',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // 底部部件
           SizedBox(

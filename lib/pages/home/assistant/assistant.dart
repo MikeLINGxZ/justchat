@@ -1177,7 +1177,7 @@ def hello():
     // 如果侧边栏不为空，显示分割布局
     return ResizableDivider(
       leftChild: ChatView(
-        key: _chatViewKey, // 添加key
+        // 移除重复的key，避免GlobalKey冲突
         historyMessages: _historyMessages,
         onSend: _handleSendMessage,
         onNewConversation:
