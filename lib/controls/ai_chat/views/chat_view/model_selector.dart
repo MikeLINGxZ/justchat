@@ -164,19 +164,19 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
   Widget _buildProviderHeader(LlmProvider provider) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
       child: Row(
         children: [
           Icon(
             Icons.business,
-            size: 16,
+            size: 14,
             color: Theme.of(context).colorScheme.primary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
             provider.name,
             style: TextStyle(
-              fontSize: FontSizeUtils.getBodySize(ref),
+              fontSize: FontSizeUtils.getSmallSize(ref),
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,
             ),
@@ -200,11 +200,11 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         controller: _searchController,
         decoration: InputDecoration(
           hintText: '搜索模型...',
-          hintStyle: TextStyle(fontSize: FontSizeUtils.getCaptionSize(ref)),
-          prefixIcon: const Icon(Icons.search, size: 20),
+          hintStyle: TextStyle(fontSize: FontSizeUtils.getXSmallSize(ref)),
+          prefixIcon: const Icon(Icons.search, size: 18),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
+                  icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
                     _filterModels('');
@@ -212,28 +212,28 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                 )
               : null,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
         onChanged: _filterModels,
-        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
       ),
     );
   }
@@ -241,7 +241,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
   Widget _buildModelList() {
     if (_isLoading) {
       return const SizedBox(
-        height: 200,
+        height: 150,
         child: Center(
           child: CircularProgressIndicator(),
         ),
@@ -250,12 +250,12 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
     if (_displayItems.isEmpty) {
       return Container(
-        height: 100,
+        height: 80,
         alignment: Alignment.center,
         child: Text(
           _searchQuery.isNotEmpty ? '未找到匹配的模型' : '暂无可用模型',
           style: TextStyle(
-            fontSize: FontSizeUtils.getBodySize(ref),
+            fontSize: FontSizeUtils.getSmallSize(ref),
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
@@ -264,8 +264,8 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
     return ConstrainedBox(
       constraints: const BoxConstraints(
-        maxHeight: 300,
-        minHeight: 100,
+        maxHeight: 250,
+        minHeight: 80,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -287,36 +287,36 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         _menuController.close();
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         child: Row(
           children: [
             SizedBox(
-              width: 24,
+              width: 20,
               child: isSelected
                   ? Icon(
                       Icons.check,
-                      size: 16,
+                      size: 14,
                       color: Theme.of(context).colorScheme.primary,
                     )
                   : null,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Expanded(
               child: Text(
                 item.model.id,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: FontSizeUtils.getBodySize(ref),
+                  fontSize: FontSizeUtils.getSmallSize(ref),
                 ),
               ),
             ),
             // 搜索时显示供应商信息
             if (_searchQuery.isNotEmpty) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 item.provider.name,
                 style: TextStyle(
-                  fontSize: FontSizeUtils.getCaptionSize(ref),
+                  fontSize: FontSizeUtils.getXSmallSize(ref),
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
