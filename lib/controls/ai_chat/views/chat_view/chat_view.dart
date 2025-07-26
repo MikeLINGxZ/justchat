@@ -5,6 +5,7 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/generated/l10n.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 // 导出ChatView State类型以便其他文件可以访问
 typedef ChatViewState = _ChatView;
@@ -111,10 +112,10 @@ class _ChatView extends State<ChatView> {
                       child: Material(
                         color: Theme.of(context).colorScheme.surface,
                         elevation: 6,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(Style.radiusLv1),
                         child: InkWell(
                           onTap: _onScrollToBottomTapped,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(Style.radiusLv1),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                             child: Row(

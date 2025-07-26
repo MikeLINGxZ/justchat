@@ -101,7 +101,7 @@ class _InputView extends ConsumerState<InputView> {
           border: Border.all(
             color: _isFocused ? Style.focusedBorder(context) : Style.primaryBorder(context)
           ),
-          borderRadius: BorderRadius.all(Radius.circular(10))
+          borderRadius: BorderRadius.all(Radius.circular(Style.radiusLv1))
         ),
         child: Column(
           key: _inputViewKey,
