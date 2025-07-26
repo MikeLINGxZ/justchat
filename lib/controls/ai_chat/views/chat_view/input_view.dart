@@ -7,6 +7,9 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/model_selector.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/style.dart';
 
+// 导出InputView State类型以便其他文件可以访问
+typedef InputViewState = _InputView;
+
 class InputView extends ConsumerStatefulWidget {
   final Function(String)? onFileSelected;
   final Function(String)? onSend;
@@ -35,6 +38,11 @@ class _InputView extends ConsumerState<InputView> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
+
+  // 添加公共方法来请求聚焦
+  void requestFocus() {
+    _focusNode.requestFocus();
+  }
 
   @override
   void dispose() {

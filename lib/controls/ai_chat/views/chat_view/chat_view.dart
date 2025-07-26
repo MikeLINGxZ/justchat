@@ -6,6 +6,9 @@ import 'package:lemon_tea/controls/ai_chat/views/chat_view/title_bar_view.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 
+// 导出ChatView State类型以便其他文件可以访问
+typedef ChatViewState = _ChatView;
+
 class ChatView extends StatefulWidget {
   const ChatView({
     super.key, 
@@ -39,6 +42,13 @@ class ChatView extends StatefulWidget {
 }
 
 class _ChatView extends State<ChatView> {
+  final GlobalKey<InputViewState> _inputViewKey = GlobalKey<InputViewState>();
+
+  // 添加公共方法来请求输入框聚焦
+  void requestInputFocus() {
+    _inputViewKey.currentState?.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayTitle = widget.currentTitle.isEmpty ? S.of(context).aiAssistant : widget.currentTitle;
@@ -70,6 +80,7 @@ class _ChatView extends State<ChatView> {
           SizedBox(
             width: widget.visibleWidth,
             child: InputView(
+              key: _inputViewKey,
               onFileSelected: widget.onFileSelected,
               onSend: (msg) {
                 widget.onSend?.call(msg);

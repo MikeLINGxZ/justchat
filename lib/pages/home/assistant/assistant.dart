@@ -39,6 +39,7 @@ class _AssistantPage extends State<AssistantPage> {
   String? _selectedProviderId;
   String? _selectedModelId;
   bool _isStreaming = false; // 添加流式状态标记
+  final GlobalKey<ChatViewState> _chatViewKey = GlobalKey<ChatViewState>(); // 添加ChatView的key
 
   @override
   void initState() {
@@ -47,6 +48,13 @@ class _AssistantPage extends State<AssistantPage> {
     // 监听 ConversationManager 的变化
     _conversationManager.addListener(_onConversationManagerChanged);
     _initializeConversation();
+  }
+
+  // 添加自动聚焦到输入框的方法
+  void _focusInputField() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _chatViewKey.currentState?.requestInputFocus();
+    });
   }
 
   @override
@@ -157,6 +165,9 @@ class _AssistantPage extends State<AssistantPage> {
       setState(() {
         _isLoading = false;
       });
+      
+      // 初始化完成后自动聚焦到输入框
+      _focusInputField();
     }
   }
 
@@ -587,6 +598,9 @@ def hello():
         _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
         _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
       });
+      
+      // 新对话创建完成后自动聚焦到输入框
+      _focusInputField();
     }
   }
 
@@ -1137,6 +1151,7 @@ def hello():
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: double.infinity),
           child: ChatView(
+            key: _chatViewKey, // 添加key
             historyMessages: _historyMessages,
             onSend: _handleSendMessage,
             onNewConversation:
@@ -1162,6 +1177,7 @@ def hello():
     // 如果侧边栏不为空，显示分割布局
     return ResizableDivider(
       leftChild: ChatView(
+        key: _chatViewKey, // 添加key
         historyMessages: _historyMessages,
         onSend: _handleSendMessage,
         onNewConversation:
