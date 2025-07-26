@@ -111,7 +111,7 @@ class _ChatView extends State<ChatView> {
                     child: Center(
                       child: Material(
                         color: Style.primaryBackground(context),
-                        elevation: 6,
+                        elevation: 5  ,
                         borderRadius: BorderRadius.circular(Style.radiusLv1),
                         child: InkWell(
                           onTap: _onScrollToBottomTapped,
@@ -124,13 +124,12 @@ class _ChatView extends State<ChatView> {
                                 Icon(
                                   Icons.keyboard_arrow_down,
                                   size: 20,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Style.primaryColor(context),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   S.of(context).scrollToBottom,
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.primary,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
