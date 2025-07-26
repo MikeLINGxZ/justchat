@@ -23,12 +23,23 @@ class _ModelSelectorState extends State<ModelSelector> {
   final MenuController _menuController = MenuController();
   List<LlmProvider> _providers = [];
   Map<String, List<Model>> _providerModels = {};
+  List<_ModelItem> _allModels = [];
+  List<_ModelItem> _filteredModels = [];
+  List<Widget> _displayItems = [];
   bool _isLoading = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProvidersAndModels();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProvidersAndModels() async {
@@ -40,18 +51,29 @@ class _ModelSelectorState extends State<ModelSelector> {
       // 获取所有供应商
       final providers = await LlmStorage.getAllProviders();
       final Map<String, List<Model>> providerModels = {};
+      final List<_ModelItem> allModels = [];
 
       // 为每个供应商加载模型
       for (final provider in providers) {
         final models = await LlmStorage.getModelsByProviderId(provider.id);
         if (models.isNotEmpty) {
           providerModels[provider.id] = models;
+          // 将模型转换为 _ModelItem
+          for (final model in models) {
+            allModels.add(_ModelItem(
+              provider: provider,
+              model: model,
+            ));
+          }
         }
       }
 
       setState(() {
         _providers = providers.where((p) => providerModels.containsKey(p.id)).toList();
         _providerModels = providerModels;
+        _allModels = allModels;
+        _filteredModels = allModels;
+        _buildDisplayItems();
         _isLoading = false;
       });
     } catch (e) {
@@ -60,6 +82,157 @@ class _ModelSelectorState extends State<ModelSelector> {
         _isLoading = false;
       });
     }
+  }
+
+  void _filterModels(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (query.isEmpty) {
+        _filteredModels = _allModels;
+      } else {
+        _filteredModels = _allModels.where((item) {
+          return item.model.id.toLowerCase().contains(query.toLowerCase()) ||
+                 item.provider.name.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+      _buildDisplayItems();
+    });
+  }
+
+  void _buildDisplayItems() {
+    _displayItems.clear();
+    
+    if (_searchQuery.isEmpty) {
+      // 没有搜索时，按供应商分组显示
+      for (final provider in _providers) {
+        final models = _providerModels[provider.id] ?? [];
+        if (models.isNotEmpty) {
+          // 添加供应商标题
+          _displayItems.add(_buildProviderHeader(provider));
+          // 添加该供应商的所有模型
+          for (final model in models) {
+            _displayItems.add(_buildModelItem(_ModelItem(provider: provider, model: model)));
+          }
+        }
+      }
+    } else {
+      // 有搜索时，直接显示匹配的模型
+      for (final item in _filteredModels) {
+        _displayItems.add(_buildModelItem(item));
+      }
+    }
+  }
+
+  Widget _buildProviderHeader(LlmProvider provider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(
+            Icons.business,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            provider.name,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModelList() {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_displayItems.isEmpty) {
+      return Container(
+        height: 100,
+        alignment: Alignment.center,
+        child: Text(
+          _searchQuery.isNotEmpty ? '未找到匹配的模型' : '暂无可用模型',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxHeight: 300,
+        minHeight: 100,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _displayItems,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModelItem(_ModelItem item) {
+    final isSelected = widget.selectedProviderId == item.provider.id && 
+                      widget.selectedModelId == item.model.id;
+    
+    return MenuItemButton(
+      onPressed: () {
+        widget.onModelSelected?.call(item.provider.id, item.model.id);
+        _menuController.close();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: isSelected
+                  ? Icon(
+                      Icons.check,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                item.model.id,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            // 搜索时显示供应商信息
+            if (_searchQuery.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                item.provider.name,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   String _getCurrentDisplayText() {
@@ -93,47 +266,53 @@ class _ModelSelectorState extends State<ModelSelector> {
     return '选择模型';
   }
 
-  Widget _buildModelSubmenu(LlmProvider provider, List<Model> models) {
-    return SubmenuButton(
-      menuChildren: models.map((model) {
-        final isSelected = widget.selectedProviderId == provider.id && 
-                          widget.selectedModelId == model.id;
-        
-        return MenuItemButton(
-          onPressed: () {
-            widget.onModelSelected?.call(provider.id, model.id);
-            _menuController.close();
-          },
-          child: Row(
-            children: [
-              if (isSelected) ...[
-                const Icon(Icons.check, size: 16),
-                const SizedBox(width: 8),
-              ] else
-                const SizedBox(width: 24),
-              Expanded(
-                child: Text(
-                  model.id,
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           ),
-        );
-      }).toList(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-        child: Row(
-          children: [
-            Icon(Icons.business, size: 16, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(provider.name),
-            const Spacer(),
-            const Icon(Icons.arrow_right, size: 16),
-          ],
         ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: '搜索模型...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    _filterModels('');
+                  },
+                )
+              : null,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        onChanged: _filterModels,
+        style: const TextStyle(fontSize: 14),
       ),
     );
   }
@@ -142,19 +321,26 @@ class _ModelSelectorState extends State<ModelSelector> {
   Widget build(BuildContext context) {
     return MenuAnchor(
       controller: _menuController,
-      menuChildren: _isLoading
-          ? [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-            ]
-          : _providers.map((provider) {
-              final models = _providerModels[provider.id] ?? [];
-              return _buildModelSubmenu(provider, models);
-            }).toList(),
+      style: MenuStyle(
+        elevation: WidgetStateProperty.all(8),
+        maximumSize: WidgetStateProperty.all(const Size(320, 450)),
+        padding: WidgetStateProperty.all(EdgeInsets.zero),
+      ),
+      menuChildren: [
+        // 创建一个容器来包含搜索框和列表
+        Container(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 搜索框在顶部
+              _buildSearchBar(),
+              // 模型列表在下方
+              _buildModelList(),
+            ],
+          ),
+        ),
+      ],
       builder: (context, controller, child) {
         return Material(
           color: Colors.transparent,
@@ -163,6 +349,9 @@ class _ModelSelectorState extends State<ModelSelector> {
               if (controller.isOpen) {
                 controller.close();
               } else {
+                // 打开菜单时清空搜索
+                _searchController.clear();
+                _filterModels('');
                 controller.open();
               }
             },
@@ -209,4 +398,14 @@ class _ModelSelectorState extends State<ModelSelector> {
       },
     );
   }
+}
+
+class _ModelItem {
+  final LlmProvider provider;
+  final Model model;
+
+  _ModelItem({
+    required this.provider,
+    required this.model,
+  });
 } 
