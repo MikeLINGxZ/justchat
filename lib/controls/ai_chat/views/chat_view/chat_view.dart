@@ -89,55 +89,61 @@ class _ChatView extends State<ChatView> {
             ),
           ),
           Expanded(
-            child: MessageView(
-              key: _messageViewKey, // 添加key
-              widget.historyMessages,
-              isStreaming: widget.isStreaming,
-              visibleWidth: widget.visibleWidth,
-              messageToolBar: widget.messageToolBar,
-              onUserScrollChanged: _onUserScrollChanged, // 传递回调函数
-            ),
-          ),
-
-          // 滚动到底部按钮（在输入框上方）
-          if (_showScrollToBottomButton)
-            Container(
-              width: widget.visibleWidth,
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Center(
-                child: Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  elevation: 2,
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    onTap: _onScrollToBottomTapped,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.keyboard_arrow_down,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            S.of(context).scrollToBottom,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+            child: Stack(
+              children: [
+                // 聊天消息区域
+                MessageView(
+                  key: _messageViewKey, // 添加key
+                  widget.historyMessages,
+                  isStreaming: widget.isStreaming,
+                  visibleWidth: widget.visibleWidth,
+                  messageToolBar: widget.messageToolBar,
+                  onUserScrollChanged: _onUserScrollChanged, // 传递回调函数
+                ),
+                
+                // 悬浮的滚动到底部按钮
+                if (_showScrollToBottomButton)
+                  Positioned(
+                    bottom: 16.0,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Material(
+                        color: Theme.of(context).colorScheme.surface,
+                        elevation: 6,
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          onTap: _onScrollToBottomTapped,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  S.of(context).scrollToBottom,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                ],
             ),
+          ),
 
           // 底部部件
           SizedBox(
