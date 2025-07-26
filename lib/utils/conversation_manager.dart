@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/models/conversation.dart';
-import 'package:lemon_tea/models/message.dart' as db_message;
 import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
 
@@ -208,5 +207,51 @@ class ConversationManager extends ChangeNotifier {
       
       return false;
     }).toList();
+  }
+
+  /// 异步搜索对话（包括消息内容搜索）
+  Future<List<Conversation>> searchConversationsAsync(String query) async {
+    if (query.isEmpty) {
+      return _conversations;
+    }
+    
+    try {
+      debugPrint('开始异步搜索对话: "$query"');
+      final lowercaseQuery = query.toLowerCase();
+      final Set<String> matchedConversationIds = {};
+      
+      // 1. 搜索对话标题
+      final titleMatches = _conversations.where((conversation) {
+        return conversation.title.toLowerCase().contains(lowercaseQuery);
+      });
+      
+      for (final conversation in titleMatches) {
+        matchedConversationIds.add(conversation.id);
+      }
+      debugPrint('标题搜索找到 ${titleMatches.length} 个匹配的对话');
+      
+      // 2. 搜索消息内容（使用FTS）
+      try {
+        final contentMatches = await ChatStorage.searchConversationIdsByMessageContent(query);
+        matchedConversationIds.addAll(contentMatches);
+        debugPrint('消息内容搜索找到 ${contentMatches.length} 个匹配的对话');
+      } catch (contentSearchError) {
+        debugPrint('消息内容搜索失败: $contentSearchError');
+        // 继续执行，只使用标题搜索结果
+      }
+      
+      // 3. 返回匹配的对话，保持原有的排序
+      final matchedConversations = _conversations.where((conversation) {
+        return matchedConversationIds.contains(conversation.id);
+      }).toList();
+      
+      debugPrint('总共找到 ${matchedConversations.length} 个匹配的对话');
+      return matchedConversations;
+    } catch (e) {
+      debugPrint('异步搜索对话失败: $e');
+      // 降级到仅搜索标题
+      debugPrint('降级到标题搜索');
+      return searchConversations(query);
+    }
   }
 } 

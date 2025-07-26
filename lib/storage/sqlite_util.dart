@@ -32,6 +32,12 @@ class SqliteUtil {
   /// 删除数据库
   Future<void> deleteDatabase() => _initializer.deleteDatabase();
   
+  /// 重建FTS搜索索引
+  Future<bool> rebuildFtsIndex() => _initializer.rebuildFtsTable();
+  
+  /// 诊断数据库状态
+  Future<Map<String, dynamic>> diagnoseDatabaseState() => _initializer.diagnoseDatabaseState();
+  
   /// 执行原始SQL查询
   Future<List<Map<String, dynamic>>> rawQuery(String sql, [List<dynamic>? arguments]) async {
     final db = await database;

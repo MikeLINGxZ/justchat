@@ -14,7 +14,7 @@ import 'dart:io';
 /// 负责数据库的初始化、表创建和版本升级
 class SqliteDatabaseInitializer {
   static const String _databaseName = "lemon_tea.db";
-  static const int _databaseVersion = 4; // 更新数据库版本以添加reasoning_content列
+  static const int _databaseVersion = 5; // 更新数据库版本以添加FTS全文搜索支持
   
   Database? _database;
   final _initDBCompleter = Completer<Database>();
@@ -199,6 +199,63 @@ class SqliteDatabaseInitializer {
         rethrow;
       }
     }
+    
+    if (oldVersion < 5) {
+      // 版本5: 添加FTS全文搜索支持
+      try {
+        // 检查FTS表是否已存在
+        final tableList = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='${Message.tableName()}_fts'"
+        );
+        
+        if (tableList.isEmpty) {
+          // 创建FTS虚拟表
+          await db.execute('''
+            CREATE VIRTUAL TABLE ${Message.tableName()}_fts USING fts5(
+              id UNINDEXED,
+              conversation_id UNINDEXED,
+              content,
+              reasoning_content,
+              content=${Message.tableName()},
+              content_rowid=rowid
+            )
+          ''');
+          debugPrint('FTS虚拟表创建成功');
+          
+          // 创建触发器
+          await db.execute('''
+            CREATE TRIGGER ${Message.tableName()}_fts_insert AFTER INSERT ON ${Message.tableName()} BEGIN
+              INSERT INTO ${Message.tableName()}_fts(id, conversation_id, content, reasoning_content)
+              VALUES (new.id, new.conversation_id, new.content, new.reasoning_content);
+            END
+          ''');
+          
+          await db.execute('''
+            CREATE TRIGGER ${Message.tableName()}_fts_delete AFTER DELETE ON ${Message.tableName()} BEGIN
+              DELETE FROM ${Message.tableName()}_fts WHERE id = old.id;
+            END
+          ''');
+          
+          await db.execute('''
+            CREATE TRIGGER ${Message.tableName()}_fts_update AFTER UPDATE ON ${Message.tableName()} BEGIN
+              UPDATE ${Message.tableName()}_fts 
+              SET content = new.content, reasoning_content = new.reasoning_content
+              WHERE id = new.id;
+            END
+          ''');
+          debugPrint('FTS触发器创建成功');
+          
+          // 为现有数据重建FTS索引
+          await db.execute('INSERT INTO ${Message.tableName()}_fts(${Message.tableName()}_fts) VALUES(\'rebuild\')');
+          debugPrint('FTS索引重建成功');
+        }
+        
+        debugPrint('数据库升级到版本5完成');
+      } catch (e) {
+        debugPrint('升级到版本5失败: $e');
+        rethrow;
+      }
+    }
   }
   
   /// 关闭数据库连接
@@ -224,5 +281,118 @@ class SqliteDatabaseInitializer {
     await databaseFactory.deleteDatabase(path);
     _database = null;
     debugPrint('数据库已删除: $path');
+  }
+
+  /// 获取当前数据库版本
+  Future<int> getCurrentDatabaseVersion() async {
+    final db = await database;
+    final result = await db.rawQuery('PRAGMA user_version');
+    return result.first['user_version'] as int;
+  }
+
+  /// 检查FTS表是否存在
+  Future<bool> checkFtsTableExists() async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='${Message.tableName()}_fts'"
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      debugPrint('检查FTS表失败: $e');
+      return false;
+    }
+  }
+
+  /// 强制重建FTS表和触发器
+  Future<bool> rebuildFtsTable() async {
+    try {
+      final db = await database;
+      
+      // 删除现有的FTS表和触发器（如果存在）
+      try {
+        await db.execute('DROP TRIGGER IF EXISTS ${Message.tableName()}_fts_insert');
+        await db.execute('DROP TRIGGER IF EXISTS ${Message.tableName()}_fts_delete');
+        await db.execute('DROP TRIGGER IF EXISTS ${Message.tableName()}_fts_update');
+        await db.execute('DROP TABLE IF EXISTS ${Message.tableName()}_fts');
+        debugPrint('已清理现有FTS结构');
+      } catch (e) {
+        debugPrint('清理FTS结构时出错（可能不存在）: $e');
+      }
+
+      // 创建FTS虚拟表
+      await db.execute('''
+        CREATE VIRTUAL TABLE ${Message.tableName()}_fts USING fts5(
+          id UNINDEXED,
+          conversation_id UNINDEXED,
+          content,
+          reasoning_content,
+          content=${Message.tableName()},
+          content_rowid=rowid
+        )
+      ''');
+      debugPrint('FTS虚拟表重建成功');
+      
+      // 创建触发器
+      await db.execute('''
+        CREATE TRIGGER ${Message.tableName()}_fts_insert AFTER INSERT ON ${Message.tableName()} BEGIN
+          INSERT INTO ${Message.tableName()}_fts(id, conversation_id, content, reasoning_content)
+          VALUES (new.id, new.conversation_id, new.content, new.reasoning_content);
+        END
+      ''');
+      
+      await db.execute('''
+        CREATE TRIGGER ${Message.tableName()}_fts_delete AFTER DELETE ON ${Message.tableName()} BEGIN
+          DELETE FROM ${Message.tableName()}_fts WHERE id = old.id;
+        END
+      ''');
+      
+      await db.execute('''
+        CREATE TRIGGER ${Message.tableName()}_fts_update AFTER UPDATE ON ${Message.tableName()} BEGIN
+          UPDATE ${Message.tableName()}_fts 
+          SET content = new.content, reasoning_content = new.reasoning_content
+          WHERE id = new.id;
+        END
+      ''');
+      debugPrint('FTS触发器重建成功');
+      
+      // 为现有数据重建FTS索引
+      await db.execute('INSERT INTO ${Message.tableName()}_fts(${Message.tableName()}_fts) VALUES(\'rebuild\')');
+      debugPrint('FTS索引重建成功');
+      
+      return true;
+    } catch (e) {
+      debugPrint('重建FTS表失败: $e');
+      return false;
+    }
+  }
+
+  /// 诊断数据库状态
+  Future<Map<String, dynamic>> diagnoseDatabaseState() async {
+    try {
+      final db = await database;
+      final version = await getCurrentDatabaseVersion();
+      final ftsExists = await checkFtsTableExists();
+      
+      // 获取所有表列表
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+      );
+      
+      // 获取消息表的列信息
+      final messageColumns = await db.rawQuery(
+        "PRAGMA table_info(${Message.tableName()})"
+      );
+      
+      return {
+        'version': version,
+        'fts_table_exists': ftsExists,
+        'tables': tables.map((t) => t['name']).toList(),
+        'message_columns': messageColumns.map((c) => c['name']).toList(),
+      };
+    } catch (e) {
+      debugPrint('诊断数据库状态失败: $e');
+      return {'error': e.toString()};
+    }
   }
 } 

@@ -55,8 +55,82 @@ class Message {
         deleted INTEGER NOT NULL DEFAULT 0,
         metadata TEXT,
         FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
-      )
+      );
+      
+      -- 创建FTS虚拟表用于内容搜索
+      CREATE VIRTUAL TABLE ${tableName()}_fts USING fts5(
+        id UNINDEXED,
+        conversation_id UNINDEXED,
+        content,
+        reasoning_content,
+        content=${tableName()},
+        content_rowid=rowid
+      );
+      
+      -- 创建触发器，自动同步数据到FTS表
+      CREATE TRIGGER ${tableName()}_fts_insert AFTER INSERT ON ${tableName()} BEGIN
+        INSERT INTO ${tableName()}_fts(id, conversation_id, content, reasoning_content)
+        VALUES (new.id, new.conversation_id, new.content, new.reasoning_content);
+      END;
+      
+      CREATE TRIGGER ${tableName()}_fts_delete AFTER DELETE ON ${tableName()} BEGIN
+        DELETE FROM ${tableName()}_fts WHERE id = old.id;
+      END;
+      
+      CREATE TRIGGER ${tableName()}_fts_update AFTER UPDATE ON ${tableName()} BEGIN
+        UPDATE ${tableName()}_fts 
+        SET content = new.content, reasoning_content = new.reasoning_content
+        WHERE id = new.id;
+      END;
     ''';
+  }
+
+  /// 文本搜索SQL - 使用FTS进行全文搜索
+  /// 
+  /// 参数:
+  /// - searchQuery: 搜索关键词
+  /// - conversationId: 可选，限制在特定对话中搜索
+  /// - limit: 可选，限制返回结果数量，默认50
+  /// 
+  /// 使用示例:
+  /// ```dart
+  /// // 在所有消息中搜索
+  /// String sql = Message.searchContentSql("关键词");
+  /// 
+  /// // 在特定对话中搜索
+  /// String sql = Message.searchContentSql("关键词", conversationId: "conv_id");
+  /// 
+  /// // 限制返回数量
+  /// String sql = Message.searchContentSql("关键词", limit: 10);
+  /// ```
+  static String searchContentSql(String searchQuery, {String? conversationId, int limit = 50}) {
+    String whereClause = '';
+    if (conversationId != null) {
+      whereClause = 'AND m.conversation_id = ?';
+    }
+    
+    return '''
+      SELECT m.* FROM ${tableName()} m
+      INNER JOIN ${tableName()}_fts fts ON m.id = fts.id
+      WHERE fts MATCH ? $whereClause
+      AND m.deleted = 0
+      ORDER BY rank
+      LIMIT $limit
+    ''';
+  }
+
+  /// 获取搜索SQL的参数列表
+  /// 
+  /// 使用示例:
+  /// ```dart
+  /// List<dynamic> params = Message.getSearchParams("关键词", conversationId: "conv_id");
+  /// ```
+  static List<dynamic> getSearchParams(String searchQuery, {String? conversationId}) {
+    List<dynamic> params = [searchQuery];
+    if (conversationId != null) {
+      params.add(conversationId);
+    }
+    return params;
   }
 
   /// 从 JSON 创建 LlmProvider 实例

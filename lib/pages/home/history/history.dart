@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/conversation.dart';
-import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart' as llm_message;
 import 'package:lemon_tea/models/message.dart' as db_message;
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
+import 'package:lemon_tea/storage/sqlite_util.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
@@ -31,9 +31,12 @@ class HistoryPage extends ConsumerStatefulWidget {
 class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderStateMixin {
   String _searchQuery = '';
   List<Conversation> _filteredConversations = [];
-  Map<String, int> _messageCountCache = {};
-  Map<String, String> _previewCache = {};
+  final Map<String, int> _messageCountCache = {};
+  final Map<String, String> _previewCache = {};
+  Map<String, String> _searchHighlightCache = {};
   bool _isLoadingDetails = false;
+  bool _isSearching = false;
+  bool _isRebuildingIndex = false;
   String? _hoveredConversationId;
   late AnimationController _fadeController;
 
@@ -90,7 +93,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
           if (messages.isNotEmpty) {
             // 获取最后一条用户或助手消息作为预览
             final lastMessage = messages.lastWhere(
-              (msg) => msg.role == 'user' || msg.role == 'assistant',
+              (msg) => msg.role.toString().split('.').last == 'user' || msg.role.toString().split('.').last == 'assistant',
               orElse: () => messages.last,
             );
             preview = lastMessage.content.length > 50 
@@ -144,6 +147,103 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     } else {
       _filteredConversations = widget.conversationManager.searchConversations(_searchQuery);
     }
+  }
+
+  /// 异步更新筛选的对话列表（支持消息内容搜索）
+  Future<void> _updateFilteredConversationsAsync() async {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _filteredConversations = widget.conversationManager.conversations;
+        _isSearching = false;
+        _searchHighlightCache.clear(); // 清空搜索高亮
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final searchResults = await widget.conversationManager.searchConversationsAsync(_searchQuery);
+      if (mounted) {
+        setState(() {
+          _filteredConversations = searchResults;
+          _isSearching = false;
+        });
+        // 异步加载搜索高亮内容
+        _loadSearchHighlights();
+      }
+    } catch (e) {
+      debugPrint('搜索对话失败: $e');
+      if (mounted) {
+        setState(() {
+          // 降级到同步搜索
+          _filteredConversations = widget.conversationManager.searchConversations(_searchQuery);
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  /// 获取搜索高亮内容
+  Future<void> _loadSearchHighlights() async {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _searchHighlightCache.clear();
+      });
+      return;
+    }
+
+    try {
+      final searchResults = await ChatStorage.searchMessagesWithConversationInfo(_searchQuery);
+      final Map<String, String> highlights = {};
+      
+      for (final result in searchResults) {
+        final conversationId = result['conversation_id'] as String;
+        final content = result['content'] as String;
+        
+        // 只保存第一个匹配的消息片段作为高亮
+        if (!highlights.containsKey(conversationId)) {
+          // 提取包含关键词的片段
+          final highlight = _extractHighlight(content, _searchQuery);
+          highlights[conversationId] = highlight;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _searchHighlightCache = highlights;
+        });
+      }
+    } catch (e) {
+      debugPrint('加载搜索高亮失败: $e');
+    }
+  }
+
+  /// 提取包含关键词的文本片段
+  String _extractHighlight(String content, String query) {
+    final lowerContent = content.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    
+    final index = lowerContent.indexOf(lowerQuery);
+    if (index == -1) {
+      // 如果没找到精确匹配，返回前50个字符
+      return content.length > 50 ? '${content.substring(0, 50)}...' : content;
+    }
+    
+    // 提取关键词前后的上下文
+    const contextLength = 30;
+    final start = (index - contextLength).clamp(0, content.length);
+    final end = (index + query.length + contextLength).clamp(0, content.length);
+    
+    String highlight = content.substring(start, end);
+    
+    // 添加省略号
+    if (start > 0) highlight = '...$highlight';
+    if (end < content.length) highlight = '$highlight...';
+    
+    return highlight.replaceAll('\n', ' ').trim();
   }
 
   /// 转换数据库消息为 LLM 消息
@@ -344,6 +444,83 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     }
   }
 
+  /// 重建搜索索引
+  Future<void> _rebuildSearchIndex() async {
+    if (_isRebuildingIndex) return;
+    
+    setState(() {
+      _isRebuildingIndex = true;
+    });
+    
+    try {
+      final success = await SqliteUtil.instance.rebuildFtsIndex();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? '搜索索引重建成功' : '搜索索引重建失败',
+              style: const TextStyle(fontSize: 14),
+            ),
+            backgroundColor: success ? Colors.green[600] : Colors.red[600],
+          ),
+        );
+        
+        // 如果重建成功，重新执行搜索
+        if (success && _searchQuery.isNotEmpty) {
+          _updateFilteredConversationsAsync();
+        }
+      }
+    } catch (e) {
+      debugPrint('重建搜索索引失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '重建搜索索引失败: $e',
+              style: const TextStyle(fontSize: 14),
+            ),
+            backgroundColor: Colors.red[600],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRebuildingIndex = false;
+        });
+      }
+    }
+  }
+
+  /// 显示调试信息
+  Future<void> _showDebugInfo() async {
+    try {
+      final debugInfo = await SqliteUtil.instance.diagnoseDatabaseState();
+      if (!mounted) return;
+      
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('数据库调试信息'),
+          content: SingleChildScrollView(
+            child: Text(
+              debugInfo.toString(),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('关闭'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint('获取调试信息失败: $e');
+    }
+  }
+
   Widget _buildSearchBox() {
     return Container(
       decoration: BoxDecoration(
@@ -360,28 +537,125 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
           ),
         ],
       ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: S.of(context).searchConversations,
-          hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            fontSize: FontSizeUtils.getBodySize(ref),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: '搜索对话标题或消息内容...',
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                ),
+                prefixIcon: _isSearching
+                    ? Container(
+                        padding: const EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.search_rounded,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        size: 20,
+                      ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _updateFilteredConversationsAsync();
+                  _searchHighlightCache.clear(); // 清空高亮缓存
+                });
+              },
+            ),
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            size: 20,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref)),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-            _updateFilteredConversations();
-          });
-        },
+          // 调试功能按钮
+          if (_searchQuery.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                size: 20,
+              ),
+              tooltip: '搜索选项',
+              onSelected: (value) {
+                switch (value) {
+                  case 'rebuild':
+                    _rebuildSearchIndex();
+                    break;
+                  case 'debug':
+                    _showDebugInfo();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'rebuild',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isRebuildingIndex)
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.refresh_rounded,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '重建搜索索引',
+                        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'debug',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '调试信息',
+                        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
       ),
     );
   }
@@ -408,13 +682,31 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
             ),
             const SizedBox(height: 24),
             Text(
-              _searchQuery.isEmpty ? S.of(context).noConversationHistory : '未找到相关对话',
+              _searchQuery.isEmpty ? S.of(context).noConversationHistory : '未找到匹配的对话或消息',
               style: TextStyle(
                 fontSize: FontSizeUtils.getSubheadingSize(ref),
                 fontWeight: FontWeight.w500,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
+            if (_searchQuery.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '尝试搜索不同的关键词',
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getBodySize(ref),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '如果搜索功能异常，可以尝试重建搜索索引',
+                style: TextStyle(
+                  fontSize: FontSizeUtils.getSmallSize(ref),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
             if (_searchQuery.isEmpty) ...[
               const SizedBox(height: 8),
               Text(
@@ -524,7 +816,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _previewCache[conversation.id] ?? '加载中...',
+                            _searchHighlightCache[conversation.id] ?? _previewCache[conversation.id] ?? '加载中...',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -599,7 +891,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     final currentConversation = widget.conversationManager.currentConversation;
     
     return Container(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -615,7 +907,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                     style: TextStyle(
                       fontSize: FontSizeUtils.getHeadingSize(ref) + 2,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
