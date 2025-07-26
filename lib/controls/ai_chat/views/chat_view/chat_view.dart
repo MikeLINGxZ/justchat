@@ -110,7 +110,7 @@ class _ChatView extends State<ChatView> {
                     right: 0,
                     child: Center(
                       child: Material(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Style.primaryBackground(context),
                         elevation: 6,
                         borderRadius: BorderRadius.circular(Style.radiusLv1),
                         child: InkWell(
