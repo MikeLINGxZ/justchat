@@ -105,6 +105,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "textStyles": MessageLookupByLibrary.simpleMessage("文字样式"),
     "theme": MessageLookupByLibrary.simpleMessage("主题"),
     "themeMode": MessageLookupByLibrary.simpleMessage("主题模式"),
+    "thinking": MessageLookupByLibrary.simpleMessage("正在思考..."),
     "uploadFile": MessageLookupByLibrary.simpleMessage("上传文件"),
     "uploadImage": MessageLookupByLibrary.simpleMessage("上传图片"),
     "welcomeToMarkdown": MessageLookupByLibrary.simpleMessage("欢迎使用 Markdown"),

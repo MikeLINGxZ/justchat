@@ -76,5 +76,6 @@
   "modelCount": "Model Count",
   "noModels": "No Models",
   "noAvailableModels": "No available models for this provider",
-  "scrollToBottom": "Scroll to Bottom"
+  "scrollToBottom": "Scroll to Bottom",
+  "thinking": "Thinking..."
 }

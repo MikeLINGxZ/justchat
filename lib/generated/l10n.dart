@@ -694,6 +694,11 @@ class S {
       args: [],
     );
   }
+
+  /// `Thinking...`
+  String get thinking {
+    return Intl.message('Thinking...', name: 'thinking', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

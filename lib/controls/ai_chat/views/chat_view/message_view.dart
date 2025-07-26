@@ -116,20 +116,46 @@ class _MessageViewState extends ConsumerState<MessageView> {
       _isInitializing = false; // 确保用户滚动检测已启用
     });
     
-    if (_scrollController.hasClients) {
-      _isAutoScrolling = true;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      ).then((_) {
-        // 动画完成后，重新启用滚动检测
-        _isAutoScrolling = false;
-      });
-    }
-    
     // 通知父组件用户滚动状态变化
     widget.onUserScrollChanged?.call(false);
+    
+    if (_scrollController.hasClients) {
+      _isAutoScrolling = true;
+      
+      // 使用 addPostFrameCallback 确保在UI渲染完成后再执行滚动
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          // 添加一个小延迟确保所有布局计算完成
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (_scrollController.hasClients && mounted) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              ).then((_) {
+                // 动画完成后，重新启用滚动检测
+                _isAutoScrolling = false;
+                
+                // 二次检查并确保真正滚动到底部
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients && mounted) {
+                    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+                    final currentPosition = _scrollController.position.pixels;
+                    final tolerance = 5.0;
+                    
+                    // 如果还没有真正到底部，再次滚动
+                    if (maxScrollExtent - currentPosition > tolerance) {
+                      debugPrint('二次滚动修正，当前位置: $currentPosition, 最大位置: $maxScrollExtent');
+                      _scrollController.jumpTo(maxScrollExtent);
+                    }
+                  }
+                });
+              });
+            }
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -148,15 +174,35 @@ class _MessageViewState extends ConsumerState<MessageView> {
     if (_scrollController.hasClients) {
       // 使用更短的延迟和更快的滚动动画，提升流式更新时的滚动体验
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients && !_userHasScrolled) {
+        if (_scrollController.hasClients && !_userHasScrolled && mounted) {
           _isAutoScrolling = true;
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 50), // 缩短动画时间
-            curve: Curves.easeOut,
-          ).then((_) {
-            // 动画完成后，重新启用滚动检测
-            _isAutoScrolling = false;
+          
+          // 添加一个小延迟确保布局稳定
+          Future.delayed(const Duration(milliseconds: 10), () {
+            if (_scrollController.hasClients && !_userHasScrolled && mounted) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 50), // 缩短动画时间
+                curve: Curves.easeOut,
+              ).then((_) {
+                // 动画完成后，重新启用滚动检测
+                _isAutoScrolling = false;
+                
+                // 对于自动滚动，也添加精确性检查
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients && !_userHasScrolled && mounted) {
+                    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+                    final currentPosition = _scrollController.position.pixels;
+                    final tolerance = 2.0; // 更小的容差，因为是自动滚动
+                    
+                    // 如果还没有真正到底部，直接跳转
+                    if (maxScrollExtent - currentPosition > tolerance) {
+                      _scrollController.jumpTo(maxScrollExtent);
+                    }
+                  }
+                });
+              });
+            }
           });
         }
       });

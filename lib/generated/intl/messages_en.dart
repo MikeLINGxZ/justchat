@@ -137,6 +137,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "textStyles": MessageLookupByLibrary.simpleMessage("Text Styles"),
     "theme": MessageLookupByLibrary.simpleMessage("Theme"),
     "themeMode": MessageLookupByLibrary.simpleMessage("Theme Mode"),
+    "thinking": MessageLookupByLibrary.simpleMessage("Thinking..."),
     "uploadFile": MessageLookupByLibrary.simpleMessage("Upload File"),
     "uploadImage": MessageLookupByLibrary.simpleMessage("Upload Image"),
     "welcomeToMarkdown": MessageLookupByLibrary.simpleMessage(
