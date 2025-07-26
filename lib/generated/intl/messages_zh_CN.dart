@@ -94,6 +94,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "providerDeleted": MessageLookupByLibrary.simpleMessage("供应商删除成功"),
     "providerName": MessageLookupByLibrary.simpleMessage("供应商名称"),
     "providerUpdated": MessageLookupByLibrary.simpleMessage("供应商更新成功"),
+    "scrollToBottom": MessageLookupByLibrary.simpleMessage("滚动到底部"),
     "searchConversations": MessageLookupByLibrary.simpleMessage("搜索对话..."),
     "selectModel": MessageLookupByLibrary.simpleMessage("选择模型"),
     "selectProvider": MessageLookupByLibrary.simpleMessage("选择供应商"),

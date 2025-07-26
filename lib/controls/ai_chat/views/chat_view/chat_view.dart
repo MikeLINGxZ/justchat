@@ -124,7 +124,7 @@ class _ChatView extends State<ChatView> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '滚动到底部',
+                            S.of(context).scrollToBottom,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 14,

@@ -124,6 +124,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "providerUpdated": MessageLookupByLibrary.simpleMessage(
       "Provider updated successfully",
     ),
+    "scrollToBottom": MessageLookupByLibrary.simpleMessage("Scroll to Bottom"),
     "searchConversations": MessageLookupByLibrary.simpleMessage(
       "Search conversations...",
     ),

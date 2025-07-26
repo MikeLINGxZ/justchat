@@ -75,5 +75,6 @@
   "noModelSelected": "未选择模型",
   "modelCount": "模型数量",
   "noModels": "暂无模型",
-  "noAvailableModels": "该供应商暂无可用模型"
+  "noAvailableModels": "该供应商暂无可用模型",
+  "scrollToBottom": "滚动到底部"
 }

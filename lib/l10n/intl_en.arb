@@ -75,5 +75,6 @@
   "noModelSelected": "No model selected",
   "modelCount": "Model Count",
   "noModels": "No Models",
-  "noAvailableModels": "No available models for this provider"
+  "noAvailableModels": "No available models for this provider",
+  "scrollToBottom": "Scroll to Bottom"
 }

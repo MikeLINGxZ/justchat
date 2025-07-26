@@ -43,6 +43,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
   bool _userHasScrolled = false; // 用户是否手动滚动过
   bool _wasStreaming = false; // 上次的流式状态
   bool _isInitializing = true; // 是否正在初始化，防止初始化时误触发用户滚动检测
+  bool _isAutoScrolling = false; // 是否正在执行自动滚动，防止误触发用户滚动检测
 
   @override
   void initState() {
@@ -73,15 +74,18 @@ class _MessageViewState extends ConsumerState<MessageView> {
 
   // 滚动变化监听器
   void _onScrollChanged() {
-    if (!_scrollController.hasClients || _isInitializing) return;
+    if (!_scrollController.hasClients || _isInitializing || _isAutoScrolling) return;
     
     // 检查是否是用户手动滚动（不在自动滚动过程中）
     // 如果当前位置不是最底部，说明用户向上滚动了
     final maxScrollExtent = _scrollController.position.maxScrollExtent;
     final currentPosition = _scrollController.position.pixels;
     
-    // 给一个小的容差值（5像素），避免因为精度问题误判
-    if (maxScrollExtent - currentPosition > 5.0) {
+    // 给一个小的容差值（10像素），避免因为精度问题误判
+    final tolerance = 10.0;
+    final isAtBottom = maxScrollExtent - currentPosition <= tolerance;
+    
+    if (!isAtBottom) {
       // 用户离开了底部
       if (!_userHasScrolled) {
         debugPrint('检测到用户手动滚动，暂停自动滚动');
@@ -113,11 +117,15 @@ class _MessageViewState extends ConsumerState<MessageView> {
     });
     
     if (_scrollController.hasClients) {
+      _isAutoScrolling = true;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
-      );
+      ).then((_) {
+        // 动画完成后，重新启用滚动检测
+        _isAutoScrolling = false;
+      });
     }
     
     // 通知父组件用户滚动状态变化
@@ -141,11 +149,15 @@ class _MessageViewState extends ConsumerState<MessageView> {
       // 使用更短的延迟和更快的滚动动画，提升流式更新时的滚动体验
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients && !_userHasScrolled) {
+          _isAutoScrolling = true;
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 50), // 缩短动画时间
             curve: Curves.easeOut,
-          );
+          ).then((_) {
+            // 动画完成后，重新启用滚动检测
+            _isAutoScrolling = false;
+          });
         }
       });
     }
@@ -168,12 +180,15 @@ class _MessageViewState extends ConsumerState<MessageView> {
     } else if (_wasStreaming && !widget.isStreaming) {
       // 从流式状态变为非流式状态（生成完成），恢复默认状态
       debugPrint('生成完成，恢复默认状态（自动滚动，无按钮）');
+      // 生成完成时，无论用户之前是否滚动过，都重置为初始状态
       setState(() {
         _userHasScrolled = false;
-        _isInitializing = false; // 确保用户滚动检测已启用
+        _isInitializing = false;
       });
-      // 通知父组件用户滚动状态变化
+      // 通知父组件用户滚动状态变化（隐藏按钮）
       widget.onUserScrollChanged?.call(false);
+      // 生成完成后滚动到底部
+      _scrollToBottom();
     }
     _wasStreaming = widget.isStreaming;
 

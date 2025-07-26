@@ -684,6 +684,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Scroll to Bottom`
+  String get scrollToBottom {
+    return Intl.message(
+      'Scroll to Bottom',
+      name: 'scrollToBottom',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
