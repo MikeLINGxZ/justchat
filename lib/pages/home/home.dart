@@ -117,16 +117,16 @@ class _HomePage extends State<HomePage> {
                               });
                             },
                           ),
-                          const SizedBox(height: 14),
-                          SidebarIconButton(
-                            icon: Icons.task_outlined,
-                            isSelected: _selectedIndex == 1,
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = 1;
-                              });
-                            },
-                          ),
+                          // const SizedBox(height: 14),
+                          // SidebarIconButton(
+                          //   icon: Icons.task_outlined,
+                          //   isSelected: _selectedIndex == 1,
+                          //   onPressed: () {
+                          //     setState(() {
+                          //       _selectedIndex = 1;
+                          //     });
+                          //   },
+                          // ),
                           const SizedBox(height: 14),
                           SidebarIconButton(
                             icon: Icons.history,

@@ -103,11 +103,8 @@ class _MessageViewThinkingState extends ConsumerState<MessageViewThinking>
     
     if (_isExpanded) {
       _animationController.forward();
-      if (widget.onExpansionChanged != null) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          widget.onExpansionChanged!();
-        });
-      }
+      // 移除手动点击展开时的滚动逻辑
+      // 只保留在didUpdateWidget中内容变化时的自动滚动
     } else {
       _animationController.reverse();
     }
