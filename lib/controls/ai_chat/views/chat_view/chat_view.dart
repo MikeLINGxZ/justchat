@@ -54,8 +54,13 @@ class _ChatView extends State<ChatView> {
   // 处理用户滚动状态变化
   void _onUserScrollChanged(bool userHasScrolled) {
     if (_showScrollToBottomButton != userHasScrolled) {
-      setState(() {
-        _showScrollToBottomButton = userHasScrolled;
+      // 延迟执行setState，避免在build阶段调用
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _showScrollToBottomButton = userHasScrolled;
+          });
+        }
       });
     }
   }
