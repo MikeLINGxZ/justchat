@@ -302,25 +302,36 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
             ),
             const SizedBox(width: 6),
             Expanded(
-              child: Text(
-                item.model.id,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: FontSizeUtils.getSmallSize(ref),
-                ),
-              ),
+              child: _searchQuery.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.model.id,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: FontSizeUtils.getSmallSize(ref),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.provider.name,
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getXSmallSize(ref),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      item.model.id,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: FontSizeUtils.getSmallSize(ref),
+                      ),
+                    ),
             ),
-            // 搜索时显示供应商信息
-            if (_searchQuery.isNotEmpty) ...[
-              const SizedBox(width: 6),
-              Text(
-                item.provider.name,
-                style: TextStyle(
-                  fontSize: FontSizeUtils.getXSmallSize(ref),
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
           ],
         ),
       ),
