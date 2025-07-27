@@ -787,14 +787,14 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                       height: 40,
                       decoration: BoxDecoration(
                         color: isCurrent 
-                            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                            : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                            ? Style.primaryColor(context).withValues(alpha: 0.2)
+                            : Style.primaryColor(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.chat_bubble_rounded,
                         size: 20,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Style.primaryColor(context),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -807,7 +807,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                           Text(
                             conversation.title,
                             style: TextStyle(
-                              fontSize: FontSizeUtils.getBodySize(ref),
+                              fontSize: FontSizeUtils.getBodyLargeSize(ref),
                               fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
                               color: Theme.of(context).colorScheme.onSurface,
                               height: 1.3,
@@ -826,21 +826,21 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: Style.primaryColor(context).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(Style.radiusLv4),
                                 ),
                                 child: Text(
                                   S.of(context).messagesCount(_messageCountCache[conversation.id] ?? 0),
                                   style: TextStyle(
                                     fontSize: FontSizeUtils.getSmallSize(ref) - 2,
                                     fontWeight: FontWeight.w500,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:  Style.primaryColor(context) ,
                                   ),
                                 ),
                               ),
@@ -1015,11 +1015,11 @@ class _ConversationDetailDialog extends ConsumerWidget {
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Style.radiusLv1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 24,
+              blurRadius: 10,
               offset: const Offset(0, 8),
             ),
           ],
@@ -1028,7 +1028,7 @@ class _ConversationDetailDialog extends ConsumerWidget {
           children: [
             // 标题栏
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.only(
@@ -1064,11 +1064,12 @@ class _ConversationDetailDialog extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '${messages.length} 条消息',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        Container(
+                          child: Text(
+                            '${messages.length} 条消息',
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getSmallSize(ref),
+                            ),
                           ),
                         ),
                       ],
@@ -1118,12 +1119,12 @@ class _ConversationDetailDialog extends ConsumerWidget {
             
             // 底部按钮栏
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(Style.radiusLv1),
+                  bottomRight: Radius.circular(Style.radiusLv1),
                 ),
                 border: Border(
                   top: BorderSide(
@@ -1139,6 +1140,9 @@ class _ConversationDetailDialog extends ConsumerWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(Style.radiusLv3),
+                      ),
                     ),
                     child: Text('关闭', style: TextStyle(fontSize: FontSizeUtils.getBodySize(ref))),
                   ),
@@ -1154,7 +1158,7 @@ class _ConversationDetailDialog extends ConsumerWidget {
                       shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(Style.radiusLv3),
                       ),
                     ),
                   ),
