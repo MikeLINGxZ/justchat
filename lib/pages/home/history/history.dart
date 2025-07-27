@@ -9,6 +9,7 @@ import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
 import 'package:lemon_tea/storage/sqlite_util.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   final ConversationManager conversationManager;
@@ -524,7 +525,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
   Widget _buildSearchBox() {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Style.primaryBackground(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
@@ -751,10 +752,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isCurrent 
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                ? Style.primaryBackground(context)
                 : isHovered 
-                    ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.8)
-                    : Theme.of(context).colorScheme.surface,
+                    ? Style.primaryBackground(context).withValues(alpha: 0.8)
+                    : Style.primaryBackground(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isCurrent 
@@ -891,7 +892,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     final currentConversation = widget.conversationManager.currentConversation;
     
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      color: Style.primaryBackground(context),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -907,7 +908,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
                     style: TextStyle(
                       fontSize: FontSizeUtils.getHeadingSize(ref) + 2,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Style.primaryText(context),
                     ),
                   ),
                   const Spacer(),
