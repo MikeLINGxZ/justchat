@@ -5,6 +5,7 @@ import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/provider_manager.dart';
 import 'package:lemon_tea/utils/setting/storage.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class GeneralSettings extends ConsumerWidget {
   const GeneralSettings({super.key});
@@ -26,7 +27,7 @@ class GeneralSettings extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Style.primaryBackground(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
@@ -42,8 +43,8 @@ class GeneralSettings extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Theme.of(context).primaryColor.withOpacity(0.1),
-                          Theme.of(context).primaryColor.withOpacity(0.05),
+                          Style.primaryColor(context).withOpacity(0.1),
+                          Style.primaryColor(context).withOpacity(0.05),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -51,7 +52,7 @@ class GeneralSettings extends ConsumerWidget {
                     child: Icon(
                       Icons.settings,
                       size: 20,
-                      color: Theme.of(context).primaryColor,
+                      color: Style.primaryColor(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -60,7 +61,7 @@ class GeneralSettings extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: FontSizeUtils.getHeadingSize(ref),
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.headlineMedium?.color,
+                      color: Style.primaryText(context),
                     ),
                   ),
                 ],
@@ -83,10 +84,10 @@ class GeneralSettings extends ConsumerWidget {
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Style.primaryColor(context).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        color: Style.primaryColor(context).withOpacity(0.2),
                       ),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -273,7 +274,7 @@ class GeneralSettings extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.04),
+              color: Style.primaryText(context).withOpacity(0.04),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -284,22 +285,22 @@ class GeneralSettings extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Style.primaryColor(context).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     icon,
                     size: 16,
-                    color: Theme.of(context).primaryColor,
+                    color: Style.primaryColor(context),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: FontSizeUtils.getSubheadingSize(ref) - 1,
+                    fontSize: FontSizeUtils.getBodyLargeSize(ref) - 1,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.titleMedium?.color,
+                    color: Style.buttonText(context),
                   ),
                 ),
               ],

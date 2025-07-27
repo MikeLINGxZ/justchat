@@ -183,7 +183,7 @@ class Style {
   static Color buttonText(BuildContext context) {
     return isDarkTheme(context)
         ? const Color(0xFFFFFFFF)  // 暗黑主题
-        : const Color(0xFFFFFFFF); // 明亮主题
+        : const Color(0xFF000000); // 明亮主题
   }
 
   /// 次要按钮文本颜色
