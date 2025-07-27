@@ -4,6 +4,7 @@ import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 class ModelSelector extends ConsumerStatefulWidget {
   final String? selectedProviderId;
@@ -188,7 +189,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
   Widget _buildSearchBar() {
     return Container(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(6.0),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -201,7 +202,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         decoration: InputDecoration(
           hintText: '搜索模型...',
           hintStyle: TextStyle(fontSize: FontSizeUtils.getXSmallSize(ref)),
-          prefixIcon: const Icon(Icons.search, size: 18),
+          prefixIcon: const Icon(Icons.search, size: 14 ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 18),
@@ -340,17 +341,23 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
 
   @override
   Widget build(BuildContext context) {
+    // 计算统一的宽度
+    final popupWidth = _getButtonWidth().clamp(250.0, 400.0);
+    
     return MenuAnchor(
       controller: _menuController,
+      alignmentOffset: const Offset(0, 10), // 向上偏移8像素，避免紧贴
       style: MenuStyle(
         elevation: WidgetStateProperty.all(8),
-        maximumSize: WidgetStateProperty.all(Size(_getButtonWidth().clamp(250, 400), 450)),
+        maximumSize: WidgetStateProperty.all(Size(popupWidth, 450)),
         padding: WidgetStateProperty.all(EdgeInsets.zero),
+        alignment: Alignment.topLeft, // 弹出框在按钮上方
       ),
       menuChildren: [
         // 创建一个容器来包含模型列表和搜索框
         Container(
-          width: _getButtonWidth().clamp(230, 380),
+          width: popupWidth,
+          color: Style.primaryBackground(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -379,6 +386,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
             },
             borderRadius: BorderRadius.circular(4.0),
             child: Container(
+              width: popupWidth, // 按钮宽度与弹出框一致
               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
               decoration: BoxDecoration(
                 border: Border.all(
@@ -395,8 +403,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 150),
+                  Expanded( // 改为 Expanded 以填充剩余空间
                     child: Text(
                       _getCurrentDisplayText(),
                       style: TextStyle(
@@ -408,7 +415,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    Icons.keyboard_arrow_down,
+                    Icons.keyboard_arrow_up, // 改为向上箭头，表示弹出框在上方
                     size: 16,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
