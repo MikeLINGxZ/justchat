@@ -238,7 +238,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
           ),
         ),
         onChanged: _filterModels,
-        style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+        style: TextStyle(fontSize: FontSizeUtils.getXSmallSize(ref)),
       ),
     );
   }
@@ -350,7 +350,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     
     return MenuAnchor(
       controller: _menuController,
-      alignmentOffset: const Offset(0, 12), // 向上偏移8像素，避免紧贴
+      alignmentOffset: const Offset(0, 13), // 向上偏移8像素，避免紧贴
       style: MenuStyle(
         elevation: WidgetStateProperty.all(8),
         maximumSize: WidgetStateProperty.all(Size(popupWidth, 450)),
