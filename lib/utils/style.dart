@@ -288,6 +288,8 @@ class Style {
   }
 
   static double radiusLv1 = 10.0;
+  static double radiusLv2 = 8.0;
+  static double radiusLv3 = 6.0;
 
   static double messageViewWidth = 1000;
 }

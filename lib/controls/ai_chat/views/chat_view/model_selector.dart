@@ -203,9 +203,13 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
           hintText: '搜索模型...',
           hintStyle: TextStyle(fontSize: FontSizeUtils.getXSmallSize(ref)),
           prefixIcon: const Icon(Icons.search, size: 14 ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 30,
+          ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const Icon(Icons.clear, size: 14),
                   onPressed: () {
                     _searchController.clear();
                     _filterModels('');
@@ -213,7 +217,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
                 )
               : null,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(
@@ -221,13 +225,13 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(Style.radiusLv3),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(Style.radiusLv3),
             borderSide: BorderSide(
               color: Theme.of(context).colorScheme.primary,
             ),
@@ -346,7 +350,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
     
     return MenuAnchor(
       controller: _menuController,
-      alignmentOffset: const Offset(0, 10), // 向上偏移8像素，避免紧贴
+      alignmentOffset: const Offset(0, 12), // 向上偏移8像素，避免紧贴
       style: MenuStyle(
         elevation: WidgetStateProperty.all(8),
         maximumSize: WidgetStateProperty.all(Size(popupWidth, 450)),
