@@ -287,7 +287,7 @@ class _ModelSelectorState extends ConsumerState<ModelSelector> {
         _menuController.close();
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 4.0),
         child: Row(
           children: [
             SizedBox(
