@@ -929,12 +929,38 @@ def hello():
       }
       
       List<grpc_common.Message> grpcMessages = historyToUse.map((msg) {
+        // 创建消息内容列表
+        List<grpc_common.MessageContent> contents = [];
+        
+        // 添加文本内容（如果有）
+        if (msg.content.isNotEmpty) {
+          contents.add(grpc_common.MessageContent(text: msg.content));
+        }
+        
+        // 添加文件内容（如果有）
+        if (msg.files != null && msg.files!.isNotEmpty) {
+          for (final file in msg.files!) {
+            contents.add(grpc_common.MessageContent(
+              file: grpc_common.FileContent(
+                name: file.name,
+                mimeType: file.mimeType,
+                type: _convertFileType(file.type),
+                data: file.data != null ? base64Decode(file.data!) : null,
+                size: Int64(file.size),
+                url: file.url ?? '',
+                description: file.description ?? '',
+              ),
+            ));
+          }
+        }
+        
         return grpc_common.Message(
           role:
               msg.role == MessageRole.user
                   ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
                   : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-          content: msg.content,
+          contents: contents,
+          content: msg.content, // 保持向后兼容性
         );
       }).toList();
 
