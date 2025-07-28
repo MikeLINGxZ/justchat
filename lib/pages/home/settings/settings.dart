@@ -4,11 +4,8 @@ import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/utils/setting/manager.dart' as app_theme;
 import 'package:lemon_tea/utils/setting/storage.dart';
-import 'package:lemon_tea/utils/setting/provider_manager.dart';
-import 'package:lemon_tea/models/llm_provider_v0.dart';
-import 'package:lemon_tea/models/model_v0.dart';
 import 'package:lemon_tea/pages/home/settings/general_settings.dart';
-import 'package:lemon_tea/pages/home/settings/model_settings.dart';
+import 'package:lemon_tea/pages/home/settings/model_settings/model_settings.dart';
 import 'package:lemon_tea/pages/home/settings/data_settings.dart';
 import 'package:lemon_tea/pages/home/settings/about_settings.dart';
 
