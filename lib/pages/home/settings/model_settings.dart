@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/rpc/service.pb.dart';
+import 'package:lemon_tea/rpc/common.pb.dart' as rpc;
 import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
@@ -75,6 +76,60 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  // 删除指定提供商的非自定义模型
+  Future<bool> _deleteNonCustomModelsByProviderId(String providerId) async {
+    try {
+      final models = await LlmStorage.getModelsByProviderId(providerId);
+      for (final model in models) {
+        if (!model.isCustom) {
+          await LlmStorage.deleteModel(model.id);
+        }
+      }
+      return true;
+    } catch (e) {
+      debugPrint('删除非自定义模型失败: $e');
+      return false;
+    }
+  }
+
+  // 从RPC响应保存模型到数据库
+  Future<bool> _saveModelsFromRPC(String providerId, List<rpc.Model> rpcModels) async {
+    try {
+      // 先删除该提供商的非自定义模型
+      await _deleteNonCustomModelsByProviderId(providerId);
+      
+      // 获取当前提供商的最大序号
+      int currentMaxSeqId = await LlmStorage.getMaxModelSeqId(providerId);
+      
+      // 添加新模型
+      for (int i = 0; i < rpcModels.length; i++) {
+        final rpcModel = rpcModels[i];
+        final model = Model(
+          llmProviderId: providerId,
+          id: rpcModel.id,
+          object: rpcModel.object.isEmpty ? "model" : rpcModel.object,
+          ownedBy: rpcModel.ownedBy,
+          enabled: rpcModel.enabled,
+          isCustom: false, // RPC获取的模型都不是自定义的
+          seqId: currentMaxSeqId + i + 1,
+        );
+        
+        // 创建包含name字段的Map
+        final modelMap = model.toMap();
+        modelMap['name'] = rpcModel.id; // 使用模型ID作为名称
+        
+        final success = await LlmStorage.addModelWithCustomFields(modelMap);
+        if (!success) {
+          debugPrint('添加模型失败: ${rpcModel.id}');
+        }
+      }
+      return true;
+    } catch (e) {
+      debugPrint('保存RPC模型失败: $e');
+      return false;
+    }
   }
 
   // 获取模型的启用状态，优先使用本地状态
@@ -1285,6 +1340,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                   description: description.isEmpty ? null : description,
                   enable: isEnabled,
                   checked: verificationSuccess, // 根据验证结果设置checked状态
+                  seqId: provider.seqId, // 保持原seq_id不变
                 );
 
                 // 更新供应商到数据库
@@ -1292,6 +1348,26 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 Navigator.of(context).pop();
 
                 if (success) {
+                  // 如果验证成功，获取并保存模型
+                  if (verificationSuccess) {
+                    try {
+                      final request = ModelsRequest(
+                        name: name,
+                        apiKey: apiKey,
+                        baseUrl: baseUrl
+                      );
+                      final response = await Client().stub!.models(request);
+                      await _saveModelsFromRPC(provider.id, response.models);
+                      debugPrint('成功更新保存 ${response.models.length} 个模型');
+                      
+                      // 刷新模型列表
+                      ref.refresh(modelsProvider(provider.id));
+                    } catch (e) {
+                      debugPrint('获取或保存模型失败: $e');
+                      // 即使模型保存失败，也不阻止供应商的更新
+                    }
+                  }
+
                   // 刷新供应商列表
                   ref.refresh(providersProvider);
 
@@ -1383,6 +1459,18 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
+              
+              // 先删除该供应商的所有模型
+              try {
+                final models = await LlmStorage.getModelsByProviderId(provider.id);
+                for (final model in models) {
+                  await LlmStorage.deleteModel(model.id);
+                }
+              } catch (e) {
+                debugPrint('删除供应商模型失败: $e');
+              }
+              
+              // 然后删除供应商
               final success = await LlmStorage.deleteProvider(provider.id);
               if (success) {
                 // 刷新提供商列表
@@ -2151,6 +2239,9 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                   return;
                 }
 
+                // 获取下一个序号
+                final maxSeqId = await LlmStorage.getMaxProviderSeqId();
+                
                 // 创建供应商对象
                 final newProvider = LlmProvider(
                   id: '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}',
@@ -2161,6 +2252,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                   description: description.isEmpty ? null : description,
                   enable: isEnabled,
                   checked: verificationSuccess, // 根据验证结果设置checked状态
+                  seqId: maxSeqId + 1,
                 );
 
                 // 添加供应商到数据库
@@ -2168,6 +2260,23 @@ class _ModelSettingsState extends ConsumerState<ModelSettings>
                 Navigator.of(context).pop();
 
                 if (success) {
+                  // 如果验证成功，获取并保存模型
+                  if (verificationSuccess) {
+                    try {
+                      final request = ModelsRequest(
+                        name: name,
+                        apiKey: apiKey,
+                        baseUrl: baseUrl
+                      );
+                      final response = await Client().stub!.models(request);
+                      await _saveModelsFromRPC(newProvider.id, response.models);
+                      debugPrint('成功保存 ${response.models.length} 个模型');
+                    } catch (e) {
+                      debugPrint('获取或保存模型失败: $e');
+                      // 即使模型保存失败，也不阻止供应商的添加
+                    }
+                  }
+
                   // 刷新供应商列表
                   ref.refresh(providersProvider);
 
