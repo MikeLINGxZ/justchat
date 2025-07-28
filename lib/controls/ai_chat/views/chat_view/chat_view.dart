@@ -14,7 +14,8 @@ class ChatView extends StatefulWidget {
   const ChatView({
     super.key, 
     this.onFileSelected, 
-    this.onSend, 
+    this.onSend,
+    this.onSendWithFiles, 
     required this.historyMessages,
     this.onNewConversation,
     this.currentTitle = '',
@@ -27,7 +28,8 @@ class ChatView extends StatefulWidget {
   });
 
   final Function(String)? onFileSelected;
-  final Function(String)? onSend;
+  final Function(String)? onSend; // 保留向后兼容性
+  final Function(String text, List<FileContent> files)? onSendWithFiles;
   final List<Message> historyMessages;
   final VoidCallback? onNewConversation;
   final String currentTitle;
@@ -151,8 +153,14 @@ class _ChatView extends State<ChatView> {
             child: InputView(
               key: _inputViewKey,
               onFileSelected: widget.onFileSelected,
-              onSend: (msg) {
-                widget.onSend?.call(msg);
+              onSend: (text, files) {
+                // 优先使用新的回调
+                if (widget.onSendWithFiles != null) {
+                  widget.onSendWithFiles!(text, files);
+                } else if (widget.onSend != null && files.isEmpty) {
+                  // 向后兼容：只有文本且没有文件时使用旧回调
+                  widget.onSend!(text);
+                }
               },
               selectedProviderId: widget.selectedProviderId,
               selectedModelId: widget.selectedModelId,

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lemon_tea/controls/input.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/model_selector.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/style.dart';
+import 'package:lemon_tea/utils/file_service.dart';
+import 'package:lemon_tea/utils/llm/models/message.dart';
 
 // 导出InputView State类型以便其他文件可以访问
 typedef InputViewState = _InputView;
 
 class InputView extends ConsumerStatefulWidget {
-  final Function(String)? onFileSelected;
-  final Function(String)? onSend;
+  final Function(String)? onFileSelected; // 保留向后兼容性
+  final Function(String text, List<FileContent> files)? onSend;
   final String? selectedProviderId;
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
@@ -38,6 +39,7 @@ class _InputView extends ConsumerState<InputView> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
+  List<FileContent> _selectedFiles = []; // 存储选择的文件
 
   // 添加公共方法来请求聚焦
   void requestFocus() {
@@ -61,16 +63,51 @@ class _InputView extends ConsumerState<InputView> {
     });
   }
 
-  void _handleFileSelection(String type) {
-    widget.onFileSelected?.call(type);
+  void _handleFileSelection(String type) async {
+    List<FileContent>? selectedFiles;
+    
+    switch (type) {
+      case 'image':
+        selectedFiles = await FileService.pickImages();
+        break;
+      case 'file':
+        selectedFiles = await FileService.pickDocuments();
+        break;
+      case 'any':
+        selectedFiles = await FileService.pickAnyFiles();
+        break;
+    }
+    
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      setState(() {
+        _selectedFiles.addAll(selectedFiles!);
+      });
+      
+      // 向后兼容：调用原始的onFileSelected回调
+      widget.onFileSelected?.call(type);
+    }
+  }
+
+  void _removeFile(int index) {
+    setState(() {
+      _selectedFiles.removeAt(index);
+    });
   }
 
   void _handleSend() {
     final text = _textController.text.trim();
-    if (text.isNotEmpty) {
-      widget.onSend?.call(text);
-      _textController.clear();
-    }
+    
+    // 如果既没有文本内容也没有文件，则不发送
+    if (text.isEmpty && _selectedFiles.isEmpty) return;
+    
+    // 调用新的onSend回调，传递文本和文件
+    widget.onSend?.call(text, List.from(_selectedFiles));
+    
+    // 清空输入
+    _textController.clear();
+    setState(() {
+      _selectedFiles.clear();
+    });
   }
 
   Widget _buildIconButton({
@@ -91,6 +128,139 @@ class _InputView extends ConsumerState<InputView> {
     );
   }
 
+  Widget _buildFilePreview() {
+    if (_selectedFiles.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8.0),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 8.0,
+        children: _selectedFiles.asMap().entries.map((entry) {
+          final index = entry.key;
+          final file = entry.value;
+          
+          return Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: Style.primaryBorder(context),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 文件图标或图片预览
+                if (FileService.isImage(file)) ...[
+                  // 图片预览
+                  Container(
+                    width: 40,
+                    height: 40,
+                                         decoration: BoxDecoration(
+                       borderRadius: BorderRadius.circular(4.0),
+                       color: Theme.of(context).colorScheme.surfaceVariant,
+                     ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4.0),
+                      child: Builder(
+                        builder: (context) {
+                          final imageData = FileService.getImagePreviewData(file);
+                          if (imageData != null) {
+                            return Image.memory(
+                              imageData,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  FileService.getFileTypeIcon(file.type),
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                );
+                              },
+                            );
+                          }
+                          return Icon(
+                            FileService.getFileTypeIcon(file.type),
+                            size: 20,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  // 非图片文件图标
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4.0),
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    child: Icon(
+                      FileService.getFileTypeIcon(file.type),
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(width: 8.0),
+                
+                // 文件信息
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        file.name,
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getSmallSize(ref),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        FileService.formatFileSize(file.size),
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getSmallSize(ref) - 2,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 8.0),
+                
+                // 删除按钮
+                GestureDetector(
+                  onTap: () => _removeFile(index),
+                  child: Container(
+                    padding: const EdgeInsets.all(2.0),
+                    decoration: BoxDecoration(
+                      color: Style.error(context),
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -107,6 +277,10 @@ class _InputView extends ConsumerState<InputView> {
           key: _inputViewKey,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 文件预览区域
+            _buildFilePreview(),
+            
+            // 文本输入区域
             TextFormField(
               focusNode: _focusNode,
               controller: _textController,
@@ -179,17 +353,33 @@ class _InputView extends ConsumerState<InputView> {
                         ],
                       ),
                     ),
+                    MenuItemButton(
+                      onPressed: () {
+                        _handleFileSelection('any');
+                        _menuController.close();
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.attach_file),
+                          const SizedBox(width: 8),
+                          const Text('上传任意文件'),
+                        ],
+                      ),
+                    ),
                   ],
                   builder: (context, controller, child) {
                     return _buildIconButton(
                       icon: Icons.file_upload,
-                      onTap: () {
+                      onTap: widget.isStreaming ? () {} : () {
                         if (controller.isOpen) {
                           controller.close();
                         } else {
                           controller.open();
                         }
                       },
+                      color: widget.isStreaming 
+                        ? Style.disabledText(context)
+                        : null,
                     );
                   },
                 ),
@@ -203,7 +393,10 @@ class _InputView extends ConsumerState<InputView> {
                     const SizedBox(width: 8),
                     _buildIconButton(
                       icon: Icons.arrow_forward,
-                      onTap: _handleSend,
+                      onTap: widget.isStreaming ? () {} : _handleSend,
+                      color: widget.isStreaming 
+                        ? Style.disabledText(context)
+                        : null,
                     ),
                   ],
                 ),

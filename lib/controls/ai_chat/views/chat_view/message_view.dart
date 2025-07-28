@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_toolbar.dart';
 import 'package:lemon_tea/controls/ai_chat/views/chat_view/message_view_thinking.dart';
+import 'package:lemon_tea/controls/ai_chat/views/chat_view/file_preview.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart';
@@ -395,6 +396,13 @@ class _MessageViewState extends ConsumerState<MessageView> {
                                     ),
                                   ),
 
+                                // 显示文件内容（如果有的话）
+                                if (message.hasFiles)
+                                  FilePreview(
+                                    files: message.files!,
+                                    isUserMessage: false,
+                                  ),
+
                                 // 显示主要内容
                                 Container(
                                   color: Style.assistantChatBubble(context),
@@ -427,11 +435,25 @@ class _MessageViewState extends ConsumerState<MessageView> {
                           color:  Style.userChatBubble(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: MarkdownBlock(
-                          data: message.content,
-                          config: Theme.of(context).brightness == Brightness.dark
-                              ? _buildDarkConfig()
-                              : _buildLightConfig(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 显示文件内容（如果有的话）
+                            if (message.hasFiles)
+                              FilePreview(
+                                files: message.files!,
+                                isUserMessage: true,
+                              ),
+                            
+                            // 显示文本内容
+                            if (message.content.isNotEmpty)
+                              MarkdownBlock(
+                                data: message.content,
+                                config: Theme.of(context).brightness == Brightness.dark
+                                    ? _buildDarkConfig()
+                                    : _buildLightConfig(),
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),

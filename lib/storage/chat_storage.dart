@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/message.dart';
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/storage/sqlite_util.dart';
+import 'package:lemon_tea/utils/llm/models/message.dart' as llm_models;
 import 'package:uuid/uuid.dart';
 
 /// 聊天存储类，负责对话和消息的数据库操作
@@ -169,12 +171,63 @@ class ChatStorage {
     }
   }
 
+  /// 获取对话的所有消息（包含文件信息）
+  /// 返回LLM模型的Message列表
+  /// 按创建时间正序排序
+  static Future<List<llm_models.Message>> getLlmMessagesByConversationId(String conversationId) async {
+    try {
+      final results = await SqliteUtil.instance.query(
+        Message.tableName(),
+        where: 'conversation_id = ? AND deleted = ?',
+        whereArgs: [conversationId, 0],
+        orderBy: 'created_at ASC',
+      );
+      
+      return results.map((map) {
+        // 解析文件信息
+        List<llm_models.FileContent>? files;
+        if (map['metadata'] != null) {
+          try {
+            final metadata = jsonDecode(map['metadata'] as String);
+            if (metadata['files'] != null) {
+              files = (metadata['files'] as List)
+                  .map((fileJson) => llm_models.FileContent.fromJson(fileJson))
+                  .toList();
+            }
+          } catch (e) {
+            debugPrint('解析消息文件信息失败: $e');
+          }
+        }
+        
+        // 创建LLM消息
+        if (files != null && files.isNotEmpty) {
+          return llm_models.Message.withFiles(
+            role: MessageRole.values.byName(map['role']),
+            content: map['content'] ?? '',
+            files: files,
+            reasoningContent: map['reasoning_content'],
+          );
+        } else {
+          return llm_models.Message(
+            role: MessageRole.values.byName(map['role']),
+            content: map['content'] ?? '',
+            reasoningContent: map['reasoning_content'],
+          );
+        }
+      }).toList();
+    } catch (e) {
+      debugPrint('获取LLM对话消息失败: $e');
+      return [];
+    }
+  }
+
   /// 添加消息到对话
   static Future<Message?> addMessage({
     required String conversationId,
     required String role,
     required String content,
     String? reasoningContent,
+    List<llm_models.FileContent>? files,
   }) async {
     try {
       final now = DateTime.now();
@@ -187,9 +240,19 @@ class ChatStorage {
         createdAt: now,
       );
       
+      // 准备插入数据，包含文件信息
+      Map<String, dynamic> messageData = message.toMap();
+      
+      // 如果有文件，将文件信息序列化到metadata字段
+      if (files != null && files.isNotEmpty) {
+        messageData['metadata'] = jsonEncode({
+          'files': files.map((file) => file.toJson()).toList(),
+        });
+      }
+      
       final result = await SqliteUtil.instance.insert(
         Message.tableName(),
-        message.toMap(),
+        messageData,
       );
       
       if (result > 0) {

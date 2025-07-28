@@ -16,7 +16,9 @@ import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
+import 'package:fixnum/fixnum.dart';
 
 import 'package:lemon_tea/utils/style.dart';
 
@@ -216,21 +218,9 @@ class _AssistantPage extends State<AssistantPage> {
 
   Future<void> _loadConversation(Conversation conversation) async {
     _currentConversation = conversation;
-    final dbMessages = await ChatStorage.getMessagesByConversationId(
+    final messages = await ChatStorage.getLlmMessagesByConversationId(
       conversation.id,
     );
-
-    // 转换数据库Message为LLM Message
-    final messages =
-        dbMessages
-            .map(
-              (dbMsg) => Message(
-                role: dbMsg.role,
-                content: dbMsg.content,
-                reasoningContent: dbMsg.reasoningContent,
-              ),
-            )
-            .toList();
 
     setState(() {
       _currentTitle = conversation.title;
@@ -305,8 +295,15 @@ def hello():
     }
   }
 
-  Future<void> _handleSendMessage(String message) async {
-    if (message.trim().isEmpty || _currentConversation == null) return;
+  Future<void> _handleSendMessageWithFiles(String message, List<FileContent> files) async {
+    await _handleSendMessage(message, files);
+  }
+
+  Future<void> _handleSendMessage(String message, [List<FileContent>? files]) async {
+    files ??= [];
+    
+    if (message.trim().isEmpty && files.isEmpty) return;
+    if (_currentConversation == null) return;
 
     // 检查是否为临时对话模式
     final isTemporaryConversation = _currentConversation!.id.startsWith(
@@ -316,8 +313,14 @@ def hello():
       debugPrint('警告：当前为临时对话模式，消息将不会被保存到数据库');
     }
 
-    // 添加用户消息到界面
-    final userMessage = Message(role: MessageRole.user, content: message);
+    // 添加用户消息到界面（包含文件）
+    final userMessage = files.isNotEmpty 
+        ? Message.withFiles(
+            role: MessageRole.user, 
+            content: message,
+            files: files,
+          )
+        : Message(role: MessageRole.user, content: message);
     setState(() {
       _historyMessages.add(userMessage);
     });
@@ -329,6 +332,7 @@ def hello():
           conversationId: _currentConversation!.id,
           role: 'user',
           content: message,
+          files: files,
         );
 
         if (savedUserMessage == null) {
@@ -405,13 +409,39 @@ def hello():
 
       // 准备历史消息（排除刚添加的空AI消息）
       List<grpc_common.Message> grpcMessages =
-          _historyMessages.where((msg) => msg.content.isNotEmpty).map((msg) {
+          _historyMessages.where((msg) => msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)).map((msg) {
+            // 创建消息内容列表
+            List<grpc_common.MessageContent> contents = [];
+            
+            // 添加文本内容（如果有）
+            if (msg.content.isNotEmpty) {
+              contents.add(grpc_common.MessageContent(text: msg.content));
+            }
+            
+            // 添加文件内容（如果有）
+            if (msg.files != null && msg.files!.isNotEmpty) {
+              for (final file in msg.files!) {
+                contents.add(grpc_common.MessageContent(
+                  file: grpc_common.FileContent(
+                    name: file.name,
+                    mimeType: file.mimeType,
+                    type: _convertFileType(file.type),
+                    data: file.data != null ? base64Decode(file.data!) : null,
+                    size: Int64(file.size),
+                    url: file.url ?? '',
+                    description: file.description ?? '',
+                  ),
+                ));
+              }
+            }
+            
             return grpc_common.Message(
               role:
                   msg.role == MessageRole.user
                       ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
                       : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-              content: msg.content,
+              contents: contents,
+              content: msg.content, // 保持向后兼容性
             );
           }).toList();
 
@@ -421,13 +451,39 @@ def hello():
 
       debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');
 
+      // 为当前用户消息创建内容列表
+      List<grpc_common.MessageContent> currentMessageContents = [];
+      
+      // 添加文本内容（如果有）
+      if (message.isNotEmpty) {
+        currentMessageContents.add(grpc_common.MessageContent(text: message));
+      }
+      
+      // 添加文件内容（如果有）
+      if (files.isNotEmpty) {
+        for (final file in files) {
+          currentMessageContents.add(grpc_common.MessageContent(
+            file: grpc_common.FileContent(
+              name: file.name,
+              mimeType: file.mimeType,
+              type: _convertFileType(file.type),
+              data: file.data != null ? base64Decode(file.data!) : null,
+              size: Int64(file.size),
+              url: file.url ?? '',
+              description: file.description ?? '',
+            ),
+          ));
+        }
+      }
+
       final chatRequest = grpc_service.ChatRequest(
         llmProviderId: providerId,
         modelId: modelId,
         historyMessages: grpcMessages,
         message: grpc_common.Message(
           role: grpc_enum.MessageRole.MESSAGE_ROLE_USER,
-          content: message,
+          contents: currentMessageContents,
+          content: message, // 保持向后兼容性
         ),
         prompt: "你是一个有用的AI助手。",
       );
@@ -638,6 +694,22 @@ def hello():
       return message;
     }
     return '${message.substring(0, 17)}...';
+  }
+
+  // 将Flutter FileContent类型转换为protobuf FileType
+  grpc_common.FileType _convertFileType(String type) {
+    switch (type.toLowerCase()) {
+      case 'image':
+        return grpc_common.FileType.FILE_TYPE_IMAGE;
+      case 'document':
+        return grpc_common.FileType.FILE_TYPE_DOCUMENT;
+      case 'audio':
+        return grpc_common.FileType.FILE_TYPE_AUDIO;
+      case 'video':
+        return grpc_common.FileType.FILE_TYPE_VIDEO;
+      default:
+        return grpc_common.FileType.FILE_TYPE_OTHER;
+    }
   }
 
   // MessageToolbar 回调函数实现
@@ -1150,26 +1222,26 @@ def hello():
       return Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: double.infinity),
-          child: ChatView(
-            key: _chatViewKey, // 添加key
-            historyMessages: _historyMessages,
-            onSend: _handleSendMessage,
-            onNewConversation:
-                _historyMessages.isEmpty ? null : _handleNewConversation,
-            currentTitle: _currentTitle,
-            selectedProviderId: _selectedProviderId,
-            selectedModelId: _selectedModelId,
-            onModelSelected: _handleModelSelected,
-            isStreaming: _isStreaming,
-            visibleWidth: Style.messageViewWidth,
-            messageToolBar: MessageToolbar(
-              onCopy: _handleCopyMessage,
-              onCopyPlainText: _handleCopyPlainText,
-              onRegenerate: _handleRegenerateMessage,
-              onDelete: _handleDeleteMessage,
-              isVisible: !_isStreaming, // 流式生成过程中隐藏工具栏
-            ),
+          child:         ChatView(
+          key: _chatViewKey, // 添加key
+          historyMessages: _historyMessages,
+          onSendWithFiles: _handleSendMessageWithFiles,
+          onNewConversation:
+              _historyMessages.isEmpty ? null : _handleNewConversation,
+          currentTitle: _currentTitle,
+          selectedProviderId: _selectedProviderId,
+          selectedModelId: _selectedModelId,
+          onModelSelected: _handleModelSelected,
+          isStreaming: _isStreaming,
+          visibleWidth: Style.messageViewWidth,
+          messageToolBar: MessageToolbar(
+            onCopy: _handleCopyMessage,
+            onCopyPlainText: _handleCopyPlainText,
+            onRegenerate: _handleRegenerateMessage,
+            onDelete: _handleDeleteMessage,
+            isVisible: !_isStreaming, // 流式生成过程中隐藏工具栏
           ),
+        ),
         ),
       );
     }
