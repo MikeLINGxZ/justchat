@@ -14,6 +14,30 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// FileType 文件类型枚举
+class FileType extends $pb.ProtobufEnum {
+  static const FileType FILE_TYPE_UNSPECIFIED = FileType._(0, _omitEnumNames ? '' : 'FILE_TYPE_UNSPECIFIED');
+  static const FileType FILE_TYPE_IMAGE = FileType._(1, _omitEnumNames ? '' : 'FILE_TYPE_IMAGE');
+  static const FileType FILE_TYPE_DOCUMENT = FileType._(2, _omitEnumNames ? '' : 'FILE_TYPE_DOCUMENT');
+  static const FileType FILE_TYPE_AUDIO = FileType._(3, _omitEnumNames ? '' : 'FILE_TYPE_AUDIO');
+  static const FileType FILE_TYPE_VIDEO = FileType._(4, _omitEnumNames ? '' : 'FILE_TYPE_VIDEO');
+  static const FileType FILE_TYPE_OTHER = FileType._(5, _omitEnumNames ? '' : 'FILE_TYPE_OTHER');
+
+  static const $core.List<FileType> values = <FileType> [
+    FILE_TYPE_UNSPECIFIED,
+    FILE_TYPE_IMAGE,
+    FILE_TYPE_DOCUMENT,
+    FILE_TYPE_AUDIO,
+    FILE_TYPE_VIDEO,
+    FILE_TYPE_OTHER,
+  ];
+
+  static final $core.List<FileType?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static FileType? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const FileType._(super.value, super.name);
+}
+
 /// MessageRole 对话角色
 class MessageRole extends $pb.ProtobufEnum {
   static const MessageRole MESSAGE_ROLE_UNSPECIFIED = MessageRole._(0, _omitEnumNames ? '' : 'MESSAGE_ROLE_UNSPECIFIED');

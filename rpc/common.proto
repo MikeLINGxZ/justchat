@@ -25,12 +25,42 @@ message Model {
   bool enabled = 4;
 }
 
+// FileType 文件类型枚举
+enum FileType {
+  FILE_TYPE_UNSPECIFIED = 0;
+  FILE_TYPE_IMAGE = 1;        // 图片文件
+  FILE_TYPE_DOCUMENT = 2;     // 文档文件 (PDF, DOC, TXT等)
+  FILE_TYPE_AUDIO = 3;        // 音频文件
+  FILE_TYPE_VIDEO = 4;        // 视频文件
+  FILE_TYPE_OTHER = 5;        // 其他文件
+}
+
+// FileContent 文件内容
+message FileContent {
+  string name = 1;            // 文件名
+  string mime_type = 2;       // MIME类型
+  FileType type = 3;          // 文件类型
+  bytes data = 4;             // 文件二进制数据
+  int64 size = 5;             // 文件大小（字节）
+  optional string url = 6;    // 文件URL（如果是远程文件）
+  optional string description = 7; // 文件描述
+}
+
+// MessageContent 消息内容，可以是文本或文件
+message MessageContent {
+  oneof content {
+    string text = 1;          // 文本内容
+    FileContent file = 2;     // 文件内容
+  }
+}
+
 // Message 对话消息
 message Message {
   MessageRole role = 1;
-  string content = 2;
-//  repeated ToolCall tool_calls = 3;
-//  optional string tool_call_id = 4;
+  repeated MessageContent contents = 2;  // 支持多个内容块（文本+文件）
+  
+  // 保持向后兼容性的字段
+  string content = 3 [deprecated = true];  // 已弃用，使用contents字段
 }
 
 // MessageRole 对话角色

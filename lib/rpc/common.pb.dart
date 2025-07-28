@@ -12,6 +12,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'common.pbenum.dart';
@@ -247,14 +248,212 @@ class Model extends $pb.GeneratedMessage {
   void clearEnabled() => $_clearField(4);
 }
 
+/// FileContent 文件内容
+class FileContent extends $pb.GeneratedMessage {
+  factory FileContent({
+    $core.String? name,
+    $core.String? mimeType,
+    FileType? type,
+    $core.List<$core.int>? data,
+    $fixnum.Int64? size,
+    $core.String? url,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (name != null) result.name = name;
+    if (mimeType != null) result.mimeType = mimeType;
+    if (type != null) result.type = type;
+    if (data != null) result.data = data;
+    if (size != null) result.size = size;
+    if (url != null) result.url = url;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  FileContent._();
+
+  factory FileContent.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FileContent.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FileContent', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.common'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOS(2, _omitFieldNames ? '' : 'mimeType')
+    ..e<FileType>(3, _omitFieldNames ? '' : 'type', $pb.PbFieldType.OE, defaultOrMaker: FileType.FILE_TYPE_UNSPECIFIED, valueOf: FileType.valueOf, enumValues: FileType.values)
+    ..a<$core.List<$core.int>>(4, _omitFieldNames ? '' : 'data', $pb.PbFieldType.OY)
+    ..aInt64(5, _omitFieldNames ? '' : 'size')
+    ..aOS(6, _omitFieldNames ? '' : 'url')
+    ..aOS(7, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FileContent clone() => FileContent()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FileContent copyWith(void Function(FileContent) updates) => super.copyWith((message) => updates(message as FileContent)) as FileContent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FileContent create() => FileContent._();
+  @$core.override
+  FileContent createEmptyInstance() => create();
+  static $pb.PbList<FileContent> createRepeated() => $pb.PbList<FileContent>();
+  @$core.pragma('dart2js:noInline')
+  static FileContent getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FileContent>(create);
+  static FileContent? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get mimeType => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set mimeType($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMimeType() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMimeType() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  FileType get type => $_getN(2);
+  @$pb.TagNumber(3)
+  set type(FileType value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasType() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearType() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get data => $_getN(3);
+  @$pb.TagNumber(4)
+  set data($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasData() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearData() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get size => $_getI64(4);
+  @$pb.TagNumber(5)
+  set size($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSize() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSize() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get url => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set url($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasUrl() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearUrl() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get description => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set description($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDescription() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDescription() => $_clearField(7);
+}
+
+enum MessageContent_Content {
+  text, 
+  file, 
+  notSet
+}
+
+/// MessageContent 消息内容，可以是文本或文件
+class MessageContent extends $pb.GeneratedMessage {
+  factory MessageContent({
+    $core.String? text,
+    FileContent? file,
+  }) {
+    final result = create();
+    if (text != null) result.text = text;
+    if (file != null) result.file = file;
+    return result;
+  }
+
+  MessageContent._();
+
+  factory MessageContent.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory MessageContent.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, MessageContent_Content> _MessageContent_ContentByTag = {
+    1 : MessageContent_Content.text,
+    2 : MessageContent_Content.file,
+    0 : MessageContent_Content.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessageContent', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.common'), createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..aOS(1, _omitFieldNames ? '' : 'text')
+    ..aOM<FileContent>(2, _omitFieldNames ? '' : 'file', subBuilder: FileContent.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MessageContent clone() => MessageContent()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MessageContent copyWith(void Function(MessageContent) updates) => super.copyWith((message) => updates(message as MessageContent)) as MessageContent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MessageContent create() => MessageContent._();
+  @$core.override
+  MessageContent createEmptyInstance() => create();
+  static $pb.PbList<MessageContent> createRepeated() => $pb.PbList<MessageContent>();
+  @$core.pragma('dart2js:noInline')
+  static MessageContent getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MessageContent>(create);
+  static MessageContent? _defaultInstance;
+
+  MessageContent_Content whichContent() => _MessageContent_ContentByTag[$_whichOneof(0)]!;
+  void clearContent() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  $core.String get text => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set text($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasText() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearText() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  FileContent get file => $_getN(1);
+  @$pb.TagNumber(2)
+  set file(FileContent value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasFile() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFile() => $_clearField(2);
+  @$pb.TagNumber(2)
+  FileContent ensureFile() => $_ensure(1);
+}
+
 /// Message 对话消息
 class Message extends $pb.GeneratedMessage {
   factory Message({
     MessageRole? role,
+    $core.Iterable<MessageContent>? contents,
+  @$core.Deprecated('This field is deprecated.')
     $core.String? content,
   }) {
     final result = create();
     if (role != null) result.role = role;
+    if (contents != null) result.contents.addAll(contents);
     if (content != null) result.content = content;
     return result;
   }
@@ -266,7 +465,8 @@ class Message extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Message', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.common'), createEmptyInstance: create)
     ..e<MessageRole>(1, _omitFieldNames ? '' : 'role', $pb.PbFieldType.OE, defaultOrMaker: MessageRole.MESSAGE_ROLE_UNSPECIFIED, valueOf: MessageRole.valueOf, enumValues: MessageRole.values)
-    ..aOS(2, _omitFieldNames ? '' : 'content')
+    ..pc<MessageContent>(2, _omitFieldNames ? '' : 'contents', $pb.PbFieldType.PM, subBuilder: MessageContent.create)
+    ..aOS(3, _omitFieldNames ? '' : 'content')
     ..hasRequiredFields = false
   ;
 
@@ -297,13 +497,21 @@ class Message extends $pb.GeneratedMessage {
   void clearRole() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get content => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set content($core.String value) => $_setString(1, value);
-  @$pb.TagNumber(2)
-  $core.bool hasContent() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearContent() => $_clearField(2);
+  $pb.PbList<MessageContent> get contents => $_getList(1);
+
+  /// 保持向后兼容性的字段
+  @$core.Deprecated('This field is deprecated.')
+  @$pb.TagNumber(3)
+  $core.String get content => $_getSZ(2);
+  @$core.Deprecated('This field is deprecated.')
+  @$pb.TagNumber(3)
+  set content($core.String value) => $_setString(2, value);
+  @$core.Deprecated('This field is deprecated.')
+  @$pb.TagNumber(3)
+  $core.bool hasContent() => $_has(2);
+  @$core.Deprecated('This field is deprecated.')
+  @$pb.TagNumber(3)
+  void clearContent() => $_clearField(3);
 }
 
 
