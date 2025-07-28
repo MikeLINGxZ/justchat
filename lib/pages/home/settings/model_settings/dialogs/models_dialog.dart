@@ -9,576 +9,690 @@ import 'package:lemon_tea/models/model.dart';
 import '../model_settings.dart';
 
 void showModelsDialog(BuildContext context, WidgetRef ref, LlmProvider provider) {
-  List<Model> availableModels = [];
-  bool isLoadingModels = false;
-  bool isVerifying = false;
-  // 用于强制重新构建FutureBuilder的key
-  GlobalKey<State<StatefulWidget>> futureBuilderKey = GlobalKey();
-
   showDialog(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.psychology,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${provider.name} - 模型列表',
-              style: TextStyle(
-                fontSize: FontSizeUtils.getSubheadingSize(ref),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 600,
-          height: 500,
-          child: FutureBuilder<List<Model>>(
-            key: futureBuilderKey,
-            future: _loadModels(provider.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    builder: (context) => _ModelsDialog(provider: provider, ref: ref),
+  );
+}
 
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
+class _ModelsDialog extends StatefulWidget {
+  final LlmProvider provider;
+  final WidgetRef ref;
+
+  const _ModelsDialog({required this.provider, required this.ref});
+
+  @override
+  State<_ModelsDialog> createState() => _ModelsDialogState();
+}
+
+class _ModelsDialogState extends State<_ModelsDialog> {
+  List<Model> availableModels = [];
+  bool isVerifying = false;
+  String searchKeyword = '';
+  final TextEditingController searchController = TextEditingController();
+  GlobalKey<State<StatefulWidget>> futureBuilderKey = GlobalKey();
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(
+            Icons.psychology,
+            color: Theme.of(context).colorScheme.primary,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${widget.provider.name} - 模型列表',
+            style: TextStyle(
+              fontSize: FontSizeUtils.getSubheadingSize(widget.ref),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 600,
+        height: 500,
+        child: FutureBuilder<List<Model>>(
+          key: futureBuilderKey,
+          future: _loadModels(widget.provider.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '加载模型失败',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getBodySize(widget.ref),
+                        fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '加载模型失败',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getBodySize(ref),
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${snapshot.error}',
-                        style: TextStyle(
-                          fontSize: FontSizeUtils.getSmallSize(ref),
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final models = snapshot.data ?? [];
-              availableModels = models;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 标题栏
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.psychology,
-                          size: 18,
+                    const SizedBox(height: 4),
+                    Text(
+                      '${snapshot.error}',
+                      style: TextStyle(
+                        fontSize: FontSizeUtils.getSmallSize(widget.ref),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final models = snapshot.data ?? [];
+            availableModels = models;
+
+            // 根据搜索关键字过滤模型
+            final filteredModels = searchKeyword.isEmpty 
+                ? availableModels
+                : availableModels.where((model) {
+                    final keyword = searchKeyword.toLowerCase();
+                    return model.id.toLowerCase().contains(keyword) ||
+                           model.ownedBy.toLowerCase().contains(keyword);
+                  }).toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 标题栏
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.psychology,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        searchKeyword.isNotEmpty
+                            ? '搜索结果 (${filteredModels.length}/${availableModels.length})'
+                            : availableModels.isNotEmpty
+                                ? '可用模型列表 (${availableModels.length}个)'
+                                : '模型列表',
+                        style: TextStyle(
+                          fontSize: FontSizeUtils.getBodySize(widget.ref),
+                          fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.primary,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          availableModels.isNotEmpty
-                              ? '可用模型列表 (${availableModels.length}个)'
-                              : '模型列表',
-                          style: TextStyle(
-                            fontSize: FontSizeUtils.getBodySize(ref),
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const Spacer(),
+                      if (availableModels.isNotEmpty && searchKeyword.isEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${availableModels.where((m) => !m.isCustom).length}个官方',
+                            style: TextStyle(
+                              fontSize: FontSizeUtils.getSmallSize(widget.ref) - 1,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        if (availableModels.isNotEmpty) ...[
+                        if (availableModels.any((m) => m.isCustom)) ...[
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${availableModels.where((m) => !m.isCustom).length}个官方',
+                              '${availableModels.where((m) => m.isCustom).length}个自定义',
                               style: TextStyle(
-                                fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: FontSizeUtils.getSmallSize(widget.ref) - 1,
+                                color: Theme.of(context).colorScheme.secondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                          if (availableModels.any((m) => m.isCustom)) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${availableModels.where((m) => m.isCustom).length}个自定义',
-                                style: TextStyle(
-                                  fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                  color: Theme.of(context).colorScheme.secondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(width: 8),
                         ],
-                        // 添加模型按钮
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _showAddModelDialog(context, ref, provider, setState, availableModels),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    size: 14,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '添加模型',
-                                    style: TextStyle(
-                                      fontSize: FontSizeUtils.getSmallSize(ref) - 1,
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        const SizedBox(width: 8),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // 模型列表内容
-                  Expanded(
-                    child: availableModels.isNotEmpty
-                        ? ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        scrollbars: false,
-                        overscroll: false,
-                        physics: const ClampingScrollPhysics(),
-                      ),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(10),
-                        itemCount: availableModels.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 6),
-                        physics: const ClampingScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final model = availableModels[index];
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      // 添加模型按钮
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showAddModelDialog(context, widget.ref, widget.provider, setState, availableModels),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: model.isCustom
-                                  ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3)
-                                  : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: model.isCustom
-                                    ? Theme.of(context).colorScheme.secondary.withOpacity(0.2)
-                                    : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: model.isCustom
-                                        ? Theme.of(context).colorScheme.secondary
-                                        : Theme.of(context).colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    model.isCustom ? Icons.person : Icons.smart_toy,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        model.id,
-                                        style: TextStyle(
-                                          fontSize: FontSizeUtils.getSmallSize(ref),
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      if (model.ownedBy.isNotEmpty && model.ownedBy != 'unknown') ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'by ${model.ownedBy}',
-                                          style: TextStyle(
-                                            fontSize: FontSizeUtils.getSmallSize(ref) - 2,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                if (model.isCustom)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      '自定义',
-                                      style: TextStyle(
-                                        fontSize: FontSizeUtils.getSmallSize(ref) - 2,
-                                        color: Theme.of(context).colorScheme.secondary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(width: 8),
-                                // 启用开关
-                                Transform.scale(
-                                  scale: 0.8,
-                                  child: Switch(
-                                    value: model.enabled,
-                                    onChanged: (value) async {
-                                      // 更新模型启用状态
-                                      final updatedModel = Model(
-                                        llmProviderId: model.llmProviderId,
-                                        id: model.id,
-                                        object: model.object,
-                                        ownedBy: model.ownedBy,
-                                        enabled: value,
-                                        isCustom: model.isCustom,
-                                        seqId: model.seqId,
-                                      );
-
-                                      final success = await LlmStorage.updateModel(updatedModel);
-                                      if (success) {
-                                        setState(() {
-                                          availableModels[index] = updatedModel;
-                                        });
-                                        // 刷新 provider 数据
-                                        ref.refresh(modelsProvider(provider.id));
-                                      }
-                                    },
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
+                                Icon(
+                                  Icons.add,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 4),
-                                // 更多按钮
-                                PopupMenuButton<String>(
-                                  onSelected: (value) async {
-                                    if (value == 'edit' && model.isCustom) {
-                                      _showEditModelDialog(context, ref, model, provider, setState, availableModels, index);
-                                    } else if (value == 'delete') {
-                                      // 删除模型
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text(
-                                            '确认删除',
-                                            style: TextStyle(
-                                              fontSize: FontSizeUtils.getSubheadingSize(ref),
-                                            ),
-                                          ),
-                                          content: Text(
-                                            '确定要删除模型 "${model.id}" 吗？',
-                                            style: TextStyle(
-                                              fontSize: FontSizeUtils.getBodySize(ref),
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(context).pop(false),
-                                              child: Text(
-                                                '取消',
-                                                style: TextStyle(
-                                                  fontSize: FontSizeUtils.getBodySize(ref),
-                                                ),
-                                              ),
-                                            ),
-                                            FilledButton(
-                                              onPressed: () => Navigator.of(context).pop(true),
-                                              child: Text(
-                                                '删除',
-                                                style: TextStyle(
-                                                  fontSize: FontSizeUtils.getBodySize(ref),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                Text(
+                                  '添加模型',
+                                  style: TextStyle(
+                                    fontSize: FontSizeUtils.getSmallSize(widget.ref) - 1,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // 搜索框
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        searchKeyword = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: '搜索模型ID或拥有者...',
+                      hintStyle: TextStyle(
+                        fontSize: FontSizeUtils.getSmallSize(widget.ref),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      suffixIcon: searchKeyword.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  searchKeyword = '';
+                                  searchController.clear();
+                                });
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      isDense: true,
+                    ),
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getSmallSize(widget.ref),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // 模型列表内容
+                Expanded(
+                  child: filteredModels.isNotEmpty
+                      ? ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(
+                      scrollbars: false,
+                      overscroll: false,
+                      physics: const ClampingScrollPhysics(),
+                    ),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(10),
+                      itemCount: filteredModels.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 6),
+                      physics: const ClampingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final model = filteredModels[index];
+                        // 找到原始列表中的索引，用于更新状态
+                        final originalIndex = availableModels.indexOf(model);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: model.isCustom
+                                ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3)
+                                : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: model.isCustom
+                                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.2)
+                                  : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: model.isCustom
+                                      ? Theme.of(context).colorScheme.secondary
+                                      : Theme.of(context).colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  model.isCustom ? Icons.person : Icons.smart_toy,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // 高亮搜索关键字
+                                    _buildHighlightedText(
+                                      model.id,
+                                      searchKeyword,
+                                      TextStyle(
+                                        fontSize: FontSizeUtils.getSmallSize(widget.ref),
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                      Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+                                    ),
+                                    if (model.ownedBy.isNotEmpty && model.ownedBy != 'unknown') ...[
+                                      const SizedBox(height: 2),
+                                      _buildHighlightedText(
+                                        'by ${model.ownedBy}',
+                                        searchKeyword,
+                                        TextStyle(
+                                          fontSize: FontSizeUtils.getSmallSize(widget.ref) - 2,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
-                                      );
+                                        Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              if (model.isCustom)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '自定义',
+                                    style: TextStyle(
+                                      fontSize: FontSizeUtils.getSmallSize(widget.ref) - 2,
+                                      color: Theme.of(context).colorScheme.secondary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              // 启用开关
+                              Transform.scale(
+                                scale: 0.8,
+                                child: Switch(
+                                  value: model.enabled,
+                                  onChanged: (value) async {
+                                    // 更新模型启用状态
+                                    final updatedModel = Model(
+                                      llmProviderId: model.llmProviderId,
+                                      id: model.id,
+                                      object: model.object,
+                                      ownedBy: model.ownedBy,
+                                      enabled: value,
+                                      isCustom: model.isCustom,
+                                      seqId: model.seqId,
+                                    );
 
-                                      if (confirmed == true) {
-                                        final success = await LlmStorage.deleteModel(model.id);
-                                        if (success) {
-                                          setState(() {
-                                            availableModels.removeAt(index);
-                                          });
-                                          // 刷新 provider 数据
-                                          ref.refresh(modelsProvider(provider.id));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '模型已删除',
-                                                style: TextStyle(
-                                                  fontSize: FontSizeUtils.getBodySize(ref),
-                                                ),
-                                              ),
-                                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                            ),
-                                          );
-                                        }
-                                      }
+                                    final success = await LlmStorage.updateModel(updatedModel);
+                                    if (success) {
+                                      setState(() {
+                                        availableModels[originalIndex] = updatedModel;
+                                      });
+                                      // 刷新 provider 数据
+                                      widget.ref.refresh(modelsProvider(widget.provider.id));
                                     }
                                   },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem<String>(
-                                      value: 'edit',
-                                      enabled: model.isCustom,
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.edit,
-                                            size: 16,
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              // 更多按钮
+                              PopupMenuButton<String>(
+                                onSelected: (value) async {
+                                  if (value == 'edit' && model.isCustom) {
+                                    _showEditModelDialog(context, widget.ref, model, widget.provider, setState, availableModels, originalIndex);
+                                  } else if (value == 'delete') {
+                                    // 删除模型
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(
+                                          '确认删除',
+                                          style: TextStyle(
+                                            fontSize: FontSizeUtils.getSubheadingSize(widget.ref),
+                                          ),
+                                        ),
+                                        content: Text(
+                                          '确定要删除模型 "${model.id}" 吗？',
+                                          style: TextStyle(
+                                            fontSize: FontSizeUtils.getBodySize(widget.ref),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(context).pop(false),
+                                            child: Text(
+                                              '取消',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getBodySize(widget.ref),
+                                              ),
+                                            ),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () => Navigator.of(context).pop(true),
+                                            child: Text(
+                                              '删除',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getBodySize(widget.ref),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirmed == true) {
+                                      final success = await LlmStorage.deleteModel(model.id);
+                                      if (success) {
+                                        setState(() {
+                                          availableModels.removeAt(originalIndex);
+                                        });
+                                        // 刷新 provider 数据
+                                        widget.ref.refresh(modelsProvider(widget.provider.id));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '模型已删除',
+                                              style: TextStyle(
+                                                fontSize: FontSizeUtils.getBodySize(widget.ref),
+                                              ),
+                                            ),
+                                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    enabled: model.isCustom,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.edit,
+                                          size: 16,
+                                          color: model.isCustom
+                                              ? Theme.of(context).colorScheme.onSurface
+                                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '编辑',
+                                          style: TextStyle(
+                                            fontSize: FontSizeUtils.getSmallSize(widget.ref),
                                             color: model.isCustom
                                                 ? Theme.of(context).colorScheme.onSurface
                                                 : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '编辑',
-                                            style: TextStyle(
-                                              fontSize: FontSizeUtils.getSmallSize(ref),
-                                              color: model.isCustom
-                                                  ? Theme.of(context).colorScheme.onSurface
-                                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                    PopupMenuItem<String>(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.delete,
-                                            size: 16,
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.delete,
+                                          size: 16,
+                                          color: Theme.of(context).colorScheme.error,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '删除',
+                                          style: TextStyle(
+                                            fontSize: FontSizeUtils.getSmallSize(widget.ref),
                                             color: Theme.of(context).colorScheme.error,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '删除',
-                                            style: TextStyle(
-                                              fontSize: FontSizeUtils.getSmallSize(ref),
-                                              color: Theme.of(context).colorScheme.error,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                  icon: Icon(
-                                    Icons.more_vert,
-                                    size: 16,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 16,
+                                ],
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                        : Container(
-                      padding: const EdgeInsets.all(40),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.psychology_outlined,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                padding: EdgeInsets.zero,
+                                iconSize: 16,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '暂无模型数据',
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getBodySize(ref),
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                        );
+                      },
+                    ),
+                  )
+                      : Container(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          searchKeyword.isNotEmpty ? Icons.search_off : Icons.psychology_outlined,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          searchKeyword.isNotEmpty ? '未找到匹配的模型' : '暂无模型数据',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getBodySize(widget.ref),
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '点击右上角"添加模型"按钮可添加自定义模型',
-                            style: TextStyle(
-                              fontSize: FontSizeUtils.getSmallSize(ref),
-                              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          searchKeyword.isNotEmpty 
+                              ? '尝试使用其他关键字搜索，或清空搜索条件'
+                              : '点击右上角"添加模型"按钮可添加自定义模型',
+                          style: TextStyle(
+                            fontSize: FontSizeUtils.getSmallSize(widget.ref),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                           ),
-                        ],
-                      ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      actions: [
+        TextButton.icon(
+          onPressed: isVerifying ? null : () async {
+            setState(() {
+              isVerifying = true;
+            });
+
+            try {
+              final request = ModelsRequest(
+                  name: widget.provider.name,
+                  apiKey: widget.provider.apiKey,
+                  baseUrl: widget.provider.baseUrl
               );
-            },
-          ),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: isVerifying ? null : () async {
+              final response = await Client().stub!.models(request);
+
+              // 更新数据库中的模型列表
+              await _updateProviderModels(widget.provider.id, response.models);
+
+              // 强制重新构建FutureBuilder
               setState(() {
-                isVerifying = true;
+                futureBuilderKey = GlobalKey();
+                isVerifying = false;
               });
 
-              try {
-                final request = ModelsRequest(
-                    name: provider.name,
-                    apiKey: provider.apiKey,
-                    baseUrl: provider.baseUrl
-                );
-                final response = await Client().stub!.models(request);
+              // 刷新 provider 数据
+              widget.ref.refresh(modelsProvider(widget.provider.id));
 
-                // 更新数据库中的模型列表
-                await _updateProviderModels(provider.id, response.models);
-
-                // 强制重新构建FutureBuilder
-                setState(() {
-                  futureBuilderKey = GlobalKey();
-                  isVerifying = false;
-                });
-
-                // 刷新 provider 数据
-                ref.refresh(modelsProvider(provider.id));
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '模型列表已更新! 发现 ${response.models.length} 个模型',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
-                      ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '模型列表已更新! 发现 ${response.models.length} 个模型',
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(widget.ref),
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   ),
-                );
-              } catch (e) {
-                setState(() {
-                  isVerifying = false;
-                });
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                ),
+              );
+            } catch (e) {
+              setState(() {
+                isVerifying = false;
+              });
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '重新验证失败: ${e.toString()}',
-                      style: TextStyle(
-                        fontSize: FontSizeUtils.getBodySize(ref),
-                      ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '重新验证失败: ${e.toString()}',
+                    style: TextStyle(
+                      fontSize: FontSizeUtils.getBodySize(widget.ref),
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
                   ),
-                );
-              }
-            },
-            icon: isVerifying
-                ? SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            )
-                : const Icon(Icons.refresh),
-            label: Text(
-              isVerifying ? '验证中...' : '重新验证',
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                ),
+              );
+            }
+          },
+          icon: isVerifying
+              ? SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          )
+              : const Icon(Icons.refresh),
+          label: Text(
+            isVerifying ? '验证中...' : '重新验证',
+            style: TextStyle(
+              fontSize: FontSizeUtils.getBodySize(widget.ref),
             ),
           ),
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close),
-            label: Text(
-              '关闭',
-              style: TextStyle(
-                fontSize: FontSizeUtils.getBodySize(ref),
-              ),
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close),
+          label: Text(
+            '关闭',
+            style: TextStyle(
+              fontSize: FontSizeUtils.getBodySize(widget.ref),
             ),
           ),
-        ],
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      ),
-    ),
-  );
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+      ],
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    );
+  }
 }
 
 // 加载模型数据
@@ -1094,6 +1208,39 @@ void _showEditModelDialog(BuildContext context, WidgetRef ref, Model model, LlmP
           ),
         ],
       ),
+    ),
+  );
+}
+
+// 辅助函数：高亮文本
+Widget _buildHighlightedText(String text, String keyword, TextStyle style, Color highlightColor) {
+  if (keyword.isEmpty) {
+    return Text(text, style: style);
+  }
+  
+  final List<TextSpan> spans = [];
+  final RegExp regExp = RegExp(RegExp.escape(keyword), caseSensitive: false);
+  final matches = regExp.allMatches(text);
+
+  int lastMatchEnd = 0;
+  for (final match in matches) {
+    if (match.start > lastMatchEnd) {
+      spans.add(TextSpan(text: text.substring(lastMatchEnd, match.start)));
+    }
+    spans.add(TextSpan(
+      text: text.substring(match.start, match.end),
+      style: style.copyWith(backgroundColor: highlightColor),
+    ));
+    lastMatchEnd = match.end;
+  }
+  if (lastMatchEnd < text.length) {
+    spans.add(TextSpan(text: text.substring(lastMatchEnd)));
+  }
+  
+  return RichText(
+    text: TextSpan(
+      children: spans,
+      style: style,
     ),
   );
 }
