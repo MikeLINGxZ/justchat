@@ -130,12 +130,30 @@ final $typed_data.Uint8List fileContentDescriptor = $convert.base64Decode(
     'N1cmyIAQESJQoLZGVzY3JpcHRpb24YByABKAlIAVILZGVzY3JpcHRpb26IAQFCBgoEX3VybEIO'
     'CgxfZGVzY3JpcHRpb24=');
 
+@$core.Deprecated('Use filePathContentDescriptor instead')
+const FilePathContent$json = {
+  '1': 'FilePathContent',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'description', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'description', '17': true},
+  ],
+  '8': [
+    {'1': '_description'},
+  ],
+};
+
+/// Descriptor for `FilePathContent`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List filePathContentDescriptor = $convert.base64Decode(
+    'Cg9GaWxlUGF0aENvbnRlbnQSEgoEcGF0aBgBIAEoCVIEcGF0aBIlCgtkZXNjcmlwdGlvbhgCIA'
+    'EoCUgAUgtkZXNjcmlwdGlvbogBAUIOCgxfZGVzY3JpcHRpb24=');
+
 @$core.Deprecated('Use messageContentDescriptor instead')
 const MessageContent$json = {
   '1': 'MessageContent',
   '2': [
     {'1': 'text', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'text'},
     {'1': 'file', '3': 2, '4': 1, '5': 11, '6': '.lemon_tea.common.FileContent', '9': 0, '10': 'file'},
+    {'1': 'file_path', '3': 3, '4': 1, '5': 11, '6': '.lemon_tea.common.FilePathContent', '9': 0, '10': 'filePath'},
   ],
   '8': [
     {'1': 'content'},
@@ -145,7 +163,9 @@ const MessageContent$json = {
 /// Descriptor for `MessageContent`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List messageContentDescriptor = $convert.base64Decode(
     'Cg5NZXNzYWdlQ29udGVudBIUCgR0ZXh0GAEgASgJSABSBHRleHQSMwoEZmlsZRgCIAEoCzIdLm'
-    'xlbW9uX3RlYS5jb21tb24uRmlsZUNvbnRlbnRIAFIEZmlsZUIJCgdjb250ZW50');
+    'xlbW9uX3RlYS5jb21tb24uRmlsZUNvbnRlbnRIAFIEZmlsZRJACglmaWxlX3BhdGgYAyABKAsy'
+    'IS5sZW1vbl90ZWEuY29tbW9uLkZpbGVQYXRoQ29udGVudEgAUghmaWxlUGF0aEIJCgdjb250ZW'
+    '50');
 
 @$core.Deprecated('Use messageDescriptor instead')
 const Message$json = {

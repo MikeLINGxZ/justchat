@@ -367,21 +367,83 @@ class FileContent extends $pb.GeneratedMessage {
   void clearDescription() => $_clearField(7);
 }
 
+/// FilePathContent 文件路径内容
+class FilePathContent extends $pb.GeneratedMessage {
+  factory FilePathContent({
+    $core.String? path,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (path != null) result.path = path;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  FilePathContent._();
+
+  factory FilePathContent.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FilePathContent.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FilePathContent', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.common'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FilePathContent clone() => FilePathContent()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FilePathContent copyWith(void Function(FilePathContent) updates) => super.copyWith((message) => updates(message as FilePathContent)) as FilePathContent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FilePathContent create() => FilePathContent._();
+  @$core.override
+  FilePathContent createEmptyInstance() => create();
+  static $pb.PbList<FilePathContent> createRepeated() => $pb.PbList<FilePathContent>();
+  @$core.pragma('dart2js:noInline')
+  static FilePathContent getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FilePathContent>(create);
+  static FilePathContent? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+}
+
 enum MessageContent_Content {
   text, 
   file, 
+  filePath, 
   notSet
 }
 
-/// MessageContent 消息内容，可以是文本或文件
+/// MessageContent 消息内容，可以是文本、文件或文件路径
 class MessageContent extends $pb.GeneratedMessage {
   factory MessageContent({
     $core.String? text,
     FileContent? file,
+    FilePathContent? filePath,
   }) {
     final result = create();
     if (text != null) result.text = text;
     if (file != null) result.file = file;
+    if (filePath != null) result.filePath = filePath;
     return result;
   }
 
@@ -393,12 +455,14 @@ class MessageContent extends $pb.GeneratedMessage {
   static const $core.Map<$core.int, MessageContent_Content> _MessageContent_ContentByTag = {
     1 : MessageContent_Content.text,
     2 : MessageContent_Content.file,
+    3 : MessageContent_Content.filePath,
     0 : MessageContent_Content.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessageContent', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.common'), createEmptyInstance: create)
-    ..oo(0, [1, 2])
+    ..oo(0, [1, 2, 3])
     ..aOS(1, _omitFieldNames ? '' : 'text')
     ..aOM<FileContent>(2, _omitFieldNames ? '' : 'file', subBuilder: FileContent.create)
+    ..aOM<FilePathContent>(3, _omitFieldNames ? '' : 'filePath', subBuilder: FilePathContent.create)
     ..hasRequiredFields = false
   ;
 
@@ -441,6 +505,17 @@ class MessageContent extends $pb.GeneratedMessage {
   void clearFile() => $_clearField(2);
   @$pb.TagNumber(2)
   FileContent ensureFile() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  FilePathContent get filePath => $_getN(2);
+  @$pb.TagNumber(3)
+  set filePath(FilePathContent value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFilePath() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFilePath() => $_clearField(3);
+  @$pb.TagNumber(3)
+  FilePathContent ensureFilePath() => $_ensure(2);
 }
 
 /// Message 对话消息

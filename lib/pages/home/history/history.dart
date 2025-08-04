@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
 import 'package:lemon_tea/utils/llm/models/message.dart' as llm_message;
-import 'package:lemon_tea/models/message.dart' as db_message;
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/generated/l10n.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
@@ -247,27 +246,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage> with TickerProviderSt
     return highlight.replaceAll('\n', ' ').trim();
   }
 
-  /// 转换数据库消息为 LLM 消息
-  List<llm_message.Message> _convertDbMessagesToLlmMessages(List<db_message.Message> dbMessages) {
-    return dbMessages.map((dbMsg) {
-      // 调试输出：检查是否有思考过程
-      if (dbMsg.reasoningContent != null && dbMsg.reasoningContent!.isNotEmpty) {
-        debugPrint('转换消息时发现思考过程: ${dbMsg.reasoningContent!.substring(0, dbMsg.reasoningContent!.length > 50 ? 50 : dbMsg.reasoningContent!.length)}...');
-      }
-      
-      return llm_message.Message(
-        role: dbMsg.role,
-        content: dbMsg.content,
-        reasoningContent: dbMsg.reasoningContent,
-      );
-    }).toList();
-  }
+
 
   /// 显示对话详情对话框
   Future<void> _showConversationDetailDialog(Conversation conversation) async {
     try {
-      final dbMessages = await ChatStorage.getMessagesByConversationId(conversation.id);
-      final llmMessages = _convertDbMessagesToLlmMessages(dbMessages);
+      final llmMessages = await ChatStorage.getLlmMessagesByConversationId(conversation.id);
       
       if (!mounted) return;
       

@@ -46,11 +46,18 @@ message FileContent {
   optional string description = 7; // 文件描述
 }
 
-// MessageContent 消息内容，可以是文本或文件
+// FilePathContent 文件路径内容
+message FilePathContent {
+  string path = 1;            // 文件路径
+  optional string description = 2; // 文件描述
+}
+
+// MessageContent 消息内容，可以是文本、文件或文件路径
 message MessageContent {
   oneof content {
     string text = 1;          // 文本内容
     FileContent file = 2;     // 文件内容
+    FilePathContent file_path = 3; // 文件路径内容
   }
 }
 
