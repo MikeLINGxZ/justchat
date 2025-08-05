@@ -24,7 +24,8 @@ class ChatView extends StatefulWidget {
     this.onModelSelected,
     this.isStreaming = false,
     this.visibleWidth = double.infinity,
-    this.messageToolBar
+    this.messageToolBar,
+    this.onStopGeneration
   });
 
   final Function(String)? onFileSelected;
@@ -39,6 +40,7 @@ class ChatView extends StatefulWidget {
   final bool isStreaming;
   final double visibleWidth;
   final MessageToolbar? messageToolBar;
+  final VoidCallback? onStopGeneration;
 
   @override
   State<StatefulWidget> createState() => _ChatView();
@@ -150,7 +152,7 @@ class _ChatView extends State<ChatView> {
           // 底部部件
           SizedBox(
             width: widget.visibleWidth,
-            child: InputView(
+            child:             InputView(
               key: _inputViewKey,
               onFileSelected: widget.onFileSelected,
               onSend: (text, files) {
@@ -166,6 +168,7 @@ class _ChatView extends State<ChatView> {
               selectedModelId: widget.selectedModelId,
               onModelSelected: widget.onModelSelected,
               isStreaming: widget.isStreaming,
+              onStopGeneration: widget.onStopGeneration,
             ),
           ),
         ],

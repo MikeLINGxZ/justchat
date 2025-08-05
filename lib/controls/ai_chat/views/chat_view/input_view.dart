@@ -18,6 +18,7 @@ class InputView extends ConsumerStatefulWidget {
   final String? selectedModelId;
   final Function(String providerId, String modelId)? onModelSelected;
   final bool isStreaming;
+  final VoidCallback? onStopGeneration;
 
   const InputView({
     super.key,
@@ -27,6 +28,7 @@ class InputView extends ConsumerStatefulWidget {
     this.selectedModelId,
     this.onModelSelected,
     this.isStreaming = false,
+    this.onStopGeneration,
   });
 
   @override
@@ -392,10 +394,12 @@ class _InputView extends ConsumerState<InputView> {
                     ),
                     const SizedBox(width: 8),
                     _buildIconButton(
-                      icon: Icons.arrow_forward,
-                      onTap: widget.isStreaming ? () {} : _handleSend,
+                      icon: widget.isStreaming ? Icons.stop : Icons.arrow_forward,
+                      onTap: widget.isStreaming 
+                        ? (widget.onStopGeneration ?? () {})
+                        : _handleSend,
                       color: widget.isStreaming 
-                        ? Style.disabledText(context)
+                        ? Style.error(context) // 停止按钮使用红色
                         : null,
                     ),
                   ],

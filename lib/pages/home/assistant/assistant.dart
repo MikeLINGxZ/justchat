@@ -40,6 +40,7 @@ class _AssistantPage extends State<AssistantPage> {
   String? _selectedModelId;
   bool _isStreaming = false; // 添加流式状态标记
   final GlobalKey<ChatViewState> _chatViewKey = GlobalKey<ChatViewState>(); // 添加ChatView的key
+  StreamSubscription<grpc_service.ChatResponse>? _currentStreamSubscription; // 当前流订阅
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _AssistantPage extends State<AssistantPage> {
   @override
   void dispose() {
     _conversationManager.removeListener(_onConversationManagerChanged);
+    _currentStreamSubscription?.cancel(); // 取消当前流订阅
     super.dispose();
   }
 
@@ -297,6 +299,26 @@ def hello():
     await _handleSendMessage(message, files);
   }
 
+  // 停止生成方法
+  void _handleStopGeneration() {
+    debugPrint('用户请求停止生成');
+    
+    // 取消当前流订阅
+    _currentStreamSubscription?.cancel();
+    _currentStreamSubscription = null;
+    
+    // 更新UI状态
+    if (mounted) {
+      setState(() {
+        _isStreaming = false;
+      });
+    }
+    
+    debugPrint('生成已停止');
+  }
+
+
+
   Future<void> _handleSendMessage(String message, [List<FileContent>? files]) async {
     files ??= [];
     
@@ -441,57 +463,79 @@ def hello():
       // 调用gRPC聊天接口
       final responseStream = _grpcClient.stub!.chat(controller.stream);
 
-      await for (final response in responseStream) {
-        if (response.errorMessage.isNotEmpty) {
-          throw Exception(response.errorMessage);
-        }
+      // 使用StreamSubscription来处理响应，以便可以取消
+      final completer = Completer<void>();
+      _currentStreamSubscription = responseStream.listen(
+        (response) async {
+          if (response.errorMessage.isNotEmpty) {
+            completer.completeError(Exception(response.errorMessage));
+            return;
+          }
 
-        fullResponse += response.content;
-        fullReasoningContent += response.reasoningContent; // 累积思考过程内容
+          fullResponse += response.content;
+          fullReasoningContent += response.reasoningContent; // 累积思考过程内容
 
-        // 实时更新AI消息内容
-        if (mounted) {
-          setState(() {
-            _historyMessages.last = Message(
-              role: MessageRole.assistant,
-              content: fullResponse,
-              reasoningContent:
-                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
-            );
-          });
-        }
-
-        if (response.isDone) {
-          // 聊天完成，保存AI回复到数据库
-          if (!isTemporaryConversation) {
-            try {
-              final savedAiMessage = await ChatStorage.addMessage(
-                conversationId: _currentConversation!.id,
-                role: 'assistant',
+          // 实时更新AI消息内容
+          if (mounted) {
+            setState(() {
+              _historyMessages.last = Message(
+                role: MessageRole.assistant,
                 content: fullResponse,
                 reasoningContent:
-                    fullReasoningContent.isNotEmpty
-                        ? fullReasoningContent
-                        : null,
+                    fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
               );
-
-              if (savedAiMessage != null) {
-                aiMessageId = savedAiMessage.id;
-                debugPrint('AI回复保存成功: ${savedAiMessage.id}');
-              } else {
-                debugPrint('警告：AI回复保存失败');
-                // 可以在这里添加UI提示
-              }
-            } catch (e) {
-              debugPrint('保存AI回复时发生异常: $e');
-              // 保存失败不应该影响显示
-            }
-          } else {
-            debugPrint('跳过AI回复保存（临时对话模式）');
+            });
           }
-          break;
-        }
-      }
+
+          if (response.isDone) {
+            // 聊天完成，保存AI回复到数据库
+            if (!isTemporaryConversation) {
+              try {
+                final savedAiMessage = await ChatStorage.addMessage(
+                  conversationId: _currentConversation!.id,
+                  role: 'assistant',
+                  content: fullResponse,
+                  reasoningContent:
+                      fullReasoningContent.isNotEmpty
+                          ? fullReasoningContent
+                          : null,
+                );
+
+                if (savedAiMessage != null) {
+                  aiMessageId = savedAiMessage.id;
+                  debugPrint('AI回复保存成功: ${savedAiMessage.id}');
+                } else {
+                  debugPrint('警告：AI回复保存失败');
+                  // 可以在这里添加UI提示
+                }
+              } catch (e) {
+                debugPrint('保存AI回复时发生异常: $e');
+                // 保存失败不应该影响显示
+              }
+            } else {
+              debugPrint('跳过AI回复保存（临时对话模式）');
+            }
+            completer.complete();
+          }
+        },
+        onError: (error) {
+          completer.completeError(error);
+        },
+        onDone: () {
+          _currentStreamSubscription = null;
+          if (mounted) {
+            setState(() {
+              _isStreaming = false;
+            });
+          }
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      // 等待流完成或被取消
+      await completer.future;
     } catch (e) {
       hasError = true;
       debugPrint('Error during chat: $e');
@@ -883,79 +927,101 @@ def hello():
       // 调用gRPC聊天接口
       final responseStream = _grpcClient.stub!.chat(controller.stream);
 
-      await for (final response in responseStream) {
-        if (response.errorMessage.isNotEmpty) {
-          throw Exception(response.errorMessage);
-        }
-
-        fullResponse += response.content;
-        fullReasoningContent += response.reasoningContent;
-
-        // 实时更新AI消息内容
-        if (mounted) {
-          setState(() {
-            final newMessage = Message(
-              role: MessageRole.assistant,
-              content: fullResponse,
-              reasoningContent:
-                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
-            );
-            
-            if (replaceIndex != null) {
-              _historyMessages[replaceIndex] = newMessage;
-            } else {
-              _historyMessages.last = newMessage;
-            }
-          });
-        }
-
-        if (response.isDone) {
-          // 聊天完成，更新AI回复到数据库（如果有原始内容）或保存新的AI回复
-          if (!isTemporaryConversation) {
-            try {
-              if (originalContent != null) {
-                // 更新现有消息而不是创建新消息
-                final updateResult = await ChatStorage.updateMessageByContent(
-                  _currentConversation!.id,
-                  originalContent,
-                  'assistant',
-                  fullResponse,
-                  fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
-                );
-
-                if (updateResult) {
-                  debugPrint('重新生成的AI回复更新成功');
-                } else {
-                  debugPrint('警告：重新生成的AI回复更新失败');
-                }
-              } else {
-                // 原始逻辑：添加新消息
-                final savedAiMessage = await ChatStorage.addMessage(
-                  conversationId: _currentConversation!.id,
-                  role: 'assistant',
-                  content: fullResponse,
-                  reasoningContent:
-                      fullReasoningContent.isNotEmpty
-                          ? fullReasoningContent
-                          : null,
-                );
-
-                if (savedAiMessage != null) {
-                  aiMessageId = savedAiMessage.id;
-                  debugPrint('重新生成的AI回复保存成功: ${savedAiMessage.id}');
-                } else {
-                  debugPrint('警告：重新生成的AI回复保存失败');
-                }
-              }
-            } catch (e) {
-              debugPrint('保存/更新重新生成的AI回复时发生异常: $e');
-            }
-          } else {
-            debugPrint('跳过重新生成的AI回复保存（临时对话模式）');
+      // 使用StreamSubscription来处理响应，以便可以取消
+      final completer = Completer<void>();
+      _currentStreamSubscription = responseStream.listen(
+        (response) async {
+          if (response.errorMessage.isNotEmpty) {
+            completer.completeError(Exception(response.errorMessage));
+            return;
           }
-          break;
-        }
-      }
+
+          fullResponse += response.content;
+          fullReasoningContent += response.reasoningContent;
+
+          // 实时更新AI消息内容
+          if (mounted) {
+            setState(() {
+              final newMessage = Message(
+                role: MessageRole.assistant,
+                content: fullResponse,
+                reasoningContent:
+                    fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+              );
+              
+              if (replaceIndex != null) {
+                _historyMessages[replaceIndex] = newMessage;
+              } else {
+                _historyMessages.last = newMessage;
+              }
+            });
+          }
+
+          if (response.isDone) {
+            // 聊天完成，更新AI回复到数据库（如果有原始内容）或保存新的AI回复
+            if (!isTemporaryConversation) {
+              try {
+                if (originalContent != null) {
+                  // 更新现有消息而不是创建新消息
+                  final updateResult = await ChatStorage.updateMessageByContent(
+                    _currentConversation!.id,
+                    originalContent,
+                    'assistant',
+                    fullResponse,
+                    fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+                  );
+
+                  if (updateResult) {
+                    debugPrint('重新生成的AI回复更新成功');
+                  } else {
+                    debugPrint('警告：重新生成的AI回复更新失败');
+                  }
+                } else {
+                  // 原始逻辑：添加新消息
+                  final savedAiMessage = await ChatStorage.addMessage(
+                    conversationId: _currentConversation!.id,
+                    role: 'assistant',
+                    content: fullResponse,
+                    reasoningContent:
+                        fullReasoningContent.isNotEmpty
+                            ? fullReasoningContent
+                            : null,
+                  );
+
+                  if (savedAiMessage != null) {
+                    aiMessageId = savedAiMessage.id;
+                    debugPrint('重新生成的AI回复保存成功: ${savedAiMessage.id}');
+                  } else {
+                    debugPrint('警告：重新生成的AI回复保存失败');
+                  }
+                }
+              } catch (e) {
+                debugPrint('保存/更新重新生成的AI回复时发生异常: $e');
+              }
+            } else {
+              debugPrint('跳过重新生成的AI回复保存（临时对话模式）');
+            }
+            completer.complete();
+          }
+        },
+        onError: (error) {
+          completer.completeError(error);
+        },
+        onDone: () {
+          _currentStreamSubscription = null;
+          if (mounted) {
+            setState(() {
+              _isStreaming = false;
+            });
+          }
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      // 等待流完成或被取消
+      await completer.future;
     } catch (e) {
       hasError = true;
       debugPrint('重新生成时发生错误: $e');
@@ -1154,6 +1220,7 @@ def hello():
           onModelSelected: _handleModelSelected,
           isStreaming: _isStreaming,
           visibleWidth: Style.messageViewWidth,
+          onStopGeneration: _handleStopGeneration,
           messageToolBar: MessageToolbar(
             onCopy: _handleCopyMessage,
             onCopyPlainText: _handleCopyPlainText,
@@ -1171,7 +1238,7 @@ def hello():
       leftChild: ChatView(
         // 移除重复的key，避免GlobalKey冲突
         historyMessages: _historyMessages,
-        onSend: _handleSendMessage,
+        onSendWithFiles: _handleSendMessageWithFiles,
         onNewConversation:
             _historyMessages.isEmpty ? null : _handleNewConversation,
         currentTitle: _currentTitle,
@@ -1180,6 +1247,7 @@ def hello():
         onModelSelected: _handleModelSelected,
         isStreaming: _isStreaming,
         visibleWidth: Style.messageViewWidth,
+        onStopGeneration: _handleStopGeneration,
         messageToolBar: MessageToolbar(
           onCopy: _handleCopyMessage,
           onCopyPlainText: _handleCopyPlainText,
