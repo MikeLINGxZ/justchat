@@ -439,10 +439,16 @@ def hello():
         }
       }
 
-      // 准备历史消息（排除刚添加的空AI消息）
-      List<grpc_common.Message> grpcMessages = MessageConverter.convertMessages(
-        _historyMessages.where((msg) => msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)).toList()
-      );
+      // 准备历史消息（排除刚添加的空AI消息和当前用户消息）
+      final historyMessagesForRequest = _historyMessages
+          .where((msg) => 
+              (msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)) &&
+              msg != _historyMessages.last && // 排除空的AI消息
+              msg != _historyMessages[_historyMessages.length - 2] // 排除刚添加的用户消息
+          )
+          .toList();
+      
+      List<grpc_common.Message> grpcMessages = MessageConverter.convertMessages(historyMessagesForRequest);
 
       // 创建聊天请求
       final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
@@ -500,42 +506,7 @@ def hello():
           }
 
           if (response.isDone) {
-            // 聊天完成，保存AI回复到数据库
-            if (!isTemporaryConversation) {
-              try {
-                // 检查最后一条消息是否被用户停止
-                bool wasStoppedByUser = false;
-                if (_historyMessages.isNotEmpty && 
-                    _historyMessages.last.role == MessageRole.assistant) {
-                  wasStoppedByUser = _historyMessages.last.stoppedByUser;
-                }
-                
-                final savedAiMessage = await ChatStorage.addMessage(
-                  conversationId: _currentConversation!.id,
-                  role: 'assistant',
-                  content: fullResponse,
-                  reasoningContent:
-                      fullReasoningContent.isNotEmpty
-                          ? fullReasoningContent
-                          : null,
-                  stoppedByUser: wasStoppedByUser,
-                );
-
-                if (savedAiMessage != null) {
-                  aiMessageId = savedAiMessage.id;
-                  final stopInfo = wasStoppedByUser ? '（用户停止）' : '';
-                  debugPrint('AI回复保存成功$stopInfo: ${savedAiMessage.id}');
-                } else {
-                  debugPrint('警告：AI回复保存失败');
-                  // 可以在这里添加UI提示
-                }
-              } catch (e) {
-                debugPrint('保存AI回复时发生异常: $e');
-                // 保存失败不应该影响显示
-              }
-            } else {
-              debugPrint('跳过AI回复保存（临时对话模式）');
-            }
+            // 聊天完成，标记完成状态
             completer.complete();
           }
         },
@@ -602,7 +573,7 @@ def hello():
         });
       }
 
-      // 确保AI回复消息被保存：如果有内容但还没保存，就保存它
+      // 保存AI回复消息到数据库（统一保存逻辑）
       if (!isTemporaryConversation &&
           fullResponse.isNotEmpty &&
           aiMessageId == null &&
@@ -627,13 +598,17 @@ def hello():
           if (savedAiMessage != null) {
             aiMessageId = savedAiMessage.id;
             final stopInfo = wasStoppedByUser ? '（用户停止）' : '';
-            debugPrint('AI回复补充保存成功（流式中断情况）$stopInfo: ${savedAiMessage.id}');
+            debugPrint('AI回复保存成功$stopInfo: ${savedAiMessage.id}');
           } else {
-            debugPrint('警告：AI回复补充保存失败');
+            debugPrint('警告：AI回复保存失败');
           }
         } catch (e) {
-          debugPrint('补充保存AI回复时发生异常: $e');
+          debugPrint('保存AI回复时发生异常: $e');
         }
+      } else if (!isTemporaryConversation && fullResponse.isEmpty && !hasError) {
+        debugPrint('跳过AI回复保存（无内容）');
+      } else if (isTemporaryConversation) {
+        debugPrint('跳过AI回复保存（临时对话模式）');
       }
 
       // 确保在异常情况下，如果AI消息仍然为空，则移除它
