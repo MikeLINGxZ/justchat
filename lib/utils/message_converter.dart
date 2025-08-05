@@ -1,4 +1,5 @@
 
+import 'dart:convert';
 import 'package:lemon_tea/utils/llm/models/message.dart' as llm_models;
 import 'package:lemon_tea/models/message_role.dart';
 import 'package:lemon_tea/rpc/common.pb.dart' as grpc_common;
@@ -47,6 +48,8 @@ class MessageConverter {
         return grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_AUDIO_URL;
       case 'video':
         return grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_VIDEO_URL;
+      case 'text':
+        return grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_TEXT;
       case 'document':
       case 'file':
       case 'other':
@@ -60,6 +63,12 @@ class MessageConverter {
     final partType = convertFileType(file.type);
     
     switch (partType) {
+      case grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_TEXT:
+        return grpc_common.ChatMessagePart(
+          type: partType,
+          text: _extractTextFromFile(file),
+        );
+      
       case grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_IMAGE_URL:
         return grpc_common.ChatMessagePart(
           type: partType,
@@ -103,6 +112,31 @@ class MessageConverter {
           ),
         );
     }
+  }
+
+  /// 从文件中提取文本内容
+  static String _extractTextFromFile(llm_models.FileContent file) {
+    if (file.data != null && file.data!.isNotEmpty) {
+      try {
+        // 解码 base64 数据
+        final bytes = base64Decode(file.data!);
+        // 尝试使用 UTF-8 解码为文本
+        final text = utf8.decode(bytes, allowMalformed: true);
+        
+        // 添加文件名作为上下文（如果需要的话）
+        if (file.name.isNotEmpty && !file.name.startsWith('temp_')) {
+          return '// 文件: ${file.name}\n$text';
+        }
+        
+        return text;
+      } catch (e) {
+        // 如果解码失败，返回错误信息
+        return '// 无法读取文件内容: ${file.name}\n// 错误: $e';
+      }
+    }
+    
+    // 如果没有数据，返回文件名信息
+    return '// 文件: ${file.name} (无内容数据)';
   }
 
   /// 创建data URI
@@ -156,7 +190,12 @@ class MessageConverter {
       switch (part.type) {
         case grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_TEXT:
           if (part.hasText()) {
-            content = part.text;
+            // 对于普通文本部分，直接追加到内容中
+            if (content.isNotEmpty) {
+              content += '\n${part.text}';
+            } else {
+              content = part.text;
+            }
           }
           break;
         case grpc_enum.ChatMessagePartType.CHAT_MESSAGE_PART_TYPE_IMAGE_URL:
