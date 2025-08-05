@@ -17,6 +17,9 @@ service LemonTea {
 
   // Chat 对话接口
   rpc Chat(stream ChatRequest) returns (stream ChatResponse);
+
+  // UploadFile 上传文件
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
 }
 
 message UpdateLlmConfigRequest {
@@ -40,8 +43,8 @@ message ModelsResponse {
 message ChatRequest {
   string llm_provider_id = 1;
   string model_id = 2;
-  repeated  lemon_tea.common.Message history_messages = 3;
-  lemon_tea.common.Message message = 5;
+  repeated lemon_tea.common.Message history_messages = 3;
+  repeated lemon_tea.common.Message messages = 5;
   string prompt = 6;
 }
 
@@ -51,4 +54,12 @@ message ChatResponse {
   bool is_done = 3;           // 是否完成
   string request_id = 4;      // 请求ID，用于关联请求和响应
   string error_message = 5;   // 错误信息，如果有
+}
+
+message UploadFileRequest {
+  string file_path = 1;
+}
+
+message UploadFileResponse {
+  string resource_key = 1;
 }

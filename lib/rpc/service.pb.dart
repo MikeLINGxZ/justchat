@@ -203,14 +203,14 @@ class ChatRequest extends $pb.GeneratedMessage {
     $core.String? llmProviderId,
     $core.String? modelId,
     $core.Iterable<$1.Message>? historyMessages,
-    $1.Message? message,
+    $core.Iterable<$1.Message>? messages,
     $core.String? prompt,
   }) {
     final result = create();
     if (llmProviderId != null) result.llmProviderId = llmProviderId;
     if (modelId != null) result.modelId = modelId;
     if (historyMessages != null) result.historyMessages.addAll(historyMessages);
-    if (message != null) result.message = message;
+    if (messages != null) result.messages.addAll(messages);
     if (prompt != null) result.prompt = prompt;
     return result;
   }
@@ -224,7 +224,7 @@ class ChatRequest extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'llmProviderId')
     ..aOS(2, _omitFieldNames ? '' : 'modelId')
     ..pc<$1.Message>(3, _omitFieldNames ? '' : 'historyMessages', $pb.PbFieldType.PM, subBuilder: $1.Message.create)
-    ..aOM<$1.Message>(5, _omitFieldNames ? '' : 'message', subBuilder: $1.Message.create)
+    ..pc<$1.Message>(5, _omitFieldNames ? '' : 'messages', $pb.PbFieldType.PM, subBuilder: $1.Message.create)
     ..aOS(6, _omitFieldNames ? '' : 'prompt')
     ..hasRequiredFields = false
   ;
@@ -268,15 +268,7 @@ class ChatRequest extends $pb.GeneratedMessage {
   $pb.PbList<$1.Message> get historyMessages => $_getList(2);
 
   @$pb.TagNumber(5)
-  $1.Message get message => $_getN(3);
-  @$pb.TagNumber(5)
-  set message($1.Message value) => $_setField(5, value);
-  @$pb.TagNumber(5)
-  $core.bool hasMessage() => $_has(3);
-  @$pb.TagNumber(5)
-  void clearMessage() => $_clearField(5);
-  @$pb.TagNumber(5)
-  $1.Message ensureMessage() => $_ensure(3);
+  $pb.PbList<$1.Message> get messages => $_getList(3);
 
   @$pb.TagNumber(6)
   $core.String get prompt => $_getSZ(4);
@@ -380,6 +372,98 @@ class ChatResponse extends $pb.GeneratedMessage {
   $core.bool hasErrorMessage() => $_has(4);
   @$pb.TagNumber(5)
   void clearErrorMessage() => $_clearField(5);
+}
+
+class UploadFileRequest extends $pb.GeneratedMessage {
+  factory UploadFileRequest({
+    $core.String? filePath,
+  }) {
+    final result = create();
+    if (filePath != null) result.filePath = filePath;
+    return result;
+  }
+
+  UploadFileRequest._();
+
+  factory UploadFileRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory UploadFileRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UploadFileRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'filePath')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UploadFileRequest clone() => UploadFileRequest()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UploadFileRequest copyWith(void Function(UploadFileRequest) updates) => super.copyWith((message) => updates(message as UploadFileRequest)) as UploadFileRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UploadFileRequest create() => UploadFileRequest._();
+  @$core.override
+  UploadFileRequest createEmptyInstance() => create();
+  static $pb.PbList<UploadFileRequest> createRepeated() => $pb.PbList<UploadFileRequest>();
+  @$core.pragma('dart2js:noInline')
+  static UploadFileRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UploadFileRequest>(create);
+  static UploadFileRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get filePath => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set filePath($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFilePath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFilePath() => $_clearField(1);
+}
+
+class UploadFileResponse extends $pb.GeneratedMessage {
+  factory UploadFileResponse({
+    $core.String? resourceKey,
+  }) {
+    final result = create();
+    if (resourceKey != null) result.resourceKey = resourceKey;
+    return result;
+  }
+
+  UploadFileResponse._();
+
+  factory UploadFileResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory UploadFileResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UploadFileResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'lemon_tea.server'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'resourceKey')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UploadFileResponse clone() => UploadFileResponse()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UploadFileResponse copyWith(void Function(UploadFileResponse) updates) => super.copyWith((message) => updates(message as UploadFileResponse)) as UploadFileResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UploadFileResponse create() => UploadFileResponse._();
+  @$core.override
+  UploadFileResponse createEmptyInstance() => create();
+  static $pb.PbList<UploadFileResponse> createRepeated() => $pb.PbList<UploadFileResponse>();
+  @$core.pragma('dart2js:noInline')
+  static UploadFileResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UploadFileResponse>(create);
+  static UploadFileResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get resourceKey => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set resourceKey($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasResourceKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearResourceKey() => $_clearField(1);
 }
 
 

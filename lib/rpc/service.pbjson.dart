@@ -71,7 +71,7 @@ const ChatRequest$json = {
     {'1': 'llm_provider_id', '3': 1, '4': 1, '5': 9, '10': 'llmProviderId'},
     {'1': 'model_id', '3': 2, '4': 1, '5': 9, '10': 'modelId'},
     {'1': 'history_messages', '3': 3, '4': 3, '5': 11, '6': '.lemon_tea.common.Message', '10': 'historyMessages'},
-    {'1': 'message', '3': 5, '4': 1, '5': 11, '6': '.lemon_tea.common.Message', '10': 'message'},
+    {'1': 'messages', '3': 5, '4': 3, '5': 11, '6': '.lemon_tea.common.Message', '10': 'messages'},
     {'1': 'prompt', '3': 6, '4': 1, '5': 9, '10': 'prompt'},
   ],
 };
@@ -80,9 +80,9 @@ const ChatRequest$json = {
 final $typed_data.Uint8List chatRequestDescriptor = $convert.base64Decode(
     'CgtDaGF0UmVxdWVzdBImCg9sbG1fcHJvdmlkZXJfaWQYASABKAlSDWxsbVByb3ZpZGVySWQSGQ'
     'oIbW9kZWxfaWQYAiABKAlSB21vZGVsSWQSRAoQaGlzdG9yeV9tZXNzYWdlcxgDIAMoCzIZLmxl'
-    'bW9uX3RlYS5jb21tb24uTWVzc2FnZVIPaGlzdG9yeU1lc3NhZ2VzEjMKB21lc3NhZ2UYBSABKA'
-    'syGS5sZW1vbl90ZWEuY29tbW9uLk1lc3NhZ2VSB21lc3NhZ2USFgoGcHJvbXB0GAYgASgJUgZw'
-    'cm9tcHQ=');
+    'bW9uX3RlYS5jb21tb24uTWVzc2FnZVIPaGlzdG9yeU1lc3NhZ2VzEjUKCG1lc3NhZ2VzGAUgAy'
+    'gLMhkubGVtb25fdGVhLmNvbW1vbi5NZXNzYWdlUghtZXNzYWdlcxIWCgZwcm9tcHQYBiABKAlS'
+    'BnByb21wdA==');
 
 @$core.Deprecated('Use chatResponseDescriptor instead')
 const ChatResponse$json = {
@@ -102,4 +102,29 @@ final $typed_data.Uint8List chatResponseDescriptor = $convert.base64Decode(
     '9udGVudBgCIAEoCVIQcmVhc29uaW5nQ29udGVudBIXCgdpc19kb25lGAMgASgIUgZpc0RvbmUS'
     'HQoKcmVxdWVzdF9pZBgEIAEoCVIJcmVxdWVzdElkEiMKDWVycm9yX21lc3NhZ2UYBSABKAlSDG'
     'Vycm9yTWVzc2FnZQ==');
+
+@$core.Deprecated('Use uploadFileRequestDescriptor instead')
+const UploadFileRequest$json = {
+  '1': 'UploadFileRequest',
+  '2': [
+    {'1': 'file_path', '3': 1, '4': 1, '5': 9, '10': 'filePath'},
+  ],
+};
+
+/// Descriptor for `UploadFileRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List uploadFileRequestDescriptor = $convert.base64Decode(
+    'ChFVcGxvYWRGaWxlUmVxdWVzdBIbCglmaWxlX3BhdGgYASABKAlSCGZpbGVQYXRo');
+
+@$core.Deprecated('Use uploadFileResponseDescriptor instead')
+const UploadFileResponse$json = {
+  '1': 'UploadFileResponse',
+  '2': [
+    {'1': 'resource_key', '3': 1, '4': 1, '5': 9, '10': 'resourceKey'},
+  ],
+};
+
+/// Descriptor for `UploadFileResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List uploadFileResponseDescriptor = $convert.base64Decode(
+    'ChJVcGxvYWRGaWxlUmVzcG9uc2USIQoMcmVzb3VyY2Vfa2V5GAEgASgJUgtyZXNvdXJjZUtleQ'
+    '==');
 

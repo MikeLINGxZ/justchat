@@ -47,6 +47,11 @@ class LemonTeaClient extends $grpc.Client {
     return $createStreamingCall(_$chat, request, options: options);
   }
 
+  /// UploadFile 上传文件
+  $grpc.ResponseFuture<$0.UploadFileResponse> uploadFile($0.UploadFileRequest request, {$grpc.CallOptions? options,}) {
+    return $createUnaryCall(_$uploadFile, request, options: options);
+  }
+
     // method descriptors
 
   static final _$updateLlmConfig = $grpc.ClientMethod<$0.UpdateLlmConfigRequest, $0.UpdateLlmConfigResponse>(
@@ -61,6 +66,10 @@ class LemonTeaClient extends $grpc.Client {
       '/lemon_tea.server.LemonTea/Chat',
       ($0.ChatRequest value) => value.writeToBuffer(),
       $0.ChatResponse.fromBuffer);
+  static final _$uploadFile = $grpc.ClientMethod<$0.UploadFileRequest, $0.UploadFileResponse>(
+      '/lemon_tea.server.LemonTea/UploadFile',
+      ($0.UploadFileRequest value) => value.writeToBuffer(),
+      $0.UploadFileResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('lemon_tea.server.LemonTea')
@@ -89,6 +98,13 @@ abstract class LemonTeaServiceBase extends $grpc.Service {
         true,
         ($core.List<$core.int> value) => $0.ChatRequest.fromBuffer(value),
         ($0.ChatResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UploadFileRequest, $0.UploadFileResponse>(
+        'UploadFile',
+        uploadFile_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.UploadFileRequest.fromBuffer(value),
+        ($0.UploadFileResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.UpdateLlmConfigResponse> updateLlmConfig_Pre($grpc.ServiceCall $call, $async.Future<$0.UpdateLlmConfigRequest> $request) async {
@@ -104,5 +120,11 @@ abstract class LemonTeaServiceBase extends $grpc.Service {
   $async.Future<$0.ModelsResponse> models($grpc.ServiceCall call, $0.ModelsRequest request);
 
   $async.Stream<$0.ChatResponse> chat($grpc.ServiceCall call, $async.Stream<$0.ChatRequest> request);
+
+  $async.Future<$0.UploadFileResponse> uploadFile_Pre($grpc.ServiceCall $call, $async.Future<$0.UploadFileRequest> $request) async {
+    return uploadFile($call, await $request);
+  }
+
+  $async.Future<$0.UploadFileResponse> uploadFile($grpc.ServiceCall call, $0.UploadFileRequest request);
 
 }

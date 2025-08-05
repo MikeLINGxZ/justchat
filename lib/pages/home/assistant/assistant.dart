@@ -7,18 +7,16 @@ import 'package:lemon_tea/utils/llm/models/message.dart';
 import 'package:lemon_tea/controls/resizable_divider.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/utils/cli/client/client.dart';
+import 'package:lemon_tea/utils/message_converter.dart';
 import 'package:lemon_tea/rpc/service.pb.dart' as grpc_service;
 import 'package:lemon_tea/rpc/common.pb.dart' as grpc_common;
-import 'package:lemon_tea/rpc/common.pbenum.dart' as grpc_enum;
 import 'package:lemon_tea/storage/chat_storage.dart';
 import 'package:lemon_tea/storage/llm_storage.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/models/llm_provider.dart';
 import 'package:lemon_tea/models/model.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:fixnum/fixnum.dart';
 
 import 'package:lemon_tea/utils/style.dart';
 
@@ -408,42 +406,9 @@ def hello():
       }
 
       // 准备历史消息（排除刚添加的空AI消息）
-      List<grpc_common.Message> grpcMessages =
-          _historyMessages.where((msg) => msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)).map((msg) {
-            // 创建消息内容列表
-            List<grpc_common.MessageContent> contents = [];
-            
-            // 添加文本内容（如果有）
-            if (msg.content.isNotEmpty) {
-              contents.add(grpc_common.MessageContent(text: msg.content));
-            }
-            
-            // 添加文件内容（如果有）
-            if (msg.files != null && msg.files!.isNotEmpty) {
-              for (final file in msg.files!) {
-                contents.add(grpc_common.MessageContent(
-                  file: grpc_common.FileContent(
-                    name: file.name,
-                    mimeType: file.mimeType,
-                    type: _convertFileType(file.type),
-                    data: file.data != null ? base64Decode(file.data!) : null,
-                    size: Int64(file.size),
-                    url: file.url ?? '',
-                    description: file.description ?? '',
-                  ),
-                ));
-              }
-            }
-            
-            return grpc_common.Message(
-              role:
-                  msg.role == MessageRole.user
-                      ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
-                      : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-              contents: contents,
-              content: msg.content, // 保持向后兼容性
-            );
-          }).toList();
+      List<grpc_common.Message> grpcMessages = MessageConverter.convertMessages(
+        _historyMessages.where((msg) => msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)).toList()
+      );
 
       // 创建聊天请求
       final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
@@ -451,40 +416,20 @@ def hello():
 
       debugPrint('使用模型配置: providerId=$providerId, modelId=$modelId');
 
-      // 为当前用户消息创建内容列表
-      List<grpc_common.MessageContent> currentMessageContents = [];
-      
-      // 添加文本内容（如果有）
-      if (message.isNotEmpty) {
-        currentMessageContents.add(grpc_common.MessageContent(text: message));
-      }
-      
-      // 添加文件内容（如果有）
-      if (files.isNotEmpty) {
-        for (final file in files) {
-          currentMessageContents.add(grpc_common.MessageContent(
-            file: grpc_common.FileContent(
-              name: file.name,
-              mimeType: file.mimeType,
-              type: _convertFileType(file.type),
-              data: file.data != null ? base64Decode(file.data!) : null,
-              size: Int64(file.size),
-              url: file.url ?? '',
-              description: file.description ?? '',
-            ),
-          ));
-        }
-      }
+      // 创建当前用户消息
+      final currentMessage = files.isNotEmpty 
+          ? Message.withFiles(
+              role: MessageRole.user, 
+              content: message,
+              files: files,
+            )
+          : Message(role: MessageRole.user, content: message);
 
       final chatRequest = grpc_service.ChatRequest(
         llmProviderId: providerId,
         modelId: modelId,
         historyMessages: grpcMessages,
-        message: grpc_common.Message(
-          role: grpc_enum.MessageRole.MESSAGE_ROLE_USER,
-          contents: currentMessageContents,
-          content: message, // 保持向后兼容性
-        ),
+        messages: [MessageConverter.convertMessage(currentMessage)],
         prompt: "你是一个有用的AI助手。",
       );
 
@@ -696,21 +641,7 @@ def hello():
     return '${message.substring(0, 17)}...';
   }
 
-  // 将Flutter FileContent类型转换为protobuf FileType
-  grpc_common.FileType _convertFileType(String type) {
-    switch (type.toLowerCase()) {
-      case 'image':
-        return grpc_common.FileType.FILE_TYPE_IMAGE;
-      case 'document':
-        return grpc_common.FileType.FILE_TYPE_DOCUMENT;
-      case 'audio':
-        return grpc_common.FileType.FILE_TYPE_AUDIO;
-      case 'video':
-        return grpc_common.FileType.FILE_TYPE_VIDEO;
-      default:
-        return grpc_common.FileType.FILE_TYPE_OTHER;
-    }
-  }
+
 
   // MessageToolbar 回调函数实现
   void _handleCopyMessage(Message message) {
@@ -928,41 +859,7 @@ def hello():
         historyToUse = _historyMessages.where((msg) => msg.content.isNotEmpty).toList();
       }
       
-      List<grpc_common.Message> grpcMessages = historyToUse.map((msg) {
-        // 创建消息内容列表
-        List<grpc_common.MessageContent> contents = [];
-        
-        // 添加文本内容（如果有）
-        if (msg.content.isNotEmpty) {
-          contents.add(grpc_common.MessageContent(text: msg.content));
-        }
-        
-        // 添加文件内容（如果有）
-        if (msg.files != null && msg.files!.isNotEmpty) {
-          for (final file in msg.files!) {
-            contents.add(grpc_common.MessageContent(
-              file: grpc_common.FileContent(
-                name: file.name,
-                mimeType: file.mimeType,
-                type: _convertFileType(file.type),
-                data: file.data != null ? base64Decode(file.data!) : null,
-                size: Int64(file.size),
-                url: file.url ?? '',
-                description: file.description ?? '',
-              ),
-            ));
-          }
-        }
-        
-        return grpc_common.Message(
-          role:
-              msg.role == MessageRole.user
-                  ? grpc_enum.MessageRole.MESSAGE_ROLE_USER
-                  : grpc_enum.MessageRole.MESSAGE_ROLE_ASSISTANT,
-          contents: contents,
-          content: msg.content, // 保持向后兼容性
-        );
-      }).toList();
+      List<grpc_common.Message> grpcMessages = MessageConverter.convertMessages(historyToUse);
 
       // 创建聊天请求
       final providerId = _currentConversation!.defaultProviderId ?? 'deepseek';
@@ -974,10 +871,7 @@ def hello():
         llmProviderId: providerId,
         modelId: modelId,
         historyMessages: grpcMessages,
-        message: grpc_common.Message(
-          role: grpc_enum.MessageRole.MESSAGE_ROLE_USER,
-          content: userMessageContent,
-        ),
+        messages: [], // 重新生成时不需要新的用户消息
         prompt: "你是一个有用的AI助手。",
       );
 
