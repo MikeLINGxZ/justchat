@@ -933,11 +933,28 @@ def hello():
 
       debugPrint('重新生成使用模型配置: providerId=$providerId, modelId=$modelId');
 
+      // 如果有文件信息，需要将包含文件的用户消息作为当前消息发送
+      List<grpc_common.Message> currentMessages = [];
+      if (files != null && files.isNotEmpty && replaceIndex != null) {
+        // 找到对应的用户消息并创建包含文件的消息
+        for (int i = replaceIndex - 1; i >= 0; i--) {
+          if (_historyMessages[i].role == MessageRole.user) {
+            final userMessageWithFiles = Message.withFiles(
+              role: MessageRole.user,
+              content: _historyMessages[i].content,
+              files: files,
+            );
+            currentMessages = [MessageConverter.convertMessage(userMessageWithFiles)];
+            break;
+          }
+        }
+      }
+
       final chatRequest = grpc_service.ChatRequest(
         llmProviderId: providerId,
         modelId: modelId,
         historyMessages: grpcMessages,
-        messages: [], // 重新生成时不需要新的用户消息
+        messages: currentMessages, // 如果有文件，发送包含文件的用户消息
         prompt: "你是一个有用的AI助手。",
       );
 
