@@ -23,6 +23,7 @@ class FileService {
               file.bytes!,
               'image',
               file.size,
+              localPath: file.path,
             );
             files.add(fileContent);
           }
@@ -54,6 +55,7 @@ class FileService {
               file.bytes!,
               'document',
               file.size,
+              localPath: file.path,
             );
             files.add(fileContent);
           }
@@ -85,6 +87,7 @@ class FileService {
               file.bytes!,
               fileType,
               file.size,
+              localPath: file.path,
             );
             files.add(fileContent);
           }
@@ -254,8 +257,9 @@ class FileService {
     String name,
     Uint8List bytes,
     String type,
-    int size,
-  ) async {
+    int size, {
+    String? localPath,
+  }) async {
     // 将文件数据编码为Base64
     final base64Data = base64Encode(bytes);
     
@@ -268,6 +272,7 @@ class FileService {
       type: type,
       data: base64Data,
       size: size,
+      localPath: localPath,
     );
   }
 

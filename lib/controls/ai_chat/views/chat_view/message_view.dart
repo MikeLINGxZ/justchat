@@ -406,11 +406,29 @@ class _MessageViewState extends ConsumerState<MessageView> {
                                 // 显示主要内容
                                 Container(
                                   color: Style.assistantChatBubble(context),
-                                  child: MarkdownBlock(
-                                    data: message.content.isEmpty ? ' ' : message.content,
-                                    config: Theme.of(context).brightness == Brightness.dark
-                                        ? _buildDarkConfig()
-                                        : _buildLightConfig(),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      MarkdownBlock(
+                                        data: message.content.isEmpty ? ' ' : message.content,
+                                        config: Theme.of(context).brightness == Brightness.dark
+                                            ? _buildDarkConfig()
+                                            : _buildLightConfig(),
+                                      ),
+                                      // 显示用户停止标记
+                                      if (message.stoppedByUser)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            '用户已停止生成',
+                                            style: TextStyle(
+                                              fontSize: FontSizeUtils.getSmallSize(ref),
+                                              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 if (message.role == MessageRole.assistant && widget.messageToolBar != null)

@@ -307,11 +307,23 @@ def hello():
     _currentStreamSubscription?.cancel();
     _currentStreamSubscription = null;
     
-    // 更新UI状态
-    if (mounted) {
+    // 标记最后一条消息为用户停止
+    if (_historyMessages.isNotEmpty && 
+        _historyMessages.last.role == MessageRole.assistant) {
       setState(() {
+        final lastMessage = _historyMessages.last;
+        _historyMessages[_historyMessages.length - 1] = lastMessage.copyWith(
+          stoppedByUser: true,
+        );
         _isStreaming = false;
       });
+    } else {
+      // 更新UI状态
+      if (mounted) {
+        setState(() {
+          _isStreaming = false;
+        });
+      }
     }
     
     debugPrint('生成已停止');
@@ -491,6 +503,13 @@ def hello():
             // 聊天完成，保存AI回复到数据库
             if (!isTemporaryConversation) {
               try {
+                // 检查最后一条消息是否被用户停止
+                bool wasStoppedByUser = false;
+                if (_historyMessages.isNotEmpty && 
+                    _historyMessages.last.role == MessageRole.assistant) {
+                  wasStoppedByUser = _historyMessages.last.stoppedByUser;
+                }
+                
                 final savedAiMessage = await ChatStorage.addMessage(
                   conversationId: _currentConversation!.id,
                   role: 'assistant',
@@ -499,11 +518,13 @@ def hello():
                       fullReasoningContent.isNotEmpty
                           ? fullReasoningContent
                           : null,
+                  stoppedByUser: wasStoppedByUser,
                 );
 
                 if (savedAiMessage != null) {
                   aiMessageId = savedAiMessage.id;
-                  debugPrint('AI回复保存成功: ${savedAiMessage.id}');
+                  final stopInfo = wasStoppedByUser ? '（用户停止）' : '';
+                  debugPrint('AI回复保存成功$stopInfo: ${savedAiMessage.id}');
                 } else {
                   debugPrint('警告：AI回复保存失败');
                   // 可以在这里添加UI提示
@@ -587,17 +608,26 @@ def hello():
           aiMessageId == null &&
           !hasError) {
         try {
+          // 检查最后一条消息是否被用户停止
+          bool wasStoppedByUser = false;
+          if (_historyMessages.isNotEmpty && 
+              _historyMessages.last.role == MessageRole.assistant) {
+            wasStoppedByUser = _historyMessages.last.stoppedByUser;
+          }
+          
           final savedAiMessage = await ChatStorage.addMessage(
             conversationId: _currentConversation!.id,
             role: 'assistant',
             content: fullResponse,
             reasoningContent:
                 fullReasoningContent.isNotEmpty ? fullReasoningContent : null,
+            stoppedByUser: wasStoppedByUser,
           );
 
           if (savedAiMessage != null) {
             aiMessageId = savedAiMessage.id;
-            debugPrint('AI回复补充保存成功（流式中断情况）: ${savedAiMessage.id}');
+            final stopInfo = wasStoppedByUser ? '（用户停止）' : '';
+            debugPrint('AI回复补充保存成功（流式中断情况）$stopInfo: ${savedAiMessage.id}');
           } else {
             debugPrint('警告：AI回复补充保存失败');
           }
@@ -741,14 +771,16 @@ def hello():
 
     // 找到对应的用户消息（通常是前一条消息）
     String? userMessageContent;
+    List<FileContent>? userMessageFiles;
     for (int i = messageIndex - 1; i >= 0; i--) {
       if (_historyMessages[i].role == MessageRole.user) {
         userMessageContent = _historyMessages[i].content;
+        userMessageFiles = _historyMessages[i].files;
         break;
       }
     }
 
-    if (userMessageContent == null) {
+    if (userMessageContent == null && (userMessageFiles == null || userMessageFiles.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('未找到对应的用户消息'),
@@ -791,7 +823,7 @@ def hello():
     });
 
     // 调用重新生成方法，传入用户消息内容、要替换的索引和原始内容
-    await _regenerateAIResponse(userMessageContent, messageIndex, originalContent);
+    await _regenerateAIResponse(userMessageContent ?? '', messageIndex, originalContent, userMessageFiles);
   }
 
   Future<void> _handleDeleteMessage(Message message) async {
@@ -868,7 +900,7 @@ def hello():
   }
 
   // 重新生成AI回复的方法（不添加用户消息）
-  Future<void> _regenerateAIResponse(String userMessageContent, [int? replaceIndex, String? originalContent]) async {
+  Future<void> _regenerateAIResponse(String userMessageContent, [int? replaceIndex, String? originalContent, List<FileContent>? files]) async {
     if (_currentConversation == null) return;
 
     // 检查是否为临时对话模式
@@ -898,9 +930,24 @@ def hello():
       if (replaceIndex != null) {
         // 使用重新生成位置之前的历史消息（包含对应的用户消息，不包含要重新生成的AI消息）
         historyToUse = _historyMessages.sublist(0, replaceIndex);
+        
+        // 如果有文件信息，需要确保最后一条用户消息包含文件
+        if (files != null && files.isNotEmpty && historyToUse.isNotEmpty) {
+          final lastUserMessageIndex = historyToUse.lastIndexWhere((msg) => msg.role == MessageRole.user);
+          if (lastUserMessageIndex != -1) {
+            final lastUserMessage = historyToUse[lastUserMessageIndex];
+            // 创建包含文件的新用户消息
+            final updatedUserMessage = Message.withFiles(
+              role: MessageRole.user,
+              content: lastUserMessage.content,
+              files: files,
+            );
+            historyToUse[lastUserMessageIndex] = updatedUserMessage;
+          }
+        }
       } else {
         // 使用所有非空消息（排除最后一个空AI消息）
-        historyToUse = _historyMessages.where((msg) => msg.content.isNotEmpty).toList();
+        historyToUse = _historyMessages.where((msg) => msg.content.isNotEmpty || (msg.files?.isNotEmpty ?? false)).toList();
       }
       
       List<grpc_common.Message> grpcMessages = MessageConverter.convertMessages(historyToUse);

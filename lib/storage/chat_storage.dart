@@ -184,18 +184,25 @@ class ChatStorage {
       );
       
       return results.map((map) {
-        // 解析文件信息
+        // 解析metadata信息
         List<llm_models.FileContent>? files;
+        bool stoppedByUser = false;
+        
         if (map['metadata'] != null) {
           try {
             final metadata = jsonDecode(map['metadata'] as String);
+            
+            // 解析文件信息
             if (metadata['files'] != null) {
               files = (metadata['files'] as List)
                   .map((fileJson) => llm_models.FileContent.fromJson(fileJson))
                   .toList();
             }
+            
+            // 解析stoppedByUser字段
+            stoppedByUser = metadata['stoppedByUser'] == true;
           } catch (e) {
-            debugPrint('解析消息文件信息失败: $e');
+            debugPrint('解析消息metadata失败: $e');
           }
         }
         
@@ -206,12 +213,14 @@ class ChatStorage {
             content: map['content'] ?? '',
             files: files,
             reasoningContent: map['reasoning_content'],
+            stoppedByUser: stoppedByUser,
           );
         } else {
           return llm_models.Message(
             role: MessageRole.values.byName(map['role']),
             content: map['content'] ?? '',
             reasoningContent: map['reasoning_content'],
+            stoppedByUser: stoppedByUser,
           );
         }
       }).toList();
@@ -228,6 +237,7 @@ class ChatStorage {
     required String content,
     String? reasoningContent,
     List<llm_models.FileContent>? files,
+    bool stoppedByUser = false,
   }) async {
     try {
       final now = DateTime.now();
@@ -243,11 +253,22 @@ class ChatStorage {
       // 准备插入数据，包含文件信息
       Map<String, dynamic> messageData = message.toMap();
       
+      // 准备metadata数据
+      Map<String, dynamic> metadata = {};
+      
       // 如果有文件，将文件信息序列化到metadata字段
       if (files != null && files.isNotEmpty) {
-        messageData['metadata'] = jsonEncode({
-          'files': files.map((file) => file.toJson()).toList(),
-        });
+        metadata['files'] = files.map((file) => file.toJson()).toList();
+      }
+      
+      // 如果消息被用户停止，记录在metadata中
+      if (stoppedByUser) {
+        metadata['stoppedByUser'] = true;
+      }
+      
+      // 只有当metadata不为空时才保存
+      if (metadata.isNotEmpty) {
+        messageData['metadata'] = jsonEncode(metadata);
       }
       
       final result = await SqliteUtil.instance.insert(

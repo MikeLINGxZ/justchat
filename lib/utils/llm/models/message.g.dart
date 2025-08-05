@@ -14,6 +14,7 @@ FileContent _$FileContentFromJson(Map<String, dynamic> json) => FileContent(
   size: (json['size'] as num).toInt(),
   url: json['url'] as String?,
   description: json['description'] as String?,
+  localPath: json['localPath'] as String?,
 );
 
 Map<String, dynamic> _$FileContentToJson(FileContent instance) =>
@@ -25,6 +26,7 @@ Map<String, dynamic> _$FileContentToJson(FileContent instance) =>
       'size': instance.size,
       'url': instance.url,
       'description': instance.description,
+      'localPath': instance.localPath,
     };
 
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(
@@ -40,6 +42,7 @@ Message _$MessageFromJson(Map<String, dynamic> json) => Message(
       (json['files'] as List<dynamic>?)
           ?.map((e) => FileContent.fromJson(e as Map<String, dynamic>))
           .toList(),
+  stoppedByUser: json['stoppedByUser'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
@@ -49,6 +52,7 @@ Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'toolCalls': instance.toolCalls,
   'toolCallId': instance.toolCallId,
   'files': instance.files,
+  'stoppedByUser': instance.stoppedByUser,
 };
 
 const _$MessageRoleEnumMap = {

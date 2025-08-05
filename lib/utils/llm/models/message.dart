@@ -27,6 +27,9 @@ class FileContent {
   
   /// 文件描述
   final String? description;
+  
+  /// 本地文件路径（用于历史记录回显和重新生成）
+  final String? localPath;
 
   const FileContent({
     required this.name,
@@ -36,6 +39,7 @@ class FileContent {
     required this.size,
     this.url,
     this.description,
+    this.localPath,
   });
 
   factory FileContent.fromJson(Map<String, dynamic> json) =>
@@ -50,6 +54,7 @@ class FileContent {
     int? size,
     String? url,
     String? description,
+    String? localPath,
   }) => FileContent(
     name: name ?? this.name,
     mimeType: mimeType ?? this.mimeType,
@@ -58,6 +63,7 @@ class FileContent {
     size: size ?? this.size,
     url: url ?? this.url,
     description: description ?? this.description,
+    localPath: localPath ?? this.localPath,
   );
 }
 
@@ -81,6 +87,9 @@ class Message {
   /// 附件文件列表
   final List<FileContent>? files;
 
+  /// 是否被用户停止生成
+  final bool stoppedByUser;
+
   // todo visible
   
 
@@ -91,6 +100,7 @@ class Message {
     this.toolCalls,
     this.toolCallId,
     this.files,
+    this.stoppedByUser = false,
   }) : assert(
     // 允许assistant和tool角色的content为空（用于流式输出和工具调用）
     role == MessageRole.assistant || 
@@ -106,12 +116,14 @@ class Message {
     String? reasoningContent,
     List<ToolCall>? toolCalls,
     String? toolCallId,
+    bool stoppedByUser = false,
   }) => Message(
     role: role,
     content: content,
     reasoningContent: reasoningContent,
     toolCalls: toolCalls,
     toolCallId: toolCallId,
+    stoppedByUser: stoppedByUser,
   );
 
   /// 创建包含文件的消息
@@ -122,6 +134,7 @@ class Message {
     String? reasoningContent,
     List<ToolCall>? toolCalls,
     String? toolCallId,
+    bool stoppedByUser = false,
   }) => Message(
     role: role,
     content: content,
@@ -129,6 +142,7 @@ class Message {
     reasoningContent: reasoningContent,
     toolCalls: toolCalls,
     toolCallId: toolCallId,
+    stoppedByUser: stoppedByUser,
   );
 
   /// 判断消息是否包含文件
@@ -148,12 +162,14 @@ class Message {
     List<ToolCall>? toolCalls,
     String? toolCallId,
     List<FileContent>? files,
+    bool? stoppedByUser,
   }) => Message(
     role: role ?? this.role,
     content: content ?? this.content,
     reasoningContent: reasoningContent ?? this.reasoningContent,
     toolCalls: toolCalls ?? this.toolCalls,
-    toolCallId: this.toolCallId,
+    toolCallId: toolCallId ?? this.toolCallId,
     files: files ?? this.files,
+    stoppedByUser: stoppedByUser ?? this.stoppedByUser,
   );
 }
