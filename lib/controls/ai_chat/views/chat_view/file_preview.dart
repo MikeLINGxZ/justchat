@@ -20,7 +20,7 @@ class FilePreview extends ConsumerWidget {
     if (files.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8.0),
+      margin: const EdgeInsets.only(bottom: 8.0,top: 8.0),
       child: Wrap(
         spacing: 8.0,
         runSpacing: 8.0,
