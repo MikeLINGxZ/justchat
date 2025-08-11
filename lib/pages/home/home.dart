@@ -174,8 +174,13 @@ class _HomePage extends State<HomePage> {
                       ),
                     ),
                     VerticalDivider(thickness: 1, width: 1,color: Style.divider(context)),
-                    // 内容区域
-                    Expanded(child: _pages[_selectedIndex]),
+                    // 内容区域：使用 IndexedStack 保持各页面状态，切换无销毁
+                    Expanded(
+                      child: IndexedStack(
+                        index: _selectedIndex,
+                        children: _pages,
+                      ),
+                    ),
                   ],
                 ),
               )

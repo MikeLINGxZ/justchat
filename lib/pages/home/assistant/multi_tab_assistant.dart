@@ -20,6 +20,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
   List<AssistantTab> _tabs = [];
   int _currentTabIndex = 0;
   bool _isLoading = true;
+  
 
   @override
   void initState() {
@@ -44,16 +45,13 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
     try {
       // 获取所有对话
       final conversations = await ChatStorage.getAllConversations();
-
+      // 避免一次性打开多标签，仅打开一个（优先最近一个会话）
+      _tabs.clear();
       if (conversations.isEmpty) {
-        // 如果没有对话，创建一个默认标签页
         await _createNewTab();
       } else {
-        // 为每个对话创建一个标签页
-        for (final conversation in conversations.take(5)) {
-          // 限制最多5个标签页
-          await _createTabForConversation(conversation);
-        }
+        // 仅取第一个会话作为初始标签
+        await _createTabForConversation(conversations.first);
       }
 
       // 初始化TabController
@@ -211,7 +209,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
   Widget _buildTabBar() {
     return Container(
       height: 40,
-      padding: const EdgeInsets.only(left: 8, right: 8, top: 2,bottom: 2),
+      padding: const EdgeInsets.only(left: 8, right: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -258,7 +256,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                            vertical: 0,
                           ),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: _buildTabTitle(tab, index),
                         ),
