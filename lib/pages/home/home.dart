@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/controls/window_title_bar.dart';
 import 'package:lemon_tea/controls/sidebar_icon_button.dart';
-import 'package:lemon_tea/pages/home/assistant/assistant.dart';
+import 'package:lemon_tea/pages/home/assistant/multi_tab_assistant.dart';
 import 'package:lemon_tea/pages/home/task/task.dart';
 import 'package:lemon_tea/pages/home/history/history.dart';
 import 'package:lemon_tea/pages/home/settings/settings.dart';
@@ -37,7 +37,7 @@ class _HomePage extends State<HomePage> {
   void _initializePages() {
     _pages.clear();
     _pages.addAll([
-      AssistantPage(conversationManager: _conversationManager),
+      const MultiTabAssistant(),
       const TaskPage(),
       HistoryPage(
         conversationManager: _conversationManager,
