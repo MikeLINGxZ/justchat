@@ -378,7 +378,7 @@ class _MessageViewState extends ConsumerState<MessageView> {
                               minWidth: 0,
                             ),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 2,
                               vertical: 2,
                             ),
                             child: Column(
