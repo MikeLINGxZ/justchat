@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/assistant/assistant.dart';
 import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
-import 'package:lemon_tea/utils/style.dart';
+import 'package:lemon_tea/utils/font_size_utils.dart';
 
 /// 多标签页对话界面
-class MultiTabAssistant extends StatefulWidget {
+class MultiTabAssistant extends ConsumerStatefulWidget {
   const MultiTabAssistant({super.key});
 
   @override
-  State<MultiTabAssistant> createState() => _MultiTabAssistantState();
+  ConsumerState<MultiTabAssistant> createState() => _MultiTabAssistantState();
 }
 
-class _MultiTabAssistantState extends State<MultiTabAssistant>
+class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
     with TickerProviderStateMixin {
   late TabController _tabController;
   List<AssistantTab> _tabs = [];
@@ -43,13 +44,14 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
     try {
       // 获取所有对话
       final conversations = await ChatStorage.getAllConversations();
-      
+
       if (conversations.isEmpty) {
         // 如果没有对话，创建一个默认标签页
         await _createNewTab();
       } else {
         // 为每个对话创建一个标签页
-        for (final conversation in conversations.take(5)) { // 限制最多5个标签页
+        for (final conversation in conversations.take(5)) {
+          // 限制最多5个标签页
           await _createTabForConversation(conversation);
         }
       }
@@ -60,7 +62,7 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
         vsync: this,
         initialIndex: 0,
       );
-      
+
       _tabController.addListener(_onTabChanged);
     } catch (e) {
       debugPrint('初始化标签页失败: $e');
@@ -91,26 +93,26 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
   Future<void> _createTabForConversation(Conversation conversation) async {
     final conversationManager = ConversationManager();
     await conversationManager.loadConversation(conversation.id);
-    
+
     final tab = AssistantTab(
       id: conversation.id,
       title: conversation.title,
       conversationManager: conversationManager,
     );
-    
+
     _tabs.add(tab);
   }
 
   /// 创建新的标签页
   Future<void> _createNewTab([String? title]) async {
     final conversationManager = ConversationManager();
-    
+
     final tab = AssistantTab(
       id: 'new-${DateTime.now().millisecondsSinceEpoch}',
       title: title ?? '新对话',
       conversationManager: conversationManager,
     );
-    
+
     setState(() {
       _tabs.add(tab);
     });
@@ -125,9 +127,9 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
       );
       _tabController.addListener(_onTabChanged);
       oldController.dispose();
-      
+
       setState(() {
-        _currentTabIndex = _tabs.length - 1;
+        _currentTabIndex = _tabController.index;
       });
     }
   }
@@ -146,7 +148,7 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
     // 重新创建TabController
     final oldController = _tabController;
     final newIndex = index >= _tabs.length ? _tabs.length - 1 : index;
-    
+
     _tabController = TabController(
       length: _tabs.length,
       vsync: this,
@@ -154,94 +156,145 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
     );
     _tabController.addListener(_onTabChanged);
     oldController.dispose();
-    
+
     setState(() {
-      _currentTabIndex = newIndex;
+      _currentTabIndex = _tabController.index;
     });
   }
 
   /// 构建标签页标题
   Widget _buildTabTitle(AssistantTab tab, int index) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 200),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              tab.title,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13),
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          tab.title,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: FontSizeUtils.getSmallSize(ref),
+            fontWeight: FontWeight.w500,
+            height: 1.0,
           ),
-          if (_tabs.length > 1) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _closeTab(index),
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey.withOpacity(0.3),
-                ),
-                child: const Icon(
-                  Icons.close,
-                  size: 12,
-                  color: Colors.grey,
-                ),
+          strutStyle: const StrutStyle(
+            height: 1.0,
+            leading: 0.0,
+            forceStrutHeight: true,
+          ),
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+        ),
+        if (_tabs.length > 1)
+          GestureDetector(
+            onTap: () => _closeTab(index),
+            child: Container(
+              margin: const EdgeInsets.only(left: 8.0),
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 
   /// 构建标签栏
   Widget _buildTabBar() {
     return Container(
+      height: 40,
+      padding: const EdgeInsets.only(left: 8, right: 8, top: 2,bottom: 2),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
         ),
       ),
       child: Row(
         children: [
           Expanded(
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              tabs: _tabs.asMap().entries.map((entry) {
-                final index = entry.key;
-                final tab = entry.value;
-                return Tab(
-                  child: _buildTabTitle(tab, index),
-                );
-              }).toList(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                indicator: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorPadding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 4,
+                ),
+                labelColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                dividerColor: Colors.transparent,
+                tabs:
+                    _tabs.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final tab = entry.value;
+                      return Tab(
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                           vertical: 0,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: _buildTabTitle(tab, index),
+                        ),
+                      );
+                    }).toList(),
+              ),
             ),
           ),
           // 新建标签页按钮
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: IconButton(
-              onPressed: _createNewTab,
-              icon: const Icon(Icons.add, size: 18),
-              tooltip: '新建标签页',
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
+          if (_tabs.length < 5)
+            Container(
+              margin: const EdgeInsets.only(left: 8, right: 16),
+              child: GestureDetector(
+                onTap: () => _createNewTab(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.all(4),
             ),
-          ),
         ],
       ),
     );
@@ -254,22 +307,42 @@ class _MultiTabAssistantState extends State<MultiTabAssistant>
     }
 
     if (_tabs.isEmpty) {
-      return const Center(
-        child: Text('没有可用的标签页'),
-      );
+      return const Center(child: Text('没有可用的标签页'));
     }
 
     return Column(
       children: [
         _buildTabBar(),
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: _tabs.map((tab) {
-              return AssistantPage(
-                conversationManager: tab.conversationManager,
-              );
-            }).toList(),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              child: IndexedStack(
+                index: _currentTabIndex,
+                children: _tabs.map((tab) {
+                  return AssistantPage(
+                    conversationManager: tab.conversationManager,
+                  );
+                }).toList(),
+              ),
+            ),
           ),
         ),
       ],
