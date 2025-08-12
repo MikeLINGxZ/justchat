@@ -170,7 +170,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
         Text(
           tab.title,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+          style: TextStyle(fontSize: FontSizeUtils.getMXSmallSize(ref),fontWeight: FontWeight.w500),
           strutStyle: const StrutStyle(forceStrutHeight: true),
           textHeightBehavior: const TextHeightBehavior(
             applyHeightToFirstAscent: false,
@@ -185,7 +185,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(Style.radiusLv1),
               ),
               child: Icon(
                 Icons.close,
@@ -201,7 +201,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
   /// 构建标签栏
   Widget _buildTabBar() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(Style.radiusLv1),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
@@ -209,23 +209,16 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
           // padding: const EdgeInsets.only(left: 8, right: 8),
           decoration: BoxDecoration(
             color: Style.tertiaryBackground(context),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: Colors.black.withOpacity(0.1),
-            //     blurRadius: 10,
-            //     offset: const Offset(0, 2),
-            //   ),
-            // ],
           ),
           child: Container(
-            height: 34,
             child: Row(
             children: [
               Container(
+                height: 30,
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(Style.radiusLv1),
+                    topRight: Radius.circular(Style.radiusLv1),
                   ),
                 ),
                 child: TabBar(
@@ -234,13 +227,9 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                   tabAlignment: TabAlignment.start,
                   indicator: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(Style.radiusLv1),
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorPadding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
                   labelColor: Theme.of(context).colorScheme.onPrimaryContainer,
                   unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -255,10 +244,9 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                             constraints: const BoxConstraints(maxWidth: 200),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
-                              vertical: 0,
                             ),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(Style.radiusLv1),
                             ),
                             child: _buildTabTitle(tab, index),
                           ),
@@ -278,7 +266,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                         color: Theme.of(
                           context,
                         ).colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(Style.radiusLv1),
                       ),
                       child: Icon(
                         Icons.add,

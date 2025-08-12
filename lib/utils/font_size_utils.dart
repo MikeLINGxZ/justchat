@@ -44,6 +44,11 @@ class FontSizeUtils {
     return getAdjustedFontSize(ref, 13);
   }
 
+    /// 获取调整后的微小字体大小 (12)
+  static double getMXSmallSize(WidgetRef ref) {
+    return getAdjustedFontSize(ref, 12);
+  }
+
   /// 获取调整后的微小字体大小 (11)
   static double getXSmallSize(WidgetRef ref) {
     return getAdjustedFontSize(ref, 11);
