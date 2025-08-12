@@ -319,13 +319,6 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
