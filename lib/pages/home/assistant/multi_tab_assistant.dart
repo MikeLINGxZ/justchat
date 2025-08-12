@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lemon_tea/pages/home/assistant/assistant.dart';
@@ -5,6 +6,7 @@ import 'package:lemon_tea/utils/conversation_manager.dart';
 import 'package:lemon_tea/models/conversation.dart';
 import 'package:lemon_tea/storage/chat_storage.dart';
 import 'package:lemon_tea/utils/font_size_utils.dart';
+import 'package:lemon_tea/utils/style.dart';
 
 /// 多标签页对话界面
 class MultiTabAssistant extends ConsumerStatefulWidget {
@@ -20,7 +22,6 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
   List<AssistantTab> _tabs = [];
   int _currentTabIndex = 0;
   bool _isLoading = true;
-  
 
   @override
   void initState() {
@@ -169,16 +170,8 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
         Text(
           tab.title,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: FontSizeUtils.getSmallSize(ref),
-            fontWeight: FontWeight.w500,
-            height: 1.0,
-          ),
-          strutStyle: const StrutStyle(
-            height: 1.0,
-            leading: 0.0,
-            forceStrutHeight: true,
-          ),
+          style: TextStyle(fontSize: FontSizeUtils.getSmallSize(ref)),
+          strutStyle: const StrutStyle(forceStrutHeight: true),
           textHeightBehavior: const TextHeightBehavior(
             applyHeightToFirstAscent: false,
             applyHeightToLastDescent: false,
@@ -207,93 +200,97 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
 
   /// 构建标签栏
   Widget _buildTabBar() {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.only(left: 8, right: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                indicator: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 4,
-                ),
-                labelColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-                dividerColor: Colors.transparent,
-                tabs:
-                    _tabs.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final tab = entry.value;
-                      return Tab(
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 200),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                           vertical: 0,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: _buildTabTitle(tab, index),
-                        ),
-                      );
-                    }).toList(),
-              ),
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: EdgeInsets.all(6),
+          // padding: const EdgeInsets.only(left: 8, right: 8),
+          decoration: BoxDecoration(
+            color: Style.tertiaryBackground(context),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.black.withOpacity(0.1),
+            //     blurRadius: 10,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
           ),
-          // 新建标签页按钮
-          if (_tabs.length < 5)
-            Container(
-              margin: const EdgeInsets.only(left: 8, right: 16),
-              child: GestureDetector(
-                onTap: () => _createNewTab(),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
+          child: Container(
+            height: 38,
+            child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  indicator: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.3),
-                      width: 1,
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
+                  labelColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                  unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  dividerColor: Colors.transparent,
+                  tabs:
+                      _tabs.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final tab = entry.value;
+                        return Tab(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 0,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: _buildTabTitle(tab, index),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+              // 新建标签页按钮
+              if (_tabs.length < 5)
+                Container(
+                  margin: const EdgeInsets.only(left: 8, right: 8),
+                  child: GestureDetector(
+                    onTap: () => _createNewTab(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
-                  child: Icon(
-                    Icons.add,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+          ),
+        ),
       ),
     );
   }
@@ -310,11 +307,13 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
 
     return Column(
       children: [
-        _buildTabBar(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: _buildTabBar(),
+        ),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
@@ -334,11 +333,12 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
               ),
               child: IndexedStack(
                 index: _currentTabIndex,
-                children: _tabs.map((tab) {
-                  return AssistantPage(
-                    conversationManager: tab.conversationManager,
-                  );
-                }).toList(),
+                children:
+                    _tabs.map((tab) {
+                      return AssistantPage(
+                        conversationManager: tab.conversationManager,
+                      );
+                    }).toList(),
               ),
             ),
           ),
