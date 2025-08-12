@@ -89,7 +89,6 @@ class _HomePage extends State<HomePage> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(Style.radiusLv1),
-                  color: Style.primaryBackground(context),
                 ),
                 child: Row(
                   children: [
@@ -99,6 +98,8 @@ class _HomePage extends State<HomePage> {
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(Style.radiusLv1),
                           bottomLeft: Radius.circular(Style.radiusLv1),
+                          topRight: Radius.circular(Style.radiusLv1),
+                          bottomRight: Radius.circular(Style.radiusLv1),
                         ),
                         color: Style.sidebarBackground(context),
                       ),
@@ -173,17 +174,30 @@ class _HomePage extends State<HomePage> {
                         ],
                       ),
                     ),
-                    VerticalDivider(thickness: 1, width: 1,color: Style.divider(context)),
+                    // VerticalDivider(thickness: 1, width: 1,color: Style.divider(context)),
+                    SizedBox(width: 4),
+
                     // 内容区域：使用 IndexedStack 保持各页面状态，切换无销毁
                     Expanded(
-                      child: IndexedStack(
-                        index: _selectedIndex,
-                        children: _pages,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(Style.radiusLv1),
+                            bottomLeft: Radius.circular(Style.radiusLv1),
+                            topRight: Radius.circular(Style.radiusLv1),
+                            bottomRight: Radius.circular(Style.radiusLv1),
+                          ),
+                          color: Style.primaryBackground(context),
+                        ),
+                        child: IndexedStack(
+                          index: _selectedIndex,
+                          children: _pages,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              )
+              ),
             ),
           ),
         ],

@@ -218,7 +218,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
             // ],
           ),
           child: Container(
-            height: 38,
+            height: 34,
             child: Row(
             children: [
               Container(
