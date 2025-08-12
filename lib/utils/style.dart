@@ -48,8 +48,8 @@ class Style {
   /// 次次次要背景色（与次要背景色对比更明显）
   static Color tertiaryBackground(BuildContext context) {
     return isDarkTheme(context)
-        ? const Color(0xFF121212) // 更暗，与 0xFF282828 对比更明显
-        : const Color(0xFFd3d3d3); // 更深的浅灰，与 0xFFededed 对比更明显
+        ? const Color(0xFF0D0D0D) // 更接近黑色，与 0xFF282828 对比更强
+        : const Color(0xFFc0c0c0); // 中灰色，与 0xFFededed 形成明显对比
   }
 
   /// 卡片背景色

@@ -51,6 +51,30 @@ class _AssistantPage extends State<AssistantPage> {
     _initializeConversation();
   }
 
+  @override
+  void didUpdateWidget(covariant AssistantPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 当外部传入的 ConversationManager 发生变化时，切换监听并刷新状态
+    if (oldWidget.conversationManager != widget.conversationManager &&
+        widget.conversationManager != null) {
+      _conversationManager.removeListener(_onConversationManagerChanged);
+      _conversationManager = widget.conversationManager!;
+      _conversationManager.addListener(_onConversationManagerChanged);
+
+      // 根据新的会话管理器刷新当前会话与消息
+      final newConversation = _conversationManager.currentConversation;
+      if (newConversation != null) {
+        _loadConversation(newConversation);
+      } else {
+        setState(() {
+          _currentConversation = null;
+          _historyMessages = [];
+          _currentTitle = '新对话';
+        });
+      }
+    }
+  }
+
   // 添加自动聚焦到输入框的方法
   void _focusInputField() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,7 +93,8 @@ class _AssistantPage extends State<AssistantPage> {
     // 当 ConversationManager 发生变化时，更新UI
     if (mounted) {
       setState(() {
-        _historyMessages = _conversationManager.messages;
+        // 不直接用 ConversationManager 的消息覆盖本地消息，
+        // 避免在新建会话后本地已添加的用户消息被清空
         _currentTitle =
             _conversationManager.currentConversation?.title ?? 'AI 助手';
         _currentConversation = _conversationManager.currentConversation;
@@ -105,16 +130,14 @@ class _AssistantPage extends State<AssistantPage> {
           '使用已有的当前对话: ${_conversationManager.currentConversation!.title}',
         );
       } else {
-        // 获取所有对话
-        final conversations = await ChatStorage.getAllConversations();
-
-        if (conversations.isEmpty) {
-          // 如果没有对话，创建一个新的欢迎对话
-          await _createWelcomeConversation();
-        } else {
-          // 加载最新的对话
-          await _loadConversation(conversations.first);
-        }
+        // 对于新的空白标签页，不自动加载历史对话
+        // 保持空白状态，等待用户开始新对话
+        setState(() {
+          _currentConversation = null;
+          _historyMessages = [];
+          _currentTitle = '新对话';
+        });
+        debugPrint('创建空白对话标签页');
       }
     } catch (e) {
       debugPrint('Failed to initialize conversation: $e');
@@ -335,7 +358,28 @@ def hello():
     files ??= [];
     
     if (message.trim().isEmpty && files.isEmpty) return;
-    if (_currentConversation == null) return;
+    
+    // 如果没有当前对话，自动创建一个新对话
+    if (_currentConversation == null) {
+      final conversation = await _conversationManager.createConversation(
+        title: '新对话',
+        defaultProviderId: _selectedProviderId ?? 'deepseek',
+        defaultModelId: _selectedModelId ?? 'deepseek-chat',
+      );
+      
+      if (conversation != null) {
+        setState(() {
+          _currentConversation = conversation;
+          _currentTitle = conversation.title;
+          _selectedProviderId = conversation.defaultProviderId ?? 'deepseek';
+          _selectedModelId = conversation.defaultModelId ?? 'deepseek-chat';
+        });
+        debugPrint('自动创建新对话: ${conversation.id}');
+      } else {
+        debugPrint('创建新对话失败，无法发送消息');
+        return;
+      }
+    }
 
     // 检查是否为临时对话模式
     final isTemporaryConversation = _currentConversation!.id.startsWith(

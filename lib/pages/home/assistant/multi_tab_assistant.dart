@@ -81,11 +81,9 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
 
   /// 标签页切换监听
   void _onTabChanged() {
-    if (_tabController.indexIsChanging) {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-    }
+    setState(() {
+      _currentTabIndex = _tabController.index;
+    });
   }
 
   /// 为指定对话创建标签页
@@ -105,6 +103,8 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
   /// 创建新的标签页
   Future<void> _createNewTab([String? title]) async {
     final conversationManager = ConversationManager();
+    // 确保新的ConversationManager是完全空白的状态
+    conversationManager.clearCurrentConversation();
 
     final tab = AssistantTab(
       id: 'new-${DateTime.now().millisecondsSinceEpoch}',
@@ -250,6 +250,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                         final index = entry.key;
                         final tab = entry.value;
                         return Tab(
+                          key: ValueKey('tab-${tab.id}'),
                           child: Container(
                             constraints: const BoxConstraints(maxWidth: 200),
                             padding: const EdgeInsets.symmetric(
@@ -336,6 +337,7 @@ class _MultiTabAssistantState extends ConsumerState<MultiTabAssistant>
                 children:
                     _tabs.map((tab) {
                       return AssistantPage(
+                        key: ValueKey('assistant-${tab.id}'),
                         conversationManager: tab.conversationManager,
                       );
                     }).toList(),
