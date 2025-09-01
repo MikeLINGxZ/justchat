@@ -28,7 +28,6 @@ class ExpandableSidebar extends StatefulWidget {
 class _ExpandableSidebarState extends State<ExpandableSidebar>
     with TickerProviderStateMixin {
   bool _isExpanded = false;
-  bool _isUserMenuExpanded = false;
   String _searchQuery = '';
   List<Conversation> _filteredConversations = [];
   late AnimationController _animationController;
@@ -82,7 +81,6 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
         _animationController.forward();
       } else {
         _animationController.reverse();
-        _isUserMenuExpanded = false; // 收缩时关闭用户菜单
       }
     });
   }
@@ -462,191 +460,205 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
       );
     }
 
-    return Column(
-      children: [
-        // 用户信息
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _isUserMenuExpanded = !_isUserMenuExpanded;
-              });
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return PopupMenuButton<String>(
+      offset: const Offset(0, -8), // 向上弹出
+      tooltip: '',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: _isUserMenuExpanded ? Style.secondaryColor(context) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                color: Style.tertiaryBackground(context),
               ),
-              child: Row(
+              child: Icon(
+                Icons.person,
+                size: 18,
+                color: Style.primaryText(context),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Style.tertiaryBackground(context),
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      size: 18,
+                  Text(
+                    'lpxqu',
+                    style: TextStyle(
                       color: Style.primaryText(context),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'lpxqu',
-                          style: TextStyle(
-                            color: Style.primaryText(context),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          'lpxqu@qq.com',
-                          style: TextStyle(
-                            color: Style.hintText(context),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'lpxqu@qq.com',
+                    style: TextStyle(
+                      color: Style.hintText(context),
+                      fontSize: 11,
                     ),
-                  ),
-                  Icon(
-                    _isUserMenuExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                    size: 16,
-                    color: Style.secondaryText(context),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-        
-        // 用户菜单项
-        if (_isUserMenuExpanded) ..._buildUserMenuItems(),
-      ],
-    );
-  }
-
-  List<Widget> _buildUserMenuItems() {
-    return [
-      const SizedBox(height: 8),
-      
-      // 设置
-      _buildUserMenuItem(
-        icon: Icons.settings,
-        title: '设置',
-        onTap: () {
-          widget.onItemSelected(kDebugMode ? 5 : 4);
-          setState(() {
-            _isUserMenuExpanded = false;
-          });
-        },
-      ),
-      
-      // 主题
-      _buildThemeMenuItem(),
-      
-      // 调试（仅Debug模式）
-      if (kDebugMode) _buildUserMenuItem(
-        icon: Icons.bug_report,
-        title: '调试',
-        onTap: () {
-          widget.onItemSelected(4);
-          setState(() {
-            _isUserMenuExpanded = false;
-          });
-        },
-      ),
-      
-      // 退出登录
-      _buildUserMenuItem(
-        icon: Icons.logout,
-        title: '退出登录',
-        onTap: () {
-          // TODO: 实现退出登录逻辑
-          print('退出登录');
-        },
-      ),
-    ];
-  }
-
-  Widget _buildUserMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: Style.secondaryText(context),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Style.primaryText(context),
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThemeMenuItem() {
-    return PopupMenuButton<String>(
-      offset: const Offset(-120, 0),
-      child: Container(
-        width: double.infinity,
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
             Icon(
-              Icons.palette,
+              Icons.more_vert,
               size: 16,
-              color: Style.secondaryText(context),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '主题',
-              style: TextStyle(
-                color: Style.primaryText(context),
-                fontSize: 13,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.keyboard_arrow_right,
-              size: 14,
               color: Style.secondaryText(context),
             ),
           ],
         ),
       ),
       itemBuilder: (context) => [
+        // 设置
+        PopupMenuItem(
+          value: 'settings',
+          height: 48,
+          child: Row(
+            children: [
+              Icon(
+                Icons.settings,
+                size: 18,
+                color: Style.secondaryText(context),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '设置',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Style.primaryText(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // 主题
+        PopupMenuItem(
+          value: 'theme',
+          height: 48,
+          child: Row(
+            children: [
+              Icon(
+                Icons.palette,
+                size: 18,
+                color: Style.secondaryText(context),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '主题',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Style.primaryText(context),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_right,
+                size: 16,
+                color: Style.secondaryText(context),
+              ),
+            ],
+          ),
+        ),
+        
+        // 调试（仅Debug模式）
+        if (kDebugMode)
+          PopupMenuItem(
+            value: 'debug',
+            height: 48,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.bug_report,
+                  size: 18,
+                  color: Style.secondaryText(context),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '调试',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Style.primaryText(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        // 分割线
+        const PopupMenuDivider(),
+        
+        // 退出登录
+        PopupMenuItem(
+          value: 'logout',
+          height: 48,
+          child: Row(
+            children: [
+              Icon(
+                Icons.logout,
+                size: 18,
+                color: Style.error(context),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '退出登录',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Style.error(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'settings':
+            widget.onItemSelected(kDebugMode ? 5 : 4);
+            break;
+          case 'theme':
+            _showThemeSubMenu(context);
+            break;
+          case 'debug':
+            if (kDebugMode) {
+              widget.onItemSelected(4);
+            }
+            break;
+          case 'logout':
+            // TODO: 实现退出登录逻辑
+            print('退出登录');
+            break;
+        }
+      },
+    );
+  }
+
+  void _showThemeSubMenu(BuildContext context) {
+    // 获取按钮位置
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final position = renderBox.localToGlobal(Offset.zero);
+    
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx + 200, // 在用户菜单右侧显示
+        position.dy - 100,
+        position.dx + 400,
+        position.dy + 100,
+      ),
+      items: [
         PopupMenuItem(
           value: 'auto',
+          height: 40,
           child: Row(
             children: [
               Icon(Icons.brightness_auto, size: 16, color: Style.secondaryText(context)),
@@ -657,6 +669,7 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
         ),
         PopupMenuItem(
           value: 'light',
+          height: 40,
           child: Row(
             children: [
               Icon(Icons.light_mode, size: 16, color: Style.secondaryText(context)),
@@ -667,6 +680,7 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
         ),
         PopupMenuItem(
           value: 'dark',
+          height: 40,
           child: Row(
             children: [
               Icon(Icons.dark_mode, size: 16, color: Style.secondaryText(context)),
@@ -676,11 +690,12 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
           ),
         ),
       ],
-      onSelected: (value) {
+    ).then((value) {
+      if (value != null) {
         // TODO: 实现主题切换逻辑
         print('切换主题: $value');
-      },
-    );
+      }
+    });
   }
 
   String _formatDate(DateTime date) {
