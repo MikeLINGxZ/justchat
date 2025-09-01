@@ -22,7 +22,6 @@ class HomePage extends StatefulWidget {
 class _HomePage extends State<HomePage> {
   int _selectedIndex = 0;
   late ConversationManager _conversationManager;
-  late List<SidebarItem> _sidebarItems;
 
   final List<Widget> _pages = [];
 
@@ -30,51 +29,9 @@ class _HomePage extends State<HomePage> {
   void initState() {
     super.initState();
     _conversationManager = ConversationManager();
-    _initializeSidebarItems();
     _initializePages();
     // 初始化ConversationManager，加载对话历史
     _conversationManager.initialize();
-  }
-
-  void _initializeSidebarItems() {
-    _sidebarItems = [
-      const SidebarItem(
-        icon: Icons.chat_bubble_outline,
-        title: '助手',
-        index: 0,
-      ),
-      const SidebarItem(
-        icon: Icons.task_alt,
-        title: '任务',
-        index: 1,
-      ),
-      const SidebarItem(
-        icon: Icons.history,
-        title: '历史',
-        index: 2,
-      ),
-      const SidebarItem(
-        icon: Icons.extension,
-        title: '插件',
-        index: 3,
-      ),
-    ];
-
-    // 在debug模式下添加debug项
-    if (kDebugMode) {
-      _sidebarItems.add(const SidebarItem(
-        icon: Icons.bug_report,
-        title: '调试',
-        index: 4,
-      ));
-    }
-
-    // 最后添加settings项
-    _sidebarItems.add(SidebarItem(
-      icon: Icons.settings,
-      title: '设置',
-      index: kDebugMode ? 5 : 4,
-    ));
   }
 
   void _initializePages() {
@@ -143,7 +100,9 @@ class _HomePage extends State<HomePage> {
                           _selectedIndex = index;
                         });
                       },
-                      items: _sidebarItems,
+                      conversationManager: _conversationManager,
+                      onConversationSelected: _handleConversationSelected,
+                      onNewConversation: _handleNewConversation,
                     ),
                     const SizedBox(width: 4),
 
