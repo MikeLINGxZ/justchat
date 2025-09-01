@@ -99,46 +99,54 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
     return AnimatedBuilder(
       animation: _widthAnimation,
       builder: (context, child) {
+        final currentWidth = _widthAnimation.value;
+        final shouldShowExpanded = currentWidth > 150; // 只有当宽度足够时才显示展开内容
+        
         return Container(
-          width: _widthAnimation.value,
+          width: currentWidth,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Style.radiusLv1),
             color: Style.sidebarBackground(context),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
-          child: Column(
-            children: [
-              // 顶部柠檬图标按钮
-              _buildToggleButton(),
-              if (_isExpanded) const SizedBox(height: 16),
-              
-              // 功能按钮区域
-              if (_isExpanded) _buildFunctionButtons(),
-              if (_isExpanded) const SizedBox(height: 16),
-              
-              // 新建对话按钮
-              if (_isExpanded) _buildNewChatButton(),
-              if (_isExpanded) const SizedBox(height: 12),
-              
-              // 搜索框
-              if (_isExpanded) _buildSearchBox(),
-              if (_isExpanded) const SizedBox(height: 12),
-              
-              // 历史对话列表
-              if (_isExpanded) Expanded(child: _buildChatHistory()),
-              
-              const Spacer(),
-              
-              // 底部用户菜单
-              _buildUserMenu(),
-            ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Style.radiusLv1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
+              child: Column(
+                children: [
+                  // 顶部柠檬图标按钮
+                  _buildToggleButton(shouldShowExpanded),
+                  const SizedBox(height: 16),
+                  
+                  // 功能按钮区域 - 无论展开还是折叠都显示
+                  _buildFunctionButtons(shouldShowExpanded),
+                  if (shouldShowExpanded) const SizedBox(height: 16),
+                  
+                  // 新建对话按钮
+                  if (shouldShowExpanded) _buildNewChatButton(),
+                  if (shouldShowExpanded) const SizedBox(height: 12),
+                  
+                  // 搜索框
+                  if (shouldShowExpanded) _buildSearchBox(),
+                  if (shouldShowExpanded) const SizedBox(height: 12),
+                  
+                  // 历史对话列表
+                  if (shouldShowExpanded) Expanded(child: _buildChatHistory()),
+                  
+                  const Spacer(),
+                  
+                  // 底部用户菜单
+                  _buildUserMenu(shouldShowExpanded),
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildToggleButton() {
+  Widget _buildToggleButton(bool shouldShowExpanded) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Tooltip(
@@ -152,7 +160,7 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
               borderRadius: BorderRadius.circular(8),
               color: Colors.transparent,
             ),
-            child: _isExpanded
+            child: shouldShowExpanded
                 ? Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
@@ -187,24 +195,50 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
     );
   }
 
-  Widget _buildFunctionButtons() {
-    return Column(
-      children: [
-        _buildFunctionButton(
-          icon: Icons.task_alt,
-          title: '任务',
-          isSelected: widget.selectedIndex == 1,
-          onTap: () => widget.onItemSelected(1),
-        ),
-        const SizedBox(height: 8),
-        _buildFunctionButton(
-          icon: Icons.extension,
-          title: '插件',
-          isSelected: widget.selectedIndex == 3,
-          onTap: () => widget.onItemSelected(3),
-        ),
-      ],
-    );
+  Widget _buildFunctionButtons(bool shouldShowExpanded) {
+    if (shouldShowExpanded) {
+      // 展开状态：显示所有按钮
+      return Column(
+        children: [
+          _buildFunctionButton(
+            icon: Icons.task_alt,
+            title: '任务',
+            isSelected: widget.selectedIndex == 1,
+            onTap: () => widget.onItemSelected(1),
+            showExpanded: shouldShowExpanded,
+          ),
+          const SizedBox(height: 8),
+          _buildFunctionButton(
+            icon: Icons.extension,
+            title: '插件',
+            isSelected: widget.selectedIndex == 3,
+            onTap: () => widget.onItemSelected(3),
+            showExpanded: shouldShowExpanded,
+          ),
+        ],
+      );
+    } else {
+      // 折叠状态：只显示图标，并增加间距
+      return Column(
+        children: [
+          _buildFunctionButton(
+            icon: Icons.task_alt,
+            title: '任务',
+            isSelected: widget.selectedIndex == 1,
+            onTap: () => widget.onItemSelected(1),
+            showExpanded: shouldShowExpanded,
+          ),
+          const SizedBox(height: 14),
+          _buildFunctionButton(
+            icon: Icons.extension,
+            title: '插件',
+            isSelected: widget.selectedIndex == 3,
+            onTap: () => widget.onItemSelected(3),
+            showExpanded: shouldShowExpanded,
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildFunctionButton({
@@ -212,36 +246,48 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
     required String title,
     required bool isSelected,
     required VoidCallback onTap,
+    required bool showExpanded,
   }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          height: 36,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: isSelected ? Style.secondaryColor(context) : Colors.transparent,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected ? Style.primaryColor(context) : Style.secondaryText(context),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? Style.primaryColor(context) : Style.primaryText(context),
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                ),
-              ),
-            ],
+      child: Tooltip(
+        message: showExpanded ? '' : title,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: showExpanded ? double.infinity : 40,
+            height: showExpanded ? 36 : 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: isSelected ? Style.secondaryColor(context) : Colors.transparent,
+            ),
+            padding: showExpanded ? const EdgeInsets.symmetric(horizontal: 12) : null,
+            child: showExpanded
+                ? Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: 18,
+                        color: isSelected ? Style.primaryColor(context) : Style.secondaryText(context),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: isSelected ? Style.primaryColor(context) : Style.primaryText(context),
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: isSelected ? Style.primaryColor(context) : Style.secondaryText(context),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -390,8 +436,8 @@ class _ExpandableSidebarState extends State<ExpandableSidebar>
     );
   }
 
-  Widget _buildUserMenu() {
-    if (!_isExpanded) {
+  Widget _buildUserMenu(bool shouldShowExpanded) {
+    if (!shouldShowExpanded) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Tooltip(
