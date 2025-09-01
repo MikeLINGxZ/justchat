@@ -1,6 +1,6 @@
 syntax = "proto3";
 package lemon_tea.common;
-option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_cli/rpc";
+option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_server/rpc/common";
 
 // Empty 空参数占位
 message Empty {}
@@ -24,14 +24,7 @@ message Model {
   bool enabled = 4;          // 是否启用
 }
 
-// RoleType 是消息角色类型的枚举
-enum RoleType {
-  ROLE_TYPE_UNSPECIFIED = 0; // 未指定
-  ROLE_TYPE_ASSISTANT = 1;   // 助手（AI 回复）
-  ROLE_TYPE_USER = 2;        // 用户输入
-  ROLE_TYPE_SYSTEM = 3;      // 系统指令
-  ROLE_TYPE_TOOL = 4;        // 工具调用返回
-}
+
 
 // ImageURLDetail 是图像 URL 的细节级别
 enum ImageURLDetail {
@@ -49,6 +42,12 @@ enum ChatMessagePartType {
   CHAT_MESSAGE_PART_TYPE_AUDIO_URL = 3;   // 音频链接
   CHAT_MESSAGE_PART_TYPE_VIDEO_URL = 4;   // 视频链接
   CHAT_MESSAGE_PART_TYPE_FILE_URL = 5;    // 文件链接
+}
+
+enum VerificationCodeType {
+  VERIFICATION_CODE_TYPE_UNSPECIFIED = 0;
+  VERIFICATION_CODE_TYPE_REGISTER = 1;
+  VERIFICATION_CODE_TYPE_RESET_PASSWORD = 2;
 }
 
 // FunctionCall 是消息中的函数调用信息
@@ -184,71 +183,38 @@ message ResponseMeta {
   optional LogProbs log_probs = 3;
 }
 
-// Message 表示一条聊天消息
+// Message 表示一条聊天消息，使用 oneof 分离不同角色的消息类型
 message Message {
-  RoleType role = 1;                         // 角色类型
-  string content = 2;                        // 消息内容（纯文本）
-  // 如果 multi_content 非空，则优先使用它而不是 content
-  repeated ChatMessagePart multi_content = 3;
-  string name = 4;                           // 发送者名称（如用户或工具名）
-  // 仅用于 Assistant 消息
-  repeated ToolCall tool_calls = 5;
-  // 仅用于 Tool 消息
-  string tool_call_id = 6;                   // 工具调用 ID
-  // 仅用于 Tool 消息
-  string tool_name = 7;                      // 工具名称
-  optional ResponseMeta response_meta = 8;   // 响应元信息
-  // ReasoningContent 是模型的推理思考过程
-  string reasoning_content = 9;
-  // 针对特定模型实现的自定义扩展信息
-  map<string, string> extra = 10;
+  // 通用字段（所有消息类型都可能包含）
+  string content = 1;                       // 主要内容（纯文本）
+  repeated ChatMessagePart multi_content = 2; // 多模态内容（如图片、文本、文件等）
+  string name = 3;                          // 消息发送者名称（可选）
+  map<string, string> extra = 4;           // 扩展信息（可选）
+  string role = 5;
+  // 系统消息相关字段（仅在 role == SYSTEM 时使用）
+  string system_content = 10;              // 系统指令内容（原 SystemMessage.content）
+
+  // 助手消息相关字段（仅在 role == ASSISTANT 时使用）
+  repeated ToolCall tool_calls = 11;       // 工具调用请求
+  ResponseMeta response_meta = 12;         // 响应元信息
+  string reasoning_content = 13;           // 推理过程（如思维链）
+
+  // 工具消息相关字段（仅在 role == TOOL 时使用）
+  string tool_call_id = 14;                // 工具调用 ID
+  string tool_name = 15;                   // 工具名称
+  // 以下为业务字段
+  string chat_uuid = 16;
 }
 
-// MessageList 表示一组消息的列表
-message MessageList {
-  repeated Message messages = 1;
-}
 
-// Request and Response messages for RPC operations
-// RPC 操作的请求与响应消息
-
-message CreateMessageRequest {
-  Message message = 1;   // 创建消息的请求
-}
-message CreateMessageResponse {
-  string message_id = 1; // 创建成功的消息 ID
-  Message message = 2;   // 返回完整的消息对象
-}
-
-message GetMessageRequest {
-  string message_id = 1; // 根据 ID 获取消息
-}
-message GetMessageResponse {
-  Message message = 1;   // 返回的消息对象
-}
-
-message UpdateMessageRequest {
-  string message_id = 1; // 要更新的消息 ID
-  Message message = 2;   // 更新后的内容
-}
-message UpdateMessageResponse {
-  Message message = 1;   // 返回更新后的消息
-}
-
-message DeleteMessageRequest {
-  string message_id = 1; // 要删除的消息 ID
-}
-message DeleteMessageResponse {
-  bool success = 1;      // 删除是否成功
-}
-
-message ListMessagesRequest {
-  int32 page_size = 1;   // 分页大小
-  string page_token = 2; // 分页令牌
-  string filter = 3;     // 过滤条件
-}
-message ListMessagesResponse {
-  repeated Message messages = 1;     // 消息列表
-  string next_page_token = 2;        // 下一页令牌
-  int32 total_count = 3;             // 总数量
+// ChatInfo 对话信息
+message ChatInfo {
+  string chat_uuid = 1;                                    // 对话 ID
+  string title = 2;                                      // 对话标题
+  int64 model_id = 3;                                      // 使用的模型
+  int64 created_at = 4;                                  // 创建时间（unix 秒）
+  int64 updated_at = 5;                                  // 更新时间（unix 秒）
+  int32 message_count = 6;                               // 消息数量
+  string last_message_preview = 7;                       // 最后一条消息预览
+  map<string, string> metadata = 8;                      // 元数据
 }

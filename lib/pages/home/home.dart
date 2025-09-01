@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lemon_tea/controls/window_title_bar.dart';
-import 'package:lemon_tea/controls/sidebar_icon_button.dart';
+import 'package:lemon_tea/controls/expandable_sidebar.dart';
 import 'package:lemon_tea/pages/home/assistant/multi_tab_assistant.dart';
 import 'package:lemon_tea/pages/home/task/task.dart';
 import 'package:lemon_tea/pages/home/history/history.dart';
@@ -22,6 +22,7 @@ class HomePage extends StatefulWidget {
 class _HomePage extends State<HomePage> {
   int _selectedIndex = 0;
   late ConversationManager _conversationManager;
+  late List<SidebarItem> _sidebarItems;
 
   final List<Widget> _pages = [];
 
@@ -29,9 +30,51 @@ class _HomePage extends State<HomePage> {
   void initState() {
     super.initState();
     _conversationManager = ConversationManager();
+    _initializeSidebarItems();
     _initializePages();
     // 初始化ConversationManager，加载对话历史
     _conversationManager.initialize();
+  }
+
+  void _initializeSidebarItems() {
+    _sidebarItems = [
+      const SidebarItem(
+        icon: Icons.chat_bubble_outline,
+        title: '助手',
+        index: 0,
+      ),
+      const SidebarItem(
+        icon: Icons.task_alt,
+        title: '任务',
+        index: 1,
+      ),
+      const SidebarItem(
+        icon: Icons.history,
+        title: '历史',
+        index: 2,
+      ),
+      const SidebarItem(
+        icon: Icons.extension,
+        title: '插件',
+        index: 3,
+      ),
+    ];
+
+    // 在debug模式下添加debug项
+    if (kDebugMode) {
+      _sidebarItems.add(const SidebarItem(
+        icon: Icons.bug_report,
+        title: '调试',
+        index: 4,
+      ));
+    }
+
+    // 最后添加settings项
+    _sidebarItems.add(SidebarItem(
+      icon: Icons.settings,
+      title: '设置',
+      index: kDebugMode ? 5 : 4,
+    ));
   }
 
   void _initializePages() {
@@ -92,90 +135,17 @@ class _HomePage extends State<HomePage> {
                 ),
                 child: Row(
                   children: [
-                    // 侧边栏
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(Style.radiusLv1),
-                          bottomLeft: Radius.circular(Style.radiusLv1),
-                          topRight: Radius.circular(Style.radiusLv1),
-                          bottomRight: Radius.circular(Style.radiusLv1),
-                        ),
-                        color: Style.sidebarBackground(context),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20.0,
-                        horizontal: 12.0,
-                      ),
-                      child: Column(
-                        children: [
-                          SidebarIconButton(
-                            icon: Icons.chat_bubble_outline,
-                            isSelected: _selectedIndex == 0,
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = 0;
-                              });
-                            },
-                          ),
-                          // const SizedBox(height: 14),
-                          // SidebarIconButton(
-                          //   icon: Icons.task_outlined,
-                          //   isSelected: _selectedIndex == 1,
-                          //   onPressed: () {
-                          //     setState(() {
-                          //       _selectedIndex = 1;
-                          //     });
-                          //   },
-                          // ),
-                          const SizedBox(height: 14),
-                          SidebarIconButton(
-                            icon: Icons.history,
-                            isSelected: _selectedIndex == 2,
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = 2;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          SidebarIconButton(
-                            icon: Icons.extension,
-                            isSelected: _selectedIndex == 3,
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = 3;
-                              });
-                            },
-                          ),
-                          const Spacer(),
-                          // 在debug模式下显示debug按钮
-                          if (kDebugMode) ...[
-                            SidebarIconButton(
-                              icon: Icons.bug_report,
-                              isSelected: _selectedIndex == 4,
-                              onPressed: () {
-                                setState(() {
-                                  _selectedIndex = 4;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          SidebarIconButton(
-                            icon: Icons.settings,
-                            isSelected: _selectedIndex == (kDebugMode ? 5 : 4),
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = kDebugMode ? 5 : 4;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                    // 可展开侧边栏
+                    ExpandableSidebar(
+                      selectedIndex: _selectedIndex,
+                      onItemSelected: (index) {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      items: _sidebarItems,
                     ),
-                    // VerticalDivider(thickness: 1, width: 1,color: Style.divider(context)),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
 
                     // 内容区域：使用 IndexedStack 保持各页面状态，切换无销毁
                     Expanded(
