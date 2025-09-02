@@ -182,7 +182,7 @@ export interface FileDescriptorProto {
   publicDependency: number[];
   /**
    * Indexes of the weak imported files in the dependency list.
-   * For Google-internal migration only. Do not use.
+   * For Google-backend migration only. Do not use.
    */
   weakDependency: number[];
   /** All top-level definitions in this file. */
@@ -262,7 +262,7 @@ export interface ExtensionRangeOptions {
   uninterpretedOption: UninterpretedOption[];
   /**
    * For external users: DO NOT USE. We are in the process of open sourcing
-   * extension declaration and executing internal cleanups before it can be
+   * extension declaration and executing backend cleanups before it can be
    * used externally.
    */
   declaration: ExtensionRangeOptions_Declaration[];
@@ -1173,7 +1173,7 @@ export interface FieldOptions {
   deprecated?:
     | boolean
     | undefined;
-  /** For Google-internal migration only. Do not use. */
+  /** For Google-backend migration only. Do not use. */
   weak?:
     | boolean
     | undefined;

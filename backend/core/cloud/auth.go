@@ -3,7 +3,7 @@ package cloud
 import (
 	"context"
 
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/internal/core"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/core"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/rpc/service"
 )
 

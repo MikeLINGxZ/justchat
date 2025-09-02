@@ -1,4 +1,4 @@
-const prefixErr = "@internal@err@";
+const prefixErr = "@backend@err@";
 
 export const packageErr = (errStr: string) => {
     return prefixErr+errStr;
