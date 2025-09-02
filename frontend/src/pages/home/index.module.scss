@@ -1,0 +1,353 @@
+@use '@/styles/variables.scss' as *;
+
+.homePage {
+  height: 100vh;
+  height: 100dvh; // 动态视口高度，适配移动端
+  overflow: hidden;
+  
+  // 移动端使用自定义视口高度变量
+  @media (max-width: 768px) {
+    height: var(--viewport-height);
+  }
+  
+  .layout {
+    height: 100%;
+    background: var(--background-color);
+    
+    .sidebar {
+      position: relative;
+      z-index: 100;
+    }
+    
+    .mainContent {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 100vh;
+      padding: 0;
+      background: var(--background-color);
+      overflow: hidden;
+    }
+  }
+}
+
+// 欢迎页面
+.welcomeContainer {
+  flex: 1;
+  @include flex-center;
+  padding: var(--spacing-xxl);
+  background: linear-gradient(135deg, var(--background-color) 0%, var(--background-color-light) 100%);
+  
+  .welcomeContent {
+    max-width: 800px;
+    text-align: center;
+    
+    .welcomeHeader {
+      margin-bottom: var(--spacing-xxl);
+      
+      .welcomeIcon {
+        font-size: 64px;
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-lg);
+        display: block;
+      }
+      
+      .welcomeTitle {
+        font-size: var(--font-size-xxl);
+        font-weight: var(--font-weight-bold);
+        color: var(--text-color);
+        margin-bottom: var(--spacing-md);
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .welcomeSubtitle {
+        font-size: var(--font-size-lg);
+        color: var(--text-color-secondary);
+        margin: 0;
+        line-height: var(--line-height-lg);
+      }
+    }
+    
+    .suggestionsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-xxl);
+      
+      .suggestionCard {
+        background: var(--background-color);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-lg);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        @include card-shadow;
+        
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--shadow-3);
+          border-color: var(--primary-color);
+          
+          .suggestionIcon {
+            color: var(--primary-color);
+            transform: scale(1.1);
+          }
+        }
+        
+        .suggestionIcon {
+          font-size: 32px;
+          color: var(--text-color-secondary);
+          margin-bottom: var(--spacing-md);
+          transition: all var(--transition-normal);
+        }
+        
+        .suggestionContent {
+          .suggestionTitle {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-color);
+            margin-bottom: var(--spacing-sm);
+          }
+          
+          .suggestionSubtitle {
+            font-size: var(--font-size);
+            color: var(--text-color-secondary);
+            margin: 0;
+            line-height: var(--line-height-lg);
+          }
+        }
+      }
+    }
+    
+    .welcomeActions {
+      .startChatButton {
+        height: 48px;
+        padding: 0 var(--spacing-xxl);
+        border-radius: var(--border-radius-lg);
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-medium);
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-2);
+        }
+      }
+    }
+  }
+}
+
+// 聊天内容样式已移至 ChatContent 组件
+
+// 移动端遮罩
+.sidebarOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  backdrop-filter: blur(4px);
+  opacity: 1;
+  transition: opacity 0.25s ease-out;
+  will-change: opacity;
+}
+
+// 回到顶部
+.backTop {
+  .ant-back-top-content {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    
+    &:hover {
+      background: var(--primary-color-hover);
+    }
+  }
+}
+
+// 悬浮按钮组
+.floatButtonGroup {
+  .ant-float-btn {
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+}
+
+// 响应式适配
+@include respond-below(lg) {
+  .homePage {
+    .layout {
+      .mainContent {
+        // ChatContent 组件样式已移至独立文件
+      }
+    }
+  }
+  
+  .welcomeContainer {
+    padding: var(--spacing-xl);
+    
+    .welcomeContent {
+      .welcomeHeader {
+        .welcomeIcon {
+          font-size: 48px;
+        }
+        
+        .welcomeTitle {
+          font-size: var(--font-size-xl);
+        }
+        
+        .welcomeSubtitle {
+          font-size: var(--font-size);
+        }
+      }
+      
+      .suggestionsGrid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--spacing-md);
+        
+        .suggestionCard {
+          padding: var(--spacing-md);
+          
+          .suggestionIcon {
+            font-size: 24px;
+          }
+          
+          .suggestionContent {
+            .suggestionTitle {
+              font-size: var(--font-size);
+            }
+            
+            .suggestionSubtitle {
+              font-size: var(--font-size-sm);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@include respond-below(md) {
+  .homePage {
+    .layout {
+      .mainContent {
+        margin-left: 0;
+        height: 100vh;
+        
+        // ChatContent 响应式样式已移至独立文件
+      }
+    }
+  }
+  
+  .welcomeContainer {
+    padding: var(--spacing-lg) var(--spacing-md);
+    
+    .welcomeContent {
+      .welcomeHeader {
+        margin-bottom: var(--spacing-xl);
+        
+        .welcomeIcon {
+          font-size: 40px;
+        }
+        
+        .welcomeTitle {
+          font-size: var(--font-size-lg);
+        }
+      }
+      
+      .suggestionsGrid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-xl);
+        
+        .suggestionCard {
+          padding: var(--spacing-sm);
+          
+          .suggestionIcon {
+            font-size: 20px;
+            margin-bottom: var(--spacing-sm);
+          }
+          
+          .suggestionContent {
+            .suggestionTitle {
+              font-size: var(--font-size-sm);
+              margin-bottom: var(--spacing-xs);
+            }
+            
+            .suggestionSubtitle {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+      
+      .welcomeActions {
+        .startChatButton {
+          height: 40px;
+          padding: 0 var(--spacing-lg);
+          font-size: var(--font-size);
+        }
+      }
+    }
+  }
+}
+
+@include respond-below(sm) {
+  .welcomeContainer {
+    padding: var(--spacing-md);
+    
+    .welcomeContent {
+      .suggestionsGrid {
+        .suggestionCard {
+          padding: var(--spacing-xs);
+          
+          .suggestionContent {
+            .suggestionTitle {
+              font-size: 12px;
+            }
+            
+            .suggestionSubtitle {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 暗色主题适配
+:root.dark {
+  .homePage {
+    .layout {
+      .mainContent {
+        background: var(--background-color);
+      }
+    }
+  }
+  
+  .welcomeContainer {
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--background-color-light) 100%);
+    
+    .welcomeContent {
+      .suggestionsGrid {
+        .suggestionCard {
+          background: var(--background-color-light);
+          border-color: var(--border-color);
+          
+          &:hover {
+            border-color: var(--primary-color);
+          }
+        }
+      }
+    }
+  }
+  
+  // ChatContent 暗色主题样式已移至独立文件
+}

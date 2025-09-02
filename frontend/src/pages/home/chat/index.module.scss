@@ -1,0 +1,69 @@
+@use '@/styles/variables.scss' as *;
+
+.chatPage {
+  width: 100%;
+  height: 100vh; // 占满整个视窗高度
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 15px;
+  
+  // 移动端使用动态视口高度，避免浏览器菜单栏遮挡
+  @media (max-width: 768px) {
+    height: var(--viewport-height);
+    padding-bottom: 0;
+  }
+}
+
+.chatMessagesContent {
+  flex: 1; // 占用所有剩余高度
+  overflow-y: auto; // 消息过多时可滚动
+  min-height: 0; // 确保 flex 子项可以收缩
+  width: 100%;
+  align-items: center;
+  justify-items: center;
+}
+
+.chatInput {
+  width: 80%;
+  flex-shrink: 0; // 输入框不收缩
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+
+  .chatMessagesContent {
+    width: 100%; // 移动端消息区域全宽
+  }
+
+  .chatInput {
+    width: 100%;
+  }
+}
+
+// 暗色主题适配
+:root.dark {
+  .chatPage {
+    background-color: var(--background-color-dark, #1f1f1f);
+    color: var(--text-color, #ffffff);
+  }
+  
+  .chatMessagesContent {
+    // 暗色主题下的滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color, #404040);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--text-color-disabled, #666666);
+      }
+    }
+  }
+}

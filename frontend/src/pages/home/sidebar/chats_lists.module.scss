@@ -1,0 +1,442 @@
+@use '@/styles/variables' as *;
+
+.sidebarChats {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--background-color);
+}
+
+.searchContainer {
+  padding: var(--sidebar-padding);
+  border-top: 1px solid var(--border-color-light);
+  background: var(--background-color);
+
+  .ant-input-affix-wrapper {
+    border-radius: var(--border-radius);
+
+    &:hover {
+      border-color: var(--primary-color-hover);
+    }
+
+    &:focus-within {
+      border-color: var(--border-color);
+      box-shadow: none;
+    }
+  }
+}
+
+.chatsContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  //&::-webkit-scrollbar-track {
+  //  background: transparent;
+  //}
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+
+    &:hover {
+      background: var(--text-color-disabled);
+    }
+  }
+}
+
+.chatGroup {
+  .groupTitleGroup {
+    padding: var(--sidebar-padding);
+    .groupTitle {
+      margin: 0;
+      padding: 0;
+      .ant-divider-inner-text {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--text-color-secondary);
+      }
+
+      &::before,
+      &::after {
+        border-top-color: var(--border-color-light);
+      }
+    }
+  }
+}
+
+.chatList {
+  .ant-list-item {
+    border: none !important; // 强制移除边线
+    border-block-end: none !important; // 移除 CSS 逻辑属性边框
+    border-bottom: none !important; // 兼容性边框移除
+    min-width: 0; // 确保flex子元素能正确收缩
+    overflow: hidden; // 防止内容溢出
+  }
+}
+
+.chatItem {
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  min-width: 0; // 确保flex子元素能正确收缩
+  overflow: hidden; // 防止内容溢出
+}
+
+.chatContent {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--border-radius);
+  margin: 0 6px;
+  min-width: 0; // 确保flex子元素能正确收缩
+  overflow: hidden; // 防止内容溢出
+  
+
+  &:hover {
+    background-color: var(--background-color-dark);
+  }
+
+  &.active {
+    background-color: var(--primary-color-light);
+
+    .chatTitle {
+      color: var(--primary-color);
+    }
+  }
+
+  &.editing {
+    padding: 4px 6px; // 编辑时减少内边距
+
+    &:hover {
+      background-color: var(--background-color-light);
+    }
+  }
+}
+
+.chatHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-width: 0; // 确保flex子元素能正确收缩
+  width: 100%; // 确保占满父容器宽度
+}
+
+.chatTitle {
+  flex: 1;
+  font-size: var(--font-size);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color);
+  line-height: 1.4;
+  min-width: 0; // 确保ellipsis生效
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatActions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.chatTime {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-color-disabled);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: var(--error-color);
+    color: white;
+  }
+
+  .anticon {
+    font-size: 12px;
+  }
+}
+
+.moreButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-color-disabled);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+
+  &:hover {
+    background-color: var(--background-color-hover);
+    color: var(--text-color);
+  }
+
+  .anticon {
+    font-size: 14px;
+  }
+}
+
+.chatContent:hover .moreButton {
+  opacity: 1;
+}
+
+.chatContent.active .moreButton {
+  opacity: 1;
+}
+
+// 内联编辑样式
+.editContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.editInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size);
+  
+  &.ant-input {
+    padding: 2px 6px;
+    height: 28px;
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size);
+    background-color: var(--background-color);
+    
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.confirmBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: var(--border-radius-sm);
+  color: var(--success-color, #52c41a);
+  
+  &:hover {
+    background-color: var(--success-color-light, rgba(82, 196, 26, 0.1));
+    color: var(--success-color, #52c41a);
+  }
+  
+  .anticon {
+    font-size: 12px;
+  }
+}
+
+.cancelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-color-secondary);
+  
+  &:hover {
+    background-color: var(--background-color-hover);
+    color: var(--error-color, #ff4d4f);
+  }
+  
+  .anticon {
+    font-size: 12px;
+  }
+}
+
+.chatPreview {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-secondary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.chatMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.messageCount {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-disabled);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .anticon {
+    font-size: 12px;
+  }
+}
+
+.loadMoreContainer {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.loadMoreBtn {
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
+
+  &:hover {
+    color: var(--primary-color-hover);
+  }
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+  padding: 20px 0;
+  
+  // 确保在侧边栏展开时不会影响宽度过渡
+  min-width: 0;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.endContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  margin: 8px 0;
+}
+
+.endText {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-secondary);
+  text-align: center;
+}
+
+// 空状态样式
+.ant-empty {
+  margin: 40px 0;
+
+  .ant-empty-description {
+    color: var(--text-color-secondary);
+    font-size: var(--font-size-sm);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .chatItem {
+    margin: 0 4px 4px 4px;
+  }
+
+  .searchContainer {
+    padding: 12px;
+  }
+
+  .chatTitle {
+    font-size: var(--font-size);
+  }
+
+  .chatPreview {
+    font-size: 12px;
+  }
+}
+
+// 深色主题支持
+:root.dark {
+  .sidebarChats {
+    background: var(--background-color);
+  }
+
+  .searchContainer {
+    background: var(--background-color);
+    border-top-color: var(--border-color-light);
+  }
+
+  .groupTitle {
+    .ant-divider-inner-text {
+      color: var(--text-color-secondary);
+    }
+
+    &::before,
+    &::after {
+      border-top-color: var(--border-color-light);
+    }
+  }
+}
+
+// 菜单项禁用状态样式
+:global {
+  .ant-dropdown-menu-item-disabled {
+    cursor: not-allowed !important;
+    
+    .ant-dropdown-menu-title-content {
+      color: var(--text-color-disabled) !important;
+      opacity: 0.5 !important;
+    }
+    
+    &:hover {
+      background-color: transparent !important;
+    }
+    
+    .anticon {
+      color: var(--text-color-disabled) !important;
+      opacity: 0.5 !important;
+    }
+  }
+
+  // 覆盖 Ant Design List 组件的默认边框
+  .ant-list-split .ant-list-item {
+    border-block-end: none !important;
+    border-bottom: none !important;
+  }
+}
+
+// 动画优化
+@media (prefers-reduced-motion: reduce) {
+  .chatItem,
+  .deleteBtn,
+  .loadMoreBtn {
+    transition: none !important;
+  }
+}

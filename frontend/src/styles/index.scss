@@ -1,0 +1,469 @@
+// 导入变量和混合器
+@use './variables.scss' as *;
+
+// 全局样式重置
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// 初始化视口高度 CSS 变量（避免移动端浏览器工具栏遮挡问题）
+:root {
+  --vh: 1vh;
+  --viewport-height: 100vh;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  color: var(--text-color);
+  background-color: var(--background-color-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: color var(--transition-normal), background-color var(--transition-normal);
+  
+  // 移动端优化：避免橡皮筋效果
+  @media (max-width: 768px) {
+    overflow-x: hidden;
+    position: fixed;
+    width: 100%;
+    height: var(--viewport-height);
+  }
+}
+
+#root {
+  height: 100%;
+  
+  // 移动端使用动态视口高度
+  @media (max-width: 768px) {
+    height: var(--viewport-height);
+    overflow: hidden;
+  }
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+// 链接样式
+a {
+  color: #1890ff;
+  text-decoration: none;
+  transition: color 0.3s;
+
+  &:hover {
+    color: #40a9ff;
+  }
+
+  &:active {
+    color: #096dd9;
+  }
+}
+
+// 按钮通用样式
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    color: #fff;
+    background: #1890ff;
+    border-color: #1890ff;
+
+    &:hover:not(:disabled) {
+      background: #40a9ff;
+      border-color: #40a9ff;
+    }
+
+    &:active {
+      background: #096dd9;
+      border-color: #096dd9;
+    }
+  }
+
+  &.btn-secondary {
+    color: #262626;
+    background: #fff;
+    border-color: #d9d9d9;
+
+    &:hover:not(:disabled) {
+      color: #1890ff;
+      border-color: #1890ff;
+    }
+  }
+
+  &.btn-danger {
+    color: #fff;
+    background: #ff4d4f;
+    border-color: #ff4d4f;
+
+    &:hover:not(:disabled) {
+      background: #ff7875;
+      border-color: #ff7875;
+    }
+  }
+
+  &.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  &.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+}
+
+// 卡片样式
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 500;
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+
+  .card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+  }
+}
+
+// 表单样式
+.form-group {
+  margin-bottom: 16px;
+
+  .form-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: #262626;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+
+    &:focus {
+      outline: none;
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+
+    &.error {
+      border-color: #ff4d4f;
+
+      &:focus {
+        border-color: #ff4d4f;
+        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+      }
+    }
+  }
+
+  .form-error {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #ff4d4f;
+  }
+
+  .form-help {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #8c8c8c;
+  }
+}
+
+// 移动端视口高度工具类
+.mobile-viewport-height {
+  @media (max-width: 768px) {
+    height: var(--viewport-height) !important;
+    min-height: var(--viewport-height) !important;
+  }
+}
+
+.mobile-full-height {
+  @media (max-width: 768px) {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+// 工具类
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.d-block {
+  display: block;
+}
+
+.d-inline {
+  display: inline;
+}
+
+.d-inline-block {
+  display: inline-block;
+}
+
+.d-none {
+  display: none;
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.h-100 {
+  height: 100%;
+}
+
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.mb-1 {
+  margin-bottom: 8px;
+}
+
+.mb-2 {
+  margin-bottom: 16px;
+}
+
+.mb-3 {
+  margin-bottom: 24px;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
+
+.mt-1 {
+  margin-top: 8px;
+}
+
+.mt-2 {
+  margin-top: 16px;
+}
+
+.mt-3 {
+  margin-top: 24px;
+}
+
+.p-0 {
+  padding: 0;
+}
+
+.p-1 {
+  padding: 8px;
+}
+
+.p-2 {
+  padding: 16px;
+}
+
+.p-3 {
+  padding: 24px;
+}
+
+// 响应式断点
+@media (max-width: 576px) {
+  .d-sm-none {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .d-md-none {
+    display: none;
+  }
+}
+
+@media (max-width: 992px) {
+  .d-lg-none {
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .d-xl-none {
+    display: none;
+  }
+}
+
+// 动画类
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.slide-in-down {
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 加载状态
+.loading {
+  position: relative;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+}
+
+// 错误状态
+.error-boundary {
+  padding: 40px;
+  text-align: center;
+
+  .error-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #ff4d4f;
+    margin-bottom: 16px;
+  }
+
+  .error-message {
+    font-size: 16px;
+    color: #8c8c8c;
+    margin-bottom: 24px;
+  }
+}

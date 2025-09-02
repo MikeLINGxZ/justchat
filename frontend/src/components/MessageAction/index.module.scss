@@ -1,0 +1,87 @@
+@use '@/styles/variables.scss' as *;
+
+// 消息操作按钮容器
+.messageActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+  padding: 4px 8px;
+  margin-top: 4px;
+  
+  // 默认隐藏模式
+  &.hideByDefault {
+    opacity: 0;
+  }
+  
+  // 靠右对齐（用户消息）
+  &.alignRight {
+    justify-content: flex-end;
+    align-self: flex-end;
+  }
+  
+  // 移动端默认显示
+  &.mobileShow {
+    opacity: 1 !important;
+  }
+}
+
+// 操作按钮样式
+.actionButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+    transform: scale(1.1);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+  }
+  
+  .buttonIcon {
+    pointer-events: none;
+  }
+  
+  .tooltipOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 1;
+  }
+}
+
+// 支持深色主题
+[data-theme="dark"] {
+  .actionButton {
+    color: #9ca3af;
+    
+    &:hover {
+      background: rgba(55, 65, 81, 0.8);
+      color: #f3f4f6;
+    }
+  }
+}

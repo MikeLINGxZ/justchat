@@ -1,0 +1,653 @@
+@use '@/styles/variables.scss' as *;
+
+.chatMessagesPage {
+  width: 100%;
+  height: 100%;
+  color: var(--text-color);
+  padding: var(--spacing-md);
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+
+  .messagesList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    width: 80%;
+    padding-bottom: 20px;
+    margin: auto;
+    @media (max-width: 768px) {
+      width: 100%;
+      padding-bottom: 0;
+    }
+  }
+  
+  // 消息整体包装器
+  .messageWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    
+
+  }
+  
+  // 消息容器样式
+  .messageContainer {
+    padding: var(--spacing-md);
+    border-radius: 12px;
+    transition: all var(--transition-fast);
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  }
+  
+  // 消息内容
+  .messageContent {
+    word-break: break-word;
+    line-height: 1.6;
+  }
+
+  // Markdown 内容样式
+  .markdownContent {
+    // 标题样式
+    h1, h2, h3, h4, h5, h6 {
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+      line-height: 1.4;
+      color: inherit;
+      
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    h1 {
+      font-size: 1.8em;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 1.5em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 1.3em;
+    }
+
+    h4 {
+      font-size: 1.1em;
+    }
+
+    // 段落样式
+    p {
+      margin: 8px 0;
+      line-height: 1.6;
+      
+      &:first-child {
+        margin-top: 0;
+      }
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    // 行内代码样式
+    .inlineCode {
+      background: rgba(255, 255, 255, 0.15);
+      color: #f8f8f2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.9em;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    // 代码块样式
+    pre {
+      margin: 12px 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      
+      code {
+        display: block;
+        padding: 0;
+        background: none;
+        border: none;
+        border-radius: 0;
+      }
+    }
+
+    // 列表样式
+    .markdownList {
+      margin: 8px 0;
+      padding-left: 20px;
+      
+      li {
+        margin: 4px 0;
+        line-height: 1.5;
+      }
+      
+      // 嵌套列表
+      ul, ol {
+        margin: 4px 0;
+      }
+    }
+
+    // 引用块样式
+    .markdownBlockquote {
+      margin: 12px 0;
+      padding: 12px 16px;
+      border-left: 4px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      
+      p {
+        margin: 4px 0;
+        
+        &:first-child {
+          margin-top: 0;
+        }
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    // 链接样式
+    .markdownLink {
+      color: #87ceeb;
+      text-decoration: underline;
+      transition: color var(--transition-fast);
+      
+      &:hover {
+        color: #b0e0e6;
+        text-decoration: underline;
+      }
+    }
+
+    // 表格样式
+    .tableWrapper {
+      margin: 12px 0;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .markdownTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+      
+      th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      th {
+        background: rgba(255, 255, 255, 0.1);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      tr:last-child td {
+        border-bottom: none;
+      }
+      
+      tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+    }
+
+    // 分隔线样式
+    hr {
+      margin: 16px 0;
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    // 强调文本样式
+    strong {
+      font-weight: 600;
+      color: inherit;
+    }
+
+    em {
+      font-style: italic;
+      color: inherit;
+    }
+
+    // 删除线样式
+    del {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+  }
+  
+  // 用户消息包装器 - 靠右
+  .userMessageWrapper {
+    align-self: flex-end;
+    max-width: 80%;
+    
+    .messageContainer {
+      background: #f8f9fa;
+      
+      .messageContent {
+        color: #2c3e50;
+        
+        // 用户消息的 Markdown 样式
+        &.markdownContent {
+          .inlineCode {
+            background: rgba(44, 62, 80, 0.1);
+            color: #2c3e50;
+            border: 1px solid rgba(44, 62, 80, 0.2);
+          }
+          
+          .markdownBlockquote {
+            border-left-color: rgba(44, 62, 80, 0.3);
+            background: rgba(44, 62, 80, 0.05);
+          }
+          
+          .markdownLink {
+            color: #3498db;
+            
+            &:hover {
+              color: #2980b9;
+            }
+          }
+          
+          h1, h2 {
+            border-bottom-color: rgba(44, 62, 80, 0.2);
+          }
+          
+          hr {
+            border-top-color: rgba(44, 62, 80, 0.2);
+          }
+          
+          .tableWrapper {
+            border-color: rgba(44, 62, 80, 0.2);
+          }
+          
+          .markdownTable {
+            th, td {
+              border-bottom-color: rgba(44, 62, 80, 0.1);
+            }
+            
+            th {
+              background: rgba(44, 62, 80, 0.1);
+              border-bottom-color: rgba(44, 62, 80, 0.2);
+            }
+            
+            tr:hover {
+              background: rgba(44, 62, 80, 0.05);
+            }
+          }
+        }
+      }
+    }
+    
+    .messageActions {
+      align-self: flex-end;
+      
+      .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #374151;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        
+        &:hover {
+          background: #ffffff;
+          color: #1f2937;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+  
+  // AI 消息包装器 - 靠左
+  .assistantMessageWrapper {
+    align-self: flex-start;
+    max-width: 80%;
+    
+    .messageContainer {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      
+      .messageContent {
+        color: #ffffff;
+      }
+    }
+    
+    .messageActions {
+      align-self: flex-start;
+      
+      .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #374151;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        &:hover {
+          background: #ffffff;
+          color: #1f2937;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+
+  // 错误消息包装器 - 靠左，红色背景
+  .errorMessageWrapper {
+    align-self: flex-start;
+    max-width: 80%;
+    
+    .messageContainer {
+      background: #5b2526;
+      border: 1px solid #dc3545;
+      box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+      
+      .messageContent {
+        color: #ffffff;
+        font-weight: 500;
+        
+        // 错误消息的特殊样式
+        &::before {
+          margin-right: 8px;
+          font-size: 1.1em;
+        }
+      }
+    }
+    
+    .messageActions {
+      align-self: flex-start;
+      
+      .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #374151;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        &:hover {
+          background: #ffffff;
+          color: #1f2937;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+  
+  // 消息操作按钮容器
+  .messageActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    padding: 4px 8px;
+    margin-top: 4px;
+  }
+  
+  // 操作按钮样式
+  .actionButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    
+    &:hover {
+      background: #f3f4f6;
+      color: #374151;
+      transform: scale(1.1);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    svg {
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      pointer-events: none;
+    }
+    
+    .buttonIcon {
+      pointer-events: none;
+    }
+  }
+  
+  // 加载状态样式
+  .loadingIndicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    color: #6c757d;
+    font-style: italic;
+    align-self: flex-start;
+    background: #f8f9fa;
+    border-radius: 12px;
+    max-width: 80%;
+  }
+  
+  // 加载动画点
+  .loadingDots {
+    display: flex;
+    gap: 4px;
+    
+    span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      animation: loadingPulse 1.4s ease-in-out infinite both;
+      
+      &:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      &:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0s;
+      }
+    }
+  }
+}
+
+// 加载动画关键帧
+@keyframes loadingPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatMessagesPage {
+    width: 100%;
+  }
+}
+
+// 暗色主题适配
+:root.dark {
+  .chatMessagesPage {
+    background: var(--background-color-dark, #1a1a1a);
+    color: var(--text-color, #ffffff);
+    
+    .messageContainer {
+      color: var(--text-color, #ffffff);
+      
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      }
+    }
+    
+    .userMessageWrapper {
+      .messageContainer {
+        background: #2d3748;
+        
+        .messageContent {
+          color: #e2e8f0;
+          
+          // 暗色主题下用户消息的 Markdown 样式
+          &.markdownContent {
+            .inlineCode {
+              background: rgba(226, 232, 240, 0.15);
+              color: #e2e8f0;
+              border: 1px solid rgba(226, 232, 240, 0.2);
+            }
+            
+            .markdownBlockquote {
+              border-left-color: rgba(226, 232, 240, 0.3);
+              background: rgba(226, 232, 240, 0.05);
+            }
+            
+            .markdownLink {
+              color: #63b3ed;
+              
+              &:hover {
+                color: #90cdf4;
+              }
+            }
+            
+            h1, h2 {
+              border-bottom-color: rgba(226, 232, 240, 0.2);
+            }
+            
+            hr {
+              border-top-color: rgba(226, 232, 240, 0.2);
+            }
+            
+            .tableWrapper {
+              border-color: rgba(226, 232, 240, 0.2);
+            }
+            
+            .markdownTable {
+              th, td {
+                border-bottom-color: rgba(226, 232, 240, 0.1);
+              }
+              
+              th {
+                background: rgba(226, 232, 240, 0.1);
+                border-bottom-color: rgba(226, 232, 240, 0.2);
+              }
+              
+              tr:hover {
+                background: rgba(226, 232, 240, 0.05);
+              }
+            }
+          }
+        }
+      }
+      
+      .messageActions .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #1f2937;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        &:hover {
+          background: #ffffff;
+          color: #111827;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+      }
+    }
+    
+    .assistantMessageWrapper {
+      .messageContainer {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        
+        .messageContent {
+          color: #ffffff;
+        }
+      }
+      
+      .messageActions .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #1f2937;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        
+        &:hover {
+          background: #ffffff;
+          color: #111827;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+      }
+    }
+
+    .errorMessageWrapper {
+      .messageContainer {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border: 1px solid #ef4444;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        
+        .messageContent {
+          color: #ffffff;
+          font-weight: 500;
+          
+          // 暗色主题下错误消息的特殊样式
+          &::before {
+            content: '⚠️';
+            margin-right: 8px;
+            font-size: 1.1em;
+          }
+        }
+      }
+      
+      .messageActions .actionButton {
+        background: rgba(255, 255, 255, 0.9);
+        color: #1f2937;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        
+        &:hover {
+          background: #ffffff;
+          color: #111827;
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+      }
+    }
+    
+    .actionButton {
+      color: #9ca3af;
+      
+      &:hover {
+        background: rgba(55, 65, 81, 0.8);
+        color: #f3f4f6;
+      }
+    }
+    
+    .loadingIndicator {
+      background: #2d3748;
+      color: #9ca3af;
+    }
+    
+    .loadingDots span {
+      background: #60a5fa;
+    }
+  }
+}

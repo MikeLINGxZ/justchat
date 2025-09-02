@@ -1,0 +1,248 @@
+syntax = "proto3";
+package lemon_tea.server;
+
+option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_server/rpc/service";
+
+import "google/api/annotations.proto";
+import "rpc/common/common.proto";
+import "rpc/common/options.proto";
+
+service Chat {
+  // 流式 Chat Completions（等价于 OpenAI /v1/chat/completions + stream）
+  rpc Completions(CompletionsRequest) returns (stream CompletionsResponse) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chat/completions"
+      body: "*"
+    };
+  }
+
+  // 获取对话标题
+  rpc ChatTitle(ChatTitleRequest) returns (ChatTitleResponse) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/title/{chat_uuid}"
+      body: "*"
+    };
+  }
+
+  // 保存对话标题
+  rpc ChatTitleSave(ChatTitleSaveRequest) returns (lemon_tea.common.Empty) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/title/save/{chat_uuid}/{chat_title}"
+      body: "*"
+    };
+  }
+
+  // 获取历史对话记录列表
+  rpc ListChats(ListChatsRequest) returns (ListChatsResponse) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/get"
+      body: "*"
+    };
+  }
+
+  // 删除对话
+  rpc DeleteChat(DeleteChatRequest) returns (lemon_tea.common.Empty) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/delete/{chat_uuid}"
+      body: "*"
+    };
+  }
+
+  // 获取对话消息
+  rpc GetChatMessages(GetChatMessagesRequest) returns (GetChatMessagesResponse) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/messages/get/{chat_uuid}"
+      body: "*"
+    };
+  }
+
+  // 删除对话消息
+  rpc DeleteChatMessage(DeleteChatMessageRequest) returns (DeleteChatMessageResponse) {
+    option (lemon_tea.common.requires_auth) = true;
+    option (google.api.http) = {
+      post: "/v1/chats/messages/delete/{chat_uuid}/{message_id}"
+      body: "*"
+    };
+  }
+
+}
+
+// CreateChatCompletionRequest 与 OpenAI Chat Completions 请求体对齐
+message CompletionsRequest {
+  string model = 1;                                          // 模型名称（必需）
+  repeated lemon_tea.common.Message messages = 2;            // 对话消息列表（必需）
+  optional double temperature = 3;                           // 随机性控制，0-2，默认1
+  optional int32 max_tokens = 4;                             // 最大生成token数
+  optional double top_p = 5;                                 // 核采样，0-1，默认1
+  optional int32 n = 6;                                      // 生成多少个选择，默认1
+  optional bool stream = 7;                                  // 是否流式返回，默认false
+  optional string stop = 8;                                  // 停止序列
+  repeated string stop_sequence = 9;                         // 停止序列列表
+  optional double presence_penalty = 10;                     // 存在惩罚，-2.0到2.0，默认0
+  optional double frequency_penalty = 11;                    // 频率惩罚，-2.0到2.0，默认0
+  optional double repetition_penalty = 12;                   // 重复惩罚
+  optional string user = 13;                                 // 用户标识符
+  repeated ChatCompletionTool tools = 14;                    // 可用工具列表
+  optional ToolChoice tool_choice = 15;                      // 工具选择策略
+  optional ResponseFormat response_format = 16;              // 响应格式
+  optional int32 seed = 17;                                  // 随机种子
+  map<string, string> metadata = 18;                         // 额外元数据
+  // 以下为业务字段
+  bool non_standard = 19;                                     // 是否为非标准对话
+  string chat_uuid = 20;                                         // 对话id
+}
+
+
+// ChatCompletionChunk 与 OpenAI Chat Completions 流式 chunk 对齐
+message CompletionsResponse {
+  string id = 1;                                             // 响应唯一标识符
+  string object = 2;                                         // 对象类型，通常为"chat.completion"
+  int64 created = 3;                                         // 创建时间戳
+  string model = 4;                                          // 使用的模型名称
+  repeated ChatCompletionChoice choices = 5;                 // 生成的选择列表
+  optional lemon_tea.common.TokenUsage usage = 6;           // token使用情况
+  optional string system_fingerprint = 7;                   // 系统指纹
+  map<string, string> metadata = 8;                         // 额外元数据
+  // 以下为业务字段
+  bool non_standard = 9;                                     // 是否为非标准对话
+  string chat_uuid = 10;                                        // 对话id
+}
+
+// ChatTitleRequest 获取对话标题请求
+message ChatTitleRequest {
+  string chat_uuid = 1;
+}
+
+// ChatTitleResponse 获取对话标题响应
+message ChatTitleResponse {
+  string title = 1;
+}
+
+// ChatTitleSaveRequest 保存对话标题请求
+message ChatTitleSaveRequest {
+  string chat_uuid = 1;
+  string chat_title = 2;
+}
+
+// ListChatsRequest 获取对话列表请求
+message ListChatsRequest {
+  int64 offset = 1;
+  int64 limit = 2;
+  optional ListChatsFilter filter = 3;
+}
+
+message ListChatsFilter {
+  optional string tag = 1;
+  optional string keyword = 2;                                    // 搜索关键字，为空则不搜索
+}
+
+// ListChatsResponse 获取对话列表响应
+message ListChatsResponse {
+  repeated lemon_tea.common.ChatInfo chats = 1;                               // 对话列表
+  int64 total_count = 2;                                 // 总数量
+}
+
+// DeleteChatRequest 删除对话请求
+message DeleteChatRequest {
+  string chat_uuid = 1;                                    // 要删除的对话 ID
+}
+
+// GetChatMessagesRequest 获取对话消息请求
+message GetChatMessagesRequest {
+  string chat_uuid = 1;                                    // 对话 ID
+  int64 offset = 2;
+  int64 limit = 3;
+}
+
+// GetChatMessagesResponse 获取对话消息响应
+message GetChatMessagesResponse {
+  repeated lemon_tea.common.Message messages = 1;        // 消息列表
+  int32 total_count = 2;                                 // 总消息数量
+}
+
+// DeleteChatMessageRequest 删除对话消息请求
+message DeleteChatMessageRequest {
+  string chat_uuid = 1;                                      // 对话 ID
+  string message_id = 2;                                 // 要删除的消息 ID
+}
+
+// DeleteChatMessageResponse 删除对话消息响应
+message DeleteChatMessageResponse {
+  bool success = 1;                                      // 删除是否成功
+  string message = 2;                                    // 响应消息
+}
+
+// ChatCompletionTool 工具定义
+message ChatCompletionTool {
+  string type = 1;                                       // 工具类型，通常为"function"
+  ChatCompletionFunction function = 2;                   // 函数定义
+}
+
+// ChatCompletionFunction 函数定义
+message ChatCompletionFunction {
+  string name = 1;                                       // 函数名称
+  optional string description = 2;                       // 函数描述
+  optional string parameters = 3;                        // JSON Schema格式的参数定义
+}
+
+// ToolChoice 工具选择策略
+message ToolChoice {
+  oneof choice {
+    string mode = 1;                                     // "none", "auto", "required"
+    ChatCompletionNamedToolChoice named = 2;             // 指定特定工具
+  }
+}
+
+// ChatCompletionNamedToolChoice 指定特定工具
+message ChatCompletionNamedToolChoice {
+  string type = 1;                                       // 工具类型
+  ChatCompletionFunction function = 2;                   // 指定的函数
+}
+
+// ResponseFormat 响应格式
+message ResponseFormat {
+  string type = 1;                                       // "text" 或 "json_object"
+  optional string json_schema = 2;                       // JSON Schema定义（当type为json_object时）
+}
+
+// ChatCompletionChoice 聊天完成选择
+message ChatCompletionChoice {
+  int32 index = 1;                                       // 选择索引
+  lemon_tea.common.Message delta = 2;             // 生成的消息
+  optional lemon_tea.common.LogProbs logprobs = 3;      // 对数概率信息
+  optional string finish_reason = 4;                             // 结束原因："stop", "length", "tool_calls", "content_filter", "function_call"
+  //  lemon_tea.common.CommonMessage message = 5;             // 生成的消息
+}
+
+// ChatCompletionChunk 流式响应块（用于流式传输）
+message ChatCompletionChunk {
+  string id = 1;                                         // 响应唯一标识符
+  string object = 2;                                     // 对象类型，通常为"chat.completion.chunk"
+  int64 created = 3;                                     // 创建时间戳
+  string model = 4;                                      // 使用的模型名称
+  repeated ChatCompletionChunkChoice choices = 5;       // 增量选择列表
+  optional lemon_tea.common.TokenUsage usage = 6;       // token使用情况（通常只在最后一个chunk中出现）
+  optional string system_fingerprint = 7;               // 系统指纹
+}
+
+// ChatCompletionChunkChoice 流式响应选择
+message ChatCompletionChunkChoice {
+  int32 index = 1;                                       // 选择索引
+  optional ChatCompletionChunkDelta delta = 2;          // 增量内容
+  optional lemon_tea.common.LogProbs logprobs = 3;      // 对数概率信息
+  optional string finish_reason = 4;                    // 结束原因（只在最后一个chunk中出现）
+}
+
+// ChatCompletionChunkDelta 流式响应增量内容
+message ChatCompletionChunkDelta {
+  optional string role = 1;                             // 角色（只在第一个chunk中出现）
+  optional string content = 2;                          // 增量内容
+  repeated lemon_tea.common.ToolCall tool_calls = 3;    // 增量工具调用
+}
+

@@ -1,0 +1,458 @@
+// 思考过程容器样式
+.reasoningContainer {
+  margin: 8px 0 16px 0;
+  border: 1px solid var(--border-color-light, #e5e7eb);
+  border-radius: 8px;
+  background: var(--reasoning-background, #f8fafc);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--border-color-hover, #d1d5db);
+  }
+}
+
+// 头部样式
+.reasoningHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--reasoning-header-hover, #f1f5f9);
+  }
+}
+
+// 标题区域
+.reasoningTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+// 思考图标
+.reasoningIcon {
+  font-size: 16px;
+  display: inline-block;
+}
+
+// 流式指示器
+.streamingIndicator {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+// 流式点动画
+.streamingDots {
+  display: inline-flex;
+  gap: 2px;
+  
+  span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--accent-color, #3b82f6);
+    animation: streamingPulse 1.4s ease-in-out infinite both;
+    
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+    
+    &:nth-child(3) {
+      animation-delay: 0s;
+    }
+  }
+}
+
+@keyframes streamingPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// 切换图标
+.toggleIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-color-tertiary, #9ca3af);
+  transition: transform 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    color: var(--text-color-secondary, #6b7280);
+  }
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// 内容区域
+.reasoningContent {
+  padding: 0 16px 16px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color-primary, #374151);
+  
+  // Markdown 样式
+  :global {
+    p {
+      margin: 0 0 12px 0;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+      color: var(--text-color-primary, #1f2937);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    h1 { font-size: 18px; }
+    h2 { font-size: 17px; }
+    h3 { font-size: 16px; }
+    h4 { font-size: 15px; }
+    h5 { font-size: 14px; }
+    h6 { font-size: 14px; }
+
+    ul, ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    blockquote {
+      margin: 12px 0;
+      padding: 8px 16px;
+      border-left: 4px solid var(--accent-color, #3b82f6);
+      background: var(--blockquote-background, #f8fafc);
+      border-radius: 0 4px 4px 0;
+      
+      p {
+        margin: 0;
+      }
+    }
+
+    code {
+      background: var(--inline-code-background, #f1f5f9);
+      color: var(--inline-code-color, #e11d48);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    }
+
+    pre {
+      margin: 12px 0;
+      border-radius: 6px;
+      overflow: hidden;
+
+      code {
+        background: none;
+        color: inherit;
+        padding: 0;
+        font-size: 13px;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 13px;
+      
+      th, td {
+        border: 1px solid var(--table-border, #e5e7eb);
+        padding: 8px 12px;
+        text-align: left;
+      }
+      
+      th {
+        background: var(--table-header-background, #f8fafc);
+        font-weight: 600;
+        color: var(--text-color-primary, #374151);
+      }
+      
+      td {
+        background: var(--table-cell-background, #ffffff);
+      }
+    }
+
+    a {
+      color: var(--link-color, #3b82f6);
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-color-light, #e5e7eb);
+      margin: 16px 0;
+    }
+
+    strong {
+      font-weight: 600;
+      color: var(--text-color-primary, #1f2937);
+    }
+
+    em {
+      font-style: italic;
+    }
+  }
+}
+
+// 表格包装器
+.tableWrapper {
+  overflow-x: auto;
+  margin: 12px 0;
+  border-radius: 6px;
+  border: 1px solid var(--table-border, #e5e7eb);
+}
+
+.markdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 13px;
+  
+  th, td {
+    border: 1px solid var(--table-border, #e5e7eb);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  
+  th {
+    background: var(--table-header-background, #f8fafc);
+    font-weight: 600;
+    color: var(--text-color-primary, #374151);
+  }
+  
+  td {
+    background: var(--table-cell-background, #ffffff);
+  }
+}
+
+.markdownLink {
+  color: var(--link-color, #3b82f6);
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.markdownBlockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--accent-color, #3b82f6);
+  background: var(--blockquote-background, #f8fafc);
+  border-radius: 0 4px 4px 0;
+  
+  p {
+    margin: 0;
+  }
+}
+
+.markdownList {
+  margin: 8px 0;
+  padding-left: 20px;
+  
+  li {
+    margin: 4px 0;
+  }
+}
+
+.inlineCode {
+  background: var(--inline-code-background, #f1f5f9);
+  color: var(--inline-code-color, #e11d48);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+// 暗色主题适配
+@media (prefers-color-scheme: dark) {
+  .reasoningContainer {
+    border-color: var(--border-color-dark, #374151);
+    background: var(--reasoning-background-dark, #1f2937);
+  }
+
+  .reasoningHeader {
+    &:hover {
+      background-color: var(--reasoning-header-hover-dark, #374151);
+    }
+  }
+
+  .reasoningTitle {
+    color: var(--text-color-secondary-dark, #d1d5db);
+  }
+
+  .toggleIcon {
+    color: var(--text-color-tertiary-dark, #9ca3af);
+
+    &:hover {
+      color: var(--text-color-secondary-dark, #d1d5db);
+    }
+  }
+
+  .reasoningContent {
+    color: var(--text-color-primary-dark, #f3f4f6);
+
+    :global {
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--text-color-primary-dark, #f9fafb);
+      }
+
+      blockquote {
+        background: var(--blockquote-background-dark, #374151);
+        border-left-color: var(--accent-color-dark, #60a5fa);
+      }
+
+      code {
+        background: var(--inline-code-background-dark, #374151);
+        color: var(--inline-code-color-dark, #fbbf24);
+      }
+
+      table {
+        th {
+          background: var(--table-header-background-dark, #374151);
+          color: var(--text-color-primary-dark, #f3f4f6);
+          border-color: var(--table-border-dark, #4b5563);
+        }
+        
+        td {
+          background: var(--table-cell-background-dark, #1f2937);
+          border-color: var(--table-border-dark, #4b5563);
+        }
+      }
+
+      a {
+        color: var(--link-color-dark, #60a5fa);
+      }
+
+      hr {
+        border-top-color: var(--border-color-dark, #374151);
+      }
+
+      strong {
+        color: var(--text-color-primary-dark, #f9fafb);
+      }
+    }
+  }
+
+  .markdownTable {
+    th {
+      background: var(--table-header-background-dark, #374151);
+      color: var(--text-color-primary-dark, #f3f4f6);
+      border-color: var(--table-border-dark, #4b5563);
+    }
+    
+    td {
+      background: var(--table-cell-background-dark, #1f2937);
+      border-color: var(--table-border-dark, #4b5563);
+    }
+  }
+
+  .markdownLink {
+    color: var(--link-color-dark, #60a5fa);
+  }
+
+  .markdownBlockquote {
+    background: var(--blockquote-background-dark, #374151);
+    border-left-color: var(--accent-color-dark, #60a5fa);
+  }
+
+  .inlineCode {
+    background: var(--inline-code-background-dark, #374151);
+    color: var(--inline-code-color-dark, #fbbf24);
+  }
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .reasoningContainer {
+    margin: 6px 0 12px 0;
+    border-radius: 6px;
+  }
+
+  .reasoningHeader {
+    padding: 10px 12px;
+  }
+
+  .reasoningTitle {
+    font-size: 13px;
+  }
+
+  .reasoningContent {
+    padding: 0 12px 12px 12px;
+    font-size: 13px;
+
+    :global {
+      h1 { font-size: 16px; }
+      h2 { font-size: 15px; }
+      h3 { font-size: 14px; }
+      h4, h5, h6 { font-size: 13px; }
+
+      pre {
+        margin: 8px 0;
+        
+        code {
+          font-size: 12px;
+        }
+      }
+
+      table {
+        font-size: 12px;
+        
+        th, td {
+          padding: 6px 8px;
+        }
+      }
+    }
+  }
+
+  .markdownTable {
+    font-size: 12px;
+    
+    th, td {
+      padding: 6px 8px;
+    }
+  }
+}

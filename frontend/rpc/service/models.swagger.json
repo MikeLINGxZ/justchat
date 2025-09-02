@@ -1,0 +1,134 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "rpc/service/models.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Models"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/models": {
+      "post": {
+        "summary": "列出可用模型（等价 OpenAI GET /v1/models）",
+        "operationId": "Models_models",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/serverModelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "llmProviderId",
+            "description": "优先使用 providerId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "baseUrl",
+            "description": "当未提供 providerId 时使用",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "apiKey",
+            "description": "当未提供 providerId 时使用",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Models"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "commonModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "模型 ID"
+        },
+        "object": {
+          "type": "string",
+          "title": "对象类型（如 model）"
+        },
+        "ownedBy": {
+          "type": "string",
+          "title": "所属组织或提供方"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "是否启用"
+        }
+      },
+      "title": "Model llm模型信息"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "serverModelsResponse": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/commonModel"
+          },
+          "title": "模型列表"
+        }
+      }
+    }
+  }
+}

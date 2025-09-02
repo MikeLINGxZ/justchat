@@ -1,0 +1,309 @@
+@use '@/styles/variables.scss' as *;
+
+.chatTitlePage {
+  width: 100%;
+  height: 46px;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.titleHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.mobileMenuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  
+  &:hover {
+    background: var(--background-color-light);
+    color: var(--primary-color);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs); // 缩小间距，让编辑按钮更靠近标题
+  flex: 1;
+  min-width: 0; // 允许flex子元素收缩到内容以下
+  max-width: fit-content; // 让容器只占据内容所需的宽度
+}
+
+.title {
+  font-size: var(--font-size-xxl);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color);
+  flex: 0 1 auto; // 不占据剩余空间，只占据内容所需空间
+  min-width: 0; // 允许收缩到内容以下
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; // 长标题时显示省略号
+  max-width: calc(100vw - 200px); // 限制最大宽度，为其他元素留出空间
+}
+
+.defaultTitle {
+  color: var(--text-color-secondary);
+  font-style: italic;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; // 稍微缩小按钮
+  height: 24px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-color-disabled); // 默认使用更淡的颜色
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.6; // 默认显示，但比较淡
+  flex-shrink: 0; // 防止按钮被压缩
+  
+  &:hover {
+    background: var(--background-color-light);
+    color: var(--primary-color);
+    opacity: 1; // 悬停时完全不透明
+    transform: scale(1.1); // 悬停时稍微放大
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  &.editButtonDisabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    color: var(--text-color-disabled);
+    
+    &:hover {
+      background: transparent;
+      color: var(--text-color-disabled);
+      opacity: 0.3;
+      transform: none; // 禁用悬停放大效果
+    }
+  }
+}
+
+// 当标题容器被悬停时让编辑按钮更明显
+.titleContainer:hover .editButton {
+  opacity: 1;
+  color: var(--text-color-secondary); // 悬停标题区域时颜色变深
+}
+
+.editContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.titleInput {
+  height: 32px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--background-color);
+  color: var(--text-color);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  outline: none;
+  transition: border-color var(--transition-fast), width var(--transition-fast);
+  min-width: 120px;
+  max-width: 320px; // 20个字符的最大宽度
+  
+  &:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  }
+  
+  &::placeholder {
+    color: var(--text-color-disabled);
+  }
+}
+
+// 用于测量文本宽度的隐藏元素
+.measureSpan {
+  position: absolute;
+  visibility: hidden;
+  height: auto;
+  width: auto;
+  white-space: nowrap;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  top: -9999px;
+  left: -9999px;
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.confirmButton {
+  background: transparent;
+  color: var(--success-color, #52c41a);
+  
+  &:hover {
+    background: rgba(82, 196, 26, 0.1); // 很淡的绿色背景
+    color: var(--success-color-hover, #73d13d);
+    transform: scale(1.1);
+  }
+}
+
+.cancelButton {
+  background: transparent;
+  color: var(--error-color, #ff4d4f);
+  
+  &:hover {
+    background: rgba(255, 77, 79, 0.1); // 很淡的红色背景
+    color: var(--error-color-hover, #ff7875);
+    transform: scale(1.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .chatTitlePage {
+    padding: 4px 5px;
+  }
+  
+  .title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .titleInput {
+    font-size: var(--font-size);
+  }
+  
+  .editButton {
+    width: 28px; // 移动端稍大一些，便于点击
+    height: 28px;
+    opacity: 0.8; // 移动端默认更明显一些
+  }
+  
+  .actionButton {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+// 暗色主题适配
+:root.dark {
+  .chatTitlePage {
+    background: var(--background-color-dark, #1f1f1f);
+    color: var(--text-color, #ffffff);
+  }
+  
+  .title {
+    color: var(--text-color, #ffffff);
+  }
+  
+  .defaultTitle {
+    color: var(--text-color-secondary, #8c8c8c);
+  }
+  
+  .editButton {
+    color: var(--text-color-disabled, #666666);
+    
+    &:hover {
+      background: var(--background-color, #2d2d2d);
+      color: var(--primary-color, #40a9ff);
+    }
+    
+    &.editButtonDisabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      color: var(--text-color-disabled, #666666);
+      
+      &:hover {
+        background: transparent;
+        color: var(--text-color-disabled, #666666);
+        opacity: 0.3;
+        transform: none;
+      }
+    }
+  }
+  
+  .titleContainer:hover .editButton {
+    color: var(--text-color-secondary, #8c8c8c);
+  }
+  
+  .titleInput {
+    background: var(--background-color, #2d2d2d);
+    border-color: var(--border-color, #404040);
+    color: var(--text-color, #ffffff);
+    
+    &:focus {
+      border-color: var(--primary-color, #40a9ff);
+      box-shadow: 0 0 0 2px rgba(64, 169, 255, 0.1);
+    }
+    
+    &::placeholder {
+      color: var(--text-color-disabled, #666666);
+    }
+  }
+  
+  .confirmButton {
+    color: var(--success-color, #52c41a);
+    
+    &:hover {
+      background: rgba(82, 196, 26, 0.1);
+      color: var(--success-color-hover, #73d13d);
+    }
+  }
+  
+  .cancelButton {
+    color: var(--error-color, #ff4d4f);
+    
+    &:hover {
+      background: rgba(255, 77, 79, 0.1);
+      color: var(--error-color-hover, #ff7875);
+    }
+  }
+  
+  .measureSpan {
+    color: var(--text-color, #ffffff);
+  }
+}
