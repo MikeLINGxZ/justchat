@@ -20,26 +20,23 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 查找并复制 .proto 和 .swagger.json 文件，保留目录结构
+# 查找并复制 .proto 文件，保留目录结构
 PROTO_FILES=$(find "$TMP_DIR/$RPC_DIR_IN_REPO" -type f -name "*.proto")
-SWAGGER_FILES=$(find "$TMP_DIR/$RPC_DIR_IN_REPO" -type f -name "*.swagger.json")
 
-if [ -z "$PROTO_FILES" ] && [ -z "$SWAGGER_FILES" ]; then
-  echo "⚠️ 在 $RPC_DIR_IN_REPO 中未找到 .proto 或 .swagger.json 文件。"
+if [ -z "$PROTO_FILES" ]; then
+  echo "⚠️ 在 $RPC_DIR_IN_REPO 中未找到 .proto 文件。"
 else
-  if [ -n "$PROTO_FILES" ]; then
-    echo "✅ 找到以下 .proto 文件："
-    echo "$PROTO_FILES"
-  fi
+  echo "✅ 找到以下 .proto 文件："
+  echo "$PROTO_FILES"
 
-  if [ -n "$SWAGGER_FILES" ]; then
-    echo "✅ 找到以下 .swagger.json 文件："
-    echo "$SWAGGER_FILES"
-  fi
-
-  # 使用 rsync 保留目录结构复制所有 .proto 和 .swagger.json 文件
-  rsync -av --include="*/" --include="*.proto" --include="*.swagger.json" --exclude="*" "$TMP_DIR/$RPC_DIR_IN_REPO/" "$LOCAL_RPC_DIR/"
-  echo "✅ .proto 和 .swagger.json 文件已复制到 $LOCAL_RPC_DIR/，保留了原目录结构"
+  # 使用 rsync 保留目录结构复制所有 .proto 文件
+  rsync -av --include="*/" --include="*.proto" --exclude="*" "$TMP_DIR/$RPC_DIR_IN_REPO/" "$LOCAL_RPC_DIR/"
+  echo "✅ .proto 文件已复制到 $LOCAL_RPC_DIR/，保留了原目录结构"
+  
+  # 替换 proto 文件中的字符串
+  echo "🔄 正在替换 proto 文件中的字符串..."
+  find "$LOCAL_RPC_DIR" -type f -name "*.proto" -exec sed -i '' 's/gitlab\.linhf\.cn\/project\/lemontea\/lemon_tea_server/gitlab.linhf.cn\/project\/lemontea\/lemon_tea_desktop/g' {} \;
+  echo "✅ 字符串替换完成"
 fi
 
 # 清理临时目录

@@ -1,4 +1,4 @@
-module lemon_tea_desktop_temp
+module gitlab.linhf.cn/project/lemontea/lemon_tea_desktop
 
 go 1.23
 
