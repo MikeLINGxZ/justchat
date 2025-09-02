@@ -661,6 +661,25 @@
   }
 }
 
+// Safari内核兼容性：桌面端强制重置transform属性
+@media (min-width: 769px) {
+  .sidebar {
+    position: relative !important;
+    transform: none !important;
+    left: auto !important;
+    top: auto !important;
+    z-index: auto !important;
+    height: 100vh !important;
+    
+    // 确保在桌面端恢复正常的宽度动画
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    
+    &.collapsed {
+      transform: none !important;
+    }
+  }
+}
+
 
 
 // 动画定义

@@ -41,6 +41,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
   const [updateChatTitle, setUpdateChatTitle] = useState<
     ((chatUuid: string, newTitle: string) => void) | null
   >(null);
+  // Safari兼容性：添加强制重新渲染状态
+  const [forceRerender, setForceRerender] = useState(0);
 
   // 使用视口高度检测 Hook
   const { isMobile } = useViewportHeight();
@@ -64,6 +66,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
   useEffect(() => {
     if (isMobile) {
       setIsSidebarCollapsed(true);
+    } else {
+      // Safari内核兼容性：从移动端切换回桌面端时，需要强制重置transform属性
+      // 添加延迟重新渲染机制，确保Safari正确应用新的CSS规则
+      const timer = setTimeout(() => {
+        // 强制触发组件重新渲染
+        setIsSidebarCollapsed(prev => prev);
+        setForceRerender(prev => prev + 1);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isMobile]);
 
@@ -622,6 +634,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
   return (
     <div
       className={`homePage ${className || ''} ${isMobile ? 'mobile-viewport-height' : ''}`}
+      key={forceRerender} // Safari兼容性：强制重新渲染
     >
       <Layout className="layout">
         {/* 侧边栏 */}
