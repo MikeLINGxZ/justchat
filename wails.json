@@ -1,0 +1,13 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "lemon_tea_desktop_temp",
+  "outputfilename": "lemon_tea_desktop_temp",
+  "frontend:install": "cnpm install",
+  "frontend:build": "cnpm run build",
+  "frontend:dev:watcher": "cnpm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "linhuafeng",
+    "email": "lpxqu@qq.com"
+  }
+}

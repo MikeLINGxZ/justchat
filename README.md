@@ -1,16 +1,19 @@
-# lemon_tea
+# README
 
-A new Flutter project.
+## About
 
-## Getting Started
+This is the official Wails React-TS template.
 
-This project is a starting point for a Flutter application.
+You can configure the project by editing `wails.json`. More information about the project settings can be found
+here: https://wails.io/docs/reference/project-config
 
-A few resources to get you started if this is your first Flutter project:
+## Live Development
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
+server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
+and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
+to this in your browser, and you can call your Go code from devtools.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Building
+
+To build a redistributable, production mode package, use `wails build`.

@@ -1,6 +1,0 @@
-output: example_ffi.g.dart
-name: ExampleFfiGenerate
-description: ffi调用样例
-headers:
-  entry-points:
-    - example_ffi.h
