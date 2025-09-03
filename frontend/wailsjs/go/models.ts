@@ -1,11 +1,11 @@
 export namespace data_models {
 	
 	export class Model {
-	    ID: number;
+	    id: number;
 	    // Go type: time
-	    CreatedAt: any;
+	    created_at: any;
 	    // Go type: time
-	    UpdatedAt: any;
+	    updated_at: any;
 	    // Go type: gorm
 	    DeletedAt: any;
 	    provider_id: number;
@@ -21,9 +21,9 @@ export namespace data_models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ID = source["ID"];
-	        this.CreatedAt = this.convertValues(source["CreatedAt"], null);
-	        this.UpdatedAt = this.convertValues(source["UpdatedAt"], null);
+	        this.id = source["id"];
+	        this.created_at = this.convertValues(source["created_at"], null);
+	        this.updated_at = this.convertValues(source["updated_at"], null);
 	        this.DeletedAt = this.convertValues(source["DeletedAt"], null);
 	        this.provider_id = source["provider_id"];
 	        this.model = source["model"];

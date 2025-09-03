@@ -1,13 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
+import { GetModels } from '../../wailsjs/go/service/Service';
+import { data_models } from '../../wailsjs/go/models';
 
 // 定义模型选项接口
-
 export interface ModelOption {
   id: string;
   name: string;
   ownedBy?: string;
   enabled?: boolean;
 }
+
+// 将后端模型数据转换为前端使用的格式
+const convertBackendModel = (backendModel: data_models.Model): ModelOption => {
+  return {
+    id: backendModel.model,
+    name: backendModel.alias || backendModel.model,
+    ownedBy: backendModel.owned_by,
+    enabled: backendModel.enable,
+  };
+};
 
 export interface UseModelsReturn {
   models: ModelOption[];
@@ -97,15 +108,26 @@ export const useModels = (params: UseModelsParams = {}): UseModelsReturn => {
     setError(null);
     
     try {
-      // 模拟异步加载
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // 调用 Wails 后端服务获取模型列表
+      const backendModels = await GetModels();
       
-      const models = getDefaultModels();
-      setModels(models);
+      // 转换后端数据格式为前端使用的格式
+      const convertedModels = backendModels.map(convertBackendModel);
+      
+      // 如果后端没有数据，使用默认模拟数据作为后备
+      if (convertedModels.length === 0) {
+        console.warn('后端返回空模型列表，使用默认模拟数据');
+        setModels(getDefaultModels());
+      } else {
+        setModels(convertedModels);
+      }
     } catch (err: any) {
       const errorMessage = err?.message || '获取模型列表失败';
       setError(errorMessage);
-      console.error('获取模型列表失败:', err);
+      console.error('从后端获取模型列表失败，使用默认模拟数据:', err);
+      
+      // 出错时使用默认模拟数据作为后备
+      setModels(getDefaultModels());
     } finally {
       setIsLoading(false);
     }
