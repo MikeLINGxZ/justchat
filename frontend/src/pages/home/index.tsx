@@ -7,17 +7,6 @@ import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { useModels } from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
-import type {
-  ServerCompletionsRequest,
-  ServerGetChatMessagesResponse,
-} from '@/api/chatClient';
-import { chatClient } from '@/api/chatClient';
-import type { CommonMessage } from '@/api/service/chat/Api';
-import { packageErr } from '@/utils/converErr.ts';
-import {
-  ConvertApiMessageToMessage,
-  ConvertMessageToApiMessage,
-} from '@/utils/message.ts';
 
 const { Content, Sider } = Layout;
 
@@ -164,23 +153,28 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
     // 显示加载动画
     setIsLoadingMessages(true);
 
-    // 获取当前对话历史消息
+    // 获取当前对话历史消息 (模拟实现)
     try {
-      // 请求历史消息接口
-      const response: ServerGetChatMessagesResponse =
-        await chatClient.getChatMessages(chatUuid, {
-          offset: '0',
-          limit: '50',
-        });
-      // 有消息返回则转换渲染，没有则则重置消息为空
-      if (response.messages) {
-        const convertedMessages = response.messages.map(
-          ConvertApiMessageToMessage
-        );
-        setCurrentMessages(convertedMessages);
-      } else {
-        setCurrentMessages([]);
-      }
+      // 模拟加载延迟
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // 模拟历史消息数据
+      const mockMessages: Message[] = [
+        {
+          id: '1',
+          role: 'user',
+          content: '你好，请介绍一下你自己。',
+          timestamp: Date.now() - 60000,
+        },
+        {
+          id: '2',
+          role: 'assistant',
+          content: '你好！我是一个 AI 助手，可以帮助你回答问题、提供信息和进行对话。有什么我可以帮到你的吗？',
+          timestamp: Date.now() - 30000,
+        },
+      ];
+      
+      setCurrentMessages(mockMessages);
     } catch (error) {
       // todo 显示”加载历史消息错误“
       console.error('获取聊天消息失败:', error);
@@ -246,15 +240,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
     []
   );
 
-  // 聊天功能 - 现在接收消息内容作为参数
+  // 聊天功能 - 模拟实现
   const handleSendMessage = useCallback(
     async (messageContent: string) => {
       if (!messageContent.trim() || isLoading || isStreaming) return;
 
       // 创建要发送的消息
       const userMessage: Message = {
+        id: Date.now().toString(),
         role: 'user',
         content: messageContent,
+        timestamp: Date.now(),
       };
 
       // 添加用户消息
@@ -262,52 +258,30 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
       setIsLoading(true);
       setIsStreaming(true);
 
-      // 创建AbortController用于中断请求
+      // 创建 AbortController 用于中断请求
       const controller = new AbortController();
       setAbortController(controller);
 
-      // 预先初始化ai回复的消息
+      // 预先初始化 AI 回复的消息
       const aiMessage: Message = {
-        id: '',
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: '',
         isStreaming: true,
+        timestamp: Date.now(),
       };
       setCurrentMessages(prev => [...prev, aiMessage]);
 
-      // 用于跟踪是否已经接收到第一个响应
-      let hasReceivedFirstResponse = false;
       try {
-        // 构建请求消息历史
-        const messagesHistory = [...currentMessages, userMessage];
-        const apiMessages: CommonMessage[] = messagesHistory.map(
-          ConvertMessageToApiMessage
-        );
-
-        // 构建请求参数
-        const completionRequest: ServerCompletionsRequest = {
-          model: selectedModel,
-          messages: apiMessages,
-          nonStandard: true, // 固定为 true
-          chatUuid: currentChatUuid || '', // 空字符串表示新建对话
-          temperature: 0.7,
-          maxTokens: 2000,
-          stream: true,
-        };
-
-        // 调用流式 Completions 接口
-        await chatClient.createChatCompletionStream(
-          completionRequest,
-          // onMessage: 接收到新内容时的回调
-          (content: string, reasoningContent?: string) => {
-            console.log('收到流式内容:', { content, reasoningContent });
-
-            // 第一次接收到内容时立即隐藏loading状态
-            if (!hasReceivedFirstResponse) {
-              hasReceivedFirstResponse = true;
-              setIsLoading(false);
-            }
-
+        // 模拟流式响应
+        const mockResponse = `你好！我收到了你的消息："${messageContent}"。这是一个模拟回复，用于展示 UI 功能。在实际应用中，这里会调用真实的 AI 接口。`;
+        
+        // 模拟打字机效果
+        let currentIndex = 0;
+        const typeWriter = () => {
+          if (controller.signal.aborted) return;
+          
+          if (currentIndex < mockResponse.length) {
             setCurrentMessages(prev => {
               const newMessages = [...prev];
               const lastIndex = newMessages.length - 1;
@@ -318,39 +292,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               ) {
                 newMessages[lastIndex] = {
                   ...newMessages[lastIndex],
-                  content: newMessages[lastIndex].content + (content || ''),
-                  reasoningContent: reasoningContent
-                    ? (newMessages[lastIndex].reasoningContent || '') +
-                      reasoningContent
-                    : newMessages[lastIndex].reasoningContent,
+                  content: mockResponse.slice(0, currentIndex + 1),
                 };
               }
               return newMessages;
             });
-          },
-          // onError: 接收到错误时的回调
-          (error: string) => {
-            // 将错误信息作为AI消息显示在聊天界面中
-            setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: packageErr(`${error}`),
-                  isStreaming: false,
-                };
-              }
-              return newMessages;
-            });
-          },
-          // onComplete: 流式响应完成时的回调
-          (chatUuid?: string) => {
-            // 标记消息流式输入完成
+            
+            currentIndex++;
+            setTimeout(typeWriter, 30); // 模拟打字速度
+          } else {
+            // 模拟完成
             setCurrentMessages(prev => {
               const newMessages = [...prev];
               const lastIndex = newMessages.length - 1;
@@ -366,66 +317,56 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               }
               return newMessages;
             });
-
+            
             // 重置流式状态
             setIsStreaming(false);
             setAbortController(null);
-
-            // 如果是新对话（currentChatUuid为空）且有chatUuid，更新chatUuid和标题
-            if (!currentChatUuid && chatUuid) {
-              setCurrentChatUuid(chatUuid);
-              // 更新URL以反映新的聊天UUID
-              navigate(`/home/${chatUuid}`, { replace: true });
-
-              // 使用ChatTitle接口获取对话标题并设置
-              (async () => {
-                try {
-                  const titleResponse = await chatClient.getChatTitle(chatUuid);
-                  setChatTitle(titleResponse.title || '新的对话');
-                } catch (error) {
-                  console.error('获取对话标题失败:', error);
-                  setChatTitle('新的对话');
-                }
-              })();
-
+            setIsLoading(false);
+            
+            // 如果是新对话，生成一个模拟的 chatUuid
+            if (!currentChatUuid) {
+              const newChatUuid = 'mock-chat-' + Date.now();
+              setCurrentChatUuid(newChatUuid);
+              navigate(`/home/${newChatUuid}`, { replace: true });
+              setChatTitle('新的对话');
+              
               // 更新侧边栏历史对话列表
               if (refreshChatList) {
                 refreshChatList();
               }
             }
-          },
-          controller
-        );
+          }
+        };
+        
+        // 延迟开始模拟打字效果
+        setTimeout(() => {
+          setIsLoading(false);
+          typeWriter();
+        }, 500);
+        
       } catch (error) {
-        console.error('Send message error:', error);
-        // 将错误信息作为AI消息显示在聊天界面中
+        console.error('发送消息错误:', error);
+        
+        // 将错误信息作为 AI 消息显示在聊天界面中
         setCurrentMessages(prev => {
           const newMessages = [...prev];
           const lastIndex = newMessages.length - 1;
           if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
             newMessages[lastIndex] = {
               ...newMessages[lastIndex],
-              content: `错误: ${error instanceof Error ? error.message : '发送失败，请重试'}`,
+              content: '抱歉，发生了一个错误。请稍后再试。',
               isStreaming: false,
             };
           }
           return newMessages;
         });
-      } finally {
+        
         setIsLoading(false);
         setIsStreaming(false);
         setAbortController(null);
       }
     },
-    [
-      isLoading,
-      selectedModel,
-      currentChatUuid,
-      currentMessages,
-      isStreaming,
-      refreshChatList,
-      navigate,
-    ]
+    [isLoading, isStreaming, currentMessages, currentChatUuid, navigate, refreshChatList]
   );
 
   // 处理消息删除
@@ -439,8 +380,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
       }
 
       try {
-        // 调用API删除消息
-        await chatClient.deleteChatMessage(currentChatUuid, messageId);
+        // 模拟删除延迟
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // 本地删除消息
         setCurrentMessages(prev => prev.filter(msg => msg.id !== messageId));
@@ -482,27 +423,18 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
       setCurrentMessages(prev => [...prev, aiMessage]);
 
       try {
-        // 构建请求消息历史（不包含被删除的消息）
-        const apiMessages: CommonMessage[] = newMessages.map(
-          ConvertMessageToApiMessage
-        );
-
-        // 构建请求参数
-        const completionRequest: ServerCompletionsRequest = {
-          model: selectedModel,
-          messages: apiMessages,
-          nonStandard: true,
-          chatUuid: currentChatUuid || '',
-          temperature: 0.8, // 提高随机性以获得不同的回答
-          maxTokens: 2000,
-          stream: true,
-        };
-
-        // 调用流式 Completions 接口重新生成
-        await chatClient.createChatCompletionStream(
-          completionRequest,
-          // onMessage: 接收到新内容时的回调
-          (content: string, reasoningContent?: string) => {
+        // 模拟重新生成延迟
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 模拟回复内容
+        const mockResponse = '这是一个重新生成的回复，用于展示 UI 功能。在实际应用中，这里会调用真实的 AI 接口重新生成内容。';
+        
+        // 模拟打字机效果
+        let currentIndex = 0;
+        const typeWriter = () => {
+          if (controller.signal.aborted) return;
+          
+          if (currentIndex < mockResponse.length) {
             setCurrentMessages(prev => {
               const newMessages = [...prev];
               const lastIndex = newMessages.length - 1;
@@ -513,39 +445,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               ) {
                 newMessages[lastIndex] = {
                   ...newMessages[lastIndex],
-                  content: newMessages[lastIndex].content + (content || ''),
-                  reasoningContent: reasoningContent
-                    ? (newMessages[lastIndex].reasoningContent || '') +
-                      reasoningContent
-                    : newMessages[lastIndex].reasoningContent,
+                  content: mockResponse.slice(0, currentIndex + 1),
                 };
               }
               return newMessages;
             });
-          },
-          // onError: 接收到错误时的回调
-          (error: string) => {
-            // 将错误信息作为AI消息显示在聊天界面中
-            setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: packageErr(`${error}`),
-                  isStreaming: false,
-                };
-              }
-              return newMessages;
-            });
-          },
-          // onComplete: 流式响应完成时的回调
-          (chatUuid?: string) => {
-            // 标记消息流式输入完成
+            
+            currentIndex++;
+            setTimeout(typeWriter, 30); // 模拟打字速度
+          } else {
+            // 模拟完成
             setCurrentMessages(prev => {
               const newMessages = [...prev];
               const lastIndex = newMessages.length - 1;
@@ -561,15 +470,20 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               }
               return newMessages;
             });
-
+            
             // 重置流式状态
             setIsStreaming(false);
             setAbortController(null);
-
-            // 重新生成时通常不需要更新chatUuid，因为已经是现有对话
-          },
-          controller
-        );
+            setIsLoading(false);
+          }
+        };
+        
+        // 延迟开始模拟打字效果
+        setTimeout(() => {
+          setIsLoading(false);
+          typeWriter();
+        }, 300);
+        
       } catch (error) {
         console.error('Regenerate message error:', error);
         // 将错误信息作为AI消息显示在聊天界面中

@@ -1,4 +1,4 @@
-package do
+package data_models
 
 type Provider struct {
 	OrmModel

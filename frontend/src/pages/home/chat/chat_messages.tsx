@@ -7,7 +7,6 @@ import type { Message } from "@/types";
 import MessageAction from "@/components/MessageAction";
 import ReasoningContent from "@/components/ReasoningContent";
 import styles from "@/pages/home/chat/chat_messages.module.scss";
-import {isError, unpackageErr} from "@/utils/converErr.ts";
 
 interface ChatMessagesProps {
     // 所有消息
@@ -441,7 +440,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
                             ),
                         }}
                     >
-                        {unpackageErr(message.content)}
+                        {message.content}
                     </ReactMarkdown>
                 </div>
             </>
@@ -450,7 +449,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
 
     // 检测是否为错误消息
     const isErrorMessage = useCallback((message: Message) => {
-        return message.role === 'assistant' && isError(message.content);
+        return message.role === 'assistant' && message.content.includes('错误');
     }, []);
 
     // 渲染单条消息

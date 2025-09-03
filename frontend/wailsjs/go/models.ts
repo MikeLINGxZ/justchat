@@ -1,4 +1,4 @@
-export namespace do {
+export namespace data_models {
 	
 	export class Model {
 	    ID: number;

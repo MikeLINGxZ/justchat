@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { message } from 'antd';
-import { chatClient } from '@/api/chatClient';
 import styles from '@/pages/home/chat/chat_title.module.scss';
 
 interface ChatTitleProps {
@@ -61,14 +60,15 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
     setIsEditing(true);
   };
 
-  // 确认编辑
+  // 确认编辑 (模拟实现)
   const handleConfirm = async () => {
     const trimmedValue = editValue.trim();
     if (trimmedValue && trimmedValue !== chatTitle) {
-      // 如果有chatUuid，调用API保存标题
+      // 如果有chatUuid，模拟保存标题
       if (chatUuid) {
         try {
-          await chatClient.saveChatTitle(chatUuid, trimmedValue);
+          // 模拟保存延迟
+          await new Promise(resolve => setTimeout(resolve, 200));
           onTitleChange(trimmedValue);
           message.success('标题保存成功');
         } catch (error) {

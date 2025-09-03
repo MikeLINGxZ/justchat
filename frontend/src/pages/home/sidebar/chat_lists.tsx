@@ -28,18 +28,24 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { chatClient } from '@/api/chatClient.ts';
-import type { CommonChatInfo } from '@/api/service/chat/Api.ts';
 import styles from './chats_lists.module.scss';
 
 const { Text } = Typography;
 const { Search } = Input;
 
+// 模拟聊天信息接口
+interface MockChatInfo {
+  chatUuid: string;
+  title: string;
+  updatedAt: string;
+  messagesCount?: number;
+}
+
 interface GroupedChats {
-  today: CommonChatInfo[];
-  yesterday: CommonChatInfo[];
-  pastWeek: CommonChatInfo[];
-  older: CommonChatInfo[];
+  today: MockChatInfo[];
+  yesterday: MockChatInfo[];
+  pastWeek: MockChatInfo[];
+  older: MockChatInfo[];
 }
 
 interface SidebarChatsProps {
@@ -57,7 +63,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
   onRegisterRefreshCallback,
   onRegisterUpdateTitleCallback,
 }) => {
-  const [chats, setChats] = useState<CommonChatInfo[]>([]);
+  const [chats, setChats] = useState<MockChatInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,6 +82,43 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
   const chatsCountRef = useRef<number>(0);
   const hasMoreRef = useRef<boolean>(true);
   const searchInputRef = useRef<any>(null);
+
+  // 模拟聊天数据
+  const getMockChats = useCallback((): MockChatInfo[] => {
+    const now = Date.now();
+    return [
+      {
+        chatUuid: 'mock-chat-1',
+        title: 'AI 助手介绍',
+        updatedAt: new Date(now - 1000 * 60 * 30).toISOString(), // 30分钟前
+        messagesCount: 3,
+      },
+      {
+        chatUuid: 'mock-chat-2', 
+        title: '编程问题咨询',
+        updatedAt: new Date(now - 1000 * 60 * 60 * 2).toISOString(), // 2小时前
+        messagesCount: 8,
+      },
+      {
+        chatUuid: 'mock-chat-3',
+        title: '日常闲聊',
+        updatedAt: new Date(now - 1000 * 60 * 60 * 24).toISOString(), // 昨天
+        messagesCount: 12,
+      },
+      {
+        chatUuid: 'mock-chat-4',
+        title: '学习计划制定',
+        updatedAt: new Date(now - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3天前
+        messagesCount: 15,
+      },
+      {
+        chatUuid: 'mock-chat-5',
+        title: '工作项目讨论',
+        updatedAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10天前
+        messagesCount: 25,
+      },
+    ];
+  }, []);
 
   // 同步hasMore状态到ref
   useEffect(() => {
@@ -143,7 +186,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     return result;
   }, [chats]);
 
-  // 加载聊天列表
+  // 加载聊天列表 (模拟实现)
   const loadChats = useCallback(
     async (keyword?: string, isLoadMore = false) => {
       // 防止重复请求
@@ -157,97 +200,57 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
       }
 
       try {
-        // 使用ref来获取最新的chats长度
+        // 模拟加载延迟
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // 获取模拟数据
+        const allMockChats = getMockChats();
+        
+        // 根据关键词过滤
+        const filteredChats = keyword 
+          ? allMockChats.filter(chat => 
+              chat.title.toLowerCase().includes(keyword.toLowerCase())
+            )
+          : allMockChats;
+        
         const currentOffset = isLoadMore ? chatsCountRef.current : 0;
-
-        console.log('开始加载聊天列表...', {
-          isLoadMore,
-          offset: currentOffset,
-          keyword: keyword || '无',
-          当前聊天数量: chatsCountRef.current,
-        });
-
-        const response = await chatClient.listChats({
-          limit: '50', // 使用较小的分页大小
-          offset: currentOffset.toString(),
-          filter: keyword ? { keyword } : undefined,
-        });
-
-        if (response.chats) {
-          const newChats = response.chats;
-          const total = parseInt(response.totalCount || '0');
-          let currentTotal = 0;
-
-          if (isLoadMore) {
-            // 加载更多时追加到现有列表，使用chatUuid去重
-            setChats(prev => {
-              console.log('合并前的数据:', {
-                原有数量: prev.length,
-                新数据数量: newChats.length,
-              });
-
-              // 创建一个Map来存储已有的聊天记录，以chatUuid为key
-              const existingChatsMap = new Map(
-                prev.map(chat => [chat.chatUuid, chat])
-              );
-
-              let addedCount = 0;
-              // 添加新的聊天记录，如果chatUuid已存在则跳过
-              newChats.forEach(newChat => {
-                if (
-                  newChat.chatUuid &&
-                  !existingChatsMap.has(newChat.chatUuid)
-                ) {
-                  existingChatsMap.set(newChat.chatUuid, newChat);
-                  addedCount++;
-                }
-              });
-
-              const mergedChats = Array.from(existingChatsMap.values());
-              currentTotal = mergedChats.length;
-
-              // 更新ref中的聊天数量
-              chatsCountRef.current = currentTotal;
-
-              console.log('合并后的数据:', {
-                实际添加: addedCount,
-                合并后总数: currentTotal,
-              });
-
-              return mergedChats;
+        const pageSize = 50;
+        const paginatedChats = filteredChats.slice(currentOffset, currentOffset + pageSize);
+        
+        if (isLoadMore) {
+          // 加载更多时追加到现有列表
+          setChats(prev => {
+            const existingChatsMap = new Map(
+              prev.map(chat => [chat.chatUuid, chat])
+            );
+            
+            paginatedChats.forEach(newChat => {
+              if (!existingChatsMap.has(newChat.chatUuid)) {
+                existingChatsMap.set(newChat.chatUuid, newChat);
+              }
             });
-          } else {
-            // 初始加载或搜索时替换列表
-            setChats(newChats);
-            currentTotal = newChats.length;
-            // 更新ref中的聊天数量
-            chatsCountRef.current = currentTotal;
-          }
-
-          setTotalCount(total);
-
-          // 判断是否还有更多数据
-          const hasMoreData = currentTotal < total;
-          setHasMore(hasMoreData);
-
-          console.log('聊天列表加载完成', {
-            新加载: newChats.length,
-            当前总数: currentTotal,
-            总数量: total,
-            还有更多: hasMoreData,
-            isLoadMore,
+            
+            const mergedChats = Array.from(existingChatsMap.values());
+            chatsCountRef.current = mergedChats.length;
+            return mergedChats;
           });
-
-          // 验证状态同步
-          setTimeout(() => {
-            console.log('状态同步验证:', {
-              'hasMore(状态)': hasMore,
-              'hasMoreRef(引用)': hasMoreRef.current,
-              'chatsCountRef': chatsCountRef.current,
-              'chats.length': chats.length,
-            });
-          }, 100);
+        } else {
+          // 初始加载或搜索时替换列表
+          setChats(paginatedChats);
+          chatsCountRef.current = paginatedChats.length;
         }
+        
+        setTotalCount(filteredChats.length);
+        setHasMore(currentOffset + pageSize < filteredChats.length);
+        
+        console.log('模拟聊天列表加载完成', {
+          新加载: paginatedChats.length,
+          当前总数: isLoadMore ? chatsCountRef.current : paginatedChats.length,
+          总数量: filteredChats.length,
+          还有更多: currentOffset + pageSize < filteredChats.length,
+          isLoadMore,
+        });
+        
       } catch (error) {
         console.error('Failed to load chats:', error);
         message.error('加载聊天列表失败');
@@ -257,7 +260,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         loadingRef.current = false;
       }
     },
-    []
+    [getMockChats]
   );
 
   // 加载更多聊天
@@ -449,7 +452,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     setEditingTitle(chatTitle || '新对话');
   };
 
-  // 确认内联编辑
+  // 确认内联编辑 (模拟实现)
   const confirmInlineEdit = async () => {
     if (!editingChatId || !editingTitle.trim()) {
       message.error('请输入有效的对话标题');
@@ -457,7 +460,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     }
 
     try {
-      await chatClient.saveChatTitle(editingChatId, editingTitle.trim());
+      // 模拟保存延迟
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // 更新本地状态
       setChats(prev =>
@@ -503,12 +507,14 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     setDeleteModalVisible(true);
   };
 
-  // 处理删除聊天
+  // 处理删除聊天 (模拟实现)
   const handleDeleteChat = async () => {
     if (!deletingChatId) return;
 
     try {
-      await chatClient.deleteChat(deletingChatId);
+      // 模拟删除延迟
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       setChats(prev => {
         const newChats = prev.filter(chat => chat.chatUuid !== deletingChatId);
         // 更新ref中的聊天数量
@@ -612,7 +618,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
   };
 
   // 渲染聊天项
-  const renderChatItem = (chat: CommonChatInfo) => {
+  const renderChatItem = (chat: MockChatInfo) => {
     const isEditing = editingChatId === chat.chatUuid;
     
     return (

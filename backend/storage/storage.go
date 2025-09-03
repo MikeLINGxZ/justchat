@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/do"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -18,7 +18,7 @@ func NewStorage() (*Storage, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&do.Model{}, &do.Provider{})
+	err = db.AutoMigrate(&data_models.Model{}, &data_models.Provider{})
 	if err != nil {
 		logger.Errorf("Failed to migrate models: %v", err)
 		return nil, err
