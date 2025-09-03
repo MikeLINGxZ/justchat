@@ -1,98 +1,86 @@
 package storage
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gorm.io/gorm"
 )
 
 // CreateChat 创建新的聊天会话
-func (s *Storage) CreateChat(chat *data_models.Chat) error {
+func (s *Storage) CreateChat(ctx context.Context, chat *data_models.Chat) error {
 	return s.sqliteDB.Create(chat).Error
 }
 
 // GetChat 根据ID获取聊天
-func (s *Storage) GetChat(id uint) (*data_models.Chat, error) {
+func (s *Storage) GetChat(ctx context.Context, id uint) (*data_models.Chat, error) {
 	var chat data_models.Chat
 	err := s.sqliteDB.First(&chat, id).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logger.Errorf("get chat %v error: %v", id, err)
 		return nil, err
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
 	}
 	return &chat, nil
 }
 
-// GetChatByUUID 根据UUID获取聊天
-func (s *Storage) GetChatByUUID(uuid string) (*data_models.Chat, error) {
+// GetChatByID 根据 ID 获取聊天
+func (s *Storage) GetChatByID(ctx context.Context, id uint) (*data_models.Chat, error) {
 	var chat data_models.Chat
-	err := s.sqliteDB.Where("chat_uuid = ?", uuid).First(&chat).Error
+	err := s.sqliteDB.Where("id = ?", id).First(&chat).Error
 	if err != nil {
+		logger.Errorf("get chat by id err: %v", err)
 		return nil, err
 	}
 	return &chat, nil
 }
 
 // UpdateChat 更新聊天信息
-func (s *Storage) UpdateChat(chat *data_models.Chat) error {
-	return s.sqliteDB.Save(chat).Error
+func (s *Storage) UpdateChat(ctx context.Context, chat *data_models.Chat) error {
+	err := s.sqliteDB.Save(chat).Error
+	if err != nil {
+		logger.Errorf("update chat %v error: %v", chat.ID, err)
+		return err
+	}
+	return nil
 }
 
 // DeleteChat 删除聊天（软删除）
-func (s *Storage) DeleteChat(id uint) error {
-	return s.sqliteDB.Delete(&data_models.Chat{}, id).Error
+func (s *Storage) DeleteChat(ctx context.Context, id uint) error {
+	err := s.sqliteDB.Delete(&data_models.Chat{}, id).Error
+	if err != nil {
+		logger.Errorf("delete chat %v error: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // ListChats 获取聊天列表
-func (s *Storage) ListChats(limit, offset int) ([]data_models.Chat, error) {
+func (s *Storage) ListChats(ctx context.Context, limit, offset int) ([]data_models.Chat, error) {
 	var chats []data_models.Chat
 	err := s.sqliteDB.Order("updated_at DESC").Limit(limit).Offset(offset).Find(&chats).Error
-	return chats, err
+	if err != nil {
+		logger.Errorf("list chats err: %v", err)
+		return nil, err
+	}
+	return chats, nil
 }
 
 // CreateMessage 创建新消息
-func (s *Storage) CreateMessage(message *data_models.Message) error {
-	return s.sqliteDB.Transaction(func(tx *gorm.DB) error {
-		// 创建消息
-		if err := tx.Create(message).Error; err != nil {
-			return err
-		}
-
-		// 更新聊天统计信息
-		return tx.Model(&data_models.Chat{}).Where("id = ?", message.ChatID).Updates(map[string]interface{}{
-			"message_count": gorm.Expr("message_count + 1"),
-			"last_activity": time.Now(),
-		}).Error
-	})
-}
-
-// CreateMessageFromSchema 从 schema.Message 创建消息
-func (s *Storage) CreateMessageFromSchema(chatID uint, msg *schema.Message) (*data_models.Message, error) {
-	message := &data_models.Message{
-		ChatID: chatID,
+func (s *Storage) CreateMessage(ctx context.Context, message *data_models.Message) error {
+	if err := s.sqliteDB.Create(message).Error; err != nil {
+		logger.Errorf("create message %v error: %v", message.ID, err)
+		return err
 	}
-
-	if err := message.FromSchemaMessage(msg); err != nil {
-		return nil, fmt.Errorf("failed to convert from schema.Message: %w", err)
-	}
-
-	if err := s.CreateMessage(message); err != nil {
-		return nil, err
-	}
-
-	return message, nil
-}
-
-// GetMessage 根据ID获取消息
-func (s *Storage) GetMessage(id uint) (*data_models.Message, error) {
-	var message data_models.Message
-	err := s.sqliteDB.First(&message, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &message, nil
+	return nil
 }
 
 // GetMessageByUUID 根据UUID获取消息
@@ -141,6 +129,25 @@ func (s *Storage) GetChatMessages(chatID uint, limit, offset int) ([]data_models
 		Offset(offset).
 		Find(&messages).Error
 	return messages, err
+}
+
+// CreateMessageFromSchema 从 schema.Message 创建消息
+func (s *Storage) CreateMessageFromSchema(ctx context.Context, chatID uint, msg *schema.Message) (*data_models.Message, error) {
+	message := &data_models.Message{
+		ChatID: chatID,
+	}
+
+	if err := message.FromSchemaMessage(msg); err != nil {
+		logger.Errorf("failed to convert from schema.Message: %v", err)
+		return nil, err
+	}
+
+	if err := s.CreateMessage(ctx, message); err != nil {
+		logger.Errorf("failed to create chat message: %v", err)
+		return nil, err
+	}
+
+	return message, nil
 }
 
 // GetChatMessagesAsSchema 获取聊天的所有消息并转换为 schema.Message
