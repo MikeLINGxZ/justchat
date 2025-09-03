@@ -2,15 +2,8 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import Layout from '@/components/Layout';
-import PrivateRoute from '@/components/PrivateRoute';
-import PublicRoute from '@/components/PublicRoute';
-import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
-import ForgotPassword from '@/pages/auth/ForgotPassword';
-import TestAuth from '@/pages/TestAuth';
 import SimpleTest from '@/pages/SimpleTest';
 import EnvTest from '@/pages/EnvTest';
-import TestLoginExpiry from '@/pages/TestLoginExpiry';
 import { initializeStores } from '@/stores';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 
@@ -45,39 +38,7 @@ function App() {
       }
     >
       <Routes>
-        {/* 公共路由 */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/test-auth"
-          element={
-            <PublicRoute>
-              <TestAuth />
-            </PublicRoute>
-          }
-        />
+        {/* 测试路由 */}
         <Route
           path="/simple-test"
           element={<SimpleTest />}
@@ -86,40 +47,31 @@ function App() {
           path="/env-test"
           element={<EnvTest />}
         />
-        <Route
-          path="/test-login-expiry"
-          element={<TestLoginExpiry />}
-        />
 
-        {/* 聊天页面 - 独立路由 */}
+        {/* 聊天页面 - 主页面 */}
+        <Route
+          path="/"
+          element={<Chat />}
+        />
         <Route
           path="/home"
-          element={
-            <PrivateRoute>
-              <Chat />
-            </PrivateRoute>
-          }
+          element={<Chat />}
         />
         {/* 带chatUuid参数的聊天页面路由 */}
         <Route
           path="/home/:chatUuid"
-          element={
-            <PrivateRoute>
-              <Chat />
-            </PrivateRoute>
-          }
+          element={<Chat />}
+        />
+        <Route
+          path="/:chatUuid"
+          element={<Chat />}
         />
 
-        {/* 私有路由 - 使用Layout */}
+        {/* 其他路由 - 使用Layout */}
         <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }
+          path="/app"
+          element={<Layout />}
         >
-          <Route index element={<Navigate to="/home" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
         </Route>

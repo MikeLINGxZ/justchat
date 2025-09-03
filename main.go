@@ -7,19 +7,23 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/core/cloud"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 
-	auth := cloud.NewAuth()
+	storage, err := storage.NewStorage()
+	if err != nil {
+		panic(err)
+	}
 
-	// Create application with options
-	err := wails.Run(&options.App{
+	service := service.NewService(storage)
+
+	err = wails.Run(&options.App{
 		Title:  "lemon_tea_desktop_temp",
 		Width:  1024,
 		Height: 768,
@@ -28,10 +32,10 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
-			auth.Startup(ctx)
+			service.Startup(ctx)
 		},
 		Bind: []interface{}{
-			auth,
+			service,
 		},
 	})
 

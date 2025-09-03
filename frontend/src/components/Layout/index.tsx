@@ -3,7 +3,6 @@ import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Space } from 'antd
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   UserOutlined,
-  LogoutOutlined,
   SettingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -22,56 +21,30 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [collapsed, setCollapsed] = React.useState(false);
   
   // 使用视口高度检测 Hook
   const { isMobile } = useViewportHeight();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  const menuItems = [
-    {
-      key: '/profile',
-      icon: <UserOutlined />,
-      label: '个人资料',
-    },
-  ];
 
   const userMenuItems = [
     {
       key: 'chat',
       icon: <MessageOutlined />,
       label: 'AI聊天',
-      onClick: () => navigate('/chat'),
+      onClick: () => navigate('/home'),
     },
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: '个人资料',
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/app/profile'),
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
       label: '设置',
-      onClick: () => navigate('/settings'),
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
+      onClick: () => navigate('/app/settings'),
     },
   ];
 
@@ -94,7 +67,18 @@ const Layout: React.FC<LayoutProps> = () => {
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
-          items={menuItems}
+          items={[
+            {
+              key: '/app/profile',
+              icon: <UserOutlined />,
+              label: '个人资料',
+            },
+            {
+              key: '/app/settings',
+              icon: <SettingOutlined />,
+              label: '设置',
+            },
+          ]}
           onClick={handleMenuClick}
         />
       </Sider>

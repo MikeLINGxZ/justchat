@@ -1,9 +1,0 @@
-syntax = "proto3";
-package lemon_tea.common;
-option go_package = "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/rpc/common";
-
-import "google/protobuf/descriptor.proto";
-
-extend google.protobuf.MethodOptions {
-  bool requires_auth = 50001;
-}

@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authClient } from '@/api/authClient';
-import { extractErrorMessage } from '@/utils/errorHandler';
 
 interface User {
   id?: string;
@@ -24,11 +22,9 @@ interface AuthState {
 }
 
 interface AuthActions {
-  logout: () => Promise<void>;
-  getCurrentUser: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
-  // 新增：直接设置认证状态的方法
+  // 设置认证状态的方法
   setAuthState: (user: User | null, token: string | null, isAuthenticated: boolean) => void;
 }
 
@@ -37,10 +33,14 @@ type AuthStore = AuthState & AuthActions;
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, _) => ({
-      // 初始状态
-      user: null,
-      token: null,
-      isAuthenticated: false,
+      // 初始状态 - 默认为已认证状态
+      user: {
+        userId: 'demo-user',
+        username: 'Demo User',
+        email: 'demo@example.com',
+      },
+      token: 'demo-token',
+      isAuthenticated: true,
       isLoading: false,
       error: null,
 
@@ -53,49 +53,6 @@ export const useAuthStore = create<AuthStore>()(
           isLoading: false,
           error: null,
         });
-      },
-
-
-
-      // 登出
-      logout: async () => {
-        try {
-          await authClient.logout();
-        } catch (error) {
-          console.error('Logout API call failed:', error);
-        } finally {
-          // 清除本地存储
-          localStorage.removeItem('token');
-          
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            error: null,
-          });
-        }
-      },
-
-      // 获取当前用户信息
-      getCurrentUser: async () => {
-        try {
-          set({ isLoading: true });
-          // 注意：这里需要根据实际的API接口来实现
-          // 如果后端没有提供获取当前用户信息的接口，可以跳过
-          set({
-            isLoading: false,
-          });
-        } catch (error: any) {
-          const errorMessage = extractErrorMessage(error);
-          set({
-            error: errorMessage,
-            isLoading: false,
-            isAuthenticated: false,
-          });
-          
-          // 如果获取用户信息失败，清除token
-          localStorage.removeItem('token');
-        }
       },
 
       // 清除错误
@@ -119,10 +76,8 @@ export const useAuthStore = create<AuthStore>()(
   )
 );
 
-// 初始化认证状态
+// 简化初始化认证状态
 export const initializeAuth = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    useAuthStore.getState().getCurrentUser();
-  }
+  // 不需要任何验证，直接使用默认认证状态
+  console.log('Auth initialized with demo state');
 };
