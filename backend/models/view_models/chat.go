@@ -2,6 +2,11 @@ package view_models
 
 import "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 
+type ChatList struct {
+	Lists []Chat `json:"lists"`
+	Total int    `json:"total"`
+}
+
 type Chat struct {
 	data_models.Chat
 	Content          []MatchMessage `json:"content"`

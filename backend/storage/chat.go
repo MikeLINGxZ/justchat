@@ -9,22 +9,27 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 )
 
-func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string) ([]view_models.Chat, error) {
+func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string) ([]view_models.Chat, int, error) {
 	var chats []view_models.Chat
 	var res []data_models.Chat
-
+	var count int64
 	if keyword == nil || strings.TrimSpace(*keyword) == "" {
-		err := s.sqliteDB.Model(&data_models.Chat{}).Offset(offset).Limit(limit).Find(&res).Error
+		err := s.sqliteDB.Model(&data_models.Chat{}).Count(&count).Error
+		if err != nil {
+			logger.Error(ctx, "GetChats count error: %s", err.Error())
+			return nil, 0, err
+		}
+		err = s.sqliteDB.Model(&data_models.Chat{}).Offset(offset).Limit(limit).Find(&res).Error
 		if err != nil {
 			logger.Errorf("GetChats err: %v", err)
-			return nil, err
+			return nil, 0, err
 		}
 		for _, item := range res {
 			chats = append(chats, view_models.Chat{
 				Chat: item,
 			})
 		}
-		return chats, nil
+		return chats, int(count), nil
 	}
 
 	// 使用关键字搜索包含匹配消息的聊天与聊天标题
@@ -40,7 +45,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Pluck("id", &titleMatchChatIDs).Error
 	if err != nil {
 		logger.Errorf("GetChats err: %v", err)
-		return nil, err
+		return chats, 0, nil
 	}
 	for _, id := range titleMatchChatIDs {
 		matchedChatIDs[id] = true
@@ -54,7 +59,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Pluck("chat_id", &messageMatchChatIDs).Error
 	if err != nil {
 		logger.Errorf("GetChats err: %v", err)
-		return nil, err
+		return chats, 0, nil
 	}
 	for _, id := range messageMatchChatIDs {
 		matchedChatIDs[id] = true
@@ -65,10 +70,11 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 	for id := range matchedChatIDs {
 		allMatchedIDs = append(allMatchedIDs, id)
 	}
+	count = int64(len(allMatchedIDs))
 
 	// 如果没有匹配的聊天，直接返回空结果
 	if len(allMatchedIDs) == 0 {
-		return chats, nil
+		return chats, 0, nil
 	}
 
 	// 对匹配的聊天应用分页并获取详细信息
@@ -79,7 +85,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Find(&res).Error
 	if err != nil {
 		logger.Errorf("GetChats err: %v", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	// 转换为view_models.Chat并填充匹配的消息内容
@@ -96,7 +102,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 			Find(&matchedMessages).Error
 		if err != nil {
 			logger.Errorf("GetChats err: %v", err)
-			return nil, err
+			return nil, 0, err
 		}
 
 		// 填充匹配的消息内容
@@ -122,5 +128,5 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		chats = append(chats, chat)
 	}
 
-	return chats, nil
+	return chats, int(count), nil
 }

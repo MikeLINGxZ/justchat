@@ -12,8 +12,8 @@ import {
   CheckOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore.ts';
-import SidebarChats from './chat_lists.tsx';
-import './index.scss';
+import SidebarChats from '@/pages/home/sidebar/chat_lists.tsx';
+import '@/pages/home/sidebar/index.scss';
 
 interface SidebarProps {
   className?: string;
