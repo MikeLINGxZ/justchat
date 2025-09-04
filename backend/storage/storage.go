@@ -52,7 +52,7 @@ func (s *Storage) createFTSIndex() error {
 		return nil // FTS表已存在
 	}
 
-	// 创建FTS5虚拟表
+	// 尝试创建FTS5虚拟表
 	ftsSQL := `
 	CREATE VIRTUAL TABLE messages_fts USING fts5(
 		id UNINDEXED,
@@ -65,7 +65,10 @@ func (s *Storage) createFTSIndex() error {
 	`
 
 	if err := s.sqliteDB.Exec(ftsSQL).Error; err != nil {
-		return fmt.Errorf("failed to create FTS table: %w", err)
+		// 如果FTS5不可用，记录警告但不返回错误
+		// 搜索功能将使用常规的LIKE查询
+		logger.Warmf("FTS5 module not available, search will use LIKE queries: %v", err)
+		return nil
 	}
 
 	// 创建触发器自动同步数据

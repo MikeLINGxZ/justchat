@@ -103,3 +103,71 @@ export namespace data_models {
 
 }
 
+export namespace view_models {
+	
+	export class MatchMessage {
+	    role: string;
+	    content: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MatchMessage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.role = source["role"];
+	        this.content = source["content"];
+	    }
+	}
+	export class Chat {
+	    id: number;
+	    // Go type: time
+	    created_at: any;
+	    // Go type: time
+	    updated_at: any;
+	    // Go type: gorm
+	    DeletedAt: any;
+	    model_id: number;
+	    title: string;
+	    prompt: string;
+	    content: MatchMessage[];
+	    reasoning_content: MatchMessage[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Chat(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.created_at = this.convertValues(source["created_at"], null);
+	        this.updated_at = this.convertValues(source["updated_at"], null);
+	        this.DeletedAt = this.convertValues(source["DeletedAt"], null);
+	        this.model_id = source["model_id"];
+	        this.title = source["title"];
+	        this.prompt = source["prompt"];
+	        this.content = this.convertValues(source["content"], MatchMessage);
+	        this.reasoning_content = this.convertValues(source["reasoning_content"], MatchMessage);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
