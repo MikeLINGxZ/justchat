@@ -178,6 +178,11 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     const hasMoreData = currentTotal < total;
                     setHasMore(hasMoreData);
                 }
+                if (response.lists == null || response.lists.length == 0) {
+                    setTotalCount(0);
+                    setHasMore(false);
+                    setChats([]);
+                }
 
             } catch (error) {
                 console.error('Failed to load chats:', error);
