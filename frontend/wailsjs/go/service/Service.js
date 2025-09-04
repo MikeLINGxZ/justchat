@@ -6,6 +6,10 @@ export function ChatList(arg1, arg2, arg3) {
   return window['go']['service']['Service']['ChatList'](arg1, arg2, arg3);
 }
 
+export function Completions(arg1, arg2, arg3) {
+  return window['go']['service']['Service']['Completions'](arg1, arg2, arg3);
+}
+
 export function GetModels() {
   return window['go']['service']['Service']['GetModels']();
 }
