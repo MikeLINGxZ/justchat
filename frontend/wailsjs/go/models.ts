@@ -127,6 +127,7 @@ export namespace view_models {
 	    updated_at: any;
 	    // Go type: gorm
 	    deleted_at: any;
+	    uuid: string;
 	    model_id: number;
 	    title: string;
 	    prompt: string;
@@ -143,6 +144,7 @@ export namespace view_models {
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	        this.deleted_at = this.convertValues(source["deleted_at"], null);
+	        this.uuid = source["uuid"];
 	        this.model_id = source["model_id"];
 	        this.title = source["title"];
 	        this.prompt = source["prompt"];

@@ -9,6 +9,7 @@ import (
 
 type Chat struct {
 	OrmModel
+	Uuid    string `grom:"unique;index" json:"uuid"`
 	ModelID uint   `gorm:"index" json:"model_id"`
 	Title   string `gorm:"type:varchar(255)" json:"title"`
 	Prompt  string `gorm:"type:text" json:"prompt"`

@@ -14,6 +14,7 @@ import {
 import styles from './chats_lists.module.scss';
 import {view_models} from "../../../../wailsjs/go/models.ts";
 import {ChatList} from "../../../../wailsjs/go/service/Service";
+import Chat = view_models.Chat;
 
 const {Text} = Typography;
 const {Search} = Input;
@@ -26,7 +27,7 @@ interface GroupedChats {
 }
 
 interface SidebarChatsProps {
-    currentChatId: string | null;
+    currentChatUuid: string | null;
     onChatSelect?: (chatUuid: string, chatTitle?: string) => void;
     onRegisterRefreshCallback?: (callback: () => void) => void;
     onRegisterUpdateTitleCallback?: (
@@ -35,7 +36,7 @@ interface SidebarChatsProps {
 }
 
 const SidebarChats: React.FC<SidebarChatsProps> = ({
-                                                       currentChatId,
+                                                       currentChatUuid,
                                                        onChatSelect,
                                                        onRegisterRefreshCallback,
                                                        onRegisterUpdateTitleCallback,
@@ -45,10 +46,10 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     const [loadingMore, setLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+    const [deletingChatUuid, setDeletingChatUuid] = useState<string | null>(null);
     const [deletingChatTitle, setDeletingChatTitle] = useState<string>('');
     // 内联编辑状态
-    const [editingChatId, setEditingChatId] = useState<string | null>(null);
+    const [editingChatUuid, setEditingChatUuid] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState<string>('');
     const [totalCount, setTotalCount] = useState<number>(0);
     const [hasMore, setHasMore] = useState(true);
@@ -91,7 +92,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             chatDate.getDate()
         );
 
-        if (chatDateOnly.getTime() === today.getTime()) {
+        if (chatDateOnly.getTime() >= today.getTime()) {
             return 'today';
         } else if (chatDateOnly.getTime() === yesterday.getTime()) {
             return 'yesterday';
@@ -133,8 +134,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             try {
                 // 使用ref来获取最新的chats长度
                 const currentOffset = isLoadMore ? chatsCountRef.current : 0;
-                const response: view_models.ChatList = await ChatList(currentOffset,50, keyword);
-                console.log("ChatList response:",response)
+                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null);
+                console.log("ChatList response:", response)
                 if (response.lists) {
                     const newChats: view_models.Chat[] = response.lists;
                     const total: number = response.total || 0;
@@ -144,17 +145,17 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                         setChats(prev => {
                             // 创建一个Map来存储已有的聊天记录，以chatUuid为key
                             const existingChatsMap = new Map(
-                                prev.map(chat => [chat.id, chat])
+                                prev.map(chat => [chat.uuid, chat])
                             );
 
                             let addedCount = 0;
                             // 添加新的聊天记录，如果chatUuid已存在则跳过
                             newChats.forEach(newChat => {
                                 if (
-                                    newChat.id &&
-                                    !existingChatsMap.has(newChat.id)
+                                    newChat.uuid &&
+                                    !existingChatsMap.has(newChat.uuid)
                                 ) {
-                                    existingChatsMap.set(newChat.id, newChat);
+                                    existingChatsMap.set(newChat.uuid, newChat);
                                     addedCount++;
                                 }
                             });
@@ -192,13 +193,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     // 加载更多聊天
     const loadMoreChats = useCallback(() => {
         if (!hasMoreRef.current || loadingRef.current) {
-            console.log('loadMoreChats: 条件不满足', {
-                hasMore: hasMoreRef.current,
-                loading: loadingRef.current,
-            });
             return;
         }
-        console.log('loadMoreChats: 开始加载更多');
         loadChats(searchQueryRef.current || undefined, true);
     }, []); // 移除loadChats依赖，直接调用
 
@@ -220,35 +216,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             // 判断是否滚动到底部（留有50px的缓冲区）
             const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-            // 添加更详细的调试日志
-            console.log('滚动事件触发:', {
-                scrollTop,
-                scrollHeight,
-                clientHeight,
-                distanceFromBottom,
-                hasMore: hasMoreRef.current,
-                loading: loadingRef.current,
-                当前聊天数量: chatsCountRef.current,
-                总数量: totalCount,
-                searchQuery: searchQueryRef.current,
-            });
-
-            if (distanceFromBottom <= 50) {
-                console.log('到达底部，准备加载更多:', {
-                    hasMore: hasMoreRef.current,
-                    loading: loadingRef.current,
-                    当前聊天数量: chatsCountRef.current,
-                    distanceFromBottom,
-                });
-                if (hasMoreRef.current && !loadingRef.current) {
-                    console.log('开始加载更多数据');
-                    loadMoreChats();
-                } else {
-                    console.log('跳过加载更多，原因:', {
-                        hasMore: hasMoreRef.current,
-                        loading: loadingRef.current,
-                    });
-                }
+            if (distanceFromBottom <= 50 && (hasMoreRef.current && !loadingRef.current)) {
+                loadMoreChats();
             }
         },
         [loadMoreChats, totalCount]
@@ -272,12 +241,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         searchTimeoutRef.current = setTimeout(async () => {
             // 搜索时重置分页状态
             setHasMore(true);
-            chatsCountRef.current = 0; // 重置聊天数量
-            console.log('搜索开始，重置分页状态:', {
-                searchQuery,
-                hasMore: true,
-                chatsCount: 0,
-            });
+            chatsCountRef.current = 0;
             // 直接调用loadChats，传入搜索词
             loadChats(searchQuery || undefined);
 
@@ -336,7 +300,9 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     const updateChatTitle = useCallback((chatUuid: string, newTitle: string) => {
         setChats(prev =>
             prev.map(chat =>
-                chat.chatUuid === chatUuid ? {...chat, title: newTitle} : chat
+                chat.uuid === chatUuid
+                    ? new Chat({...chat, title: newTitle})
+                    : chat
             )
         );
     }, []);
@@ -368,19 +334,19 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     // 开始内联编辑
     const startInlineEdit = (chatUuid: string, chatTitle: string) => {
         // 根据项目规范，只有已保存的对话（有有效的 chatUuid）才允许重命名
-        const canRename = Boolean(chatUuid && chatUuid.trim() !== '');
-        if (!canRename) {
+        const canRename = chatUuid;
+        if (!canRename && chatUuid == "") {
             message.warning('请先保存对话后再重命名');
             return;
         }
 
-        setEditingChatId(chatUuid);
+        setEditingChatUuid(chatUuid);
         setEditingTitle(chatTitle || '新对话');
     };
 
     // 确认内联编辑 (模拟实现)
     const confirmInlineEdit = async () => {
-        if (!editingChatId || !editingTitle.trim()) {
+        if (!editingChatUuid || !editingTitle.trim()) {
             message.error('请输入有效的对话标题');
             return;
         }
@@ -392,17 +358,17 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             // 更新本地状态
             setChats(prev =>
                 prev.map(chat =>
-                    chat.chatUuid === editingChatId
-                        ? {...chat, title: editingTitle.trim()}
+                    chat.uuid === editingChatUuid
+                        ? new Chat({...chat, title: editingTitle.trim()})
                         : chat
                 )
             );
 
             // 调用外部更新回调
-            updateChatTitle(editingChatId, editingTitle.trim());
+            updateChatTitle(editingChatUuid, editingTitle.trim());
 
             message.success('重命名成功');
-            setEditingChatId(null);
+            setEditingChatUuid(null);
             setEditingTitle('');
         } catch (error) {
             console.error('Failed to rename chat:', error);
@@ -412,7 +378,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
     // 取消内联编辑
     const cancelInlineEdit = () => {
-        setEditingChatId(null);
+        setEditingChatUuid(null);
         setEditingTitle('');
     };
 
@@ -428,28 +394,28 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
     // 显示删除确认对话框
     const showDeleteConfirm = (chatUuid: string, chatTitle: string) => {
-        setDeletingChatId(chatUuid);
+        setDeletingChatUuid(chatUuid);
         setDeletingChatTitle(chatTitle || '新对话');
         setDeleteModalVisible(true);
     };
 
     // 处理删除聊天 (模拟实现)
     const handleDeleteChat = async () => {
-        if (!deletingChatId) return;
+        if (!deletingChatUuid) return;
 
         try {
             // 模拟删除延迟
             await new Promise(resolve => setTimeout(resolve, 200));
 
             setChats(prev => {
-                const newChats = prev.filter(chat => chat.chatUuid !== deletingChatId);
+                const newChats = prev.filter(chat => chat.uuid !== deletingChatUuid);
                 // 更新ref中的聊天数量
                 chatsCountRef.current = newChats.length;
                 return newChats;
             });
             message.success('删除成功');
             setDeleteModalVisible(false);
-            setDeletingChatId(null);
+            setDeletingChatUuid(null);
             setDeletingChatTitle('');
         } catch (error) {
             console.error('Failed to delete chat:', error);
@@ -460,7 +426,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     // 取消删除
     const handleCancelDelete = () => {
         setDeleteModalVisible(false);
-        setDeletingChatId(null);
+        setDeletingChatUuid(null);
         setDeletingChatTitle('');
     };
 
@@ -544,18 +510,18 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 渲染聊天项
-    const renderChatItem = (chat: MockChatInfo) => {
-        const isEditing = editingChatId === chat.chatUuid;
+    const renderChatItem = (chat: view_models.Chat) => {
+        const isEditing = editingChatUuid === chat.uuid;
 
         return (
             <List.Item
-                key={chat.chatUuid}
+                key={chat.uuid}
                 style={{padding: 0}}
                 className={`${styles.chatItem}`}
-                onClick={() => !isEditing && handleChatSelect(chat.chatUuid!, chat.title)}
+                onClick={() => !isEditing && handleChatSelect(chat.uuid!, chat.title)}
             >
                 <div
-                    className={`${styles.chatContent} ${currentChatId === chat.chatUuid ? styles.active : ''} ${isEditing ? styles.editing : ''}`}
+                    className={`${styles.chatContent} ${currentChatUuid === chat.uuid ? styles.active : ''} ${isEditing ? styles.editing : ''}`}
                 >
                     <div className={styles.chatHeader}>
                         {isEditing ? (
@@ -603,11 +569,11 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                 </div>
                                 <div className={styles.chatActions}>
                                     <Text className={styles.chatTime} hidden={true}>
-                                        {chat.updatedAt && formatTime(chat.updatedAt)}
+                                        {chat.updated_at && formatTime(chat.updated_at)}
                                     </Text>
                                     <Dropdown
                                         menu={{
-                                            items: getMenuItems(chat.chatUuid!, chat.title || '新对话'),
+                                            items: getMenuItems(chat.uuid!, chat.title || '新对话'),
                                         }}
                                         trigger={['click']}
                                         placement="bottomRight"
@@ -630,7 +596,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 渲染分组
-    const renderGroup = (title: string, chats: CommonChatInfo[]) => {
+    const renderGroup = (title: string, chats: view_models.Chat[]) => {
         if (chats.length === 0) return null;
 
         return (
