@@ -6,6 +6,10 @@ export function GetModels() {
   return window['go']['service']['Service']['GetModels']();
 }
 
+export function GetProviders() {
+  return window['go']['service']['Service']['GetProviders']();
+}
+
 export function Startup(arg1) {
   return window['go']['service']['Service']['Startup'](arg1);
 }

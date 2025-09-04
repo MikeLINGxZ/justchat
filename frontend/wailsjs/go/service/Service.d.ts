@@ -5,4 +5,6 @@ import {context} from '../models';
 
 export function GetModels():Promise<Array<data_models.Model>>;
 
+export function GetProviders():Promise<Array<data_models.Provider>>;
+
 export function Startup(arg1:context.Context):Promise<void>;
