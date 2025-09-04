@@ -26,9 +26,18 @@ func NewStorage() (*Storage, error) {
 		return nil, err
 	}
 
-	return &Storage{
+	// 创建 Storage 实例
+	storage := &Storage{
 		sqliteDB: db,
-	}, nil
+	}
+
+	// 创建 FTS 索引
+	if err := storage.createFTSIndex(); err != nil {
+		logger.Errorf("Failed to create FTS index: %v", err)
+		return nil, err
+	}
+
+	return storage, nil
 }
 
 func (s *Storage) createFTSIndex() error {
@@ -48,12 +57,9 @@ func (s *Storage) createFTSIndex() error {
 	CREATE VIRTUAL TABLE messages_fts USING fts5(
 		id UNINDEXED,
 		chat_id UNINDEXED, 
-		message_uuid UNINDEXED,
-		role UNINDEXED,
 		content,
-		reasoning_content,
-		name,
 		searchable_content,
+		searchable_reasoning_content,
 		created_at UNINDEXED
 	);
 	`
@@ -66,17 +72,16 @@ func (s *Storage) createFTSIndex() error {
 	triggers := []string{
 		// INSERT 触发器
 		`CREATE TRIGGER messages_fts_insert AFTER INSERT ON messages BEGIN
-			INSERT INTO messages_fts(id, chat_id, message_uuid, role, content, reasoning_content, name, searchable_content, created_at)
-			VALUES (new.id, new.chat_id, new.message_uuid, new.role, new.content, new.reasoning_content, new.name, new.searchable_content, new.created_at);
+			INSERT INTO messages_fts(id, chat_id, content, searchable_content, searchable_reasoning_content, created_at)
+			VALUES (new.id, new.chat_id, new.message_json, new.searchable_content, new.searchable_reasoning_content, new.created_at);
 		END;`,
 
 		// UPDATE 触发器
 		`CREATE TRIGGER messages_fts_update AFTER UPDATE ON messages BEGIN
 			UPDATE messages_fts 
-			SET content = new.content, 
-				reasoning_content = new.reasoning_content, 
-				name = new.name,
-				searchable_content = new.searchable_content
+			SET content = new.message_json, 
+				searchable_content = new.searchable_content,
+				searchable_reasoning_content = new.searchable_reasoning_content
 			WHERE id = new.id;
 		END;`,
 
