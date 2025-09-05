@@ -7,6 +7,9 @@ import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { useModels } from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
+import {Completions} from "../../../wailsjs/go/service/Service";
+import {schema} from "../../../wailsjs/go/models.ts";
+import {EventsOn} from "../../../wailsjs/runtime";
 
 const { Content, Sider } = Layout;
 
@@ -275,7 +278,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
       try {
         // 模拟流式响应
         const mockResponse = `你好！我收到了你的消息："${messageContent}"。这是一个模拟回复，用于展示 UI 功能。在实际应用中，这里会调用真实的 AI 接口。`;
-        
+        var message= new schema.Message();
+        const emitKey:string = await Completions(currentChatUuid,selectedModel,message)
+        EventsOn(emitKey,(optionalData?: any)=>{
+          console.log("optionalData:",optionalData.toString())
+        });
         // 模拟打字机效果
         let currentIndex = 0;
         const typeWriter = () => {

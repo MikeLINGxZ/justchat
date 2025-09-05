@@ -24,7 +24,7 @@ func main() {
 	service := service.NewService(storage)
 
 	err = wails.Run(&options.App{
-		Title:  "lemon_tea_desktop_temp",
+		Title:  "lemon_tea_desktop",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
