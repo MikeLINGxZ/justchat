@@ -297,8 +297,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               ) {
                 newMessages[lastIndex] = {
                   ...newMessages[lastIndex],
-                  content: responseMessage.content || '',
-                  reasoningContent: responseMessage.reasoning_content,
+                  content: (newMessages[lastIndex].content || '') + (responseMessage.content || ''),
+                  reasoningContent: (newMessages[lastIndex].reasoningContent || '') + (responseMessage.reasoning_content || ''),
                   isStreaming: !responseMessage.response_meta?.finish_reason,
                 };
               }
