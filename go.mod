@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/cloudwego/eino v0.4.8
 	github.com/fatih/color v1.18.0
+	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/wailsapp/wails/v2 v2.10.2
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.2

@@ -36,7 +36,24 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 			"这里是ai助手",
 		}
 		for i := 0; i < len(contents); i++ {
-			runtime.EventsEmit(s.ctx, chatUuid, contents[i])
+			finishReason := ""
+			if i == len(contents)-1 {
+				finishReason = "finish"
+			}
+			runtime.EventsEmit(s.ctx, chatUuid, schema.Message{
+				Role:         "assistant",
+				Content:      contents[i],
+				MultiContent: nil,
+				Name:         "",
+				ToolCalls:    nil,
+				ToolCallID:   "",
+				ToolName:     "",
+				ResponseMeta: &schema.ResponseMeta{
+					FinishReason: finishReason,
+				},
+				ReasoningContent: "",
+				Extra:            nil,
+			})
 		}
 	}()
 	return chatUuid, nil

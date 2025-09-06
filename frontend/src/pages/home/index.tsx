@@ -243,29 +243,28 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
     []
   );
 
-  // 聊天功能 - 模拟实现
+  // 聊天功能
   const handleSendMessage = useCallback(
     async (messageContent: string) => {
       if (!messageContent.trim() || isLoading || isStreaming) return;
-
-      // 创建要发送的消息
+      
+      // 设置加载状态
+      setIsLoading(true);
+      setIsStreaming(true);
+      
+      // 创建用户消息
       const userMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
-        content: messageContent,
+        content: messageContent.trim(),
         timestamp: Date.now(),
       };
-
-      // 添加用户消息
-      setCurrentMessages(prev => [...prev, userMessage]);
-      setIsLoading(true);
-      setIsStreaming(true);
-
-      // 创建 AbortController 用于中断请求
-      const controller = new AbortController();
-      setAbortController(controller);
-
-      // 预先初始化 AI 回复的消息
+      
+      // 添加用户消息到聊天列表
+      const updatedMessages = [...currentMessages, userMessage];
+      setCurrentMessages(updatedMessages);
+      
+      // 创建AI消息占位符
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -274,21 +273,20 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
         timestamp: Date.now(),
       };
       setCurrentMessages(prev => [...prev, aiMessage]);
-
+      
       try {
-        // 模拟流式响应
-        const mockResponse = `你好！我收到了你的消息："${messageContent}"。这是一个模拟回复，用于展示 UI 功能。在实际应用中，这里会调用真实的 AI 接口。`;
-        var message= new schema.Message();
-        const emitKey:string = await Completions(currentChatUuid,selectedModel,message)
-        EventsOn(emitKey,(optionalData?: any)=>{
-          console.log("optionalData:",optionalData.toString())
-        });
-        // 模拟打字机效果
-        let currentIndex = 0;
-        const typeWriter = () => {
-          if (controller.signal.aborted) return;
-          
-          if (currentIndex < mockResponse.length) {
+        // 准备发送给API的消息格式
+        const apiMessage = new schema.Message();
+        apiMessage.role = userMessage.role;
+        apiMessage.content = userMessage.content;
+        
+        // 调用Completions API
+        const emitKey: string = await Completions(currentChatUuid, selectedModel, apiMessage);
+        
+        // 监听流式响应
+        EventsOn(emitKey, (responseMessage?: schema.Message) => {
+          if (responseMessage) {
+            // 更新AI消息内容
             setCurrentMessages(prev => {
               const newMessages = [...prev];
               const lastIndex = newMessages.length - 1;
@@ -299,81 +297,52 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               ) {
                 newMessages[lastIndex] = {
                   ...newMessages[lastIndex],
-                  content: mockResponse.slice(0, currentIndex + 1),
+                  content: responseMessage.content || '',
+                  reasoningContent: responseMessage.reasoning_content,
+                  isStreaming: !responseMessage.response_meta?.finish_reason,
                 };
               }
               return newMessages;
             });
             
-            currentIndex++;
-            setTimeout(typeWriter, 30); // 模拟打字速度
-          } else {
-            // 模拟完成
-            setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  isStreaming: false,
-                };
-              }
-              return newMessages;
-            });
-            
-            // 重置流式状态
-            setIsStreaming(false);
-            setAbortController(null);
-            setIsLoading(false);
-            
-            // 如果是新对话，生成一个模拟的 chatUuid
-            if (!currentChatUuid) {
-              const newChatUuid = 'mock-chat-' + Date.now();
-              setCurrentChatUuid(newChatUuid);
-              navigate(`/home/${newChatUuid}`, { replace: true });
-              setChatTitle('新的对话');
+            // 如果响应完成，重置状态
+             if (responseMessage.response_meta?.finish_reason) {
+              setIsLoading(false);
+              setIsStreaming(false);
               
-              // 更新侧边栏历史对话列表
-              if (refreshChatList) {
+              // 如果是新对话且有标题更新回调，刷新聊天列表
+              if (!currentChatUuid && refreshChatList) {
                 refreshChatList();
               }
             }
           }
-        };
-        
-        // 延迟开始模拟打字效果
-        setTimeout(() => {
-          setIsLoading(false);
-          typeWriter();
-        }, 500);
+        });
         
       } catch (error) {
-        console.error('发送消息错误:', error);
+        console.error('发送消息失败:', error);
         
-        // 将错误信息作为 AI 消息显示在聊天界面中
+        // 更新AI消息显示错误
         setCurrentMessages(prev => {
           const newMessages = [...prev];
           const lastIndex = newMessages.length - 1;
           if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
             newMessages[lastIndex] = {
               ...newMessages[lastIndex],
-              content: '抱歉，发生了一个错误。请稍后再试。',
+              content: `抱歉，发送消息时出现错误：${error instanceof Error ? error.message : '未知错误'}`,
               isStreaming: false,
+              error: error instanceof Error ? error.message : '未知错误',
             };
           }
           return newMessages;
         });
         
+        // 重置状态
         setIsLoading(false);
         setIsStreaming(false);
-        setAbortController(null);
+        message.error('发送消息失败，请重试');
       }
     },
-    [isLoading, isStreaming, currentMessages, currentChatUuid, navigate, refreshChatList]
+    [isLoading, isStreaming, currentMessages, currentChatUuid, selectedModel, navigate, refreshChatList]
   );
 
   // 处理消息删除
