@@ -154,43 +154,43 @@ func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelI
 func (s *Storage) SaveOrUpdateDeltaMessage(ctx context.Context, deltaMessage data_models.Message) error {
 	// 如果消息ID为0，说明是新消息，直接创建
 	if deltaMessage.ID == 0 {
-		return s.sqliteDB.Create(deltaMessage).Error
+		return s.sqliteDB.Create(&deltaMessage).Error
 	}
 
 	// 先查询现有记录
-	var existingMessages []data_models.Message
 	var existingMessage data_models.Message
-	err := s.sqliteDB.Model(&data_models.Message{}).Where("id = ?", deltaMessage.ID).Find(&existingMessages).Error
+	err := s.sqliteDB.First(&existingMessage, deltaMessage.ID).Error
 	if err != nil {
 		// 如果记录不存在，创建新消息
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = s.sqliteDB.Create(deltaMessage).Error
-			if err != nil {
-				return err
-			}
-			existingMessage = deltaMessage
+			return s.sqliteDB.Create(&deltaMessage).Error
 		}
+		// 其他错误直接返回
 		return err
 	}
-	if len(existingMessages) > 0 {
-		existingMessage = existingMessages[0]
-	}
 
+	// 检查现有消息的Message字段
 	schemaMsg := existingMessage.Message
 	if schemaMsg == nil {
-		return errors.New("msg is not defined")
+		return errors.New("existing message schema is not defined")
 	}
 
-	if deltaMessage.Message != nil && deltaMessage.Message.Content != "" {
-		schemaMsg.Content += deltaMessage.Message.Content
+	// 增量更新内容
+	if deltaMessage.Message != nil {
+		if deltaMessage.Message.Content != "" {
+			schemaMsg.Content += deltaMessage.Message.Content
+		}
+		if deltaMessage.Message.ReasoningContent != "" {
+			schemaMsg.ReasoningContent += deltaMessage.Message.ReasoningContent
+		}
+		if deltaMessage.Message.ResponseMeta != nil {
+			schemaMsg.ResponseMeta = deltaMessage.Message.ResponseMeta
+		}
 	}
-	if deltaMessage.Message != nil && deltaMessage.Message.ReasoningContent != "" {
-		schemaMsg.ReasoningContent += deltaMessage.Message.ReasoningContent
-	}
-	if deltaMessage.Message.ResponseMeta != nil {
-		schemaMsg.ResponseMeta = deltaMessage.Message.ResponseMeta
-	}
+
+	// 更新现有消息的Message字段
 	existingMessage.Message = schemaMsg
 
-	return s.sqliteDB.Model(&data_models.Message{}).Where("uuid = ?", deltaMessage.Uuid).Save(&existingMessage).Error
+	// 保存更新后的消息
+	return s.sqliteDB.Save(&existingMessage).Error
 }
