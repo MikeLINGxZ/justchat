@@ -6,7 +6,6 @@ import (
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +14,6 @@ func (s *Storage) GetModels(ctx context.Context) ([]data_models.Model, error) {
 	var res []data_models.Model
 	err := s.sqliteDB.Model(&data_models.Model{}).Find(&res).Error
 	if err != nil {
-		logger.Errorf("[GetModels] failed to get models: %s", err.Error())
 		return nil, err
 	}
 	return res, nil
@@ -25,7 +23,6 @@ func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Mode
 	var models data_models.Model
 	err := s.sqliteDB.Model(&data_models.Model{}).Where("model = ?", model).First(&models).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Errorf("[GetModel] failed to get model: %s", model)
 		return nil, err
 	}
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
@@ -37,7 +34,6 @@ func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Mode
 func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_models.ProviderModel, error) {
 	modelInfo, err := s.GetModel(ctx, model)
 	if err != nil {
-		logger.Errorf("[GetProviderModel] failed to get model: %s", model)
 		return nil, err
 	}
 	if modelInfo == nil {
@@ -46,7 +42,6 @@ func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_
 
 	provider, err := s.GetProviderByID(ctx, modelInfo.ProviderId)
 	if err != nil {
-		logger.Errorf("[GetProviderModel] failed to get model: %s", model)
 		return nil, err
 	}
 	if provider == nil {
@@ -57,5 +52,6 @@ func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_
 		BaseUrl: provider.BaseUrl,
 		ApiKey:  provider.ApiKey,
 		Model:   modelInfo.Model,
+		ModelId: modelInfo.ID,
 	}, nil
 }

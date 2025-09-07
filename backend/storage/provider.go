@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +13,6 @@ func (s *Storage) GetProviders(ctx context.Context) ([]data_models.Provider, err
 	var res []data_models.Provider
 	err := s.sqliteDB.Model(&data_models.Provider{}).Find(&res).Error
 	if err != nil {
-		logger.Errorf("failed to get providers: %s", err.Error())
 		return nil, err
 	}
 
@@ -29,7 +27,6 @@ func (s *Storage) GetProviderByID(ctx context.Context, id uint) (*data_models.Pr
 		return nil, nil
 	}
 	if err != nil {
-		logger.Errorf("failed to get provider: %s", err.Error())
 		return nil, err
 	}
 

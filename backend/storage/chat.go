@@ -3,10 +3,10 @@ package storage
 import (
 	"context"
 	"strings"
+	"time"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 )
 
 func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string) ([]view_models.Chat, int, error) {
@@ -16,12 +16,10 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 	if keyword == nil || strings.TrimSpace(*keyword) == "" {
 		err := s.sqliteDB.Model(&data_models.Chat{}).Count(&count).Error
 		if err != nil {
-			logger.Error(ctx, "GetChats count error: %s", err.Error())
 			return nil, 0, err
 		}
 		err = s.sqliteDB.Model(&data_models.Chat{}).Offset(offset).Limit(limit).Find(&res).Error
 		if err != nil {
-			logger.Errorf("GetChats err: %v", err)
 			return nil, 0, err
 		}
 		for _, item := range res {
@@ -44,7 +42,6 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Where("title LIKE ?", "%"+keywordStr+"%").
 		Pluck("id", &titleMatchChatIDs).Error
 	if err != nil {
-		logger.Errorf("GetChats err: %v", err)
 		return chats, 0, nil
 	}
 	for _, id := range titleMatchChatIDs {
@@ -58,7 +55,6 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Distinct("chat_id").
 		Pluck("chat_id", &messageMatchChatIDs).Error
 	if err != nil {
-		logger.Errorf("GetChats err: %v", err)
 		return chats, 0, nil
 	}
 	for _, id := range messageMatchChatIDs {
@@ -84,7 +80,6 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		Offset(offset).Limit(limit).
 		Find(&res).Error
 	if err != nil {
-		logger.Errorf("GetChats err: %v", err)
 		return nil, 0, err
 	}
 
@@ -101,7 +96,6 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 				item.ID, "%"+keywordStr+"%", "%"+keywordStr+"%").
 			Find(&matchedMessages).Error
 		if err != nil {
-			logger.Errorf("GetChats err: %v", err)
 			return nil, 0, err
 		}
 
@@ -129,4 +123,26 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 	}
 
 	return chats, int(count), nil
+}
+
+// CreateChat 创建对话
+func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelId uint) error {
+	now := time.Now()
+	chat := &data_models.Chat{
+		OrmModel: data_models.OrmModel{
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		Uuid:    chatUuid,
+		ModelID: modelId,
+		Title:   title,
+		Prompt:  "",
+	}
+
+	err := s.sqliteDB.Create(chat).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
