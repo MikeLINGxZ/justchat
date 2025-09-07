@@ -282,10 +282,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
         
         // 调用Completions API
         const emitKey: string = await Completions(currentChatUuid, selectedModel, apiMessage);
+        setCurrentChatUuid(emitKey);
         
         // 监听流式响应
         EventsOn(emitKey, (responseMessage?: schema.Message) => {
           if (responseMessage) {
+            setIsLoading(false);
             // 更新AI消息内容
             setCurrentMessages(prev => {
               const newMessages = [...prev];
@@ -309,7 +311,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
              if (responseMessage.response_meta?.finish_reason) {
               setIsLoading(false);
               setIsStreaming(false);
-              
               // 如果是新对话且有标题更新回调，刷新聊天列表
               if (!currentChatUuid && refreshChatList) {
                 refreshChatList();
