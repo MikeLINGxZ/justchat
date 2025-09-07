@@ -2,13 +2,16 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gorm.io/gorm"
 )
 
+// GetChats 获取对话
 func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string) ([]view_models.Chat, int, error) {
 	var chats []view_models.Chat
 	var res []data_models.Chat
@@ -18,7 +21,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		if err != nil {
 			return nil, 0, err
 		}
-		err = s.sqliteDB.Model(&data_models.Chat{}).Offset(offset).Limit(limit).Find(&res).Error
+		err = s.sqliteDB.Model(&data_models.Chat{}).Order("updated_at DESC").Offset(offset).Limit(limit).Find(&res).Error
 		if err != nil {
 			return nil, 0, err
 		}
@@ -145,4 +148,49 @@ func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelI
 	}
 
 	return nil
+}
+
+// SaveOrUpdateDeltaMessage 创建或更新消息
+func (s *Storage) SaveOrUpdateDeltaMessage(ctx context.Context, deltaMessage data_models.Message) error {
+	// 如果消息ID为0，说明是新消息，直接创建
+	if deltaMessage.ID == 0 {
+		return s.sqliteDB.Create(deltaMessage).Error
+	}
+
+	// 先查询现有记录
+	var existingMessages []data_models.Message
+	var existingMessage data_models.Message
+	err := s.sqliteDB.Model(&data_models.Message{}).Where("id = ?", deltaMessage.ID).Find(&existingMessages).Error
+	if err != nil {
+		// 如果记录不存在，创建新消息
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = s.sqliteDB.Create(deltaMessage).Error
+			if err != nil {
+				return err
+			}
+			existingMessage = deltaMessage
+		}
+		return err
+	}
+	if len(existingMessages) > 0 {
+		existingMessage = existingMessages[0]
+	}
+
+	schemaMsg := existingMessage.Message
+	if schemaMsg == nil {
+		return errors.New("msg is not defined")
+	}
+
+	if deltaMessage.Message != nil && deltaMessage.Message.Content != "" {
+		schemaMsg.Content += deltaMessage.Message.Content
+	}
+	if deltaMessage.Message != nil && deltaMessage.Message.ReasoningContent != "" {
+		schemaMsg.ReasoningContent += deltaMessage.Message.ReasoningContent
+	}
+	if deltaMessage.Message.ResponseMeta != nil {
+		schemaMsg.ResponseMeta = deltaMessage.Message.ResponseMeta
+	}
+	existingMessage.Message = schemaMsg
+
+	return s.sqliteDB.Model(&data_models.Message{}).Where("uuid = ?", deltaMessage.Uuid).Save(&existingMessage).Error
 }

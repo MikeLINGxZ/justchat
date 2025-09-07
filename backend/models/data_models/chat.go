@@ -17,7 +17,8 @@ type Chat struct {
 
 type Message struct {
 	OrmModel
-	ChatID                     uint            `gorm:"index" json:"chat_id"`
+	Uuid                       string          `grom:"unique;index" json:"uuid"`
+	ChatUuid                   string          `gorm:"index" json:"chat_uuid"`
 	SearchableContent          string          `gorm:"type:text" json:"search_content"`
 	SearchableReasoningContent string          `gorm:"type:text" json:"search_reasoning_content"`
 	MessageJson                string          `gorm:"type:text" json:"message_json"`
