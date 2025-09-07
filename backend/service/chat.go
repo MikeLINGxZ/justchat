@@ -28,11 +28,6 @@ func (s *Service) ChatList(offset, limit int, keyword *string) (*view_models.Cha
 }
 
 func (s *Service) Completions(chatUuid, model string, message schema.Message) (string, error) {
-	// uuid
-	uv4, err := uuid.NewV4()
-	if err != nil {
-		return "", ierror.NewError(err)
-	}
 
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(s.ctx, model)
@@ -45,6 +40,10 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 
 	// 当chatUuid为空说明是新建聊天
 	if chatUuid == "" {
+		uv4, err := uuid.NewV4()
+		if err != nil {
+			return "", ierror.NewError(err)
+		}
 		chatUuid = uv4.String()
 		// 创建一个聊天
 		err = s.storage.CreateChat(s.ctx, chatUuid, message.Content, providerModel.ModelId)
@@ -54,7 +53,21 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 	}
 
 	// 新建一个消息id
+	uv4, err := uuid.NewV4()
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
 	messageUuid := uv4.String()
+
+	// 创建用户消息
+	err = s.storage.CreateMessage(s.ctx, chatUuid, data_models.Message{
+		Uuid:     messageUuid,
+		ChatUuid: chatUuid,
+		Message:  &message,
+	})
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
 
 	provider := llm.NewLlmProvider(providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
 	stream, err := provider.Completions(s.ctx, []schema.Message{message})
@@ -85,30 +98,34 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 	}()
 
 	go func() {
-		dataMsg := data_models.Message{
+		dataModelMsg := data_models.Message{
 			Uuid:     messageUuid,
 			ChatUuid: chatUuid,
 		}
 		for {
 			select {
 			case <-doneChan:
-				dataMsg = s.fillCompletionsMsg(dataMsg, "done")
-				runtime.EventsEmit(s.ctx, chatUuid, dataMsg)
+				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
+				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
 				return
 			case msg, ok := <-msgChan:
 				if !ok || msg == nil {
-					dataMsg = s.fillCompletionsMsg(dataMsg, "done")
-					runtime.EventsEmit(s.ctx, chatUuid, dataMsg)
+					dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
+					runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
 					return
 				}
-				dataMsg.Message = msg
-				dataMsg = s.fillCompletionsMsg(dataMsg, "")
-				runtime.EventsEmit(s.ctx, chatUuid, dataMsg)
+				dataModelMsg.Message = msg
+				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
+				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
+				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
+					return
+				}
 			case err := <-errChan:
 				if err == nil {
 					continue
 				}
-				s.fillCompletionsMsg(dataMsg, err.Error())
+				s.fillCompletionsMsg(dataModelMsg, err.Error())
+				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
 				return
 			}
 		}

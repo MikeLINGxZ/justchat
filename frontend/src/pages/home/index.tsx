@@ -286,6 +286,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
         
         // 监听流式响应
         EventsOn(emitKey, (responseMessage?: schema.Message) => {
+            console.log("responseMessage:",responseMessage)
           if (responseMessage) {
             setIsLoading(false);
             // 更新AI消息内容
@@ -315,6 +316,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
               if (!currentChatUuid && refreshChatList) {
                 refreshChatList();
               }
+              return
             }
           }
         });

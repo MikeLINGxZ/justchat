@@ -150,16 +150,21 @@ func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelI
 	return nil
 }
 
+// CreateMessage 创建消息
+func (s *Storage) CreateMessage(ctx context.Context, chatUuid string, message data_models.Message) error {
+	return s.sqliteDB.Create(&message).Error
+}
+
 // SaveOrUpdateDeltaMessage 创建或更新消息
 func (s *Storage) SaveOrUpdateDeltaMessage(ctx context.Context, deltaMessage data_models.Message) error {
 	// 如果消息ID为0，说明是新消息，直接创建
-	if deltaMessage.ID == 0 {
+	if deltaMessage.Uuid == "" {
 		return s.sqliteDB.Create(&deltaMessage).Error
 	}
 
 	// 先查询现有记录
 	var existingMessage data_models.Message
-	err := s.sqliteDB.First(&existingMessage, deltaMessage.ID).Error
+	err := s.sqliteDB.Where("uuid = ?", deltaMessage.Uuid).First(&existingMessage).Error
 	if err != nil {
 		// 如果记录不存在，创建新消息
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -192,5 +197,5 @@ func (s *Storage) SaveOrUpdateDeltaMessage(ctx context.Context, deltaMessage dat
 	existingMessage.Message = schemaMsg
 
 	// 保存更新后的消息
-	return s.sqliteDB.Save(&existingMessage).Error
+	return s.sqliteDB.Where("uuid = ?", deltaMessage.Uuid).Updates(&existingMessage).Error
 }
