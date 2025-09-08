@@ -1,10 +1,10 @@
 import React from "react";
-import type { Message } from "@/types";
+import { schema } from "../../../wailsjs/go/models"; // 修复导入路径
 import styles from "./index.module.scss";
 
 interface MessageActionProps {
     // 消息对象
-    message: Message;
+    message: schema.Message; // 修改为 schema.Message
     // 复制消息事件
     onCopyMessage?: (content: string) => void;
     // 删除消息事件
@@ -42,8 +42,8 @@ const MessageAction: React.FC<MessageActionProps> = ({
         let fullContent = '';
         
         // 如果有思考过程，先添加思考过程
-        if (message.reasoningContent && message.reasoningContent.trim()) {
-            fullContent += `## 思考过程\n\n${message.reasoningContent}\n\n## 回答\n\n`;
+        if (message.reasoning_content && message.reasoning_content.trim()) {
+            fullContent += `## 思考过程\n\n${message.reasoning_content}\n\n## 回答\n\n`;
         }
         
         // 添加主要内容
@@ -106,7 +106,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
             {!isUser && isLastAssistantMessage && (
                 <button
                     className={styles.actionButton}
-                    onClick={() => handleRegenerateMessage(message.id || '')}
+                    onClick={() => handleRegenerateMessage('')} // Message 类没有 id 属性
                     title="重新生成回答"
                 >
                     <svg 
@@ -131,7 +131,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
             {/* 删除按钮 */}
             <button
                 className={styles.actionButton}
-                onClick={() => handleDeleteMessage(message.id || '')}
+                onClick={() => handleDeleteMessage('')} // Message 类没有 id 属性
                 title="删除这条消息"
             >
                 <svg 

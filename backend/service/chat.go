@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/cloudwego/eino/schema"
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
@@ -60,11 +60,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 
 	// 当chatUuid为空说明是新建聊天
 	if chatUuid == "" {
-		uv4, err := uuid.NewV4()
-		if err != nil {
-			return "", ierror.NewError(err)
-		}
-		chatUuid = uv4.String()
+		chatUuid = uuid.New().String()
 		// 创建一个聊天
 		err = s.storage.CreateChat(s.ctx, chatUuid, message.Content, providerModel.ModelId)
 		if err != nil {
@@ -72,16 +68,9 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 		}
 	}
 
-	// 新建一个消息id
-	uv4, err := uuid.NewV4()
-	if err != nil {
-		return "", ierror.NewError(err)
-	}
-	messageUuid := uv4.String()
-
 	// 创建用户消息
 	err = s.storage.CreateMessage(s.ctx, chatUuid, data_models.Message{
-		Uuid:     messageUuid,
+		Uuid:     uuid.New().String(),
 		ChatUuid: chatUuid,
 		Message:  &message,
 	})
@@ -119,7 +108,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 
 	go func() {
 		dataModelMsg := data_models.Message{
-			Uuid:     messageUuid,
+			Uuid:     uuid.New().String(),
 			ChatUuid: chatUuid,
 		}
 		for {

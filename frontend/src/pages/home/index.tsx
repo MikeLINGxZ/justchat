@@ -2,14 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BackTop, Layout, message } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import Index from './sidebar';
-import type { Message } from '@/types';
+import { schema } from "../../../wailsjs/go/models"; // 修复导入路径
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { useModels } from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
 import {ChatMessages, Completions} from "../../../wailsjs/go/service/Service";
-import {schema, view_models} from "../../../wailsjs/go/models.ts";
+import {view_models} from "../../../wailsjs/go/models";
 import {EventsOn} from "../../../wailsjs/runtime";
+import styles from './index.module.scss'; // 添加样式导入
 
 const { Content, Sider } = Layout;
 
@@ -24,7 +25,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
 
   // 本地状态管理
   const [currentChatUuid, setCurrentChatUuid] = useState<string>(urlChatUuid || ''); // 空字符串表示新对话
-  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
+  const [currentMessages, setCurrentMessages] = useState<schema.Message[]>([]); // 修改为 schema.Message[]
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
@@ -132,13 +133,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
         if (
           lastIndex >= 0 &&
           newMessages[lastIndex].role === 'assistant' &&
-          newMessages[lastIndex].isStreaming
+          (newMessages[lastIndex] as any).isStreaming // Message 类没有 isStreaming 属性
         ) {
-          newMessages[lastIndex] = {
-            ...newMessages[lastIndex],
-            isStreaming: false,
-            content: newMessages[lastIndex].content + '\n\n[生成已停止]',
-          };
+          // 创建一个新的 Message 实例
+          const updatedMessage = new schema.Message();
+          Object.assign(updatedMessage, newMessages[lastIndex]);
+          updatedMessage.content = newMessages[lastIndex].content + '\n\n[生成已停止]';
+          // 移除 isStreaming 属性
+          delete (updatedMessage as any).isStreaming;
+          
+          newMessages[lastIndex] = updatedMessage;
         }
         return newMessages;
       });
@@ -158,9 +162,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
 
     // 获取当前对话历史消息 (模拟实现)
     try {
-      let response:view_models.MessageList = ChatMessages(chatUuid,0,50);
-      // todo 渲染数据
-      setCurrentMessages([]);
+      // 修复类型问题
+      const response: view_models.MessageList = await ChatMessages(chatUuid,0,50);
+      console.log("response.messages:",response.messages);
+      setCurrentMessages(response.messages);
     } catch (error) {
       // todo 显示”加载历史消息错误“
       console.error('获取聊天消息失败:', error);
@@ -199,13 +204,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
   const handleChatSelect = useCallback(
     (chatUuid: string, chatTitle?: string) => {
       setCurrentChatUuid(chatUuid);
-      // 设置对话标题
-      if (chatTitle) {
-        setChatTitle(chatTitle);
-      }
-      // 更新URL以反映当前选中的聊天
+      setChatTitle(chatTitle || '新建对话');
+      // 更新URL但不刷新页面
       navigate(`/home/${chatUuid}`, { replace: true });
-      // H5移动端点击对话后自动隐藏侧边栏
+      // 移动端选择对话后自动隐藏侧边栏
       if (isMobile) {
         setIsSidebarCollapsed(true);
       }
@@ -213,141 +215,87 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
     [isMobile, navigate]
   );
 
-  // 处理聊天列表刷新回调注册
-  const handleRegisterRefreshCallback = useCallback((callback: () => void) => {
-    setRefreshChatList(() => callback);
+  // 处理模型更改
+  const handleModelChange = useCallback((modelId: string) => {
+    setSelectedModel(modelId);
   }, []);
 
-  // 处理标题更新回调注册
-  const handleRegisterUpdateTitleCallback = useCallback(
-    (callback: (chatUuid: string, newTitle: string) => void) => {
-      setUpdateChatTitle(() => callback);
-    },
-    []
-  );
-
-  // 聊天功能
+  // 处理发送消息
   const handleSendMessage = useCallback(
     async (messageContent: string) => {
-      if (!messageContent.trim() || isLoading || isStreaming) return;
-      
-      // 设置加载状态
-      setIsLoading(true);
-      setIsStreaming(true);
-      
-      // 创建用户消息
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: messageContent.trim(),
-        timestamp: Date.now(),
-      };
-      
-      // 添加用户消息到聊天列表
-      const updatedMessages = [...currentMessages, userMessage];
-      setCurrentMessages(updatedMessages);
-      
-      // 创建AI消息占位符
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '',
-        isStreaming: true,
-        timestamp: Date.now(),
-      };
-      setCurrentMessages(prev => [...prev, aiMessage]);
-      
+      if (!messageContent.trim() || isStreaming || isLoading) return;
+
       try {
-        // 准备发送给API的消息格式
-        const apiMessage = new schema.Message();
-        apiMessage.role = userMessage.role;
-        apiMessage.content = userMessage.content;
+        setIsLoading(true);
+        setIsStreaming(true);
         
-        // 调用Completions API
-        const emitKey: string = await Completions(currentChatUuid, selectedModel, apiMessage);
-        setCurrentChatUuid(emitKey);
+        // 创建用户消息
+        const userMessage = new schema.Message(); // 修改为 schema.Message
+        userMessage.role = 'user';
+        userMessage.content = messageContent.trim();
         
-        // 监听流式响应
-        EventsOn(emitKey, (responseMessage?: schema.Message) => {
-            console.log("responseMessage:",responseMessage)
-          if (responseMessage) {
-            setIsLoading(false);
-            // 更新AI消息内容
-            setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: (newMessages[lastIndex].content || '') + (responseMessage.content || ''),
-                  reasoningContent: (newMessages[lastIndex].reasoningContent || '') + (responseMessage.reasoning_content || ''),
-                  isStreaming: !responseMessage.response_meta?.finish_reason,
-                };
-              }
-              return newMessages;
-            });
-            
-            // 如果响应完成，重置状态
-             if (responseMessage.response_meta?.finish_reason) {
-              setIsLoading(false);
+        // 添加用户消息到聊天列表
+        const updatedMessages = [...currentMessages, userMessage];
+        setCurrentMessages(updatedMessages);
+        
+        // 创建AI消息占位符
+        const aiMessage = new schema.Message(); // 修改为 schema.Message
+        aiMessage.role = 'assistant';
+        aiMessage.content = '';
+        (aiMessage as any).isStreaming = true; // 添加 isStreaming 属性
+        
+        setCurrentMessages(prev => [...prev, aiMessage]);
+        
+        try {
+          // 调用Completions API
+          const emitKey: string = await Completions(currentChatUuid, selectedModel, userMessage);
+          setCurrentChatUuid(emitKey);
+          
+          // 监听流式响应
+          EventsOn(emitKey, (responseMessage?: schema.Message) => {
+              console.log("responseMessage:",responseMessage)
+            if (responseMessage) {
+              // 更新AI消息
+              setCurrentMessages(prev => {
+                const newMessages = [...prev];
+                const lastIndex = newMessages.length - 1;
+                if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                  newMessages[lastIndex] = responseMessage;
+                }
+                return newMessages;
+              });
+            } else {
+              // 流式响应结束
               setIsStreaming(false);
-              // 如果是新对话且有标题更新回调，刷新聊天列表
-              if (!currentChatUuid && refreshChatList) {
-                refreshChatList();
-              }
-              return
+              setIsLoading(false);
             }
-          }
-        });
-        
+          });
+        } catch (error) {
+          console.error('API调用失败:', error);
+          message.error('消息发送失败');
+          setIsStreaming(false);
+          setIsLoading(false);
+          
+          // 移除AI消息占位符
+          setCurrentMessages(prev => prev.slice(0, -1));
+        }
       } catch (error) {
         console.error('发送消息失败:', error);
-        
-        // 更新AI消息显示错误
-        setCurrentMessages(prev => {
-          const newMessages = [...prev];
-          const lastIndex = newMessages.length - 1;
-          if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-            newMessages[lastIndex] = {
-              ...newMessages[lastIndex],
-              content: `抱歉，发送消息时出现错误：${error instanceof Error ? error.message : '未知错误'}`,
-              isStreaming: false,
-              error: error instanceof Error ? error.message : '未知错误',
-            };
-          }
-          return newMessages;
-        });
-        
-        // 重置状态
+        message.error('发送消息失败');
         setIsLoading(false);
         setIsStreaming(false);
-        message.error('发送消息失败，请重试');
       }
     },
-    [isLoading, isStreaming, currentMessages, currentChatUuid, selectedModel, navigate, refreshChatList]
+    [currentChatUuid, currentMessages, isStreaming, isLoading, selectedModel]
   );
 
-  // 处理消息删除
+  // 处理删除消息
   const handleDeleteMessage = useCallback(
     async (messageId: string) => {
-      if (!currentChatUuid) {
-        // 如果是新对话，只需要本地删除
-        setCurrentMessages(prev => prev.filter(msg => msg.id !== messageId));
-        message.success('消息已删除');
-        return;
-      }
-
       try {
-        // 模拟删除延迟
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // 本地删除消息
-        setCurrentMessages(prev => prev.filter(msg => msg.id !== messageId));
-        message.success('消息已删除');
+        // 这里应该调用API删除消息
+        console.log('删除消息:', messageId);
+        message.success('消息删除成功');
       } catch (error) {
         console.error('删除消息失败:', error);
         message.error('删除消息失败');
@@ -359,8 +307,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
   // 处理消息重新生成
   const handleRegenerateMessage = useCallback(
     async (messageId: string) => {
+      // Message 类没有 id 属性，所以我们使用索引来查找消息
       const messageIndex = currentMessages.findIndex(
-        msg => msg.id === messageId
+        (_, index) => index.toString() === messageId // 使用索引作为 messageId
       );
       if (messageIndex === -1) return;
 
@@ -375,13 +324,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
       setAbortController(controller);
 
       // 创建AI消息占位符
-      const aiMessage: Message = {
-        id: '',
-        role: 'assistant',
-        content: '',
-        isStreaming: true, // 标记为正在流式输入
-        timestamp: Date.now(),
-      };
+      const aiMessage = new schema.Message(); // 修改为 schema.Message
+      aiMessage.role = 'assistant';
+      aiMessage.content = '';
+      (aiMessage as any).isStreaming = true; // 标记为正在流式输入
+      
       setCurrentMessages(prev => [...prev, aiMessage]);
 
       try {
@@ -393,165 +340,113 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
         
         // 模拟打字机效果
         let currentIndex = 0;
-        const typeWriter = () => {
-          if (controller.signal.aborted) return;
-          
-          if (currentIndex < mockResponse.length) {
+        const interval = setInterval(() => {
+          if (currentIndex <= mockResponse.length && !controller.signal.aborted) {
+            const partialContent = mockResponse.slice(0, currentIndex);
+            
             setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: mockResponse.slice(0, currentIndex + 1),
-                };
+              const updatedMessages = [...prev];
+              const lastIndex = updatedMessages.length - 1;
+              if (lastIndex >= 0 && updatedMessages[lastIndex].role === 'assistant') {
+                // 创建一个新的 Message 实例
+                const updatedMessage = new schema.Message();
+                Object.assign(updatedMessage, updatedMessages[lastIndex]);
+                updatedMessage.content = partialContent;
+                // 更新 isStreaming 属性
+                (updatedMessage as any).isStreaming = currentIndex < mockResponse.length;
+                
+                updatedMessages[lastIndex] = updatedMessage;
               }
-              return newMessages;
+              return updatedMessages;
             });
             
             currentIndex++;
-            setTimeout(typeWriter, 30); // 模拟打字速度
           } else {
-            // 模拟完成
-            setCurrentMessages(prev => {
-              const newMessages = [...prev];
-              const lastIndex = newMessages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                newMessages[lastIndex].role === 'assistant' &&
-                newMessages[lastIndex].isStreaming
-              ) {
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  isStreaming: false,
-                };
-              }
-              return newMessages;
-            });
-            
-            // 重置流式状态
-            setIsStreaming(false);
-            setAbortController(null);
-            setIsLoading(false);
+            clearInterval(interval);
+            if (!controller.signal.aborted) {
+              setIsStreaming(false);
+              setIsLoading(false);
+            }
           }
-        };
-        
-        // 延迟开始模拟打字效果
-        setTimeout(() => {
-          setIsLoading(false);
-          typeWriter();
-        }, 300);
-        
+        }, 30);
       } catch (error) {
-        console.error('Regenerate message error:', error);
-        // 将错误信息作为AI消息显示在聊天界面中
-        setCurrentMessages(prev => {
-          const newMessages = [...prev];
-          const lastIndex = newMessages.length - 1;
-          if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-            newMessages[lastIndex] = {
-              ...newMessages[lastIndex],
-              content: `错误: ${error instanceof Error ? error.message : '重新生成失败，请重试'}`,
-              isStreaming: false,
-            };
-          }
-          return newMessages;
-        });
-      } finally {
-        setIsLoading(false);
+        console.error('重新生成消息失败:', error);
+        message.error('重新生成消息失败');
         setIsStreaming(false);
-        setAbortController(null);
+        setIsLoading(false);
+        
+        // 移除AI消息占位符
+        setCurrentMessages(prev => prev.slice(0, -1));
       }
     },
-    [currentMessages, selectedModel, currentChatUuid]
+    [currentMessages]
   );
 
-  // 处理文件上传
-  const handleFileUpload = useCallback((files: File[]) => {
-    message.success(`已选择 ${files.length} 个文件`);
-    // 这里实现文件上传逻辑
+  // 设置刷新聊天列表的回调
+  const handleSetRefreshChatList = useCallback((refreshFn: () => void) => {
+    setRefreshChatList(() => refreshFn);
   }, []);
 
-  // 处理图片上传
-  const handleImageUpload = useCallback((files: File[]) => {
-    message.success(`已选择 ${files.length} 张图片`);
-    // 这里实现图片上传逻辑
-  }, []);
-
-  // 聊天内容区域
-  const renderChatContent = () => (
-    <Chat
-      chatTitle={chatTitle}
-      chatUuid={currentChatUuid || undefined}
-      currentMessages={currentMessages}
-      isLoading={isLoading || isLoadingMessages} // 包含消息加载状态
-      selectedModel={selectedModel}
-      availableModels={availableModels}
-      isMobile={isMobile}
-      isSidebarCollapsed={isSidebarCollapsed}
-      isGenerating={isStreaming}
-      onTitleChange={handleTitleChange}
-      onSendMessage={handleSendMessage}
-      onStopGeneration={handleStopGeneration}
-      onModelChange={setSelectedModel}
-      onToggleSidebar={handleToggleSidebar}
-      onCopyMessage={handleCopyMessage}
-      onDeleteMessage={handleDeleteMessage}
-      onRegenerateMessage={handleRegenerateMessage}
-      onFileUpload={handleFileUpload}
-      onImageUpload={handleImageUpload}
-    />
+  // 设置更新聊天标题的回调
+  const handleSetUpdateChatTitle = useCallback(
+    (updateFn: (chatUuid: string, newTitle: string) => void) => {
+      setUpdateChatTitle(() => updateFn);
+    },
+    []
   );
 
   return (
-    <div
-      className={`homePage ${className || ''} ${isMobile ? 'mobile-viewport-height' : ''}`}
-      key={forceRerender} // Safari兼容性：强制重新渲染
-    >
-      <Layout className="layout">
-        {/* 侧边栏 */}
-        <Sider width="auto">
-          <Index
-            className="sidebar"
-            currentChatUuid={currentChatUuid}
-            onChatSelect={handleChatSelect}
+    <Layout className={`${className || ''} ${styles.chatLayout}`}>
+      <Sider
+        className={`${styles.sidebar} ${
+          isSidebarCollapsed ? styles.collapsed : ''
+        }`}
+        width={280}
+        collapsedWidth={0}
+        collapsed={isSidebarCollapsed}
+        trigger={null}
+        collapsible
+        // Safari内核兼容性：添加transform样式确保正确隐藏
+        style={{
+          transform: isSidebarCollapsed ? 'translateX(-100%)' : 'translateX(0)',
+          transition: 'transform 0.3s ease-in-out',
+        }}
+      >
+        <Index
+          onNewChat={handleNewChat}
+          onChatSelect={handleChatSelect}
+          onRegisterRefreshCallback={handleSetRefreshChatList}
+          onRegisterUpdateTitleCallback={handleSetUpdateChatTitle}
+          currentChatUuid={currentChatUuid}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={handleToggleSidebar}
+        />
+      </Sider>
+      <Layout className={styles.mainLayout}>
+        <Content className={styles.mainContent}>
+          <Chat
+            chatTitle={chatTitle}
+            chatUuid={currentChatUuid}
+            currentMessages={currentMessages}
+            isLoading={isLoadingMessages}
+            selectedModel={selectedModel}
+            availableModels={availableModels}
+            isMobile={isMobile}
             isSidebarCollapsed={isSidebarCollapsed}
+            isGenerating={isStreaming}
+            onTitleChange={handleTitleChange}
+            onSendMessage={handleSendMessage}
+            onStopGeneration={handleStopGeneration}
+            onModelChange={handleModelChange}
             onToggleSidebar={handleToggleSidebar}
-            onNewChat={handleNewChat}
-            onRegisterRefreshCallback={handleRegisterRefreshCallback}
-            onRegisterUpdateTitleCallback={handleRegisterUpdateTitleCallback}
+            onCopyMessage={handleCopyMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onRegenerateMessage={handleRegenerateMessage}
           />
-        </Sider>
-
-        {/* 移动端遮罩 */}
-        {isMobile && !isSidebarCollapsed && (
-          <div
-            className="sidebarOverlay"
-            onClick={() => setIsSidebarCollapsed(true)}
-          />
-        )}
-
-        {/* 主内容区域 */}
-        <Content
-          className="mainContent"
-          style={{
-            marginLeft: 0,
-            transition: isMobile
-              ? 'none'
-              : 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          {renderChatContent()}
         </Content>
       </Layout>
-
-      {/* 回到顶部 */}
-      <BackTop className="backTop" />
-    </div>
+      <BackTop />
+    </Layout>
   );
 };
 

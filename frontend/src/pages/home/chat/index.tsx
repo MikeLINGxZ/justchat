@@ -1,4 +1,4 @@
-import type {Message} from "@/types";
+import { schema } from "../../../../wailsjs/go/models"; // 修复导入路径
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
 import ChatInput from "@/pages/home/chat/chat_input";
@@ -12,7 +12,7 @@ interface ChatProps {
     // 聊天UUID
     chatUuid?: string;
     // 所有消息
-    currentMessages: Message[];
+    currentMessages: schema.Message[]; // 修改为 schema.Message[]
     // 是否加载中
     isLoading: boolean;
     // 所选模型
@@ -145,7 +145,7 @@ const Chat: React.FC<ChatProps> = ({
         const currentMessageCount = currentMessages.length;
         const hasNewMessage = currentMessageCount > lastMessageCountRef.current;
         const lastMessage = currentMessages[currentMessages.length - 1];
-        const isStreamingMessage = lastMessage?.isStreaming;
+        const isStreamingMessage = (lastMessage as any)?.isStreaming; // Message 类没有 isStreaming 属性
         
         // 更新消息数量引用
         lastMessageCountRef.current = currentMessageCount;

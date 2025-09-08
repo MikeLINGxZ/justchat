@@ -161,23 +161,11 @@ export interface ChatInfo {
   metadata?: Record<string, string>;
 }
 
-// 消息接口
-export interface Message {
-  id?: string;
-  role: string;
-  content: string;
-  reasoningContent?: string;  // 模型的推理思考过程
-  timestamp?: number;
-  isLoading?: boolean;
-  isStreaming?: boolean;  // 是否正在流式输入
-  error?: string;
-}
-
 // 聊天状态接口
 export interface ChatState {
   // 当前激活的聊天
   currentChatUuid: string | null;
-  currentMessages: Message[];
+  currentMessages: any[]; // 使用 any[] 替代 schema.Message[]
   
   // 聊天列表
   chatList: ChatInfo[];

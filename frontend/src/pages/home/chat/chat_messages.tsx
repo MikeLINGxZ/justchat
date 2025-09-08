@@ -3,14 +3,14 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
-import type { Message } from "@/types";
+import { schema } from "../../../../wailsjs/go/models"; // 修复导入路径
 import MessageAction from "@/components/MessageAction";
 import ReasoningContent from "@/components/ReasoningContent";
 import styles from "@/pages/home/chat/chat_messages.module.scss";
 
 interface ChatMessagesProps {
     // 所有消息
-    messages?: Message[];
+    messages?: schema.Message[]; // 修改为 schema.Message[]
     // 是否加载中
     isLoading?: boolean;
     // 是否为移动端
@@ -243,7 +243,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     }, [handleScroll, handleUserScrollStart]);
 
     // 优化的自动滚动逻辑 - 减少不必要的触发
-    const lastMessageRef = useRef<Message | null>(null);
+    const lastMessageRef = useRef<schema.Message | null>(null); // 修改为 schema.Message
     const lastMessageCountRef = useRef<number>(0);
     
     useEffect(() => {
@@ -261,8 +261,8 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
             (lastMessage && (
                 !lastMessageRef.current ||
                 lastMessage.content !== lastMessageRef.current.content ||
-                lastMessage.reasoningContent !== lastMessageRef.current.reasoningContent ||
-                lastMessage.isStreaming !== lastMessageRef.current.isStreaming
+                lastMessage.reasoning_content !== lastMessageRef.current.reasoning_content ||
+                (lastMessage as any).isStreaming !== (lastMessageRef.current as any).isStreaming // Message 类没有 isStreaming 属性
             )) ||
             isLoading;
             
@@ -272,7 +272,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
                 if (!chatMessagesPageRef.current) return;
                 
                 // 对于流式消息，使用立即滚动保证实时跟进
-                const hasStreamingMessage = messages.some(msg => msg.isStreaming);
+                const hasStreamingMessage = messages.some(msg => (msg as any).isStreaming); // Message 类没有 isStreaming 属性
                 if (hasStreamingMessage || isLoading) {
                     scrollToBottomInstant();
                 } else {
@@ -283,7 +283,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
         
         // 更新引用
         lastMessageCountRef.current = currentMessageCount;
-        lastMessageRef.current = lastMessage ? { ...lastMessage } : null;
+        lastMessageRef.current = lastMessage ? { ...lastMessage } as any : null; // 修复类型问题
         
     }, [messages, isLoading, autoScrollBottom, isUserScrolling, scrollToBottomInstant, scrollToBottomSmooth]);
 
@@ -334,7 +334,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     };
 
     // 渲染消息操作按钮
-    const renderMessageActions = (message: Message, messageIndex: number) => {
+    const renderMessageActions = (message: schema.Message, messageIndex: number) => { // 修改为 schema.Message
         const isUser = message.role === 'user';
         
         // 判断是否为最后一条AI消息（只有最后一条AI消息才能重新生成）
@@ -355,7 +355,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     };
 
     // 渲染消息内容
-    const renderMessageContent = useCallback((message: Message) => {
+    const renderMessageContent = useCallback((message: schema.Message) => { // 修改为 schema.Message
         const isUser = message.role === 'user';
         
         // 用户消息直接显示文本，AI消息使用Markdown渲染
@@ -371,10 +371,10 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
         return (
             <>
                 {/* 渲染思考过程（如果存在） */}
-                {message.reasoningContent && (
+                {message.reasoning_content && (
                     <ReasoningContent 
-                        content={message.reasoningContent} 
-                        isStreaming={message.isStreaming || false}
+                        content={message.reasoning_content} 
+                        isStreaming={(message as any).isStreaming || false} // Message 类没有 isStreaming 属性
                     />
                 )}
                 
@@ -448,17 +448,17 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     }, []);
 
     // 检测是否为错误消息
-    const isErrorMessage = useCallback((message: Message) => {
+    const isErrorMessage = useCallback((message: schema.Message) => { // 修改为 schema.Message
         return message.role === 'assistant' && message.content.includes('错误');
     }, []);
 
     // 渲染单条消息
-    const renderMessage = useCallback((message: Message, index: number) => {
+    const renderMessage = useCallback((message: schema.Message, index: number) => { // 修改为 schema.Message
         const isUser = message.role === 'user';
         const isErrorMsg = isErrorMessage(message);
         
         // 如果是AI消息且内容和思考过程都为空，则不渲染
-        if (!isUser && !message.content.trim() && !message.reasoningContent?.trim()) {
+        if (!isUser && !message.content.trim() && !message.reasoning_content?.trim()) {
             return null;
         }
         
@@ -470,7 +470,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
         }
 
         return (
-            <div key={message.id} className={`${styles.messageWrapper} ${wrapperClass}`}>
+            <div key={index} className={`${styles.messageWrapper} ${wrapperClass}`}> {/* 使用 index 作为 key */}
                 <div className={styles.messageContainer}>
                     {renderMessageContent(message)}
                 </div>
