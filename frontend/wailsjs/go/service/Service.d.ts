@@ -7,6 +7,8 @@ import {context} from '../models';
 
 export function ChatList(arg1:number,arg2:number,arg3:any):Promise<view_models.ChatList>;
 
+export function ChatMessages(arg1:string,arg2:number,arg3:number):Promise<view_models.MessageList>;
+
 export function Completions(arg1:string,arg2:string,arg3:schema.Message):Promise<string>;
 
 export function GetModels():Promise<Array<data_models.Model>>;

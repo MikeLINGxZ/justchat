@@ -7,8 +7,8 @@ import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { useModels } from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
-import {Completions} from "../../../wailsjs/go/service/Service";
-import {schema} from "../../../wailsjs/go/models.ts";
+import {ChatMessages, Completions} from "../../../wailsjs/go/service/Service";
+import {schema, view_models} from "../../../wailsjs/go/models.ts";
 import {EventsOn} from "../../../wailsjs/runtime";
 
 const { Content, Sider } = Layout;
@@ -158,26 +158,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ className }) => {
 
     // 获取当前对话历史消息 (模拟实现)
     try {
-      // 模拟加载延迟
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // 模拟历史消息数据
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          role: 'user',
-          content: '你好，请介绍一下你自己。',
-          timestamp: Date.now() - 60000,
-        },
-        {
-          id: '2',
-          role: 'assistant',
-          content: '你好！我是一个 AI 助手，可以帮助你回答问题、提供信息和进行对话。有什么我可以帮到你的吗？',
-          timestamp: Date.now() - 30000,
-        },
-      ];
-      
-      setCurrentMessages(mockMessages);
+      let response:view_models.MessageList = ChatMessages(chatUuid,0,50);
+      // todo 渲染数据
+      setCurrentMessages([]);
     } catch (error) {
       // todo 显示”加载历史消息错误“
       console.error('获取聊天消息失败:', error);

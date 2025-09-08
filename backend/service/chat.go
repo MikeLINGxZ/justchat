@@ -13,18 +13,38 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/llm"
 )
 
+// ChatList 聊天列表
 func (s *Service) ChatList(offset, limit int, keyword *string) (*view_models.ChatList, error) {
 	chats, total, err := s.storage.GetChats(s.ctx, offset, limit, keyword)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
 
-	res := view_models.ChatList{
+	return &view_models.ChatList{
 		Lists: chats,
 		Total: total,
+	}, nil
+}
+
+// ChatMessages 聊天消息
+func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models.MessageList, error) {
+	dataMessages, total, err := s.storage.GetMessage(s.ctx, chatUuid, offset, limit)
+	if err != nil {
+		return nil, ierror.NewError(err)
 	}
 
-	return &res, nil
+	var messages []schema.Message
+	for _, item := range dataMessages {
+		if item.Message == nil {
+			continue
+		}
+		messages = append(messages, *item.Message)
+	}
+
+	return &view_models.MessageList{
+		Messages: messages,
+		Total:    total,
+	}, nil
 }
 
 func (s *Service) Completions(chatUuid, model string, message schema.Message) (string, error) {
