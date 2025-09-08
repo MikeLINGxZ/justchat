@@ -29,6 +29,7 @@ require (
 	github.com/go-openapi/swag v0.19.5 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goph/emperror v0.17.2 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -78,4 +79,3 @@ require (
 )
 
 // replace github.com/wailsapp/wails/v2 v2.10.2 => /Users/linhuafeng/ProgramFile/gopath/pkg/mod
-replace github.com/wailsapp/wails/v2 v2.10.2 => github.com/wailsapp/wails/v2 v2.9.1

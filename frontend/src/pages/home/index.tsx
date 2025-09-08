@@ -232,6 +232,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 const userMessage = new schema.Message();
                 userMessage.role = 'user';
                 userMessage.content = messageContent.trim();
+                setCurrentMessages(prev => [...prev, userMessage]);
 
                 // 创建AI消息占位符
                 const assistantMessage = new schema.Message();
@@ -240,32 +241,43 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 assistantMessage.reasoning_content = '';
                 setCurrentMessages(prev => [...prev, assistantMessage]);
 
-                // 添加用户消息到聊天列表、初始化ai消息
-                const updatedMessages = [...currentMessages, userMessage,assistantMessage];
-                setCurrentMessages(updatedMessages);
+                // 用于跟踪是否已经接收到第一个响应
+                let hasReceivedFirstResponse = false;
 
                 try {
                     // 调用Completions API
                     const emitKey: string = await Completions(currentChatUuid, selectedModel, userMessage);
-                    setCurrentChatUuid(emitKey);
+                    if (currentChatUuid == "") {
+                        setCurrentChatUuid(emitKey);
+                    }
 
                     // 监听流式响应
-                    EventsOn(emitKey, (responseMessage?: schema.Message) => {
-                        console.log("responseMessage:",responseMessage)
+                    const cancel = EventsOn(emitKey, (responseMessage?: schema.Message) => {
+                        console.log("responseMessage:", responseMessage)
+                        // 第一次接收到内容时立即隐藏loading状态
+                        if (!hasReceivedFirstResponse) {
+                            hasReceivedFirstResponse = true;
+                            setIsLoading(false);
+                        }
+                        console.log("CurrentMessages:",currentMessages)
                         if (responseMessage) {
-                            const newMessages = [...currentMessages];
-                            const lastMessageIndex = newMessages.length - 1;
-                            newMessages[lastMessageIndex] = {
-                                ...newMessages[lastMessageIndex],
-                                content: (newMessages[lastMessageIndex].content || '') + (responseMessage.content || ''),
-                                reasoning_content: (newMessages[lastMessageIndex].reasoning_content || '') + (responseMessage.reasoning_content || '')
-                            };
-                            setCurrentMessages(newMessages);
+                            setCurrentMessages(prev => {
+                                const newMessages = [...prev];
+                                const lastIndex = newMessages.length - 1;
+                                console.log("lastIndex:",lastIndex,"role:",newMessages[lastIndex].role)
+                                if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                                    newMessages[lastIndex] = {
+                                        ...newMessages[lastIndex],
+                                        content: newMessages[lastIndex].content + (responseMessage.content || ''),
+                                        reasoning_content: responseMessage.reasoning_content ? (newMessages[lastIndex].reasoning_content || '') +
+                                            responseMessage.reasoning_content
+                                            : newMessages[lastIndex].reasoning_content,
+                                    };
+                                }
+                                return newMessages;
+                            });
                             if (responseMessage.response_meta?.finish_reason) {
-                                // 流式响应结束
-                                setIsStreaming(false);
-                                setIsLoading(false);
-                                return
+                                cancel();
                             }
                         }
                     });

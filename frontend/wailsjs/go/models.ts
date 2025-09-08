@@ -109,7 +109,7 @@ export namespace schema {
 	    url?: string;
 	    uri?: string;
 	    mime_type?: string;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageAudioURL(source);
@@ -128,7 +128,7 @@ export namespace schema {
 	    uri?: string;
 	    mime_type?: string;
 	    name?: string;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageFileURL(source);
@@ -148,7 +148,7 @@ export namespace schema {
 	    uri?: string;
 	    detail?: string;
 	    mime_type?: string;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageImageURL(source);
@@ -167,7 +167,7 @@ export namespace schema {
 	    url?: string;
 	    uri?: string;
 	    mime_type?: string;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageVideoURL(source);
@@ -405,7 +405,7 @@ export namespace schema {
 	    id: string;
 	    type: string;
 	    function: FunctionCall;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ToolCall(source);
@@ -448,7 +448,7 @@ export namespace schema {
 	    tool_name?: string;
 	    response_meta?: ResponseMeta;
 	    reasoning_content?: string;
-	    extra?: {[key: string]: any};
+	    extra?: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Message(source);
