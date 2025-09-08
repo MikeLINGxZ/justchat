@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
@@ -25,14 +25,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     // 本地状态管理
     const [currentChatUuid, setCurrentChatUuid] = useState<string>(urlChatUuid || ''); // 空字符串表示新对话
     const [currentMessages, setCurrentMessages] = useState<schema.Message[]>([]);
+    const currentMessagesRef = useRef<schema.Message[]>([]);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
         null
     );
-    const [updateChatTitle, setUpdateChatTitle] = useState<
-        ((chatUuid: string, newTitle: string) => void) | null
-    >(null);
+    const [updateChatTitle, setUpdateChatTitle] = useState<((chatUuid: string, newTitle: string) => void) | null >(null);
     // Safari兼容性：添加强制重新渲染状态
     const [forceRerender, setForceRerender] = useState(0);
 
@@ -51,8 +50,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedModel, setSelectedModel] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
-    const [abortController, setAbortController] =
-        useState<AbortController | null>(null);
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
 
     // 移动端默认隐藏侧边栏
     useEffect(() => {
@@ -98,6 +96,10 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         }
     }, [modelsError]);
 
+    useEffect(() => {
+        currentMessagesRef.current = currentMessages;
+    }, [currentMessages]);
+
     // 处理标题更改
     const handleTitleChange = useCallback(
         (newTitle: string) => {
@@ -119,33 +121,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 处理停止生成
     const handleStopGeneration = useCallback(() => {
-        if (abortController) {
-            abortController.abort();
-            setAbortController(null);
-            setIsStreaming(false);
-            setIsLoading(false);
-
-            // 标记最后一条AI消息为完成状态
-            setCurrentMessages(prev => {
-                const newMessages = [...prev];
-                const lastIndex = newMessages.length - 1;
-                if (
-                    lastIndex >= 0 &&
-                    newMessages[lastIndex].role === 'assistant' &&
-                    (newMessages[lastIndex] as any).isStreaming // Message 类没有 isStreaming 属性
-                ) {
-                    // 创建一个新的 Message 实例
-                    const updatedMessage = new schema.Message();
-                    Object.assign(updatedMessage, newMessages[lastIndex]);
-                    updatedMessage.content = newMessages[lastIndex].content + '\n\n[生成已停止]';
-                    // 移除 isStreaming 属性
-                    delete (updatedMessage as any).isStreaming;
-
-                    newMessages[lastIndex] = updatedMessage;
-                }
-                return newMessages;
-            });
-        }
+        // todo
     }, [abortController]);
 
     // 获取聊天消息
@@ -155,13 +131,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             setCurrentMessages([]);
             return;
         }
-
         // 显示加载动画
         setIsLoadingMessages(true);
-
-        // 获取当前对话历史消息 (模拟实现)
         try {
-            // 修复类型问题
             const response: view_models.MessageList = await ChatMessages(chatUuid, 0, 50);
             console.log("response.messages:", response.messages);
             setCurrentMessages(response.messages);
@@ -171,7 +143,6 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             message.error('获取聊天消息失败');
             setCurrentMessages([]);
         } finally {
-            // 关闭加载动画
             setIsLoadingMessages(false);
         }
     }, []);
@@ -222,7 +193,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     // 处理发送消息
     const handleSendMessage = useCallback(
         async (messageContent: string) => {
-            if (!messageContent.trim() || isStreaming || isLoading) return;
+            if (!messageContent.trim() || isLoading) return;
 
             try {
                 setIsLoading(true);
@@ -230,28 +201,28 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
                 // 创建用户消息
                 const userMessage = new schema.Message();
-                userMessage.role = 'user';
+                userMessage.role = "user";
                 userMessage.content = messageContent.trim();
                 setCurrentMessages(prev => [...prev, userMessage]);
 
                 // 创建AI消息占位符
                 const assistantMessage = new schema.Message();
-                assistantMessage.role = 'assistant';
-                assistantMessage.content = '';
-                assistantMessage.reasoning_content = '';
+                assistantMessage.role = "assistant";
+                assistantMessage.content = "";
+                assistantMessage.reasoning_content = "";
                 setCurrentMessages(prev => [...prev, assistantMessage]);
+
+                console.log("[handleSendMessage] currentMessages:",currentMessages)
 
                 // 用于跟踪是否已经接收到第一个响应
                 let hasReceivedFirstResponse = false;
 
-                try {
-                    // 调用Completions API
-                    const emitKey: string = await Completions(currentChatUuid, selectedModel, userMessage);
+                // 调用Completions API
+                Completions(currentChatUuid, selectedModel, userMessage).then((emitKey:string)=>{
                     if (currentChatUuid == "") {
                         setCurrentChatUuid(emitKey);
+                        navigate(`/home/${emitKey}`, { replace: true });
                     }
-
-                    // 监听流式响应
                     const cancel = EventsOn(emitKey, (responseMessage?: schema.Message) => {
                         console.log("responseMessage:", responseMessage)
                         // 第一次接收到内容时立即隐藏loading状态
@@ -259,56 +230,57 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                             hasReceivedFirstResponse = true;
                             setIsLoading(false);
                         }
-                        console.log("CurrentMessages:",currentMessages)
                         if (responseMessage) {
                             setCurrentMessages(prev => {
                                 const newMessages = [...prev];
                                 const lastIndex = newMessages.length - 1;
-                                console.log("lastIndex:",lastIndex,"role:",newMessages[lastIndex].role)
+
                                 if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-                                    newMessages[lastIndex] = {
+                                    const updatedMessage = new schema.Message({
                                         ...newMessages[lastIndex],
-                                        content: newMessages[lastIndex].content + (responseMessage.content || ''),
-                                        reasoning_content: responseMessage.reasoning_content ? (newMessages[lastIndex].reasoning_content || '') +
-                                            responseMessage.reasoning_content
-                                            : newMessages[lastIndex].reasoning_content,
-                                    };
+                                        content: newMessages[lastIndex].content + responseMessage.content,
+                                        reasoning_content: newMessages[lastIndex].reasoning_content + responseMessage.reasoning_content,
+                                    });
+
+                                    newMessages[lastIndex] = updatedMessage;
                                 }
+
                                 return newMessages;
                             });
                             if (responseMessage.response_meta?.finish_reason) {
                                 cancel();
+                                setIsStreaming(false);
+                                setIsLoading(false);
                             }
                         }
                     });
-                } catch (error) {
-                    console.error('API调用失败:', error);
-                    message.error('消息发送失败');
-                }finally {
-                    setIsStreaming(false);
-                    setIsLoading(false);
-                }
+                }).catch((err)=>{
+
+                });
+
             } catch (error) {
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');
-                setIsLoading(false);
-                setIsStreaming(false);
+            }finally {
+                setIsLoading(true);
+                setIsStreaming(true);
             }
         },
-        [currentChatUuid, currentMessages, isStreaming, isLoading, selectedModel]
+        [
+            isLoading,
+            selectedModel,
+            currentChatUuid,
+            currentMessages,
+            isStreaming,
+            refreshChatList,
+            navigate,
+        ]
     );
 
     // 处理删除消息
     const handleDeleteMessage = useCallback(
         async (messageId: string) => {
-            try {
-                // 这里应该调用API删除消息
-                console.log('删除消息:', messageId);
-                message.success('消息删除成功');
-            } catch (error) {
-                console.error('删除消息失败:', error);
-                message.error('删除消息失败');
-            }
+            // todo
         },
         [currentChatUuid]
     );
@@ -316,77 +288,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     // 处理消息重新生成
     const handleRegenerateMessage = useCallback(
         async (messageId: string) => {
-            // Message 类没有 id 属性，所以我们使用索引来查找消息
-            const messageIndex = currentMessages.findIndex(
-                (_, index) => index.toString() === messageId // 使用索引作为 messageId
-            );
-            if (messageIndex === -1) return;
-
-            // 移除该消息及之后的所有消息
-            const newMessages = currentMessages.slice(0, messageIndex);
-            setCurrentMessages(newMessages);
-            setIsLoading(true);
-            setIsStreaming(true);
-
-            // 创建AbortController用于中断请求
-            const controller = new AbortController();
-            setAbortController(controller);
-
-            // 创建AI消息占位符
-            const aiMessage = new schema.Message(); // 修改为 schema.Message
-            aiMessage.role = 'assistant';
-            aiMessage.content = '';
-            (aiMessage as any).isStreaming = true; // 标记为正在流式输入
-
-            setCurrentMessages(prev => [...prev, aiMessage]);
-
-            try {
-                // 模拟重新生成延迟
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // 模拟回复内容
-                const mockResponse = '这是一个重新生成的回复，用于展示 UI 功能。在实际应用中，这里会调用真实的 AI 接口重新生成内容。';
-
-                // 模拟打字机效果
-                let currentIndex = 0;
-                const interval = setInterval(() => {
-                    if (currentIndex <= mockResponse.length && !controller.signal.aborted) {
-                        const partialContent = mockResponse.slice(0, currentIndex);
-
-                        setCurrentMessages(prev => {
-                            const updatedMessages = [...prev];
-                            const lastIndex = updatedMessages.length - 1;
-                            if (lastIndex >= 0 && updatedMessages[lastIndex].role === 'assistant') {
-                                // 创建一个新的 Message 实例
-                                const updatedMessage = new schema.Message();
-                                Object.assign(updatedMessage, updatedMessages[lastIndex]);
-                                updatedMessage.content = partialContent;
-                                // 更新 isStreaming 属性
-                                (updatedMessage as any).isStreaming = currentIndex < mockResponse.length;
-
-                                updatedMessages[lastIndex] = updatedMessage;
-                            }
-                            return updatedMessages;
-                        });
-
-                        currentIndex++;
-                    } else {
-                        clearInterval(interval);
-                        if (!controller.signal.aborted) {
-                            setIsStreaming(false);
-                            setIsLoading(false);
-                        }
-                    }
-                }, 30);
-            } catch (error) {
-                console.error('重新生成消息失败:', error);
-                message.error('重新生成消息失败');
-                setIsStreaming(false);
-                setIsLoading(false);
-
-                // 移除AI消息占位符
-                setCurrentMessages(prev => prev.slice(0, -1));
-            }
+            // todo
         },
         [currentMessages]
     );
