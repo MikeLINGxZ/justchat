@@ -9,7 +9,9 @@ import './index.module.scss';
 import Chat from '@/pages/home/chat';
 import {ChatMessages, Completions} from "../../../wailsjs/go/service/Service";
 import {EventsOn} from "../../../wailsjs/runtime";
-import styles from './index.module.scss'; // 添加样式导入
+import styles from './index.module.scss';
+import {WaitGroup} from "@/utils/wait_group.ts";
+import {CompletionsUtils} from "@/utils/completions.ts"; // 添加样式导入
 
 const {Content, Sider} = Layout;
 
@@ -216,52 +218,36 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
                 console.log("[handleSendMessage] newMessages:", newMessages)
 
-                // 用于跟踪是否已经接收到第一个响应
-                let hasReceivedFirstResponse = false;
-
-                // 调用Completions API
-                Completions(currentChatUuid, selectedModel, userMessage).then((emitKey:string)=>{
-                    if (currentChatUuid == "") {
-                        setCurrentChatUuid(emitKey);
-                        navigate(`/home/${emitKey}`, { replace: true });
+                await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
+                    if (message) {
+                        // 使用函数式更新确保获取最新状态
+                        setCurrentMessages(prev => {
+                            const updatedMessages = [...prev];
+                            const latestMsg = updatedMessages[updatedMessages.length - 1];
+                            if (latestMsg && latestMsg.role === 'assistant') {
+                                latestMsg.content = latestMsg.content + message.content;
+                                latestMsg.reasoning_content = (latestMsg.reasoning_content || '') + (message.reasoning_content || '');
+                            }
+                            return updatedMessages;
+                        });
                     }
-                    const cancel = EventsOn(emitKey, (responseMessage?: schema.Message) => {
-                        console.log("responseMessage:", responseMessage)
-                        // 第一次接收到内容时立即隐藏loading状态
-                        if (!hasReceivedFirstResponse) {
-                            hasReceivedFirstResponse = true;
-                            setIsLoading(false);
-                        }
-                        if (responseMessage) {
-                            // 使用函数式更新确保获取最新状态
-                            setCurrentMessages(prev => {
-                                const updatedMessages = [...prev];
-                                const latestMsg = updatedMessages[updatedMessages.length - 1];
-                                if (latestMsg && latestMsg.role === 'assistant') {
-                                    latestMsg.content = latestMsg.content + responseMessage.content;
-                                    latestMsg.reasoning_content = (latestMsg.reasoning_content || '') + (responseMessage.reasoning_content || '');
-                                }
-                                return updatedMessages;
-                            });
-                        }
-                        if (responseMessage?.response_meta?.finish_reason) {
-                            cancel();
-                            setIsStreaming(false);
-                            setIsLoading(false);
-                        }
-                    });
-                }).catch((err)=>{
-                    console.error('发送消息失败:', err);
-                    message.error('发送消息失败');
+                }, (error: string) => {
                     setIsLoading(false);
                     setIsStreaming(false);
-                });
+                    console.error('发送消息失败:', error);
+                    message.error('发送消息失败');
+                }, (chatUuid: string) => {
+                    setIsLoading(false);
+                    setIsStreaming(false);
+                    if (currentChatUuid == "") {
+                        setCurrentChatUuid(chatUuid);
+                        navigate(`/home/${chatUuid}`, { replace: true });
+                    }
+                })
 
             } catch (error) {
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');
-                setIsLoading(false);
-                setIsStreaming(false);
             }
         },
         [
