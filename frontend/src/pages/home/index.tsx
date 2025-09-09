@@ -27,7 +27,6 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     // 本地状态管理
     const [currentChatUuid, setCurrentChatUuid] = useState<string>(urlChatUuid || ''); // 空字符串表示新对话
     const [currentMessages, setCurrentMessages] = useState<schema.Message[]>([]);
-    const currentMessagesRef = useRef<schema.Message[]>([]);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
@@ -97,10 +96,6 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             message.error(`获取模型列表失败: ${modelsError}`);
         }
     }, [modelsError]);
-
-    useEffect(() => {
-        currentMessagesRef.current = currentMessages;
-    });
 
     // 处理标题更改
     const handleTitleChange = useCallback(
@@ -241,6 +236,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     setIsStreaming(false);
                     if (currentChatUuid == "") {
                         setCurrentChatUuid(chatUuid);
+                        // todo 刷新chatlist
                         navigate(`/home/${chatUuid}`, { replace: true });
                     }
                 })

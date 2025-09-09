@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -126,7 +125,6 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 				}
 				dataModelMsg.Message = msg
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
-				fmt.Println("dataModelMsg.Message:", dataModelMsg.Message)
 				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
 				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
 					return
