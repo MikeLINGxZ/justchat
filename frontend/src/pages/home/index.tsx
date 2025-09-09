@@ -217,17 +217,26 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 const newAbortController = new AbortController();
                 setAbortController(newAbortController);
 
+                // 用于累积增量数据的缓冲区
+                let accumulatedContent = "";
+                let accumulatedReasoningContent = "";
+
                 await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
                     if (message) {
+                        console.log("message callback:",message)
+                        // 累积增量数据
+                        accumulatedContent += message.content || '';
+                        accumulatedReasoningContent += message.reasoning_content || '';
+                        
                         // 使用函数式更新确保获取最新状态，避免重复更新
                         setCurrentMessages(prev => {
                             const updatedMessages = [...prev];
                             const latestMsg = updatedMessages[updatedMessages.length - 1];
                             if (latestMsg && latestMsg.role === 'assistant') {
-                                // 检查内容是否有变化，避免不必要的更新
-                                const newContent = latestMsg.content + (message.content || '');
-                                const newReasoningContent = (latestMsg.reasoning_content || '') + (message.reasoning_content || '');
-                                
+                                // 使用累积的内容更新，避免重复拼接
+                                const newContent = accumulatedContent;
+                                const newReasoningContent = accumulatedReasoningContent;
+                                console.log("newContent:",newContent);
                                 if (newContent !== latestMsg.content || newReasoningContent !== latestMsg.reasoning_content) {
                                     latestMsg.content = newContent;
                                     latestMsg.reasoning_content = newReasoningContent;
