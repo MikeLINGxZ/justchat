@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -47,15 +48,15 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 	}, nil
 }
 
-func (s *Service) Completions(chatUuid, model string, message schema.Message) (string, error) {
+func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
 
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(s.ctx, model)
 	if err != nil {
-		return "", err
+		return nil, ierror.NewError(err)
 	}
 	if providerModel == nil {
-		return "", ierror.New(ierror.ErrCodeModelNotFound)
+		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
 	// 当chatUuid为空说明是新建聊天
@@ -64,7 +65,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 		// 创建一个聊天
 		err = s.storage.CreateChat(s.ctx, chatUuid, message.Content, providerModel.ModelId)
 		if err != nil {
-			return "", ierror.NewError(err)
+			return nil, ierror.NewError(err)
 		}
 	}
 
@@ -75,13 +76,13 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 		Message:  &message,
 	})
 	if err != nil {
-		return "", ierror.NewError(err)
+		return nil, ierror.NewError(err)
 	}
 
 	provider := llm.NewLlmProvider(providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
 	stream, err := provider.Completions(s.ctx, []schema.Message{message})
 	if err != nil {
-		return "", ierror.NewError(err)
+		return nil, ierror.NewError(err)
 	}
 
 	msgChan := make(chan *schema.Message)
@@ -105,27 +106,28 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 			msgChan <- message
 		}
 	}()
-
+	messageUuid := uuid.New().String()
 	go func() {
 		dataModelMsg := data_models.Message{
-			Uuid:     uuid.New().String(),
+			Uuid:     messageUuid,
 			ChatUuid: chatUuid,
 		}
 		for {
 			select {
 			case <-doneChan:
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
+				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
 				return
 			case msg, ok := <-msgChan:
 				if !ok || msg == nil {
 					dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-					runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
+					runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
 					return
 				}
 				dataModelMsg.Message = msg
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
-				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
+				fmt.Println("dataModelMsg.Message:", dataModelMsg.Message)
+				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
 				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
 					return
 				}
@@ -134,13 +136,16 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (s
 					continue
 				}
 				s.fillCompletionsMsg(dataModelMsg, err.Error())
-				runtime.EventsEmit(s.ctx, chatUuid, dataModelMsg.Message)
+				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
 				return
 			}
 		}
 	}()
 
-	return chatUuid, nil
+	return &view_models.Completions{
+		ChatUuid:    chatUuid,
+		MessageUuid: messageUuid,
+	}, nil
 }
 
 func (s *Service) fillCompletionsMsg(dataMsg data_models.Message, finishReason string) data_models.Message {

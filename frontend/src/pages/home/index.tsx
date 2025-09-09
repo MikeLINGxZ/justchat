@@ -244,7 +244,6 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                         navigate(`/home/${chatUuid}`, { replace: true });
                     }
                 })
-
             } catch (error) {
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');

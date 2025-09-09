@@ -17,3 +17,8 @@ type MatchMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
+
+type Completions struct {
+	ChatUuid    string `json:"chat_uuid"`
+	MessageUuid string `json:"message_uuid"`
+}

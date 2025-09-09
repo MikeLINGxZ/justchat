@@ -1,6 +1,6 @@
-import {schema} from "../../wailsjs/go/models.ts";
+import {schema, view_models} from "../../wailsjs/go/models.ts";
 import {Completions} from "../../wailsjs/go/service/Service";
-import {EventsOn} from "../../wailsjs/runtime";
+import {EventsOff, EventsOn} from "../../wailsjs/runtime";
 
 export async function CompletionsUtils(
     chatUuid: string,
@@ -30,10 +30,10 @@ export async function CompletionsUtils(
         }
 
         // 调用 Completions API
-        const emitKey = await Completions(chatUuid, selectedModel, userMessage);
+        const resp:view_models.Completions = await Completions(chatUuid, selectedModel, userMessage);
 
         // 设置事件监听器
-        cancel = EventsOn(emitKey, (responseMessage?: schema.Message) => {
+        cancel = EventsOn(resp.message_uuid, (responseMessage?: schema.Message) => {
             try {
                 // 第一次接收到内容时标记
                 if (!hasReceivedFirstResponse && responseMessage) {
@@ -50,11 +50,13 @@ export async function CompletionsUtils(
                 if (responseMessage?.response_meta?.finish_reason && 
                     responseMessage.response_meta.finish_reason !== "") {
                     isCompleted = true;
+                    console.log("cancel==null",cancel==null)
                     if (cancel) {
                         cancel();
                         cancel = null;
                     }
-                    onComplete(emitKey);
+                    EventsOff(resp.message_uuid);
+                    onComplete(resp.chat_uuid);
                 }
             } catch (error) {
                 console.error('处理响应消息时出错:', error);

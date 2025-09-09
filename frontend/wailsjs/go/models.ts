@@ -592,6 +592,20 @@ export namespace view_models {
 		    return a;
 		}
 	}
+	export class Completions {
+	    chat_uuid: string;
+	    message_uuid: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Completions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.chat_uuid = source["chat_uuid"];
+	        this.message_uuid = source["message_uuid"];
+	    }
+	}
 	
 	export class MessageList {
 	    messages: schema.Message[];
