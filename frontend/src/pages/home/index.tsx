@@ -213,15 +213,25 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
                 console.log("[handleSendMessage] newMessages:", newMessages)
 
+                // 创建新的 AbortController
+                const newAbortController = new AbortController();
+                setAbortController(newAbortController);
+
                 await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
                     if (message) {
-                        // 使用函数式更新确保获取最新状态
+                        // 使用函数式更新确保获取最新状态，避免重复更新
                         setCurrentMessages(prev => {
                             const updatedMessages = [...prev];
                             const latestMsg = updatedMessages[updatedMessages.length - 1];
                             if (latestMsg && latestMsg.role === 'assistant') {
-                                latestMsg.content = latestMsg.content + message.content;
-                                latestMsg.reasoning_content = (latestMsg.reasoning_content || '') + (message.reasoning_content || '');
+                                // 检查内容是否有变化，避免不必要的更新
+                                const newContent = latestMsg.content + (message.content || '');
+                                const newReasoningContent = (latestMsg.reasoning_content || '') + (message.reasoning_content || '');
+                                
+                                if (newContent !== latestMsg.content || newReasoningContent !== latestMsg.reasoning_content) {
+                                    latestMsg.content = newContent;
+                                    latestMsg.reasoning_content = newReasoningContent;
+                                }
                             }
                             return updatedMessages;
                         });
@@ -229,18 +239,26 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 }, (error: string) => {
                     setIsLoading(false);
                     setIsStreaming(false);
+                    setAbortController(null); // 清理 AbortController
                     console.error('发送消息失败:', error);
                     message.error('发送消息失败');
                 }, (chatUuid: string) => {
                     setIsLoading(false);
                     setIsStreaming(false);
+                    setAbortController(null); // 清理 AbortController
                     if (currentChatUuid == "") {
                         setCurrentChatUuid(chatUuid);
-                        // todo 刷新chatlist
+                        // 刷新聊天列表
+                        if (refreshChatList) {
+                            refreshChatList();
+                        }
                         navigate(`/home/${chatUuid}`, { replace: true });
                     }
-                })
+                }, newAbortController)
             } catch (error) {
+                setIsLoading(false);
+                setIsStreaming(false);
+                setAbortController(null); // 清理 AbortController
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');
             }

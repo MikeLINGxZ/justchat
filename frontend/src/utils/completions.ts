@@ -30,7 +30,7 @@ export async function CompletionsUtils(
         }
 
         // 调用 Completions API
-        const resp:view_models.Completions = await Completions(chatUuid, selectedModel, userMessage);
+        const resp: view_models.Completions = await Completions(chatUuid, selectedModel, userMessage);
 
         // 设置事件监听器
         cancel = EventsOn(resp.message_uuid, (responseMessage?: schema.Message) => {
@@ -50,12 +50,15 @@ export async function CompletionsUtils(
                 if (responseMessage?.response_meta?.finish_reason && 
                     responseMessage.response_meta.finish_reason !== "") {
                     isCompleted = true;
-                    console.log("cancel==null",cancel==null)
+                    console.log("[CompletionsUtils] 对话完成，清理资源");
+                    
+                    // 清理事件监听器
                     if (cancel) {
                         cancel();
                         cancel = null;
                     }
                     EventsOff(resp.message_uuid);
+                    
                     onComplete(resp.chat_uuid);
                 }
             } catch (error) {
@@ -85,7 +88,11 @@ export async function CompletionsUtils(
         // 清理资源
         if (cancel) {
             cancel();
+            cancel = null;
         }
+        
+        // 标记为已完成，避免后续处理
+        isCompleted = true;
         
         throw error;
     }
