@@ -98,7 +98,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     useEffect(() => {
         currentMessagesRef.current = currentMessages;
-    }, [currentMessages]);
+    });
 
     // 处理标题更改
     const handleTitleChange = useCallback(
@@ -203,16 +203,18 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 const userMessage = new schema.Message();
                 userMessage.role = "user";
                 userMessage.content = messageContent.trim();
-                setCurrentMessages(prev => [...prev, userMessage]);
-
+                
                 // 创建AI消息占位符
                 const assistantMessage = new schema.Message();
                 assistantMessage.role = "assistant";
                 assistantMessage.content = "";
                 assistantMessage.reasoning_content = "";
-                setCurrentMessages(prev => [...prev, assistantMessage]);
 
-                console.log("[handleSendMessage] currentMessages:",currentMessages)
+                // 一次性更新消息列表
+                const newMessages = [...currentMessages, userMessage, assistantMessage];
+                setCurrentMessages(newMessages);
+
+                console.log("[handleSendMessage] newMessages:", newMessages)
 
                 // 用于跟踪是否已经接收到第一个响应
                 let hasReceivedFirstResponse = false;
@@ -231,39 +233,35 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                             setIsLoading(false);
                         }
                         if (responseMessage) {
+                            // 使用函数式更新确保获取最新状态
                             setCurrentMessages(prev => {
-                                const newMessages = [...prev];
-                                const lastIndex = newMessages.length - 1;
-
-                                if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-                                    const updatedMessage = new schema.Message({
-                                        ...newMessages[lastIndex],
-                                        content: newMessages[lastIndex].content + responseMessage.content,
-                                        reasoning_content: newMessages[lastIndex].reasoning_content + responseMessage.reasoning_content,
-                                    });
-
-                                    newMessages[lastIndex] = updatedMessage;
+                                const updatedMessages = [...prev];
+                                const latestMsg = updatedMessages[updatedMessages.length - 1];
+                                if (latestMsg && latestMsg.role === 'assistant') {
+                                    latestMsg.content = latestMsg.content + responseMessage.content;
+                                    latestMsg.reasoning_content = (latestMsg.reasoning_content || '') + (responseMessage.reasoning_content || '');
                                 }
-
-                                return newMessages;
+                                return updatedMessages;
                             });
-                            if (responseMessage.response_meta?.finish_reason) {
-                                cancel();
-                                setIsStreaming(false);
-                                setIsLoading(false);
-                            }
+                        }
+                        if (responseMessage?.response_meta?.finish_reason) {
+                            cancel();
+                            setIsStreaming(false);
+                            setIsLoading(false);
                         }
                     });
                 }).catch((err)=>{
-
+                    console.error('发送消息失败:', err);
+                    message.error('发送消息失败');
+                    setIsLoading(false);
+                    setIsStreaming(false);
                 });
 
             } catch (error) {
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');
-            }finally {
-                setIsLoading(true);
-                setIsStreaming(true);
+                setIsLoading(false);
+                setIsStreaming(false);
             }
         },
         [
