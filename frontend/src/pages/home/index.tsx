@@ -7,7 +7,7 @@ import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModels} from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
-import {ChatMessages, Completions} from "../../../wailsjs/go/service/Service";
+import {ChatMessages, Completions, DeleteChat, RenameChat} from "../../../wailsjs/go/service/Service";
 import {EventsOn} from "../../../wailsjs/runtime";
 import styles from './index.module.scss';
 import {WaitGroup} from "@/utils/wait_group.ts";
@@ -101,11 +101,23 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 处理标题更改
     const handleTitleChange = useCallback(
-        (newTitle: string) => {
+        async (newTitle: string) => {
             setChatTitle(newTitle);
-            // 如果是已有对话，优先使用精确更新，否则刷新整个列表
-            if (currentChatUuid && updateChatTitle) {
-                updateChatTitle(currentChatUuid, newTitle);
+            
+            // 如果是已有对话，调用 RenameChat API 更新标题
+            if (currentChatUuid) {
+                try {
+                    await RenameChat(currentChatUuid, newTitle);
+                    // 如果是已有对话，优先使用精确更新，否则刷新整个列表
+                    if (updateChatTitle) {
+                        updateChatTitle(currentChatUuid, newTitle);
+                    } else if (refreshChatList) {
+                        refreshChatList();
+                    }
+                } catch (error) {
+                    console.error('重命名聊天失败:', error);
+                    message.error('重命名聊天失败');
+                }
             } else if (refreshChatList) {
                 refreshChatList();
             }
@@ -300,6 +312,28 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         [currentChatUuid]
     );
 
+    // 处理删除聊天
+    const handleDeleteChat = useCallback(
+        async (chatUuid: string) => {
+            try {
+                await DeleteChat(chatUuid);
+                // 如果删除的是当前聊天，导航到新聊天页面
+                if (chatUuid === currentChatUuid) {
+                    handleNewChat();
+                }
+                // 刷新聊天列表
+                if (refreshChatList) {
+                    refreshChatList();
+                }
+                message.success('聊天删除成功');
+            } catch (error) {
+                console.error('删除聊天失败:', error);
+                message.error('删除聊天失败');
+            }
+        },
+        [currentChatUuid, handleNewChat, refreshChatList]
+    );
+
     // 处理消息重新生成
     const handleRegenerateMessage = useCallback(
         async (messageId: string) => {
@@ -343,6 +377,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     onChatSelect={handleChatSelect}
                     onRegisterRefreshCallback={handleSetRefreshChatList}
                     onRegisterUpdateTitleCallback={handleSetUpdateChatTitle}
+                    onDeleteChat={handleDeleteChat}
                     currentChatUuid={currentChatUuid}
                     isSidebarCollapsed={isSidebarCollapsed}
                     onToggleSidebar={handleToggleSidebar}

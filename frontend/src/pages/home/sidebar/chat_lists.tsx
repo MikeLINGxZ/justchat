@@ -33,6 +33,7 @@ interface SidebarChatsProps {
     onRegisterUpdateTitleCallback?: (
         callback: (chatUuid: string, newTitle: string) => void
     ) => void;
+    onDeleteChat?: (chatUuid: string) => void;
 }
 
 const SidebarChats: React.FC<SidebarChatsProps> = ({
@@ -40,6 +41,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        onChatSelect,
                                                        onRegisterRefreshCallback,
                                                        onRegisterUpdateTitleCallback,
+                                                       onDeleteChat,
                                                    }) => {
     const [chats, setChats] = useState<view_models.Chat[]>([]);
     const [loading, setLoading] = useState(false);
@@ -409,16 +411,22 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         if (!deletingChatUuid) return;
 
         try {
-            // 模拟删除延迟
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // 调用传入的删除函数
+            if (onDeleteChat) {
+                await onDeleteChat(deletingChatUuid);
+            } else {
+                // 如果没有传入删除函数，使用原来的模拟实现
+                // 模拟删除延迟
+                await new Promise(resolve => setTimeout(resolve, 200));
 
-            setChats(prev => {
-                const newChats = prev.filter(chat => chat.uuid !== deletingChatUuid);
-                // 更新ref中的聊天数量
-                chatsCountRef.current = newChats.length;
-                return newChats;
-            });
-            message.success('删除成功');
+                setChats(prev => {
+                    const newChats = prev.filter(chat => chat.uuid !== deletingChatUuid);
+                    // 更新ref中的聊天数量
+                    chatsCountRef.current = newChats.length;
+                    return newChats;
+                });
+                message.success('删除成功');
+            }
             setDeleteModalVisible(false);
             setDeletingChatUuid(null);
             setDeletingChatTitle('');

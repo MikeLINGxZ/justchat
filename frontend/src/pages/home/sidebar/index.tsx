@@ -26,6 +26,7 @@ interface SidebarProps {
     onRegisterUpdateTitleCallback?: (
         callback: (chatUuid: string, newTitle: string) => void
     ) => void;
+    onDeleteChat?: (chatUuid: string) => void;
 }
 
 const Index: React.FC<SidebarProps> = ({
@@ -37,6 +38,7 @@ const Index: React.FC<SidebarProps> = ({
                                            onNewChat,
                                            onRegisterRefreshCallback,
                                            onRegisterUpdateTitleCallback,
+                                           onDeleteChat,
                                        }) => {
     // @ts-ignore
     const {user, logout} = useAuthStore();
@@ -272,6 +274,7 @@ const Index: React.FC<SidebarProps> = ({
                         onChatSelect={handleChatSelect}
                         onRegisterRefreshCallback={onRegisterRefreshCallback}
                         onRegisterUpdateTitleCallback={onRegisterUpdateTitleCallback}
+                        onDeleteChat={onDeleteChat}
                     />
                 </div>
             )}
