@@ -263,18 +263,21 @@ const Index: React.FC<SidebarProps> = ({
             {/* Tab切换按钮区域 */}
             {!isSidebarCollapsed && (
                 <div className="sidebar-tabs">
-                    <button
-                        className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('history')}
-                    >
-                        历史对话
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('favorites')}
-                    >
-                        收藏
-                    </button>
+                    <div className="tab-switch">
+                        <div 
+                            className={`tab-option ${activeTab === 'history' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('history')}
+                        >
+                            对话
+                        </div>
+                        <div 
+                            className={`tab-option ${activeTab === 'favorites' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('favorites')}
+                        >
+                            收藏
+                        </div>
+                        <div className="tab-slider" data-active={activeTab}></div>
+                    </div>
                 </div>
             )}
 
