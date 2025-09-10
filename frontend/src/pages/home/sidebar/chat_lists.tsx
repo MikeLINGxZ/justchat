@@ -138,7 +138,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             try {
                 // 使用ref来获取最新的chats长度
                 const currentOffset = isLoadMore ? chatsCountRef.current : 0;
-                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null);
+                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null,false);
                 console.log("ChatList response:", response)
                 if (response.lists) {
                     const newChats: view_models.Chat[] = response.lists;

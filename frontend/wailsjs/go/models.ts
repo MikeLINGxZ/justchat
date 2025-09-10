@@ -521,6 +521,7 @@ export namespace view_models {
 	    model_id: number;
 	    title: string;
 	    prompt: string;
+	    "index;is_collection": boolean;
 	    content: MatchMessage[];
 	    reasoning_content: MatchMessage[];
 	
@@ -538,6 +539,7 @@ export namespace view_models {
 	        this.model_id = source["model_id"];
 	        this.title = source["title"];
 	        this.prompt = source["prompt"];
+	        this["index;is_collection"] = source["index;is_collection"];
 	        this.content = this.convertValues(source["content"], MatchMessage);
 	        this.reasoning_content = this.convertValues(source["reasoning_content"], MatchMessage);
 	    }

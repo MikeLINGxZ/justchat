@@ -5,7 +5,7 @@ import {schema} from '../models';
 import {data_models} from '../models';
 import {context} from '../models';
 
-export function ChatList(arg1:number,arg2:number,arg3:any):Promise<view_models.ChatList>;
+export function ChatList(arg1:number,arg2:number,arg3:any,arg4:boolean):Promise<view_models.ChatList>;
 
 export function ChatMessages(arg1:string,arg2:number,arg3:number):Promise<view_models.MessageList>;
 

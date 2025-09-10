@@ -14,8 +14,8 @@ import (
 )
 
 // ChatList 聊天列表
-func (s *Service) ChatList(offset, limit int, keyword *string) (*view_models.ChatList, error) {
-	chats, total, err := s.storage.GetChats(s.ctx, offset, limit, keyword)
+func (s *Service) ChatList(offset, limit int, keyword *string, isCollection bool) (*view_models.ChatList, error) {
+	chats, total, err := s.storage.GetChats(s.ctx, offset, limit, keyword, isCollection)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}

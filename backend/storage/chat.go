@@ -10,16 +10,16 @@ import (
 )
 
 // GetChats 获取对话
-func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string) ([]view_models.Chat, int, error) {
+func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *string, isCollection bool) ([]view_models.Chat, int, error) {
 	var chats []view_models.Chat
 	var res []data_models.Chat
 	var count int64
 	if keyword == nil || strings.TrimSpace(*keyword) == "" {
-		err := s.sqliteDB.Model(&data_models.Chat{}).Count(&count).Error
+		err := s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ?", isCollection).Count(&count).Error
 		if err != nil {
 			return nil, 0, err
 		}
-		err = s.sqliteDB.Model(&data_models.Chat{}).Order("updated_at DESC").Offset(offset).Limit(limit).Find(&res).Error
+		err = s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ?", isCollection).Order("updated_at DESC").Offset(offset).Limit(limit).Find(&res).Error
 		if err != nil {
 			return nil, 0, err
 		}
@@ -33,11 +33,11 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 
 	// 使用关键字搜索包含匹配消息的聊天与聊天标题
 	keywordStr := strings.TrimSpace(*keyword)
-	err := s.sqliteDB.Model(&data_models.Chat{}).Where("title LIKE ?", "%"+keywordStr+"%").Count(&count).Error
+	err := s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ? AND title LIKE ?", isCollection, "%"+keywordStr+"%").Count(&count).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	err = s.sqliteDB.Model(&data_models.Chat{}).Order("updated_at DESC").Where("title LIKE ?", "%"+keywordStr+"%").Offset(offset).Limit(limit).Find(&res).Error
+	err = s.sqliteDB.Model(&data_models.Chat{}).Order("updated_at DESC").Where("is_collection = ? AND title LIKE ?", isCollection, "%"+keywordStr+"%").Offset(offset).Limit(limit).Find(&res).Error
 	if err != nil {
 		return nil, 0, err
 	}
