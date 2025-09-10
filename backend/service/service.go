@@ -11,12 +11,11 @@ type Service struct {
 	storage *storage.Storage
 }
 
-func NewService(storage *storage.Storage) *Service {
-	return &Service{
-		storage: storage,
-	}
+func NewService() *Service {
+	return &Service{}
 }
 
-func (s *Service) Startup(ctx context.Context) {
+func (s *Service) Startup(ctx context.Context, storage *storage.Storage) {
 	s.ctx = ctx
+	s.storage = storage
 }

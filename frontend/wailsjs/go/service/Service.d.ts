@@ -4,6 +4,7 @@ import {view_models} from '../models';
 import {schema} from '../models';
 import {data_models} from '../models';
 import {context} from '../models';
+import {storage} from '../models';
 
 export function ChatList(arg1:number,arg2:number,arg3:any,arg4:boolean):Promise<view_models.ChatList>;
 
@@ -19,4 +20,4 @@ export function GetProviders():Promise<Array<data_models.Provider>>;
 
 export function RenameChat(arg1:string,arg2:string):Promise<void>;
 
-export function Startup(arg1:context.Context):Promise<void>;
+export function Startup(arg1:context.Context,arg2:storage.Storage):Promise<void>;

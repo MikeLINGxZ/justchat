@@ -30,6 +30,6 @@ export function RenameChat(arg1, arg2) {
   return window['go']['service']['Service']['RenameChat'](arg1, arg2);
 }
 
-export function Startup(arg1) {
-  return window['go']['service']['Service']['Startup'](arg1);
+export function Startup(arg1, arg2) {
+  return window['go']['service']['Service']['Startup'](arg1, arg2);
 }

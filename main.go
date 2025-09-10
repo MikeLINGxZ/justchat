@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 )
@@ -16,23 +19,29 @@ var assets embed.FS
 
 func main() {
 
-	storage, err := storage.NewStorage()
-	if err != nil {
-		panic(err)
-	}
+	service := service.NewService()
 
-	service := service.NewService(storage)
-
-	err = wails.Run(&options.App{
-		Title:  "lemon_tea_desktop",
-		Width:  1024,
-		Height: 768,
+	err := wails.Run(&options.App{
+		Title:     "lemon_tea_desktop",
+		Width:     1024,
+		Height:    768,
+		MinWidth:  350,
+		MinHeight: 550,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
-			service.Startup(ctx)
+			storage, err := storage.NewStorage()
+			if err != nil {
+				_, _ = runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
+					Type:    runtime.ErrorDialog,
+					Title:   "程序错误",
+					Message: fmt.Sprintf("%v", err.Error()),
+				})
+				os.Exit(-1)
+			}
+			service.Startup(ctx, storage)
 		},
 		Bind: []interface{}{
 			service,

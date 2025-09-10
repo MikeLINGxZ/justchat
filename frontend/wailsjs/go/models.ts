@@ -493,6 +493,23 @@ export namespace schema {
 
 }
 
+export namespace storage {
+	
+	export class Storage {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new Storage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+
+}
+
 export namespace view_models {
 	
 	export class MatchMessage {
