@@ -382,7 +382,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 />
             </Sider>
             <Layout className={styles.mainLayout}>
-                <Content className={styles.mainContent}>
+                <Content className={styles.mainContent} hidden={!isSidebarCollapsed && isMobile}>
                     <Chat
                         chatTitle={chatTitle}
                         chatUuid={currentChatUuid}
