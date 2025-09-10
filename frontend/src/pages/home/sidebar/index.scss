@@ -171,6 +171,38 @@
     }
   }
 
+  // Tab切换按钮区域
+  .sidebar-tabs {
+    display: flex;
+    padding: 10px 10px 5px 10px;
+    gap: 8px;
+    border-top: 1px solid var(--border-color-light);
+    flex-shrink: 0;
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: none;
+      border-radius: var(--border-radius);
+      color: var(--text-color-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+
+      &:hover {
+        background-color: var(--background-color-dark);
+        color: var(--text-color);
+      }
+
+      &.active {
+        background-color: var(--primary-color-light);
+        color: var(--primary-color);
+      }
+    }
+  }
+
   // 搜索框
   .sidebar-search {
     padding: 0 16px 16px;
@@ -636,6 +668,12 @@
           display: none;
         }
       }
+    }
+
+    .sidebar-tabs {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
     }
 
     .sidebar-footer {

@@ -9,7 +9,7 @@
 
 .searchContainer {
   padding: var(--sidebar-padding);
-  border-top: 1px solid var(--border-color-light);
+  // border-top: 1px solid var(--border-color-light);
   background: var(--background-color);
 
   .ant-input-affix-wrapper {
@@ -390,7 +390,7 @@
 
   .searchContainer {
     background: var(--background-color);
-    border-top-color: var(--border-color-light);
+    // border-top-color: var(--border-color-light);
   }
 
   .groupTitle {

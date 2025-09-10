@@ -48,6 +48,7 @@ const Index: React.FC<SidebarProps> = ({
     const [currentTheme, setCurrentTheme] = useState<'auto' | 'light' | 'dark'>(
         'auto'
     );
+    const [activeTab, setActiveTab] = useState<'history' | 'favorites'>('history'); // 添加tab状态
     const userMenuRef = useRef<HTMLDivElement>(null);
     const themeMenuRef = useRef<HTMLDivElement>(null);
     const themeCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -259,6 +260,24 @@ const Index: React.FC<SidebarProps> = ({
                 </button>
             </div>
 
+            {/* Tab切换按钮区域 */}
+            {!isSidebarCollapsed && (
+                <div className="sidebar-tabs">
+                    <button
+                        className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('history')}
+                    >
+                        历史对话
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('favorites')}
+                    >
+                        收藏
+                    </button>
+                </div>
+            )}
+
             {/* 主体区域 - 历史对话列表 */}
             {!isSidebarCollapsed && (
                 <div className="sidebar-main">
@@ -268,6 +287,7 @@ const Index: React.FC<SidebarProps> = ({
                         onRegisterRefreshCallback={onRegisterRefreshCallback}
                         onRegisterUpdateTitleCallback={onRegisterUpdateTitleCallback}
                         onDeleteChat={onDeleteChat}
+                        activeTab={activeTab} // 传递tab状态
                     />
                 </div>
             )}

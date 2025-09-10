@@ -34,6 +34,7 @@ interface SidebarChatsProps {
         callback: (chatUuid: string, newTitle: string) => void
     ) => void;
     onDeleteChat?: (chatUuid: string) => void;
+    activeTab?: 'history' | 'favorites'; // 添加activeTab属性
 }
 
 const SidebarChats: React.FC<SidebarChatsProps> = ({
@@ -42,6 +43,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        onRegisterRefreshCallback,
                                                        onRegisterUpdateTitleCallback,
                                                        onDeleteChat,
+                                                       activeTab = 'history', // 默认为历史对话
                                                    }) => {
     const [chats, setChats] = useState<view_models.Chat[]>([]);
     const [loading, setLoading] = useState(false);
@@ -628,27 +630,34 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         );
     };
 
-    if (loading && chats.length === 0) {
+    // 修改渲染部分以根据activeTab显示不同内容
+    const renderContent = () => {
+        if (activeTab === 'favorites') {
+            // 收藏tab的内容
+            return (
+                <div className={styles.favoritesContainer}>
+                    <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="暂无收藏对话"
+                    >
+                        <p style={{color: 'var(--text-color-secondary)', fontSize: '14px'}}>
+                            点击对话菜单中的收藏按钮，将对话添加到收藏夹
+                        </p>
+                    </Empty>
+                </div>
+            );
+        }
+
+        // 历史对话tab的内容（原有逻辑）
+        if (loading && chats.length === 0) {
+            return (
+                <div className={styles.loadingContainer}>
+                    <Spin size="small"/>
+                </div>
+            );
+        }
+
         return (
-            <div className={styles.loadingContainer}>
-                <Spin size="small"/>
-            </div>
-        );
-    }
-
-    return (
-        <div className={styles.sidebarChats}>
-            <div className={styles.searchContainer}>
-                <Search
-                    ref={searchInputRef}
-                    placeholder="搜索对话..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    prefix={<SearchOutlined/>}
-                    allowClear
-                />
-            </div>
-
             <div className={styles.chatsContainer} ref={containerRef}>
                 {Object.keys(groupedChats).some(
                     key => groupedChats[key as keyof GroupedChats].length > 0
@@ -690,6 +699,23 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     />
                 )}
             </div>
+        );
+    };
+
+    return (
+        <div className={styles.sidebarChats}>
+            <div className={styles.searchContainer}>
+                <Search
+                    ref={searchInputRef}
+                    placeholder="搜索对话..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    prefix={<SearchOutlined/>}
+                    allowClear
+                />
+            </div>
+
+            {renderContent()}
 
             {/* 删除确认对话框 */}
             <Modal
