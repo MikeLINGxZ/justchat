@@ -11,8 +11,12 @@ export function ChatMessages(arg1:string,arg2:number,arg3:number):Promise<view_m
 
 export function Completions(arg1:string,arg2:string,arg3:schema.Message):Promise<view_models.Completions>;
 
+export function DeleteChat(arg1:string):Promise<void>;
+
 export function GetModels():Promise<Array<data_models.Model>>;
 
 export function GetProviders():Promise<Array<data_models.Provider>>;
+
+export function RenameChat(arg1:string,arg2:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;

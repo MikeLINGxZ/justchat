@@ -71,3 +71,21 @@ func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelI
 
 	return nil
 }
+
+// DeleteChat 删除对话
+func (s *Storage) DeleteChat(ctx context.Context, chatUuid string) error {
+	err := s.sqliteDB.Where("uuid = ?", chatUuid).Delete(&data_models.Chat{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// RenameChat 重命名对话
+func (s *Storage) RenameChat(ctx context.Context, chatUuid, title string) error {
+	err := s.sqliteDB.Model(&data_models.Chat{}).Where("uuid = ?", chatUuid).Update("title", title).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

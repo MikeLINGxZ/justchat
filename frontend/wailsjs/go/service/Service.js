@@ -14,12 +14,20 @@ export function Completions(arg1, arg2, arg3) {
   return window['go']['service']['Service']['Completions'](arg1, arg2, arg3);
 }
 
+export function DeleteChat(arg1) {
+  return window['go']['service']['Service']['DeleteChat'](arg1);
+}
+
 export function GetModels() {
   return window['go']['service']['Service']['GetModels']();
 }
 
 export function GetProviders() {
   return window['go']['service']['Service']['GetProviders']();
+}
+
+export function RenameChat(arg1, arg2) {
+  return window['go']['service']['Service']['RenameChat'](arg1, arg2);
 }
 
 export function Startup(arg1) {

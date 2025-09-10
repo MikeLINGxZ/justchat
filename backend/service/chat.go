@@ -47,6 +47,7 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 	}, nil
 }
 
+// Completions 聊天
 func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
 
 	// 获取模型信息
@@ -144,6 +145,24 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		ChatUuid:    chatUuid,
 		MessageUuid: messageUuid,
 	}, nil
+}
+
+// DeleteChat 删除聊天
+func (s *Service) DeleteChat(chatUuid string) error {
+	err := s.storage.DeleteChat(s.ctx, chatUuid)
+	if err != nil {
+		return ierror.NewError(err)
+	}
+	return nil
+}
+
+// RenameChat 重命名聊天
+func (s *Service) RenameChat(chatUuid, title string) error {
+	err := s.storage.RenameChat(s.ctx, chatUuid, title)
+	if err != nil {
+		return ierror.NewError(err)
+	}
+	return nil
 }
 
 func (s *Service) fillCompletionsMsg(dataMsg data_models.Message, finishReason string) data_models.Message {
