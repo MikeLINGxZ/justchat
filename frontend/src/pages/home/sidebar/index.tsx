@@ -213,13 +213,13 @@ const Index: React.FC<SidebarProps> = ({
             {/* 顶部区域 */}
             <div
                 className="sidebar-header"
-                onMouseEnter={() => setIsHeaderHovered(true)}
+                onMouseOver={() => setIsHeaderHovered(true)}
                 onMouseLeave={() => setIsHeaderHovered(false)}
             >
                 {!isSidebarCollapsed && (
                     <div className="sidebar-logo">
                         <div className="logo-icon">🍋</div>
-                        <span className="logo-text">Lemtea</span>
+                        <span className="logo-text">LemonTea</span>
                     </div>
                 )}
                 {isSidebarCollapsed && (
@@ -231,7 +231,7 @@ const Index: React.FC<SidebarProps> = ({
                             🍋
                         </div>
                         {isHeaderHovered && (
-                            <div className="expand-icon">
+                            <div className="expand-icon collapse-btn" onClick={onToggleSidebar}>
                                 <MenuUnfoldOutlined/>
                             </div>
                         )}
@@ -240,19 +240,13 @@ const Index: React.FC<SidebarProps> = ({
                 {!isSidebarCollapsed && (
                     <button
                         className="collapse-btn"
-                        onClick={onToggleSidebar}
+                        onClick={()=>{
+                            onToggleSidebar()
+                            setIsHeaderHovered(false)
+                        }}
                         title="折叠侧边栏"
                     >
                         <MenuFoldOutlined/>
-                    </button>
-                )}
-                {isSidebarCollapsed && (
-                    <button
-                        className="collapse-btn collapsed"
-                        onClick={onToggleSidebar}
-                        title="展开侧边栏"
-                    >
-                        <MenuUnfoldOutlined/>
                     </button>
                 )}
             </div>

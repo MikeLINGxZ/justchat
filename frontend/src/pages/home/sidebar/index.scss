@@ -44,7 +44,7 @@
     .sidebar-logo {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-items: center;
       opacity: 1;
       transition: opacity 0.2s ease;
 
@@ -58,6 +58,7 @@
         font-weight: var(--font-weight-semibold);
         color: var(--text-color);
         white-space: nowrap;
+        margin-left: 5px;
       }
 
       &.collapsed {
@@ -66,7 +67,7 @@
         width: 100%;
 
         .logo-icon {
-          font-size: 28px;
+          font-size: 24px;
           transition: opacity 0.2s ease;
         }
 
