@@ -69,6 +69,19 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		}
 	}
 
+	// 查找历史消息
+	historyMessageData, _, err := s.storage.GetMessage(s.ctx, chatUuid, 0, 10)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	var historyMessages []schema.Message
+	for _, item := range historyMessageData {
+		if item.Message == nil {
+			continue
+		}
+		historyMessages = append(historyMessages, *item.Message)
+	}
+
 	// 创建用户消息
 	err = s.storage.CreateMessage(s.ctx, chatUuid, data_models.Message{
 		Uuid:     uuid.New().String(),
@@ -80,7 +93,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}
 
 	provider := llm.NewLlmProvider(providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
-	stream, err := provider.Completions(s.ctx, []schema.Message{message})
+	stream, err := provider.Completions(s.ctx, append(historyMessages, message))
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
