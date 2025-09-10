@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
@@ -7,7 +7,7 @@ import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModels} from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
-import {ChatMessages, Completions, DeleteChat, RenameChat} from "../../../wailsjs/go/service/Service";
+import {ChatMessages, DeleteChat, RenameChat} from "../../../wailsjs/go/service/Service";
 import styles from './index.module.scss';
 import {CompletionsUtils} from "@/utils/completions.ts"; // 添加样式导入
 
@@ -30,7 +30,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
         null
     );
-    const [updateChatTitle, setUpdateChatTitle] = useState<((chatUuid: string, newTitle: string) => void) | null >(null);
+    const [updateChatTitle, setUpdateChatTitle] = useState<((chatUuid: string, newTitle: string) => void) | null>(null);
     // Safari兼容性：添加强制重新渲染状态
     const [forceRerender, setForceRerender] = useState(0);
     // 添加loading消息状态
@@ -101,7 +101,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const handleTitleChange = useCallback(
         async (newTitle: string) => {
             setChatTitle(newTitle);
-            
+
             // 如果是已有对话，调用 RenameChat API 更新标题
             if (currentChatUuid) {
                 try {
@@ -213,7 +213,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 const userMessage = new schema.Message();
                 userMessage.role = "user";
                 userMessage.content = messageContent.trim();
-                
+
                 // 创建AI消息占位符
                 const assistantMessage = new schema.Message();
                 assistantMessage.role = "assistant";
@@ -236,14 +236,14 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
                 await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
                     if (message) {
-                        console.log("message callback:",message)
+                        console.log("message callback:", message)
                         // 隐藏loading消息
                         setShowLoadingMessage(false);
-                        
+
                         // 累积增量数据
                         accumulatedContent += message.content || '';
                         accumulatedReasoningContent += message.reasoning_content || '';
-                        
+
                         // 使用函数式更新确保获取最新状态，避免重复更新
                         setCurrentMessages(prev => {
                             const updatedMessages = [...prev];
@@ -252,7 +252,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                                 // 使用累积的内容更新，避免重复拼接
                                 const newContent = accumulatedContent;
                                 const newReasoningContent = accumulatedReasoningContent;
-                                console.log("newContent:",newContent);
+                                console.log("newContent:", newContent);
                                 if (newContent !== latestMsg.content || newReasoningContent !== latestMsg.reasoning_content) {
                                     latestMsg.content = newContent;
                                     latestMsg.reasoning_content = newReasoningContent;
@@ -279,7 +279,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                         if (refreshChatList) {
                             refreshChatList();
                         }
-                        navigate(`/home/${chatUuid}`, { replace: true });
+                        navigate(`/home/${chatUuid}`, {replace: true});
                     }
                 }, newAbortController)
             } catch (error) {
@@ -360,7 +360,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     isSidebarCollapsed ? styles.collapsed : ''
                 }`}
                 width={280}
-                collapsedWidth={50} // 修改这里，不完全隐藏侧边栏，而是缩小到50px
+                collapsedWidth={isMobile ? 0 : 50}
                 collapsed={isSidebarCollapsed}
                 trigger={null}
                 collapsible
@@ -377,7 +377,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 />
             </Sider>
             <Layout className={styles.mainLayout}>
-                <Content className={styles.mainContent} hidden={!isSidebarCollapsed && isMobile}>
+                <Content className={styles.mainContent} hidden={isMobile && !isSidebarCollapsed}>
                     <Chat
                         chatTitle={chatTitle}
                         chatUuid={currentChatUuid}
