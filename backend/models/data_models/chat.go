@@ -13,7 +13,7 @@ type Chat struct {
 	ModelID      uint   `gorm:"index" json:"model_id"`
 	Title        string `gorm:"type:varchar(255)" json:"title"`
 	Prompt       string `gorm:"type:text" json:"prompt"`
-	IsCollection bool   `json:"index;is_collection"`
+	IsCollection bool   `gorm:"index;default:false" json:"is_collection"`
 }
 
 type Message struct {

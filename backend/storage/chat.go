@@ -14,12 +14,18 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 	var chats []view_models.Chat
 	var res []data_models.Chat
 	var count int64
+
+	queryBase := s.sqliteDB.Model(&data_models.Chat{})
+	if isCollection {
+		queryBase = queryBase.Where("is_collection = ?", 1)
+	}
+
 	if keyword == nil || strings.TrimSpace(*keyword) == "" {
-		err := s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ?", isCollection).Count(&count).Error
+		err := queryBase.Count(&count).Error
 		if err != nil {
 			return nil, 0, err
 		}
-		err = s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ?", isCollection).Order("updated_at DESC").Offset(offset).Limit(limit).Find(&res).Error
+		err = queryBase.Order("updated_at DESC").Offset(offset).Limit(limit).Find(&res).Error
 		if err != nil {
 			return nil, 0, err
 		}
@@ -33,11 +39,11 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 
 	// 使用关键字搜索包含匹配消息的聊天与聊天标题
 	keywordStr := strings.TrimSpace(*keyword)
-	err := s.sqliteDB.Model(&data_models.Chat{}).Where("is_collection = ? AND title LIKE ?", isCollection, "%"+keywordStr+"%").Count(&count).Error
+	err := queryBase.Where("title LIKE ?", "%"+keywordStr+"%").Count(&count).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	err = s.sqliteDB.Model(&data_models.Chat{}).Order("updated_at DESC").Where("is_collection = ? AND title LIKE ?", isCollection, "%"+keywordStr+"%").Offset(offset).Limit(limit).Find(&res).Error
+	err = queryBase.Where("title LIKE ?", "%"+keywordStr+"%").Offset(offset).Limit(limit).Find(&res).Error
 	if err != nil {
 		return nil, 0, err
 	}

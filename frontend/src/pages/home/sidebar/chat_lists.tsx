@@ -138,7 +138,9 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             try {
                 // 使用ref来获取最新的chats长度
                 const currentOffset = isLoadMore ? chatsCountRef.current : 0;
-                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null,false);
+                // 根据activeTab决定是否为收藏列表
+                const isFavorites = activeTab === 'favorites';
+                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null, isFavorites);
                 console.log("ChatList response:", response)
                 if (response.lists) {
                     const newChats: view_models.Chat[] = response.lists;
@@ -196,7 +198,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 setLoadingMore(false);
                 loadingRef.current = false;
             }
-        }, []
+        }, [activeTab]
     );
 
     // 加载更多聊天
@@ -236,6 +238,11 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     useEffect(() => {
         loadChats();
     }, []); // 使用空依赖数组，只在组件挂载时执行
+
+    // 监听activeTab变化，重新加载数据
+    useEffect(() => {
+        loadChats();
+    }, [activeTab, loadChats]); // 添加activeTab依赖
 
     // 搜索防抖处理
     useEffect(() => {
@@ -632,23 +639,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
     // 修改渲染部分以根据activeTab显示不同内容
     const renderContent = () => {
-        if (activeTab === 'favorites') {
-            // 收藏tab的内容
-            return (
-                <div className={styles.favoritesContainer}>
-                    <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="暂无收藏对话"
-                    >
-                        <p style={{color: 'var(--text-color-secondary)', fontSize: '14px'}}>
-                            点击对话菜单中的收藏按钮，将对话添加到收藏夹
-                        </p>
-                    </Empty>
-                </div>
-            );
-        }
-
-        // 历史对话tab的内容（原有逻辑）
+        // 历史对话和收藏tab都使用相同的聊天列表渲染逻辑
         if (loading && chats.length === 0) {
             return (
                 <div className={styles.loadingContainer}>
@@ -687,7 +678,9 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                         {!hasMore && chats.length > 0 && (
                             <div className={styles.endContainer}>
                                 <Text type="secondary" className={styles.endText}>
-                                    已加载全部聊天记录 ({totalCount} 条)
+                                    {activeTab === 'favorites' 
+                                        ? `已加载全部收藏对话 (${totalCount} 条)` 
+                                        : `已加载全部聊天记录 (${totalCount} 条)`}
                                 </Text>
                             </div>
                         )}
@@ -695,8 +688,16 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 ) : (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={searchQuery ? '未找到匹配的对话' : '暂无对话记录'}
-                    />
+                        description={searchQuery 
+                            ? (activeTab === 'favorites' ? '未找到匹配的收藏对话' : '未找到匹配的对话') 
+                            : (activeTab === 'favorites' ? '暂无收藏对话' : '暂无对话记录')}
+                    >
+                        {activeTab === 'favorites' && (
+                            <p style={{color: 'var(--text-color-secondary)', fontSize: '14px'}}>
+                                点击对话菜单中的收藏按钮，将对话添加到收藏夹
+                            </p>
+                        )}
+                    </Empty>
                 )}
             </div>
         );
