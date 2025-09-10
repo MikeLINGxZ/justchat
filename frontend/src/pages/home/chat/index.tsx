@@ -15,6 +15,8 @@ interface ChatProps {
     currentMessages: schema.Message[]; // 修改为 schema.Message[]
     // 是否加载中
     isLoading: boolean;
+    // 是否显示loading消息
+    showLoadingMessage?: boolean;
     // 所选模型
     selectedModel: string;
     // 可用模型
@@ -54,6 +56,7 @@ const Chat: React.FC<ChatProps> = ({
     chatUuid,
     currentMessages,
     isLoading,
+    showLoadingMessage,
     selectedModel,
     availableModels,
     isMobile,
@@ -209,6 +212,7 @@ const Chat: React.FC<ChatProps> = ({
                     ref={chatMessagesRef}
                     messages={currentMessages}
                     isLoading={isLoading}
+                    showLoadingMessage={showLoadingMessage}
                     isMobile={isMobile}
                     onCopyMessage={onCopyMessage}
                     onDeleteMessage={onDeleteMessage}

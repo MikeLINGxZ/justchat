@@ -13,6 +13,8 @@ interface ChatMessagesProps {
     messages?: schema.Message[]; // 修改为 schema.Message[]
     // 是否加载中
     isLoading?: boolean;
+    // 是否显示loading消息
+    showLoadingMessage?: boolean;
     // 是否为移动端
     isMobile?: boolean;
     // 消息是否自动滚动到底部
@@ -40,6 +42,7 @@ export interface ChatMessagesRef {
 const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessagesProps> = ({
     messages = [],
     isLoading,
+    showLoadingMessage,
     isMobile = false,
     autoScrollBottom,
     onCopyMessage,
@@ -490,7 +493,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
                 {renderedMessages}
                 
                 {/* 加载状态 */}
-                {isLoading && (
+                {(isLoading || showLoadingMessage) && (
                     <div className={styles.loadingIndicator}>
                         <div className={styles.loadingDots}>
                             <span></span>

@@ -35,6 +35,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [updateChatTitle, setUpdateChatTitle] = useState<((chatUuid: string, newTitle: string) => void) | null >(null);
     // Safari兼容性：添加强制重新渲染状态
     const [forceRerender, setForceRerender] = useState(0);
+    // 添加loading消息状态
+    const [showLoadingMessage, setShowLoadingMessage] = useState(false);
 
     // 使用视口高度检测 Hook
     const {isMobile} = useViewportHeight();
@@ -195,6 +197,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             try {
                 setIsLoading(true);
                 setIsStreaming(true);
+                setShowLoadingMessage(true); // 显示loading消息
 
                 // 创建用户消息
                 const userMessage = new schema.Message();
@@ -207,7 +210,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 assistantMessage.content = "";
                 assistantMessage.reasoning_content = "";
 
-                // 一次性更新消息列表
+                // 一次性更新消息列表（包含loading状态）
                 const newMessages = [...currentMessages, userMessage, assistantMessage];
                 setCurrentMessages(newMessages);
 
@@ -224,6 +227,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
                     if (message) {
                         console.log("message callback:",message)
+                        // 隐藏loading消息
+                        setShowLoadingMessage(false);
+                        
                         // 累积增量数据
                         accumulatedContent += message.content || '';
                         accumulatedReasoningContent += message.reasoning_content || '';
@@ -248,12 +254,14 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 }, (error: string) => {
                     setIsLoading(false);
                     setIsStreaming(false);
+                    setShowLoadingMessage(false); // 隐藏loading消息
                     setAbortController(null); // 清理 AbortController
                     console.error('发送消息失败:', error);
                     message.error('发送消息失败');
                 }, (chatUuid: string) => {
                     setIsLoading(false);
                     setIsStreaming(false);
+                    setShowLoadingMessage(false); // 隐藏loading消息
                     setAbortController(null); // 清理 AbortController
                     if (currentChatUuid == "") {
                         setCurrentChatUuid(chatUuid);
@@ -267,6 +275,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             } catch (error) {
                 setIsLoading(false);
                 setIsStreaming(false);
+                setShowLoadingMessage(false); // 隐藏loading消息
                 setAbortController(null); // 清理 AbortController
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');
@@ -346,6 +355,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                         chatUuid={currentChatUuid}
                         currentMessages={currentMessages}
                         isLoading={isLoadingMessages}
+                        showLoadingMessage={showLoadingMessage}
                         selectedModel={selectedModel}
                         availableModels={availableModels}
                         isMobile={isMobile}
