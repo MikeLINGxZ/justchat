@@ -251,7 +251,6 @@ const Index: React.FC<SidebarProps> = ({
                         className="collapse-btn collapsed"
                         onClick={onToggleSidebar}
                         title="展开侧边栏"
-                        style={{opacity: isHeaderHovered ? 1 : 0}}
                     >
                         <MenuUnfoldOutlined/>
                     </button>

@@ -31,6 +31,60 @@
   }
 }
 
+.chatLayout {
+  height: 100vh;
+  
+  // 移动端使用自定义视口高度变量
+  @media (max-width: 768px) {
+    height: var(--viewport-height);
+  }
+  
+  .sidebar {
+    position: relative;
+    z-index: 100;
+    // 确保在桌面端折叠时侧边栏不会被遮挡
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    // 桌面端特殊处理
+    @media (min-width: 769px) {
+      position: relative !important;
+      transform: none !important;
+    }
+  }
+  
+  // 修复桌面端折叠时的显示问题
+  @media (min-width: 769px) {
+    .sidebar.collapsed {
+      width: 50px !important;
+      min-width: 50px !important;
+      max-width: 50px !important;
+    }
+  }
+  
+  .mainLayout {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100vh;
+    padding: 0;
+    background: var(--background-color);
+    overflow: hidden;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .mainContent {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100vh;
+    padding: 0;
+    background: var(--background-color);
+    overflow: hidden;
+  }
+}
+
 // 欢迎页面
 .welcomeContainer {
   flex: 1;
@@ -299,18 +353,25 @@
 
 // Safari内核兼容性：桌面端布局修复
 @media (min-width: 769px) {
-  .homePage {
-    .layout {
-      .mainContent {
-        // 在桌面端确保主内容区域正确计算宽度，避免与侧边栏重叠
-        margin-left: 0 !important;
-        transform: none !important;
-        position: relative !important;
-        width: 100% !important;
-        
-        // 确保过渡动画正常工作
-        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  .chatLayout {
+    .sidebar {
+      // 确保在桌面端折叠时正确显示
+      &.collapsed {
+        width: 50px !important;
+        min-width: 50px !important;
+        max-width: 50px !important;
       }
+    }
+    
+    .mainLayout {
+      // 在桌面端确保主内容区域正确计算宽度，避免与侧边栏重叠
+      margin-left: 0 !important;
+      transform: none !important;
+      position: relative !important;
+      width: 100% !important;
+      
+      // 确保过渡动画正常工作
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
   }
 }

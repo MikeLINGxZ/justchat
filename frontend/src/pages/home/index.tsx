@@ -360,15 +360,10 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     isSidebarCollapsed ? styles.collapsed : ''
                 }`}
                 width={280}
-                collapsedWidth={0}
+                collapsedWidth={50} // 修改这里，不完全隐藏侧边栏，而是缩小到50px
                 collapsed={isSidebarCollapsed}
                 trigger={null}
                 collapsible
-                // Safari内核兼容性：添加transform样式确保正确隐藏
-                style={{
-                    transform: isSidebarCollapsed ? 'translateX(-100%)' : 'translateX(0)',
-                    transition: 'transform 0.3s ease-in-out',
-                }}
             >
                 <Index
                     onNewChat={handleNewChat}
