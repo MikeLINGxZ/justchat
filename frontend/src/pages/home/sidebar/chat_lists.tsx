@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import styles from './chats_lists.module.scss';
 import {view_models} from "../../../../wailsjs/go/models.ts";
-import {ChatList} from "../../../../wailsjs/go/service/Service";
+import {ChatList, RenameChat} from "../../../../wailsjs/go/service/Service";
 import Chat = view_models.Chat;
 
 const {Text} = Typography;
@@ -359,8 +359,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         }
 
         try {
-            // 模拟保存延迟
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // 调用 RenameChat API 保存标题
+            await RenameChat(editingChatUuid, editingTitle.trim());
 
             // 更新本地状态
             setChats(prev =>

@@ -8,9 +8,7 @@ import {useModels} from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
 import {ChatMessages, Completions, DeleteChat, RenameChat} from "../../../wailsjs/go/service/Service";
-import {EventsOn} from "../../../wailsjs/runtime";
 import styles from './index.module.scss';
-import {WaitGroup} from "@/utils/wait_group.ts";
 import {CompletionsUtils} from "@/utils/completions.ts"; // 添加样式导入
 
 const {Content, Sider} = Layout;
