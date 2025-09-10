@@ -11,7 +11,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 )
 
 //go:embed all:frontend/dist
@@ -19,7 +18,7 @@ var assets embed.FS
 
 func main() {
 
-	service := service.NewService()
+	app := service.NewService()
 
 	err := wails.Run(&options.App{
 		Title:     "lemon_tea_desktop",
@@ -32,7 +31,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
-			storage, err := storage.NewStorage()
+			err := app.Startup(ctx)
 			if err != nil {
 				_, _ = runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 					Type:    runtime.ErrorDialog,
@@ -41,10 +40,9 @@ func main() {
 				})
 				os.Exit(-1)
 			}
-			service.Startup(ctx, storage)
 		},
 		Bind: []interface{}{
-			service,
+			app,
 		},
 	})
 
