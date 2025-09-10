@@ -52,19 +52,43 @@ const Index: React.FC<SidebarProps> = ({
     const userMenuRef = useRef<HTMLDivElement>(null);
     const themeMenuRef = useRef<HTMLDivElement>(null);
     const themeCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isMobileRef = useRef(window.innerWidth <= 768);
+    const wasAutoCollapsedRef = useRef(false); // 标记是否是因为移动端而自动折叠
 
     // 检测移动端
     useEffect(() => {
         const checkMobile = () => {
-            // 移动端检测逻辑保留，但不使用isMobile状态
-            // 可以在这里添加移动端相关的逻辑
+            const isCurrentlyMobile = window.innerWidth <= 768;
+            const wasMobile = isMobileRef.current;
+            
+            // 检测从桌面端切换到移动端
+            if (!wasMobile && isCurrentlyMobile) {
+                // 从桌面端切换到移动端，自动折叠侧边栏
+                if (!isSidebarCollapsed) {
+                    onToggleSidebar();
+                    wasAutoCollapsedRef.current = true; // 标记为自动折叠
+                }
+            } 
+            // 检测从移动端切换到桌面端
+            else if (wasMobile && !isCurrentlyMobile) {
+                // 从移动端切换到桌面端，如果是因为移动端而折叠的，则自动展开
+                if (isSidebarCollapsed && wasAutoCollapsedRef.current) {
+                    onToggleSidebar();
+                    wasAutoCollapsedRef.current = false; // 重置标记
+                }
+            }
+            
+            // 更新当前状态
+            isMobileRef.current = isCurrentlyMobile;
         };
 
+        // 初始化时检查是否为移动端
         checkMobile();
+        
         window.addEventListener('resize', checkMobile);
 
         return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    }, [isSidebarCollapsed, onToggleSidebar]);
 
     // 点击外部关闭菜单
     useEffect(() => {
@@ -124,6 +148,13 @@ const Index: React.FC<SidebarProps> = ({
     const handleUserMenuToggle = () => {
         setIsUserMenuOpen(!isUserMenuOpen);
         setIsThemeMenuOpen(false);
+    };
+
+    // 用户手动点击折叠/展开按钮时，重置自动折叠标记
+    const handleManualToggle = () => {
+        onToggleSidebar();
+        wasAutoCollapsedRef.current = false; // 用户手动操作后重置标记
+        setIsHeaderHovered(false);
     };
 
     const handleThemeChange = (theme: 'auto' | 'light' | 'dark') => {
@@ -232,7 +263,7 @@ const Index: React.FC<SidebarProps> = ({
                             🍋
                         </div>
                         {isHeaderHovered && (
-                            <div className="expand-icon collapse-btn" onClick={onToggleSidebar}>
+                            <div className="expand-icon collapse-btn" onClick={handleManualToggle}>
                                 <MenuUnfoldOutlined/>
                             </div>
                         )}
@@ -241,10 +272,7 @@ const Index: React.FC<SidebarProps> = ({
                 {!isSidebarCollapsed && (
                     <button
                         className="collapse-btn"
-                        onClick={()=>{
-                            onToggleSidebar()
-                            setIsHeaderHovered(false)
-                        }}
+                        onClick={handleManualToggle}
                         title="折叠侧边栏"
                     >
                         <MenuFoldOutlined/>
