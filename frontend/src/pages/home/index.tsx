@@ -2,14 +2,17 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
-import {schema, view_models} from "../../../wailsjs/go/models"; // 修复导入路径
+import {Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts"; // 修复导入路径
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModels} from '@/hooks/useModels';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
-import {ChatMessages, DeleteChat, RenameChat} from "../../../wailsjs/go/service/Service";
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
 import styles from './index.module.scss';
-import {CompletionsUtils} from "@/utils/completions.ts"; // 添加样式导入
+import {CompletionsUtils} from "@/utils/completions.ts";
+import {
+    MessageList
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
 
 const {Content, Sider} = Layout;
 
@@ -24,7 +27,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 本地状态管理
     const [currentChatUuid, setCurrentChatUuid] = useState<string>(urlChatUuid || ''); // 空字符串表示新对话
-    const [currentMessages, setCurrentMessages] = useState<schema.Message[]>([]);
+    const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
@@ -105,7 +108,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             // 如果是已有对话，调用 RenameChat API 更新标题
             if (currentChatUuid) {
                 try {
-                    await RenameChat(currentChatUuid, newTitle);
+                    await Service.RenameChat(currentChatUuid, newTitle);
                     // 如果是已有对话，优先使用精确更新，否则刷新整个列表
                     if (updateChatTitle) {
                         updateChatTitle(currentChatUuid, newTitle);
@@ -143,9 +146,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         // 显示加载动画
         setIsLoadingMessages(true);
         try {
-            const response: view_models.MessageList = await ChatMessages(chatUuid, 0, 50);
-            console.log("response.messages:", response.messages);
-            setCurrentMessages(response.messages);
+            const response: MessageList | null = await Service.ChatMessages(chatUuid, 0, 50);
+            console.log("response.messages:", response?.messages);
+            setCurrentMessages(response?.messages!);
         } catch (error) {
             // todo 显示”加载历史消息错误“
             console.error('获取聊天消息失败:', error);
@@ -210,13 +213,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 setShowLoadingMessage(true); // 显示loading消息
 
                 // 创建用户消息
-                const userMessage = new schema.Message();
-                userMessage.role = "user";
+                const userMessage = new Message();
+                userMessage.role = RoleType.User;
                 userMessage.content = messageContent.trim();
 
                 // 创建AI消息占位符
-                const assistantMessage = new schema.Message();
-                assistantMessage.role = "assistant";
+                const assistantMessage = new Message();
+                assistantMessage.role = RoleType.Assistant;
                 assistantMessage.content = "";
                 assistantMessage.reasoning_content = "";
 
@@ -234,7 +237,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 let accumulatedContent = "";
                 let accumulatedReasoningContent = "";
 
-                await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: schema.Message) => {
+                await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: Message) => {
                     if (message) {
                         console.log("message callback:", message)
                         // 隐藏loading消息
@@ -314,7 +317,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const handleDeleteChat = useCallback(
         async (chatUuid: string) => {
             try {
-                await DeleteChat(chatUuid);
+                await Service.DeleteChat(chatUuid);
                 // 如果删除的是当前聊天，导航到新聊天页面
                 if (chatUuid === currentChatUuid) {
                     handleNewChat();

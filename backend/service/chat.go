@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -15,7 +16,7 @@ import (
 
 // ChatList 聊天列表
 func (s *Service) ChatList(offset, limit int, keyword *string, isCollection bool) (*view_models.ChatList, error) {
-	chats, total, err := s.storage.GetChats(s.ctx, offset, limit, keyword, isCollection)
+	chats, total, err := s.storage.GetChats(context.Background(), offset, limit, keyword, isCollection)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -28,7 +29,7 @@ func (s *Service) ChatList(offset, limit int, keyword *string, isCollection bool
 
 // ChatMessages 聊天消息
 func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models.MessageList, error) {
-	dataMessages, total, err := s.storage.GetMessage(s.ctx, chatUuid, offset, limit)
+	dataMessages, total, err := s.storage.GetMessage(context.Background(), chatUuid, offset, limit)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -51,7 +52,7 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
 
 	// 获取模型信息
-	providerModel, err := s.storage.GetProviderModel(s.ctx, model)
+	providerModel, err := s.storage.GetProviderModel(context.Background(), model)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -63,14 +64,14 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	if chatUuid == "" {
 		chatUuid = uuid.New().String()
 		// 创建一个聊天
-		err = s.storage.CreateChat(s.ctx, chatUuid, message.Content, providerModel.ModelId)
+		err = s.storage.CreateChat(context.Background(), chatUuid, message.Content, providerModel.ModelId)
 		if err != nil {
 			return nil, ierror.NewError(err)
 		}
 	}
 
 	// 查找历史消息
-	historyMessageData, _, err := s.storage.GetMessage(s.ctx, chatUuid, 0, 10)
+	historyMessageData, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 10)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -83,7 +84,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}
 
 	// 创建用户消息
-	err = s.storage.CreateMessage(s.ctx, chatUuid, data_models.Message{
+	err = s.storage.CreateMessage(context.Background(), chatUuid, data_models.Message{
 		Uuid:     uuid.New().String(),
 		ChatUuid: chatUuid,
 		Message:  &message,
@@ -93,7 +94,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}
 
 	provider := llm.NewLlmProvider(providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
-	stream, err := provider.Completions(s.ctx, append(historyMessages, message))
+	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -129,17 +130,17 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 			select {
 			case <-doneChan:
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
+				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
 				return
 			case msg, ok := <-msgChan:
 				if !ok || msg == nil {
 					dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-					runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
+					runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
 					return
 				}
 				dataModelMsg.Message = msg
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
-				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
+				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
 				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
 					return
 				}
@@ -148,7 +149,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 					continue
 				}
 				s.fillCompletionsMsg(dataModelMsg, err.Error())
-				runtime.EventsEmit(s.ctx, messageUuid, dataModelMsg.Message)
+				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
 				return
 			}
 		}
@@ -162,7 +163,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 
 // DeleteChat 删除聊天
 func (s *Service) DeleteChat(chatUuid string) error {
-	err := s.storage.DeleteChat(s.ctx, chatUuid)
+	err := s.storage.DeleteChat(context.Background(), chatUuid)
 	if err != nil {
 		return ierror.NewError(err)
 	}
@@ -171,7 +172,7 @@ func (s *Service) DeleteChat(chatUuid string) error {
 
 // RenameChat 重命名聊天
 func (s *Service) RenameChat(chatUuid, title string) error {
-	err := s.storage.RenameChat(s.ctx, chatUuid, title)
+	err := s.storage.RenameChat(context.Background(), chatUuid, title)
 	if err != nil {
 		return ierror.NewError(err)
 	}
@@ -187,7 +188,7 @@ func (s *Service) fillCompletionsMsg(dataMsg data_models.Message, finishReason s
 			},
 		}
 	}
-	err := s.storage.SaveOrUpdateDeltaMessage(s.ctx, dataMsg)
+	err := s.storage.SaveOrUpdateDeltaMessage(context.Background(), dataMsg)
 	if err != nil {
 		logger.Errorf("save or update delta message failed: %v", err)
 	}

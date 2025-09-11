@@ -3,24 +3,28 @@ package service
 import (
 	"context"
 
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 )
 
 type Service struct {
-	ctx     context.Context
 	storage *storage.Storage
+	app     *application.App
 }
 
 func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) Startup(ctx context.Context) error {
-	s.ctx = ctx
-	storage, err := storage.NewStorage()
+func (s *Service) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
+
+	istorage, err := storage.NewStorage()
 	if err != nil {
 		return err
 	}
-	s.storage = storage
+
+	s.storage = istorage
+	s.app = application.Get()
+
 	return nil
 }

@@ -12,18 +12,20 @@ import {
     StarOutlined,
 } from '@ant-design/icons';
 import styles from './chats_lists.module.scss';
-import {view_models} from "../../../../wailsjs/go/models.ts";
-import {ChatList, RenameChat} from "../../../../wailsjs/go/service/Service";
-import Chat = view_models.Chat;
+import {
+    Chat,
+    ChatList
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 
 const {Text} = Typography;
 const {Search} = Input;
 
 interface GroupedChats {
-    today: view_models.Chat[];
-    yesterday: view_models.Chat[];
-    pastWeek: view_models.Chat[];
-    older: view_models.Chat[];
+    today: Chat[];
+    yesterday: Chat[];
+    pastWeek: Chat[];
+    older: Chat[];
 }
 
 interface SidebarChatsProps {
@@ -45,7 +47,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        onDeleteChat,
                                                        activeTab = 'history', // 默认为历史对话
                                                    }) => {
-    const [chats, setChats] = useState<view_models.Chat[]>([]);
+    const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -140,10 +142,10 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 const currentOffset = isLoadMore ? chatsCountRef.current : 0;
                 // 根据activeTab决定是否为收藏列表
                 const isFavorites = activeTab === 'favorites';
-                const response: view_models.ChatList = await ChatList(currentOffset, 50, keyword || null, isFavorites);
+                const response: ChatList|null = await Service.ChatList(currentOffset, 50, keyword || null, isFavorites);
                 console.log("ChatList response:", response)
-                if (response.lists) {
-                    const newChats: view_models.Chat[] = response.lists;
+                if (response?.lists) {
+                    const newChats: Chat[] = response.lists;
                     const total: number = response.total || 0;
                     let currentTotal = 0;
                     if (isLoadMore) {
@@ -184,7 +186,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     const hasMoreData = currentTotal < total;
                     setHasMore(hasMoreData);
                 }
-                if (response.lists == null || response.lists.length == 0) {
+                if (response?.lists == null || response.lists.length == 0) {
                     setTotalCount(0);
                     setHasMore(false);
                     setChats([]);
@@ -369,7 +371,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
         try {
             // 调用 RenameChat API 保存标题
-            await RenameChat(editingChatUuid, editingTitle.trim());
+            await Service.RenameChat(editingChatUuid, editingTitle.trim());
 
             // 更新本地状态
             setChats(prev =>
@@ -532,7 +534,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 渲染聊天项
-    const renderChatItem = (chat: view_models.Chat) => {
+    const renderChatItem = (chat: Chat) => {
         const isEditing = editingChatUuid === chat.uuid;
 
         return (
@@ -618,7 +620,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 渲染分组
-    const renderGroup = (title: string, chats: view_models.Chat[]) => {
+    const renderGroup = (title: string, chats: Chat[]) => {
         if (chats.length === 0) return null;
 
         return (
@@ -678,8 +680,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                         {!hasMore && chats.length > 0 && (
                             <div className={styles.endContainer}>
                                 <Text type="secondary" className={styles.endText}>
-                                    {activeTab === 'favorites' 
-                                        ? `已加载全部收藏对话 (${totalCount} 条)` 
+                                    {activeTab === 'favorites'
+                                        ? `已加载全部收藏对话 (${totalCount} 条)`
                                         : `已加载全部聊天记录 (${totalCount} 条)`}
                                 </Text>
                             </div>
@@ -688,8 +690,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 ) : (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={searchQuery 
-                            ? (activeTab === 'favorites' ? '未找到匹配的收藏对话' : '未找到匹配的对话') 
+                        description={searchQuery
+                            ? (activeTab === 'favorites' ? '未找到匹配的收藏对话' : '未找到匹配的对话')
                             : (activeTab === 'favorites' ? '暂无收藏对话' : '暂无对话记录')}
                     >
                         {activeTab === 'favorites' && (

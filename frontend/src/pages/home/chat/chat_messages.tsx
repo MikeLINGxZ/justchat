@@ -3,14 +3,14 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
-import { schema } from "../../../../wailsjs/go/models"; // 修复导入路径
 import MessageAction from "@/components/MessageAction";
 import ReasoningContent from "@/components/ReasoningContent";
 import styles from "@/pages/home/chat/chat_messages.module.scss";
+import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 
 interface ChatMessagesProps {
     // 所有消息
-    messages?: schema.Message[]; // 修改为 schema.Message[]
+    messages?: Message[]; // 修改为 Message[]
     // 是否加载中
     isLoading?: boolean;
     // 是否显示loading消息
@@ -246,7 +246,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     }, [handleScroll, handleUserScrollStart]);
 
     // 优化的自动滚动逻辑 - 减少不必要的触发
-    const lastMessageRef = useRef<schema.Message | null>(null); // 修改为 schema.Message
+    const lastMessageRef = useRef<Message | null>(null); // 修改为 Message
     const lastMessageCountRef = useRef<number>(0);
     
     useEffect(() => {
@@ -337,7 +337,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     };
 
     // 渲染消息操作按钮
-    const renderMessageActions = (message: schema.Message, messageIndex: number) => { // 修改为 schema.Message
+    const renderMessageActions = (message: Message, messageIndex: number) => { // 修改为 Message
         const isUser = message.role === 'user';
         
         // 判断是否为最后一条AI消息（只有最后一条AI消息才能重新生成）
@@ -358,7 +358,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     };
 
     // 渲染消息内容
-    const renderMessageContent = useCallback((message: schema.Message) => { // 修改为 schema.Message
+    const renderMessageContent = useCallback((message: Message) => { // 修改为 Message
         const isUser = message.role === 'user';
         
         // 用户消息直接显示文本，AI消息使用Markdown渲染
@@ -451,12 +451,12 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     }, []);
 
     // 检测是否为错误消息
-    const isErrorMessage = useCallback((message: schema.Message) => { // 修改为 schema.Message
+    const isErrorMessage = useCallback((message: Message) => { // 修改为 Message
         return message.role === 'assistant' && message.content.includes('错误');
     }, []);
 
     // 渲染单条消息
-    const renderMessage = useCallback((message: schema.Message, index: number) => { // 修改为 schema.Message
+    const renderMessage = useCallback((message: Message, index: number) => { // 修改为 Message
         const isUser = message.role === 'user';
         const isErrorMsg = isErrorMessage(message);
         

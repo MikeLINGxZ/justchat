@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GetModels } from '../../wailsjs/go/service/Service';
-import { data_models } from '../../wailsjs/go/models';
+import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts';
+import { Model } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/index.ts';
 
 // 定义模型选项接口
 export interface ModelOption {
@@ -11,7 +11,7 @@ export interface ModelOption {
 }
 
 // 将后端模型数据转换为前端使用的格式
-const convertBackendModel = (backendModel: data_models.Model): ModelOption => {
+const convertBackendModel = (backendModel: Model): ModelOption => {
   return {
     id: backendModel.model,
     name: backendModel.alias || backendModel.model,
@@ -109,7 +109,7 @@ export const useModels = (params: UseModelsParams = {}): UseModelsReturn => {
     
     try {
       // 调用 Wails 后端服务获取模型列表
-      const backendModels = await GetModels();
+      const backendModels = await Service.GetModels();
       
       // 转换后端数据格式为前端使用的格式
       const convertedModels = backendModels.map(convertBackendModel);

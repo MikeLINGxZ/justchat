@@ -1,10 +1,10 @@
 import React from "react";
-import { schema } from "../../../wailsjs/go/models"; // 修复导入路径
+import { Message } from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import styles from "./index.module.scss";
 
 interface MessageActionProps {
     // 消息对象
-    message: schema.Message; // 修改为 schema.Message
+    message: Message; // 修改为 schema.Message
     // 复制消息事件
     onCopyMessage?: (content: string) => void;
     // 删除消息事件

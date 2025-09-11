@@ -1,10 +1,10 @@
-import { schema } from "../../../../wailsjs/go/models"; // 修复导入路径
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
 import ChatInput from "@/pages/home/chat/chat_input";
 import styles from "@/pages/home/chat/index.module.scss";
 import ChatMessages, {type ChatMessagesRef} from "@/pages/home/chat/chat_messages.tsx";
 import ChatTitle from "@/pages/home/chat/chat_title.tsx";
+import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 
 interface ChatProps {
     // 聊天标题
@@ -12,7 +12,7 @@ interface ChatProps {
     // 聊天UUID
     chatUuid?: string;
     // 所有消息
-    currentMessages: schema.Message[]; // 修改为 schema.Message[]
+    currentMessages: Message[]; // 修改为 Message[]
     // 是否加载中
     isLoading: boolean;
     // 是否显示loading消息

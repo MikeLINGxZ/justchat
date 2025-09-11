@@ -1,13 +1,15 @@
 package service
 
 import (
+	"context"
+
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
 
 // GetProviders 获取所有供应商
 func (s *Service) GetProviders() ([]view_models.Provider, error) {
-	providers, err := s.storage.GetProviders(s.ctx)
+	providers, err := s.storage.GetProviders(context.Background())
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}

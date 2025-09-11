@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
 	"embed"
-	"fmt"
-	"os"
+	_ "embed"
+	"log"
+	"time"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service"
 )
 
@@ -17,36 +14,46 @@ import (
 var assets embed.FS
 
 func main() {
-
-	app := service.NewService()
-
-	err := wails.Run(&options.App{
-		Title:     "lemon_tea_desktop",
-		Width:     1024,
-		Height:    768,
-		MinWidth:  350,
-		MinHeight: 550,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
+	app := application.New(application.Options{
+		Name:        "lemon_tea_desktop",
+		Description: "A ai agent client",
+		Services: []application.Service{
+			application.NewService(&GreetService{}),
+			application.NewService(service.NewService()),
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup: func(ctx context.Context) {
-			err := app.Startup(ctx)
-			if err != nil {
-				_, _ = runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
-					Type:    runtime.ErrorDialog,
-					Title:   "程序错误",
-					Message: fmt.Sprintf("%v", err.Error()),
-				})
-				os.Exit(-1)
-			}
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
 		},
-		Bind: []interface{}{
-			app,
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
 
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title: "Home",
+		Mac: application.MacWindow{
+			InvisibleTitleBarHeight: 50,
+			Backdrop:                application.MacBackdropTranslucent,
+			TitleBar:                application.MacTitleBarHiddenInset,
+		},
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		URL:              "/home",
+		Width:            1024,
+		Height:           768,
+		MinWidth:         350,
+		MinHeight:        550,
+	})
+
+	go func() {
+		for {
+			now := time.Now().Format(time.RFC1123)
+			app.Event.Emit("time", now)
+			time.Sleep(time.Second)
+		}
+	}()
+
+	err := app.Run()
 	if err != nil {
-		println("Error:", err.Error())
+		log.Fatal(err)
 	}
 }

@@ -1,12 +1,13 @@
-import {schema, view_models} from "../../wailsjs/go/models.ts";
-import {Completions} from "../../wailsjs/go/service/Service";
-import {EventsOff, EventsOn} from "../../wailsjs/runtime";
+import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts"
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
+import {Completions} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+import { Events } from '@wailsio/runtime';
 
 export async function CompletionsUtils(
     chatUuid: string,
     selectedModel: string,
-    userMessage: schema.Message,
-    onMessage: (message: schema.Message) => void,
+    userMessage: Message,
+    onMessage: (message: Message) => void,
     onError: (error: string) => void,
     onComplete: (chatUuid: string) => void,
     abortController?: AbortController
@@ -30,10 +31,11 @@ export async function CompletionsUtils(
         }
 
         // 调用 Completions API
-        const resp: view_models.Completions = await Completions(chatUuid, selectedModel, userMessage);
+        const resp: Completions | null = await Service.Completions(chatUuid, selectedModel, userMessage);
 
         // 设置事件监听器
-        cancel = EventsOn(resp.message_uuid, (responseMessage?: schema.Message) => {
+        cancel = Events.On(resp?.message_uuid!, (event) => {
+            const responseMessage: Message = event.data;
             try {
                 // 第一次接收到内容时标记
                 if (!hasReceivedFirstResponse && responseMessage) {
@@ -42,24 +44,24 @@ export async function CompletionsUtils(
 
                 // 处理接收到的消息
                 if (responseMessage) {
-                    console.log("[CompletionsUtils] responseMessage:",responseMessage)
+                    console.log("[CompletionsUtils] responseMessage:", responseMessage)
                     onMessage(responseMessage);
                 }
 
                 // 检查是否完成
-                if (responseMessage?.response_meta?.finish_reason && 
+                if (responseMessage?.response_meta?.finish_reason &&
                     responseMessage.response_meta.finish_reason !== "") {
                     isCompleted = true;
                     console.log("[CompletionsUtils] 对话完成，清理资源");
-                    
+
                     // 清理事件监听器
                     if (cancel) {
                         cancel();
                         cancel = null;
                     }
-                    EventsOff(resp.message_uuid);
-                    
-                    onComplete(resp.chat_uuid);
+                    Events.Off(resp?.message_uuid!);
+
+                    onComplete(resp?.chat_uuid!);
                 }
             } catch (error) {
                 console.error('处理响应消息时出错:', error);
@@ -84,16 +86,16 @@ export async function CompletionsUtils(
     } catch (error) {
         console.error('Completions API 调用失败:', error);
         onError(`API 调用失败: ${error instanceof Error ? error.message : String(error)}`);
-        
+
         // 清理资源
         if (cancel) {
             cancel();
             cancel = null;
         }
-        
+
         // 标记为已完成，避免后续处理
         isCompleted = true;
-        
+
         throw error;
     }
 }
