@@ -2,6 +2,7 @@ import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts"
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
 import {Completions} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 import { Events } from '@wailsio/runtime';
+import {GenEventsKey} from "@/utils/events.ts";
 
 export async function CompletionsUtils(
     chatUuid: string,
@@ -34,8 +35,8 @@ export async function CompletionsUtils(
         const resp: Completions | null = await Service.Completions(chatUuid, selectedModel, userMessage);
 
         // 设置事件监听器
-        cancel = Events.On(resp?.message_uuid!, (event) => {
-            const responseMessage: Message = event.data;
+        cancel = Events.On(GenEventsKey(resp?.message_uuid!), (event) => {
+            const responseMessage: Message = event.data[0];
             try {
                 // 第一次接收到内容时标记
                 if (!hasReceivedFirstResponse && responseMessage) {

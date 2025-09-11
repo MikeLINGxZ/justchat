@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
-import {Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts"; // 修复导入路径
+import {Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModels} from '@/hooks/useModels';
 import './index.module.scss';
@@ -246,6 +246,10 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                         // 累积增量数据
                         accumulatedContent += message.content || '';
                         accumulatedReasoningContent += message.reasoning_content || '';
+                        console.log("message.content:",message.content)
+                        console.log("message.reasoning_content:",message.reasoning_content)
+                        console.log("accumulatedContent:",accumulatedContent)
+                        console.log("accumulatedReasoningContent:",accumulatedReasoningContent)
 
                         // 使用函数式更新确保获取最新状态，避免重复更新
                         setCurrentMessages(prev => {

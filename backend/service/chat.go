@@ -6,10 +6,10 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/llm"
 )
@@ -121,6 +121,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		}
 	}()
 	messageUuid := uuid.New().String()
+	eventsKey := utils.GenEventsKey(messageUuid)
 	go func() {
 		dataModelMsg := data_models.Message{
 			Uuid:     messageUuid,
@@ -130,17 +131,17 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 			select {
 			case <-doneChan:
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
+				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 				return
 			case msg, ok := <-msgChan:
 				if !ok || msg == nil {
 					dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
-					runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
+					s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 					return
 				}
 				dataModelMsg.Message = msg
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
-				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
+				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
 					return
 				}
@@ -149,7 +150,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 					continue
 				}
 				s.fillCompletionsMsg(dataModelMsg, err.Error())
-				runtime.EventsEmit(context.Background(), messageUuid, dataModelMsg.Message)
+				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 				return
 			}
 		}

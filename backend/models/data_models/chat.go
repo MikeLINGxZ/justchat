@@ -23,7 +23,7 @@ type Message struct {
 	SearchableContent          string          `gorm:"type:text" json:"search_content"`
 	SearchableReasoningContent string          `gorm:"type:text" json:"search_reasoning_content"`
 	MessageJson                string          `gorm:"type:text" json:"message_json"`
-	Message                    *schema.Message `gorm:"-" json:"-"`
+	Message                    *schema.Message `gorm:"-" json:"message"`
 }
 
 func (m *Message) BeforeCreate(tx *gorm.DB) (err error) {

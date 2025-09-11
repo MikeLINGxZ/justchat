@@ -18,7 +18,6 @@ func main() {
 		Name:        "lemon_tea_desktop",
 		Description: "A ai agent client",
 		Services: []application.Service{
-			application.NewService(&GreetService{}),
 			application.NewService(service.NewService()),
 		},
 		Assets: application.AssetOptions{
@@ -34,7 +33,7 @@ func main() {
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarHiddenInset,
+			TitleBar:                application.MacTitleBarDefault,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/home",

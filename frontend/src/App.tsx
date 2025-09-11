@@ -7,9 +7,6 @@ import EnvTest from '@/pages/EnvTest';
 import { initializeStores } from '@/stores';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 
-// 懒加载页面组件
-const Profile = React.lazy(() => import('@/pages/Profile'));
-const Settings = React.lazy(() => import('@/pages/Settings'));
 const Chat = React.lazy(() => import('@/pages/home'));
 const NotFound = React.lazy(() => import('@/pages/NotFound'));
 
@@ -72,8 +69,6 @@ function App() {
           path="/app"
           element={<Layout />}
         >
-          <Route path="profile" element={<Profile />} />
-          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* 404页面 */}

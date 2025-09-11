@@ -41,6 +41,7 @@ func NewStorage() (*Storage, error) {
 }
 
 func getDbPath() (string, error) {
+	return "test.db", nil
 	if os.Getenv("LEMONTEA_DB_PATH") != "" {
 		return os.Getenv("LEMONTEA_DB_PATH"), nil
 	}

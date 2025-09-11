@@ -7,7 +7,6 @@ require (
 	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250905035413-86dbae6351d5
 	github.com/fatih/color v1.18.0
 	github.com/google/uuid v1.6.0
-	github.com/wailsapp/wails/v2 v2.10.2
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.27
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.5
@@ -52,7 +51,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect
-	github.com/leaanthony/slicer v1.6.0 // indirect
 	github.com/leaanthony/u v1.1.1 // indirect
 	github.com/lmittmann/tint v1.0.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
