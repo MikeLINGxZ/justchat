@@ -180,6 +180,16 @@ func (s *Service) RenameChat(chatUuid, title string) error {
 	return nil
 }
 
+// CollectionChat 收藏/取消收藏对话
+func (s *Service) CollectionChat(chatUuid string, isCollection bool) error {
+	err := s.storage.CollectionChat(context.Background(), chatUuid, isCollection)
+	if err != nil {
+		return ierror.NewError(err)
+	}
+
+	return nil
+}
+
 func (s *Service) fillCompletionsMsg(dataMsg data_models.Message, finishReason string) data_models.Message {
 	if finishReason != "" {
 		dataMsg.Message = &schema.Message{
