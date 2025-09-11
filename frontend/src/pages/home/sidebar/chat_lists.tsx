@@ -9,6 +9,7 @@ import {
     ExclamationCircleOutlined,
     MoreOutlined,
     SearchOutlined,
+    StarFilled,
     StarOutlined,
 } from '@ant-design/icons';
 import styles from './chats_lists.module.scss';
@@ -142,7 +143,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 const currentOffset = isLoadMore ? chatsCountRef.current : 0;
                 // 根据activeTab决定是否为收藏列表
                 const isFavorites = activeTab === 'favorites';
-                const response: ChatList|null = await Service.ChatList(currentOffset, 50, keyword || null, isFavorites);
+                const response: ChatList | null = await Service.ChatList(currentOffset, 50, keyword || null, isFavorites);
                 console.log("ChatList response:", response)
                 if (response?.lists) {
                     const newChats: Chat[] = response.lists;
@@ -338,11 +339,21 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 处理收藏聊天
-    const handleFavoriteChat = async (_chatUuid: string, e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleFavoriteChat = async (chat: Chat, e: React.MouseEvent) => {
         try {
-            // TODO: 实现收藏功能，目前先显示提示
-            message.info('收藏功能开发中...');
+            Service.CollectionChat(chat.uuid, !chat.is_collection).then(() => {
+
+                setChats(prev =>
+                    prev.map(item =>
+                        item.uuid === chat.uuid
+                            ? new Chat({...item, is_collection: !chat.is_collection})
+                            : item
+                    )
+                );
+            }).catch(error => {
+                console.error('Failed to favorite chat:', error);
+                message.error('收藏失败');
+            });
         } catch (error) {
             console.error('Failed to favorite chat:', error);
             message.error('收藏失败');
@@ -455,33 +466,30 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 获取菜单项配置
-    const getMenuItems = (
-        chatUuid: string,
-        chatTitle: string
-    ): MenuProps['items'] => {
+    const getMenuItems = (chat: Chat): MenuProps['items'] => {
         // 检查是否允许重命名（根据项目规范）
-        const canRename = Boolean(chatUuid && chatUuid.trim() !== '');
+        const canRename = Boolean(chat.uuid && chat.uuid.trim() !== '');
 
         return [
             {
                 key: 'favorite',
-                icon: <StarOutlined/>,
-                label: '收藏',
-                onClick: () => handleFavoriteChat(chatUuid, {} as React.MouseEvent),
+                icon: chat.is_collection ? <StarFilled/> : <StarOutlined/>,
+                label: chat.is_collection ? '取消收藏' : '收藏',
+                onClick: () => handleFavoriteChat(chat, {} as React.MouseEvent),
             },
             {
                 key: 'rename',
                 icon: <EditOutlined/>,
                 label: '重命名',
                 disabled: !canRename,
-                onClick: () => startInlineEdit(chatUuid, chatTitle),
+                onClick: () => startInlineEdit(chat.uuid, chatTitle),
             },
             {
                 key: 'delete',
                 icon: <DeleteOutlined/>,
                 label: '删除',
                 danger: true,
-                onClick: () => showDeleteConfirm(chatUuid, chatTitle),
+                onClick: () => showDeleteConfirm(chat.uuid, chatTitle),
             },
         ];
     };
@@ -597,7 +605,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                     </Text>
                                     <Dropdown
                                         menu={{
-                                            items: getMenuItems(chat.uuid!, chat.title || '新对话'),
+                                            items: getMenuItems(chat),
                                         }}
                                         trigger={['click']}
                                         placement="bottomRight"

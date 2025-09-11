@@ -31,6 +31,13 @@ export function ChatMessages(chatUuid: string, offset: number, limit: number): $
 }
 
 /**
+ * CollectionChat 收藏/取消收藏对话
+ */
+export function CollectionChat(chatUuid: string, isCollection: boolean): $CancellablePromise<void> {
+    return $Call.ByID(1162381388, chatUuid, isCollection);
+}
+
+/**
  * Completions 聊天
  */
 export function Completions(chatUuid: string, model: string, message: schema$0.Message): $CancellablePromise<view_models$0.Completions | null> {
