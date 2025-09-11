@@ -341,19 +341,19 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     // 处理收藏聊天
     const handleFavoriteChat = async (chat: Chat, e: React.MouseEvent): Promise<void> => {
         try {
-            Service.CollectionChat(chat.uuid, !chat.is_collection).then(() => {
+            await Service.CollectionChat(chat.uuid, !chat.is_collection);
 
-                setChats(prev =>
-                    prev.map(item =>
-                        item.uuid === chat.uuid
-                            ? new Chat({...item, is_collection: !chat.is_collection})
-                            : item
-                    )
-                );
-            }).catch(error => {
-                console.error('Failed to favorite chat:', error);
-                message.error('收藏失败');
-            });
+            // 更新本地状态
+            setChats(prev =>
+                prev.map(item =>
+                    item.uuid === chat.uuid
+                        ? new Chat({...item, is_collection: !chat.is_collection})
+                        : item
+                )
+            );
+
+            // 刷新对话列表以确保UI与后端状态一致
+            loadChats();
         } catch (error) {
             console.error('Failed to favorite chat:', error);
             message.error('收藏失败');

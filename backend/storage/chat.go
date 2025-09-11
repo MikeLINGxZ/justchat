@@ -98,7 +98,11 @@ func (s *Storage) RenameChat(ctx context.Context, chatUuid, title string) error 
 
 // CollectionChat ...
 func (s *Storage) CollectionChat(ctx context.Context, chatUuid string, isCollection bool) error {
-	err := s.sqliteDB.Model(&data_models.Chat{}).Where("uuid = ?", chatUuid).Update("is_collection", isCollection).Error
+	// 使用 UpdateColumn 来避免自动更新 UpdatedAt
+	err := s.sqliteDB.Model(&data_models.Chat{}).
+		Where("uuid = ?", chatUuid).
+		UpdateColumn("is_collection", isCollection).Error
+
 	if err != nil {
 		return err
 	}
