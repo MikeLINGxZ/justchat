@@ -339,7 +339,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 处理收藏聊天
-    const handleFavoriteChat = async (chat:Chat,e: React.MouseEvent):Promise<void> => {
+    const handleFavoriteChat = async (chat: Chat, e: React.MouseEvent): Promise<void> => {
         try {
             Service.CollectionChat(chat.uuid, !chat.is_collection).then(() => {
 
