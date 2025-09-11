@@ -10,9 +10,6 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as schema$0 from "../../../../../../../github.com/cloudwego/eino/schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as data_models$0 from "../data_models/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -195,11 +192,139 @@ export class MessageList {
     }
 }
 
-export const Model = data_models$0.Model;
-export type Model = data_models$0.Model;
+export class Model {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
 
-export const Provider = data_models$0.Provider;
-export type Provider = data_models$0.Provider;
+    /**
+     * 提供方id
+     */
+    "provider_id": number;
+    "model": string;
+    "owned_by": string;
+    "object": string;
+    "enable": boolean;
+    "alias": string | null;
+
+    /** Creates a new Model instance. */
+    constructor($$source: Partial<Model> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("provider_id" in $$source)) {
+            this["provider_id"] = 0;
+        }
+        if (!("model" in $$source)) {
+            this["model"] = "";
+        }
+        if (!("owned_by" in $$source)) {
+            this["owned_by"] = "";
+        }
+        if (!("object" in $$source)) {
+            this["object"] = "";
+        }
+        if (!("enable" in $$source)) {
+            this["enable"] = false;
+        }
+        if (!("alias" in $$source)) {
+            this["alias"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Model instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Model {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Model($$parsedSource as Partial<Model>);
+    }
+}
+
+export class Provider {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+
+    /**
+     * 提供方名称
+     */
+    "provider_name": string;
+
+    /**
+     * 基础url
+     */
+    "base_url": string;
+
+    /**
+     * api key
+     */
+    "api_key": string;
+
+    /**
+     * 启用
+     */
+    "enable": boolean;
+
+    /**
+     * 别名
+     */
+    "alias": string | null;
+
+    /** Creates a new Provider instance. */
+    constructor($$source: Partial<Provider> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("provider_name" in $$source)) {
+            this["provider_name"] = "";
+        }
+        if (!("base_url" in $$source)) {
+            this["base_url"] = "";
+        }
+        if (!("api_key" in $$source)) {
+            this["api_key"] = "";
+        }
+        if (!("enable" in $$source)) {
+            this["enable"] = false;
+        }
+        if (!("alias" in $$source)) {
+            this["alias"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Provider instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Provider {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Provider($$parsedSource as Partial<Provider>);
+    }
+}
 
 // Private type creation functions
 const $$createType0 = MatchMessage.createFrom;

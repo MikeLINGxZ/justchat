@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts';
-import { Model } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/index.ts';
+import { Model } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts';
 
 // 定义模型选项接口
 export interface ModelOption {

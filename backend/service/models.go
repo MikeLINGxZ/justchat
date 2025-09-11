@@ -15,7 +15,18 @@ func (s *Service) GetModels() ([]view_models.Model, error) {
 	}
 	res := make([]view_models.Model, len(models))
 	for i, model := range models {
-		res[i] = model
+		res[i] = view_models.Model{
+			ID:         model.ID,
+			CreatedAt:  model.CreatedAt,
+			UpdatedAt:  model.UpdatedAt,
+			DeletedAt:  model.DeletedAt,
+			ProviderId: model.ProviderId,
+			Model:      model.Model,
+			OwnedBy:    model.OwnedBy,
+			Object:     model.Object,
+			Enable:     model.Enable,
+			Alias:      model.Alias,
+		}
 	}
 
 	return res, nil
