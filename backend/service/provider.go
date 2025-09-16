@@ -47,25 +47,21 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
-	providerIds2DefaultModelsVD := make(map[uint]*view_models.Model)
+	providerIds2DefaultModelIdVD := make(map[uint]*uint)
 	for providerId, model := range providerId2DefaultModel {
-		providerIds2DefaultModelsVD[providerId] = &view_models.Model{
-			Model:   model.Model,
-			OwnedBy: model.OwnedBy,
-			Object:  model.Object,
-		}
+		providerIds2DefaultModelIdVD[providerId] = &model.ID
 	}
 
 	res := make([]view_models.Provider, len(providers))
 	for i, provider := range providers {
 		res[i] = view_models.Provider{
-			ID:           provider.ID,
-			ApiKey:       provider.ApiKey,
-			BaseUrl:      provider.BaseUrl,
-			Enable:       provider.Enable,
-			ProviderName: provider.ProviderName,
-			Models:       providerIds2ModelsVD[provider.ID],
-			DefaultModel: providerIds2DefaultModelsVD[provider.ID],
+			ID:             provider.ID,
+			ApiKey:         provider.ApiKey,
+			BaseUrl:        provider.BaseUrl,
+			Enable:         provider.Enable,
+			ProviderName:   provider.ProviderName,
+			Models:         providerIds2ModelsVD[provider.ID],
+			DefaultModelId: providerIds2DefaultModelIdVD[provider.ID],
 		}
 	}
 	return res, nil

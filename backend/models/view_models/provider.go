@@ -15,7 +15,6 @@ type Provider struct {
 	BaseUrl        string         `json:"base_url"`      // 基础url
 	ApiKey         string         `json:"api_key"`       // api key
 	Enable         bool           `json:"enable"`        // 启用
-	DefaultModelId uint           `json:"default_model_id"`
+	DefaultModelId *uint          `json:"default_model_id"`
 	Models         []Model        `json:"models"`
-	DefaultModel   *Model         `json:"default_model"`
 }

@@ -278,9 +278,8 @@ export class Provider {
      * 启用
      */
     "enable": boolean;
-    "default_model_id": number;
+    "default_model_id": number | null;
     "models": Model[];
-    "default_model": Model | null;
 
     /** Creates a new Provider instance. */
     constructor($$source: Partial<Provider> = {}) {
@@ -309,13 +308,10 @@ export class Provider {
             this["enable"] = false;
         }
         if (!("default_model_id" in $$source)) {
-            this["default_model_id"] = 0;
+            this["default_model_id"] = null;
         }
         if (!("models" in $$source)) {
             this["models"] = [];
-        }
-        if (!("default_model" in $$source)) {
-            this["default_model"] = null;
         }
 
         Object.assign(this, $$source);
@@ -326,13 +322,9 @@ export class Provider {
      */
     static createFrom($$source: any = {}): Provider {
         const $$createField9_0 = $$createType7;
-        const $$createField10_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField9_0($$parsedSource["models"]);
-        }
-        if ("default_model" in $$parsedSource) {
-            $$parsedSource["default_model"] = $$createField10_0($$parsedSource["default_model"]);
         }
         return new Provider($$parsedSource as Partial<Provider>);
     }
@@ -347,4 +339,3 @@ const $$createType4 = schema$0.Message.createFrom;
 const $$createType5 = $Create.Array($$createType4);
 const $$createType6 = Model.createFrom;
 const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = $Create.Nullable($$createType6);

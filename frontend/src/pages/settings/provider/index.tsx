@@ -49,9 +49,8 @@ interface ProviderConfig {
   api_key: string; // 使用后端字段名
   base_url: string; // 使用后端字段名
   enable: boolean; // 使用后端字段名
-  default_model_id: number; // 默认模型ID
+  default_model_id: number | null; // 默认模型ID，允许null
   models: any[]; // 供应商模型列表
-  default_model: any | null; // 默认模型
   // 前端额外字段
   icon?: string;
   description?: string;
@@ -77,12 +76,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     const provider = providers.find(p => p.id === selectedProvider);
     if (provider) {
       // 转换字段名以适配表单
+      const defaultModelValue = provider.default_model_id && provider.default_model_id > 0 ? provider.default_model_id : undefined;
       form.setFieldsValue({
         enabled: provider.enable,
         apiKey: provider.api_key,
         baseUrl: provider.base_url,
         providerName: provider.provider_name,
-        defaultModel: provider.default_model?.id || provider.default_model_id,
+        defaultModel: defaultModelValue,
       });
     }
   }, [selectedProvider, providers, form]);
@@ -126,12 +126,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (!currentProvider) return;
       
       // 构造后端需要的Provider对象
+      const defaultModelId = values.defaultModel || 0; // 如果没有选择默认模型，传递0
       const providerData = new Provider({
         provider_name: currentProvider.provider_name,
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
-        default_model_id: values.defaultModel || currentProvider.default_model_id,
+        default_model_id: defaultModelId,
       });
       
       // 调用后端更新接口
@@ -144,7 +145,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           api_key: values.apiKey,
           base_url: values.baseUrl,
           enable: values.enabled,
-          default_model_id: values.defaultModel || p.default_model_id,
+          default_model_id: defaultModelId,
         } : p
       );
       setProviders(updatedProviders);
@@ -489,6 +490,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     placeholder="选择默认模型"
                     allowClear
                     showSearch
+                    value={form.getFieldValue('defaultModel') || undefined} // 显式处理undefined值
                     filterOption={(input, option) => {
                       const label = option?.children?.toString().toLowerCase() || '';
                       return label.includes(input.toLowerCase());
