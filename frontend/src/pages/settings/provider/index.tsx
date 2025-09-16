@@ -49,7 +49,9 @@ interface ProviderConfig {
   api_key: string; // 使用后端字段名
   base_url: string; // 使用后端字段名
   enable: boolean; // 使用后端字段名
-  alias?: string | null; // 使用后端字段名
+  default_model_id: number; // 默认模型ID
+  models: any[]; // 供应商模型列表
+  default_model: any | null; // 默认模型
   // 前端额外字段
   icon?: string;
   description?: string;
@@ -79,8 +81,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         enabled: provider.enable,
         apiKey: provider.api_key,
         baseUrl: provider.base_url,
-        alias: provider.alias,
         providerName: provider.provider_name,
+        defaultModel: provider.default_model?.id || provider.default_model_id,
       });
     }
   }, [selectedProvider, providers, form]);
@@ -129,7 +131,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
-        alias: values.alias,
+        default_model_id: values.defaultModel || currentProvider.default_model_id,
       });
       
       // 调用后端更新接口
@@ -142,7 +144,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           api_key: values.apiKey,
           base_url: values.baseUrl,
           enable: values.enabled,
-          alias: values.alias,
+          default_model_id: values.defaultModel || p.default_model_id,
         } : p
       );
       setProviders(updatedProviders);
@@ -178,7 +180,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
-        alias: values.alias,
+        default_model_id: currentProvider.default_model_id,
       });
       
       // TODO: 调用后端测试连接接口（如果有的话）
@@ -293,9 +295,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   const currentProvider = providers.find(p => p.id === selectedProvider);
-  const availableModelsForProvider = availableModels.filter(model => 
-    currentProvider ? model.id.toLowerCase().includes(currentProvider.provider_name.toLowerCase()) : false
-  );
+  // 使用供应商的模型列表，而不是过滤所有模型
+  const availableModelsForProvider = currentProvider?.models || [];
 
   return (
     <div className={`${styles.providerSettings} ${className || ''}`}>
@@ -340,7 +341,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                          <div className={styles.providerLeft}>
                              {getProviderIcon(provider)}
                              <div className={styles.providerDetails}>
-                                 <div className={styles.providerName}>{provider.alias || provider.provider_name}</div>
+                                 <div className={styles.providerName}>{provider.provider_name}</div>
                              </div>
                          </div>
                          <div className={styles.providerActions}>
@@ -356,13 +357,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                                p.id === provider.id ? { ...p, enable: checked } : p
                                            );
                                            setProviders(updatedProviders);
-                                           // 调用后端接口更新
+                                                           // 调用后端接口更新
                                            const providerData = new Provider({
                                              provider_name: provider.provider_name,
                                              base_url: provider.base_url,
                                              api_key: provider.api_key,
                                              enable: checked,
-                                             alias: provider.alias,
+                                             default_model_id: provider.default_model_id,
                                            });
                                            await Service.UpdateProvider(provider.id, providerData);
                                          } catch (error) {
@@ -413,7 +414,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 >
                   {currentProvider?.icon || <ApiOutlined />}
                 </Avatar>
-                <span>配置 {currentProvider?.alias || currentProvider?.provider_name}</span>
+                <span>配置 {currentProvider?.provider_name}</span>
                 {currentProvider?.status === 'connected' && (
                   <Badge status="success" />
                 )}
@@ -448,7 +449,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   label="供应商名称"
                   name="providerName"
                 >
-                  <Input placeholder="为供应商设置一个名称" />
+                  <Input 
+                    placeholder="为供应商设置一个名称" 
+                    disabled
+                    value={currentProvider?.provider_name}
+                  />
                 </Form.Item>
 
                 <Form.Item
@@ -478,14 +483,25 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 <Form.Item
                   label="默认模型"
                   name="defaultModel"
+                  help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
                 >
                   <Select 
                     placeholder="选择默认模型"
-                    loading={isLoadingModels}
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) => {
+                      const label = option?.children?.toString().toLowerCase() || '';
+                      return label.includes(input.toLowerCase());
+                    }}
                   >
                     {availableModelsForProvider.map(model => (
                       <Option key={model.id} value={model.id}>
-                        {model.name || model.id}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>{model.alias || model.model}</span>
+                          <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
+                            {model.model}
+                          </span>
+                        </div>
                       </Option>
                     ))}
                   </Select>
@@ -519,7 +535,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       description={
                         <div className={styles.deleteConfirm}>
                           <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                          确定要删除 <strong>{currentProvider?.alias || currentProvider?.provider_name}</strong> 吗？
+                          确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
                         </div>
                       }
                       onConfirm={handleDeleteCurrentProvider}
