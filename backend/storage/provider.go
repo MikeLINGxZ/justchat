@@ -40,7 +40,7 @@ func (s *Storage) AddProvider(ctx context.Context, provider data_models.Provider
 
 // UpdateProvider 更新供应商
 func (s *Storage) UpdateProvider(ctx context.Context, provider data_models.Provider) error {
-	return s.sqliteDB.Updates(&provider).Error
+	return s.sqliteDB.Save(&provider).Error
 }
 
 // DeleteProvider 删除供应商

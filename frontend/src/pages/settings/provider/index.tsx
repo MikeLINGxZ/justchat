@@ -355,7 +355,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                                p.id === provider.id ? { ...p, enable: checked } : p
                                            );
                                            setProviders(updatedProviders);
-                                           
                                            // 调用后端接口更新
                                            const providerData = new Provider({
                                              provider_name: provider.provider_name,

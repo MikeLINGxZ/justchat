@@ -19,6 +19,7 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 	res := make([]view_models.Provider, len(providers))
 	for i, provider := range providers {
 		res[i] = view_models.Provider{
+			ID:           provider.ID,
 			Alias:        provider.Alias,
 			ApiKey:       provider.ApiKey,
 			BaseUrl:      provider.BaseUrl,
@@ -55,7 +56,6 @@ func (s *Service) AddProvider(provider view_models.Provider) error {
 func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error {
 	// provider为空，代表更新模型信息
 	if provider == nil {
-
 		return nil
 	}
 	return s.storage.UpdateProvider(context.Background(), data_models.Provider{
