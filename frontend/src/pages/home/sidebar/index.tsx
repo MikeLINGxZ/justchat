@@ -402,7 +402,10 @@ const Index: React.FC<SidebarProps> = ({
                                     )}
                                 </div>
 
-                                <div className="menu-item" onClick={handleOpenSettings}>
+                                <div className="menu-item" onClick={()=>{
+                                    handleOpenSettings();
+                                    setIsUserMenuOpen(false);
+                                }}>
                                     <div className="menu-item-content">
                                         <SettingOutlined/>
                                         <span>设置</span>
