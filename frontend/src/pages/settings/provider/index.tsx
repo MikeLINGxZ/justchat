@@ -208,10 +208,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     if (provider.icon) {
       return (
         <Avatar 
-          size={40} 
+          size={28} 
           style={{ 
             backgroundColor: provider.enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
-            fontSize: '20px',
+            fontSize: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -223,7 +223,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     }
     return (
       <Avatar 
-        size={40} 
+        size={28} 
         icon={<ApiOutlined />} 
         style={{ 
           backgroundColor: provider.enabled ? 'var(--primary-color)' : 'var(--text-color-disabled)' 
@@ -239,14 +239,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
   return (
     <div className={`${styles.providerSettings} ${className || ''}`}>
-      <div className={styles.header}>
-        <Title level={3}>
-          <ApiOutlined /> 模型供应商设置
-        </Title>
-        <Text type="secondary">
-          配置不同的AI模型供应商，管理API密钥和连接设置
-        </Text>
-      </div>
+
 
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={8}>
@@ -282,46 +275,48 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   }`}
                   onClick={() => setSelectedProvider(provider.id)}
                 >
-                  <div className={styles.providerContent}>
-                    <div className={styles.providerLeft}>
-                      {getProviderIcon(provider)}
-                      <div className={styles.providerDetails}>
-                        <div className={styles.providerName}>{provider.name}</div>
-                      </div>
-                    </div>
-                    <div className={styles.providerActions}>
-                      <Tooltip title={provider.enabled ? '已启用' : '未启用'}>
-                        <Switch 
-                          size="small" 
-                          checked={provider.enabled} 
-                          className={styles.enableSwitch}
-                          onChange={(checked) => {
-                            const updatedProviders = providers.map(p => 
-                              p.id === provider.id ? { ...p, enabled: checked } : p
-                            );
-                            setProviders(updatedProviders);
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="删除供应商">
-                        <Popconfirm
-                          title="删除供应商"
-                          description="确定要删除这个供应商吗？"
-                          onConfirm={() => handleDeleteProvider(provider.id)}
-                          okText="确定"
-                          cancelText="取消"
-                        >
-                          <Button 
-                            type="text" 
-                            size="small" 
-                            icon={<DeleteOutlined />}
-                            className={styles.deleteBtn}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </Popconfirm>
-                      </Tooltip>
-                    </div>
-                  </div>
+                 <div className={`${styles.providerItemBox}`}>
+                     <div className={styles.providerContent}>
+                         <div className={styles.providerLeft}>
+                             {getProviderIcon(provider)}
+                             <div className={styles.providerDetails}>
+                                 <div className={styles.providerName}>{provider.name}</div>
+                             </div>
+                         </div>
+                         <div className={styles.providerActions}>
+                             <Tooltip title={provider.enabled ? '已启用' : '未启用'}>
+                                 <Switch
+                                     size="small"
+                                     checked={provider.enabled}
+                                     className={styles.enableSwitch}
+                                     onChange={(checked) => {
+                                         const updatedProviders = providers.map(p =>
+                                             p.id === provider.id ? { ...p, enabled: checked } : p
+                                         );
+                                         setProviders(updatedProviders);
+                                     }}
+                                 />
+                             </Tooltip>
+                             <Tooltip title="删除供应商">
+                                 <Popconfirm
+                                     title="删除供应商"
+                                     description="确定要删除这个供应商吗？"
+                                     onConfirm={() => handleDeleteProvider(provider.id)}
+                                     okText="确定"
+                                     cancelText="取消"
+                                 >
+                                     <Button
+                                         type="text"
+                                         size="small"
+                                         icon={<DeleteOutlined />}
+                                         className={styles.deleteBtn}
+                                         onClick={(e) => e.stopPropagation()}
+                                     />
+                                 </Popconfirm>
+                             </Tooltip>
+                         </div>
+                     </div>
+                 </div>
                 </div>
               ))}
             </div>

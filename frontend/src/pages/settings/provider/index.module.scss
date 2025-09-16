@@ -53,12 +53,21 @@
 
 .providerItems {
   .providerItem {
-    padding: var(--spacing-lg);
     cursor: pointer;
     border-bottom: 1px solid var(--border-color-light);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    
+    min-height: 56px; // 减小高度
+    justify-items: center;
+    align-items: center;
+    display: flex;
+
+    .providerItemBox{
+      width: 100%;
+      height: 100%;
+      padding: 0 10px;
+    }
+
     &::before {
       content: '';
       position: absolute;
@@ -102,40 +111,35 @@
   
   .providerContent {
     @include flex-between;
+    align-items: center; // 确保所有元素在同一水平线
+    height: 100%;
     
     .providerLeft {
       display: flex;
-      align-items: flex-start;
+      align-items: center; // 水平对齐
       gap: var(--spacing-md);
       flex: 1;
       
       .providerDetails {
-        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         
         .providerName {
-          font-size: var(--font-size-lg);
+          font-size: var(--font-size);
           font-weight: var(--font-weight-medium);
           color: var(--text-color);
-          margin-bottom: var(--spacing-xs);
-          transition: all 0.3s ease;
-        }
-        
-        .providerDescription {
-          font-size: var(--font-size-sm);
-          color: var(--text-color-secondary);
-          margin-bottom: var(--spacing-sm);
           line-height: 1.4;
-        }
-        
-        .providerStatus {
-          margin-top: var(--spacing-xs);
+          margin: 0; // 移除默认margin
+          transition: all 0.3s ease;
         }
       }
     }
     
     .providerActions {
-      @include flex-center;
-      gap: var(--spacing-sm);
+      display: flex;
+      align-items: center; // 水平对齐
+      gap: var(--spacing-md);
       
       .enableSwitch {
         &.ant-switch-checked {
@@ -147,6 +151,11 @@
         color: var(--text-color-secondary);
         border-radius: var(--border-radius);
         transition: all 0.3s ease;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         
         &:hover {
           color: var(--error-color);
@@ -287,6 +296,7 @@
       .dangerButton {
         background: linear-gradient(135deg, #ff4d4f, #ff7875);
         border-color: var(--error-color);
+        color: white;
         
         &:hover {
           box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
@@ -344,16 +354,16 @@
   
   .providerItems {
     .providerItem {
-      padding: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      min-height: 48px; // 移动端进一步减小高度
       
       .providerContent {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--spacing-md);
+        .providerLeft {
+          gap: var(--spacing-sm);
+        }
         
         .providerActions {
-          align-self: stretch;
-          justify-content: space-between;
+          gap: var(--spacing-sm);
         }
       }
     }
@@ -417,11 +427,21 @@
   
   .providerItems {
     .providerItem {
-      padding: var(--spacing-sm);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      min-height: 44px; // 小屏幕更紧凑
       
       .providerContent {
         .providerLeft {
-          gap: var(--spacing-sm);
+          gap: var(--spacing-xs);
+        }
+        
+        .providerActions {
+          gap: var(--spacing-xs);
+          
+          .deleteBtn {
+            width: 24px;
+            height: 24px;
+          }
         }
       }
     }
