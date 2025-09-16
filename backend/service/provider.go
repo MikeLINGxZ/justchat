@@ -97,15 +97,37 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 	if provider == nil {
 		return nil
 	}
-	return s.storage.UpdateProvider(context.Background(), data_models.Provider{
-		OrmModel: data_models.OrmModel{
-			ID: id,
-		},
-		ProviderName: provider.ProviderName,
-		BaseUrl:      provider.BaseUrl,
-		ApiKey:       provider.ApiKey,
-		Enable:       provider.Enable,
+
+	ctx := context.Background()
+	provider.ID = id
+	err := s.storage.NewFnTransaction(ctx, func(ctx context.Context, tx *storage.Storage) error {
+		err := tx.UpdateProvider(ctx, data_models.Provider{
+			OrmModel: data_models.OrmModel{
+				ID: id,
+			},
+			ProviderName: provider.ProviderName,
+			BaseUrl:      provider.BaseUrl,
+			ApiKey:       provider.ApiKey,
+			Enable:       provider.Enable,
+		})
+		if err != nil {
+			return err
+		}
+
+		if provider.DefaultModelId != nil {
+			err = tx.UpdateProviderDefaultModel(ctx, provider.ID, *provider.DefaultModelId)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
+	if err != nil {
+		return ierror.NewError(err)
+	}
+
+	return nil
 }
 
 // DeleteProvider 删除供应商

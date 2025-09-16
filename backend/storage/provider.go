@@ -47,3 +47,27 @@ func (s *Storage) UpdateProvider(ctx context.Context, provider data_models.Provi
 func (s *Storage) DeleteProvider(ctx context.Context, id uint) error {
 	return s.sqliteDB.Where("id = ?", id).Delete(&data_models.Provider{}).Error
 }
+
+// UpdateProviderDefaultModel 更新供应商默认模型
+func (s *Storage) UpdateProviderDefaultModel(ctx context.Context, providerId uint, modelId uint) error {
+	var count int64
+	err := s.sqliteDB.Model(&data_models.ProviderDefaultModel{}).
+		Where("provider_id = ?", providerId).
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		// 更新
+		return s.sqliteDB.Model(&data_models.ProviderDefaultModel{}).
+			Where("provider_id = ?", providerId).
+			Update("model_id", modelId).Error
+	} else {
+		// 插入
+		return s.sqliteDB.Create(&data_models.ProviderDefaultModel{
+			ProviderID: providerId,
+			ModelId:    modelId,
+		}).Error
+	}
+}
