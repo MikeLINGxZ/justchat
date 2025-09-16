@@ -204,17 +204,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     handleDeleteProvider(selectedProvider);
   };
 
-  const getStatusBadge = (provider: ProviderConfig) => {
-    const statusConfig = {
-      connected: { status: 'success' as const, text: '已连接' },
-      disconnected: { status: 'default' as const, text: '未连接' },
-      testing: { status: 'processing' as const, text: '测试中' },
-    };
-    
-    const config = statusConfig[provider.status || 'disconnected'];
-    return <Badge status={config.status} text={config.text} />;
-  };
-
   const getProviderIcon = (provider: ProviderConfig) => {
     if (provider.icon) {
       return (
@@ -298,12 +287,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       {getProviderIcon(provider)}
                       <div className={styles.providerDetails}>
                         <div className={styles.providerName}>{provider.name}</div>
-                        <div className={styles.providerDescription}>
-                          {provider.description}
-                        </div>
-                        <div className={styles.providerStatus}>
-                          {getStatusBadge(provider)}
-                        </div>
                       </div>
                     </div>
                     <div className={styles.providerActions}>
@@ -362,19 +345,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               </Space>
             }
             className={styles.configCard}
-            extra={
-              currentProvider?.status && (
-                <Tooltip title={`当前状态: ${getStatusBadge(currentProvider).props.text}`}>
-                  {currentProvider.status === 'connected' ? (
-                    <CheckCircleOutlined style={{ color: 'var(--success-color)' }} />
-                  ) : currentProvider.status === 'testing' ? (
-                    <Spin size="small" />
-                  ) : (
-                    <ExclamationCircleOutlined style={{ color: 'var(--warning-color)' }} />
-                  )}
-                </Tooltip>
-              )
-            }
           >
             <Spin spinning={loading}>
               <Form
@@ -384,8 +354,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 initialValues={currentProvider}
               >
                 <Alert
-                  message="安全提示"
-                  description="API密钥将加密保存在本地，不会上传到任何服务器。"
+                  message="API密钥将加密保存在本地，不会上传到任何服务器。"
                   type="info"
                   showIcon
                   style={{ marginBottom: 16 }}
