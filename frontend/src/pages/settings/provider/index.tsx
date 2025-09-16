@@ -63,6 +63,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [testingConnection, setTestingConnection] = useState(false);
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null); // 改为number类型
+  const [isCreatingNew, setIsCreatingNew] = useState(false); // 新增：是否正在创建新供应商
+  const [newProviderTempId, setNewProviderTempId] = useState<number | null>(null); // 新增：临时ID
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
 
@@ -74,7 +76,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   // 当选中的供应商变化时，更新表单
   useEffect(() => {
     const provider = providers.find(p => p.id === selectedProvider);
-    if (provider) {
+    if (provider && !isCreatingNew) { // 在创建新供应商时不自动更新表单
       // 转换字段名以适配表单
       // 只有当default_model_id存在且大于0时才设置，否则传递undefined以确保不被选中
       const defaultModelValue = (provider.default_model_id && provider.default_model_id > 0) ? provider.default_model_id : undefined;
@@ -92,7 +94,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         form.setFieldValue('defaultModel', undefined);
       }
     }
-  }, [selectedProvider, providers, form]);
+  }, [selectedProvider, providers, form, isCreatingNew]);
 
   const loadProviderConfigs = async () => {
     setLoading(true);
@@ -220,8 +222,38 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   const handleAddProvider = () => {
-    // TODO: 实现添加供应商功能
-    message.info('添加供应商功能开发中...');
+    // 生成临时ID（负数以区分于真实的供应商ID）
+    const tempId = -Date.now();
+    
+    // 创建新供应商占位
+    const newProvider: ProviderConfig = {
+      id: tempId,
+      provider_name: '新建供应商',
+      api_key: '',
+      base_url: '',
+      enable: true,
+      default_model_id: null,
+      models: [],
+      icon: '🆕',
+      description: '新创建的供应商',
+      status: 'disconnected'
+    };
+    
+    // 添加到列表并选中
+    setProviders(prev => [...prev, newProvider]);
+    setSelectedProvider(tempId);
+    setIsCreatingNew(true);
+    setNewProviderTempId(tempId);
+    
+    // 清空表单并设置默认值
+    form.resetFields();
+    form.setFieldsValue({
+      enabled: true,
+      providerName: '新建供应商',
+      apiKey: '',
+      baseUrl: '',
+      defaultModel: undefined,
+    });
   };
 
   const handleDeleteProvider = async (providerId: number) => {
@@ -247,6 +279,61 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const handleDeleteCurrentProvider = async () => {
     if (selectedProvider !== null) {
       await handleDeleteProvider(selectedProvider);
+    }
+  };
+
+  // 取消新建供应商
+  const handleCancelCreate = () => {
+    if (newProviderTempId !== null) {
+      // 从列表中移除占位符
+      setProviders(prev => prev.filter(p => p.id !== newProviderTempId));
+      
+      // 重置状态
+      setIsCreatingNew(false);
+      setNewProviderTempId(null);
+      
+      // 选中第一个供应商（如果存在）
+      const realProviders = providers.filter(p => p.id > 0);
+      if (realProviders.length > 0) {
+        setSelectedProvider(realProviders[0].id);
+      } else {
+        setSelectedProvider(null);
+        form.resetFields();
+      }
+    }
+  };
+  
+  // 创建新供应商
+  const handleCreateProvider = async (values: any) => {
+    if (!isCreatingNew) return;
+    
+    setLoading(true);
+    try {
+      // 构造新供应商数据
+      const newProviderData = new Provider({
+        provider_name: values.providerName || '新建供应商',
+        base_url: values.baseUrl,
+        api_key: values.apiKey,
+        enable: values.enabled,
+        default_model_id: values.defaultModel || 0,
+      });
+      
+      // 调用后端创建接口
+      await Service.AddProvider(newProviderData);
+      
+      // 重新加载供应商列表
+      await loadProviderConfigs();
+      
+      // 重置创建状态
+      setIsCreatingNew(false);
+      setNewProviderTempId(null);
+      
+      message.success('供应商创建成功');
+    } catch (error) {
+      console.error('创建供应商失败:', error);
+      message.error('创建供应商失败');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -435,7 +522,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               <Form
                 form={form}
                 layout="vertical"
-                onFinish={handleSave}
+                onFinish={isCreatingNew ? handleCreateProvider : handleSave} // 根据状态决定调用哪个函数
                 initialValues={currentProvider}
               >
                 <Alert
@@ -524,47 +611,74 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
                 <Form.Item className={styles.buttonGroup}>
                   <Space size="middle" className={styles.actionButtons}>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
-                      icon={<SaveOutlined />}
-                      loading={loading}
-                      size="middle"
-                      className={styles.primaryButton}
-                    >
-                      保存配置
-                    </Button>
-                    <Button 
-                      icon={<ReloadOutlined />}
-                      onClick={handleTestConnection}
-                      loading={testingConnection}
-                      size="middle"
-                      className={styles.testButton}
-                    >
-                      测试连接
-                    </Button>
-                    <Popconfirm
-                      title="删除供应商"
-                      description={
-                        <div className={styles.deleteConfirm}>
-                          <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                          确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
-                        </div>
-                      }
-                      onConfirm={handleDeleteCurrentProvider}
-                      okText="确定删除"
-                      cancelText="取消"
-                      okButtonProps={{ danger: true }}
-                    >
-                      <Button 
-                        danger
-                        icon={<DeleteOutlined />}
-                        size="middle"
-                        className={styles.dangerButton}
-                      >
-                        删除供应商
-                      </Button>
-                    </Popconfirm>
+                    {isCreatingNew ? (
+                      // 新建供应商时的按钮
+                      <>
+                        <Button 
+                          type="primary" 
+                          htmlType="submit" 
+                          icon={<PlusOutlined />}
+                          loading={loading}
+                          size="middle"
+                          className={styles.primaryButton}
+                        >
+                          新建
+                        </Button>
+                        <Button 
+                          icon={<DeleteOutlined />}
+                          onClick={handleCancelCreate}
+                          size="middle"
+                          className={styles.testButton}
+                        >
+                          取消
+                        </Button>
+                      </>
+                    ) : (
+                      // 编辑供应商时的按钮
+                      <>
+                        <Button 
+                          type="primary" 
+                          htmlType="submit" 
+                          icon={<SaveOutlined />}
+                          loading={loading}
+                          size="middle"
+                          className={styles.primaryButton}
+                        >
+                          保存配置
+                        </Button>
+                        <Button 
+                          icon={<ReloadOutlined />}
+                          onClick={handleTestConnection}
+                          loading={testingConnection}
+                          size="middle"
+                          className={styles.testButton}
+                        >
+                          测试连接
+                        </Button>
+                        <Popconfirm
+                          title="删除供应商"
+                          description={
+                            <div className={styles.deleteConfirm}>
+                              <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
+                              确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
+                            </div>
+                          }
+                          onConfirm={handleDeleteCurrentProvider}
+                          okText="确定删除"
+                          cancelText="取消"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button 
+                            danger
+                            icon={<DeleteOutlined />}
+                            size="middle"
+                            className={styles.dangerButton}
+                          >
+                            删除供应商
+                          </Button>
+                        </Popconfirm>
+                      </>
+                    )}
                   </Space>
                 </Form.Item>
               </Form>
