@@ -47,9 +47,9 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
-	providerIds2DefaultModelsVD := make(map[uint]view_models.Model)
+	providerIds2DefaultModelsVD := make(map[uint]*view_models.Model)
 	for providerId, model := range providerId2DefaultModel {
-		providerIds2DefaultModelsVD[providerId] = view_models.Model{
+		providerIds2DefaultModelsVD[providerId] = &view_models.Model{
 			Model:   model.Model,
 			OwnedBy: model.OwnedBy,
 			Object:  model.Object,

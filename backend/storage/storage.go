@@ -27,7 +27,7 @@ func NewStorage() (*Storage, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&data_models.Model{}, &data_models.Provider{}, &data_models.Chat{}, &data_models.Message{})
+	err = db.AutoMigrate(&data_models.Model{}, &data_models.Provider{}, &data_models.Chat{}, &data_models.Message{}, &data_models.ProviderDefaultModel{})
 	if err != nil {
 		logger.Errorf("Failed to migrate models: %v", err)
 		return nil, err
