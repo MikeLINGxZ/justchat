@@ -135,7 +135,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 构造后端需要的Provider对象
       const defaultModelId = values.defaultModel || 0; // 如果没有选择默认模型，传递0
       const providerData = new Provider({
-        provider_name: currentProvider.provider_name,
+        provider_name: values.providerName || currentProvider.provider_name, // 使用用户输入的名称
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
@@ -149,6 +149,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       const updatedProviders = providers.map(p => 
         p.id === selectedProvider ? {
           ...p,
+          provider_name: values.providerName || p.provider_name, // 更新供应商名称
           api_key: values.apiKey,
           base_url: values.baseUrl,
           enable: values.enabled,
@@ -456,11 +457,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 <Form.Item
                   label="供应商名称"
                   name="providerName"
+                  rules={[
+                    { required: true, message: '请输入供应商名称' },
+                    { max: 50, message: '供应商名称不能超过50个字符' },
+                  ]}
                 >
                   <Input 
                     placeholder="为供应商设置一个名称" 
-                    disabled
-                    value={currentProvider?.provider_name}
                   />
                 </Form.Item>
 
@@ -557,7 +560,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                         danger
                         icon={<DeleteOutlined />}
                         size="middle"
-                        disabled={providers.length <= 1}
                         className={styles.dangerButton}
                       >
                         删除供应商
