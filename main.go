@@ -29,7 +29,7 @@ func main() {
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:  "Home",
+		Name:  service.WindowNameHome,
 		Title: "Home",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,

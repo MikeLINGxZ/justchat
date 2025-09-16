@@ -7,6 +7,11 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 )
 
+const (
+	WindowNameHome     = "window_home"
+	WindowNameSettings = "window_settings"
+)
+
 type Service struct {
 	storage *storage.Storage
 	app     *application.App
