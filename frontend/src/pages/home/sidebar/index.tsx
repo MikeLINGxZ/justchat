@@ -14,6 +14,7 @@ import {
 import {useAuthStore} from '@/stores/authStore.ts';
 import SidebarChats from '@/pages/home/sidebar/chat_lists.tsx';
 import '@/pages/home/sidebar/index.scss';
+import {OpenSettingsWindow} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/service.ts";
 
 interface SidebarProps {
     className?: string;
@@ -200,6 +201,10 @@ const Index: React.FC<SidebarProps> = ({
         } catch (error) {
             console.error('退出登录失败:', error);
         }
+    };
+
+    const handleOpenSettings = async () => {
+        OpenSettingsWindow();
     };
 
     const getThemeIcon = (theme: 'auto' | 'light' | 'dark') => {
@@ -397,7 +402,7 @@ const Index: React.FC<SidebarProps> = ({
                                     )}
                                 </div>
 
-                                <div className="menu-item" onClick={handleLogout}>
+                                <div className="menu-item" onClick={handleOpenSettings}>
                                     <div className="menu-item-content">
                                         <SettingOutlined/>
                                         <span>设置</span>

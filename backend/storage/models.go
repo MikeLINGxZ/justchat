@@ -55,3 +55,13 @@ func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_
 		ModelId: modelInfo.ID,
 	}, nil
 }
+
+// AddProviderModel 添加供应商模型
+func (s *Storage) AddProviderModel(ctx context.Context, model data_models.Model) error {
+	return s.sqliteDB.Create(&model).Error
+}
+
+// DeleteAllProviderModel 删除供应商模型
+func (s *Storage) DeleteAllProviderModel(ctx context.Context, providerId uint) error {
+	return s.sqliteDB.Model(&data_models.Model{}).Where("provider_id = ?", providerId).Delete(&data_models.Model{}).Error
+}

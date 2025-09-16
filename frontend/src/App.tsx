@@ -9,6 +9,7 @@ import { useViewportHeight } from '@/hooks/useViewportHeight';
 
 const Chat = React.lazy(() => import('@/pages/home'));
 const NotFound = React.lazy(() => import('@/pages/NotFound'));
+const Settings = React.lazy(()=>import('@/pages/settings'));
 
 function App() {
   // 初始化视口高度检测
@@ -63,6 +64,10 @@ function App() {
           path="/:chatUuid"
           element={<Chat />}
         />
+          <Route
+              path="/settings"
+              element={<Settings />}
+          />
 
         {/* 其他路由 - 使用Layout */}
         <Route

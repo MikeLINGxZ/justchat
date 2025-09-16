@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -38,6 +39,25 @@ func NewStorage() (*Storage, error) {
 	}
 
 	return storage, nil
+}
+
+// NewFnTransaction 开启事物
+func (s *Storage) NewFnTransaction(ctx context.Context, fn func(ctx context.Context, s *Storage) error) error {
+	tx := s.sqliteDB.Begin()
+	txStorage := &Storage{
+		sqliteDB: tx,
+	}
+	err := fn(ctx, txStorage)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
 }
 
 func getDbPath() (string, error) {

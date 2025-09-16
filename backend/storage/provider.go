@@ -32,3 +32,18 @@ func (s *Storage) GetProviderByID(ctx context.Context, id uint) (*data_models.Pr
 
 	return &res, nil
 }
+
+// AddProvider 添加供应商
+func (s *Storage) AddProvider(ctx context.Context, provider data_models.Provider) (uint, error) {
+	return provider.ID, s.sqliteDB.Create(&provider).Error
+}
+
+// UpdateProvider 更新供应商
+func (s *Storage) UpdateProvider(ctx context.Context, provider data_models.Provider) error {
+	return s.sqliteDB.Updates(&provider).Error
+}
+
+// DeleteProvider 删除供应商
+func (s *Storage) DeleteProvider(ctx context.Context, id uint) error {
+	return s.sqliteDB.Where("id = ?", id).Delete(&data_models.Provider{}).Error
+}
