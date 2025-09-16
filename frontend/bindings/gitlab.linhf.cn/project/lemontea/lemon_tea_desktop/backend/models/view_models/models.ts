@@ -278,11 +278,9 @@ export class Provider {
      * 启用
      */
     "enable": boolean;
-
-    /**
-     * 别名
-     */
-    "alias": string | null;
+    "default_model_id": number;
+    "models": Model[];
+    "default_model": Model | null;
 
     /** Creates a new Provider instance. */
     constructor($$source: Partial<Provider> = {}) {
@@ -310,8 +308,14 @@ export class Provider {
         if (!("enable" in $$source)) {
             this["enable"] = false;
         }
-        if (!("alias" in $$source)) {
-            this["alias"] = null;
+        if (!("default_model_id" in $$source)) {
+            this["default_model_id"] = 0;
+        }
+        if (!("models" in $$source)) {
+            this["models"] = [];
+        }
+        if (!("default_model" in $$source)) {
+            this["default_model"] = null;
         }
 
         Object.assign(this, $$source);
@@ -321,7 +325,15 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
+        const $$createField9_0 = $$createType7;
+        const $$createField10_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("models" in $$parsedSource) {
+            $$parsedSource["models"] = $$createField9_0($$parsedSource["models"]);
+        }
+        if ("default_model" in $$parsedSource) {
+            $$parsedSource["default_model"] = $$createField10_0($$parsedSource["default_model"]);
+        }
         return new Provider($$parsedSource as Partial<Provider>);
     }
 }
@@ -333,3 +345,6 @@ const $$createType2 = Chat.createFrom;
 const $$createType3 = $Create.Array($$createType2);
 const $$createType4 = schema$0.Message.createFrom;
 const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = Model.createFrom;
+const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = $Create.Nullable($$createType6);

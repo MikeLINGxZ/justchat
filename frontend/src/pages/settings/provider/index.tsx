@@ -80,6 +80,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         apiKey: provider.api_key,
         baseUrl: provider.base_url,
         alias: provider.alias,
+        providerName: provider.provider_name,
       });
     }
   }, [selectedProvider, providers, form]);
@@ -444,10 +445,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 </Form.Item>
 
                 <Form.Item
-                  label="别名"
-                  name="alias"
+                  label="供应商名称"
+                  name="providerName"
                 >
-                  <Input placeholder="为供应商设置一个别名（可选）" />
+                  <Input placeholder="为供应商设置一个名称" />
                 </Form.Item>
 
                 <Form.Item

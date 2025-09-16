@@ -19,6 +19,48 @@ func (s *Storage) GetModels(ctx context.Context) ([]data_models.Model, error) {
 	return res, nil
 }
 
+// GetModelsByProviderIds 通过供应商ids获取模型
+func (s *Storage) GetModelsByProviderIds(ctx context.Context, providerIds []uint) (map[uint][]data_models.Model, error) {
+	var res []data_models.Model
+	err := s.sqliteDB.Model(&data_models.Model{}).Where("provider_id IN (?)", providerIds).Find(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	resMap := make(map[uint][]data_models.Model)
+	for _, model := range res {
+		resMap[model.ProviderId] = append(resMap[model.ProviderId], model)
+	}
+	return resMap, nil
+}
+
+// GetProviderDefaultModelByProviderIds 通过供应商ids获取供应商默认模型
+func (s *Storage) GetProviderDefaultModelByProviderIds(ctx context.Context, providerIds []uint) (map[uint]data_models.Model, error) {
+	var providerModels []data_models.ProviderDefaultModel
+	err := s.sqliteDB.Model(&data_models.ProviderDefaultModel{}).Where("provider_id IN (?)", providerIds).Find(&providerModels).Error
+	if err != nil {
+		return nil, err
+	}
+	resMap := make(map[uint]data_models.Model)
+
+	// 遍历每个供应商默认模型配置
+	for _, pm := range providerModels {
+		// 根据模型ID获取完整的模型信息
+		var model data_models.Model
+		err := s.sqliteDB.Model(&data_models.Model{}).Where("id = ?", pm.ModelId).First(&model).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// 如果模型不存在，跳过这个配置
+				continue
+			}
+			return nil, err
+		}
+		// 将模型信息添加到结果映射中
+		resMap[pm.ProviderID] = model
+	}
+
+	return resMap, nil
+}
+
 func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Model, error) {
 	var models data_models.Model
 	err := s.sqliteDB.Model(&data_models.Model{}).Where("model = ?", model).First(&models).Error

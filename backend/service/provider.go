@@ -12,19 +12,60 @@ import (
 
 // GetProviders 获取所有供应商
 func (s *Service) GetProviders() ([]view_models.Provider, error) {
-	providers, err := s.storage.GetProviders(context.Background())
+	ctx := context.Background()
+	providers, err := s.storage.GetProviders(ctx)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
+
+	// 获取全部供应商id
+	var providerIds []uint
+	for _, provider := range providers {
+		providerIds = append(providerIds, provider.ID)
+	}
+
+	// 获取各个供应商模型列表
+	providerIds2Models, err := s.storage.GetModelsByProviderIds(ctx, providerIds)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	providerIds2ModelsVD := make(map[uint][]view_models.Model)
+	for providerId, models := range providerIds2Models {
+		var modelsVD []view_models.Model
+		for _, model := range models {
+			modelsVD = append(modelsVD, view_models.Model{
+				Model:   model.Model,
+				OwnedBy: model.OwnedBy,
+				Object:  model.Object,
+			})
+		}
+		providerIds2ModelsVD[providerId] = modelsVD
+	}
+
+	// 获取各个供应商默认模型
+	providerId2DefaultModel, err := s.storage.GetProviderDefaultModelByProviderIds(ctx, providerIds)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	providerIds2DefaultModelsVD := make(map[uint]view_models.Model)
+	for providerId, model := range providerId2DefaultModel {
+		providerIds2DefaultModelsVD[providerId] = view_models.Model{
+			Model:   model.Model,
+			OwnedBy: model.OwnedBy,
+			Object:  model.Object,
+		}
+	}
+
 	res := make([]view_models.Provider, len(providers))
 	for i, provider := range providers {
 		res[i] = view_models.Provider{
 			ID:           provider.ID,
-			Alias:        provider.Alias,
 			ApiKey:       provider.ApiKey,
 			BaseUrl:      provider.BaseUrl,
 			Enable:       provider.Enable,
 			ProviderName: provider.ProviderName,
+			Models:       providerIds2ModelsVD[provider.ID],
+			DefaultModel: providerIds2DefaultModelsVD[provider.ID],
 		}
 	}
 	return res, nil
@@ -37,7 +78,6 @@ func (s *Service) AddProvider(provider view_models.Provider) error {
 		BaseUrl:      provider.BaseUrl,
 		ApiKey:       provider.ApiKey,
 		Enable:       provider.Enable,
-		Alias:        provider.Alias,
 	})
 	if err != nil {
 		return ierror.NewError(err)
@@ -66,7 +106,6 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 		BaseUrl:      provider.BaseUrl,
 		ApiKey:       provider.ApiKey,
 		Enable:       provider.Enable,
-		Alias:        provider.Alias,
 	})
 }
 
