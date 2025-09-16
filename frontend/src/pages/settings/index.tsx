@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button } from 'antd';
 import {
   SettingOutlined,
@@ -22,6 +22,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
   const [selectedKey, setSelectedKey] = useState('provider');
   const [showContent, setShowContent] = useState(false); // 控制移动端内容显示
   const { isMobile } = useViewportHeight(); // 使用移动端检测
+
+  // 监听设备切换，处理从桌面端切换到移动端的情况
+  useEffect(() => {
+    if (isMobile) {
+      // 切换到移动端时，如果当前是从桌面端切换过来，显示当前选中的内容
+      // 这样用户不需要重新点击菜单
+      setShowContent(true);
+    } else {
+      // 切换到桌面端时，重置移动端状态
+      setShowContent(false);
+    }
+  }, [isMobile]);
 
   const menuItems = [
     {
@@ -121,7 +133,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             </div>
             <Menu
               mode="inline"
-              selectedKeys={[selectedKey]}
+              selectedKeys={[]} // 移动端不显示选中状态
               items={menuItems}
               onClick={handleMenuClick}
               className={styles.settingsMenu}
@@ -146,7 +158,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             </div>
             <Menu
               mode="inline"
-              selectedKeys={[selectedKey]}
+              selectedKeys={[selectedKey]} // 桌面端显示选中状态
               items={menuItems}
               onClick={handleMenuClick}
               className={styles.settingsMenu}

@@ -184,13 +184,11 @@
         height: auto !important;
         line-height: 1.5 !important;
         border-radius: var(--border-radius-lg) !important;
+        background: var(--background-color) !important;
+        color: var(--text-color) !important;
         
         &:hover {
           background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05)) !important;
-        }
-        
-        &.ant-menu-item-selected {
-          background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(114, 46, 209, 0.08)) !important;
           color: var(--primary-color) !important;
           
           .anticon {
@@ -198,9 +196,29 @@
           }
         }
         
+        // 移动端不显示选中状态，但保持点击效果
+        &.ant-menu-item-selected {
+          background: var(--background-color) !important;
+          color: var(--text-color) !important;
+          
+          .anticon {
+            color: inherit !important;
+          }
+          
+          &:hover {
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05)) !important;
+            color: var(--primary-color) !important;
+            
+            .anticon {
+              color: var(--primary-color) !important;
+            }
+          }
+        }
+        
         .anticon {
           margin-right: var(--spacing-md);
           font-size: 18px;
+          color: inherit;
         }
       }
     }
