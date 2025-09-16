@@ -13,6 +13,13 @@ import * as schema$0 from "../../../../../../github.com/cloudwego/eino/schema/mo
 import * as view_models$0 from "../models/view_models/models.js";
 
 /**
+ * AddProvider 添加供应商
+ */
+export function AddProvider(provider: view_models$0.Provider): $CancellablePromise<void> {
+    return $Call.ByID(2363217024, provider);
+}
+
+/**
  * ChatList 聊天列表
  */
 export function ChatList(offset: number, limit: number, keyword: string | null, isCollection: boolean): $CancellablePromise<view_models$0.ChatList | null> {
@@ -54,10 +61,26 @@ export function DeleteChat(chatUuid: string): $CancellablePromise<void> {
 }
 
 /**
+ * DeleteProvider 删除供应商
+ */
+export function DeleteProvider(providerId: number): $CancellablePromise<void> {
+    return $Call.ByID(1837639636, providerId);
+}
+
+/**
  * GetModels 获取所有模型
  */
 export function GetModels(): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(2435611672).then(($result: any) => {
+        return $$createType7($result);
+    });
+}
+
+/**
+ * GetProviderModels 获取供应商模型信息
+ */
+export function GetProviderModels(provider: view_models$0.Provider): $CancellablePromise<view_models$0.Model[]> {
+    return $Call.ByID(1264152129, provider).then(($result: any) => {
         return $$createType7($result);
     });
 }
@@ -71,11 +94,22 @@ export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     });
 }
 
+export function OpenSettingsWindow(): $CancellablePromise<void> {
+    return $Call.ByID(3479182543);
+}
+
 /**
  * RenameChat 重命名聊天
  */
 export function RenameChat(chatUuid: string, title: string): $CancellablePromise<void> {
     return $Call.ByID(2654224378, chatUuid, title);
+}
+
+/**
+ * UpdateProvider 更新供应商
+ */
+export function UpdateProvider(id: number, provider: view_models$0.Provider | null): $CancellablePromise<void> {
+    return $Call.ByID(2109525354, id, provider);
 }
 
 // Private type creation functions

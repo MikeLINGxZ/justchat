@@ -1,0 +1,105 @@
+@import '@/styles/variables.scss';
+
+.settingsLayout {
+  height: 100%;
+  background: var(--background-color);
+}
+
+.settingsSider {
+  background: var(--background-color) !important;
+  border-right: 1px solid var(--border-color-light);
+  
+  .siderHeader {
+    padding: var(--spacing-lg) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-light);
+    
+    h3 {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-color);
+    }
+  }
+}
+
+.settingsMenu {
+  border: none !important;
+  background: transparent !important;
+  
+  .ant-menu-item {
+    margin: 4px 8px !important;
+    border-radius: var(--border-radius) !important;
+    height: 40px;
+    line-height: 40px;
+    
+    &:hover {
+      background-color: var(--primary-color-light) !important;
+    }
+    
+    &.ant-menu-item-selected {
+      background-color: var(--primary-color-light) !important;
+      color: var(--primary-color) !important;
+      
+      .anticon {
+        color: var(--primary-color) !important;
+      }
+    }
+    
+    .anticon {
+      margin-right: 12px;
+      font-size: 16px;
+    }
+  }
+}
+
+.settingsContent {
+  background: var(--background-color);
+}
+
+.contentArea {
+  padding: var(--spacing-lg);
+  margin: 0;
+  background: var(--background-color);
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+.placeholder {
+  @include flex-center;
+  height: 300px;
+  color: var(--text-color-secondary);
+  font-size: var(--font-size-lg);
+  background: var(--background-color-light);
+  border-radius: var(--border-radius-lg);
+  border: 1px dashed var(--border-color);
+}
+
+// 响应式设计
+@include respond-below(md) {
+  .settingsLayout {
+    flex-direction: column;
+  }
+  
+  .settingsSider {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+  
+  .siderHeader {
+    text-align: center;
+  }
+  
+  .settingsMenu {
+    .ant-menu-item {
+      text-align: center;
+      margin: 4px !important;
+    }
+  }
+  
+  .contentArea {
+    padding: var(--spacing-md);
+  }
+}
