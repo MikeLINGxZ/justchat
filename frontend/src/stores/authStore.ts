@@ -36,8 +36,8 @@ export const useAuthStore = create<AuthStore>()(
       // 初始状态 - 默认为已认证状态
       user: {
         userId: 'demo-user',
-        username: 'Demo User',
-        email: 'demo@example.com',
+        username: 'Local User',
+        email: 'storage in local disk',
       },
       token: 'demo-token',
       isAuthenticated: true,

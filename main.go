@@ -37,8 +37,8 @@ func main() {
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/home",
-		Width:            1024,
-		Height:           768,
+		Width:            1300,
+		Height:           860,
 		MinWidth:         350,
 		MinHeight:        550,
 	})

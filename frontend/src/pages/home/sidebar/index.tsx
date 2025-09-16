@@ -399,8 +399,8 @@ const Index: React.FC<SidebarProps> = ({
 
                                 <div className="menu-item" onClick={handleLogout}>
                                     <div className="menu-item-content">
-                                        <LogoutOutlined/>
-                                        <span>退出登录</span>
+                                        <SettingOutlined/>
+                                        <span>设置</span>
                                     </div>
                                 </div>
                             </div>
