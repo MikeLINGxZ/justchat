@@ -32,6 +32,8 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
+import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
+import { Provider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import styles from './index.module.scss';
 
 const { Title, Text } = Typography;
@@ -42,12 +44,13 @@ interface ProviderSettingPageProps {
 }
 
 interface ProviderConfig {
-  id: string;
-  name: string;
-  apiKey: string;
-  baseUrl?: string;
-  enabled: boolean;
-  defaultModel?: string;
+  id: number; // 改为number类型，与后端一致
+  provider_name: string; // 使用后端字段名
+  api_key: string; // 使用后端字段名
+  base_url: string; // 使用后端字段名
+  enable: boolean; // 使用后端字段名
+  alias?: string | null; // 使用后端字段名
+  // 前端额外字段
   icon?: string;
   description?: string;
   status?: 'connected' | 'disconnected' | 'testing';
@@ -57,42 +60,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
-  const [providers, setProviders] = useState<ProviderConfig[]>([
-    {
-      id: 'openai',
-      name: 'OpenAI',
-      apiKey: '',
-      baseUrl: 'https://api.openai.com/v1',
-      enabled: false,
-      defaultModel: 'gpt-3.5-turbo',
-      icon: '🤖',
-      description: '强大的GPT系列模型，支持聊天和文本生成',
-      status: 'disconnected',
-    },
-    {
-      id: 'anthropic',
-      name: 'Anthropic',
-      apiKey: '',
-      baseUrl: 'https://api.anthropic.com',
-      enabled: false,
-      defaultModel: 'claude-3-sonnet-20240229',
-      icon: '🧠',
-      description: 'Claude系列模型，注重安全性和有用性',
-      status: 'disconnected',
-    },
-    {
-      id: 'gemini',
-      name: 'Google Gemini',
-      apiKey: '',
-      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-      enabled: false,
-      defaultModel: 'gemini-pro',
-      icon: '✨',
-      description: 'Google最新的多模态AI模型',
-      status: 'disconnected',
-    },
-  ]);
-  const [selectedProvider, setSelectedProvider] = useState<string>('openai');
+  const [providers, setProviders] = useState<ProviderConfig[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<number | null>(null); // 改为number类型
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
 
@@ -105,16 +74,38 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   useEffect(() => {
     const provider = providers.find(p => p.id === selectedProvider);
     if (provider) {
-      form.setFieldsValue(provider);
+      // 转换字段名以适配表单
+      form.setFieldsValue({
+        enabled: provider.enable,
+        apiKey: provider.api_key,
+        baseUrl: provider.base_url,
+        alias: provider.alias,
+      });
     }
   }, [selectedProvider, providers, form]);
 
   const loadProviderConfigs = async () => {
     setLoading(true);
     try {
-      // TODO: 从后端加载保存的配置
-      // const configs = await Service.GetProviderConfigs();
-      // setProviders(configs);
+      const providers = await Service.GetProviders();
+      if (providers && providers.length > 0) {
+        // 转换后端数据格式，添加前端需要的字段
+        const formattedProviders = providers.map(provider => {
+          const extras = getProviderExtras(provider.provider_name);
+          return {
+            ...provider,
+            icon: extras.icon,
+            description: extras.description,
+            status: 'disconnected' as const
+          };
+        });
+        setProviders(formattedProviders);
+        
+        // 设置默认选中第一个供应商
+        if (selectedProvider === null && formattedProviders.length > 0) {
+          setSelectedProvider(formattedProviders[0].id);
+        }
+      }
     } catch (error) {
       console.error('加载供应商配置失败:', error);
       message.error('加载供应商配置失败');
@@ -124,15 +115,36 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   const handleSave = async (values: any) => {
+    if (selectedProvider === null) return;
+    
     setLoading(true);
     try {
+      const currentProvider = providers.find(p => p.id === selectedProvider);
+      if (!currentProvider) return;
+      
+      // 构造后端需要的Provider对象
+      const providerData = new Provider({
+        provider_name: currentProvider.provider_name,
+        base_url: values.baseUrl,
+        api_key: values.apiKey,
+        enable: values.enabled,
+        alias: values.alias,
+      });
+      
+      // 调用后端更新接口
+      await Service.UpdateProvider(selectedProvider, providerData);
+      
+      // 更新本地状态
       const updatedProviders = providers.map(p => 
-        p.id === selectedProvider ? { ...p, ...values } : p
+        p.id === selectedProvider ? {
+          ...p,
+          api_key: values.apiKey,
+          base_url: values.baseUrl,
+          enable: values.enabled,
+          alias: values.alias,
+        } : p
       );
       setProviders(updatedProviders);
-      
-      // TODO: 保存到后端
-      // await Service.SaveProviderConfig(selectedProvider, values);
       
       message.success('保存成功');
     } catch (error) {
@@ -144,6 +156,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   const handleTestConnection = async () => {
+    if (selectedProvider === null) return;
+    
     setTestingConnection(true);
     
     // 更新供应商状态为测试中
@@ -154,8 +168,20 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     
     try {
       const values = form.getFieldsValue();
-      // TODO: 测试连接
-      // await Service.TestProviderConnection(selectedProvider, values);
+      const currentProvider = providers.find(p => p.id === selectedProvider);
+      if (!currentProvider) return;
+      
+      // 构造Provider对象进行测试
+      const providerData = new Provider({
+        provider_name: currentProvider.provider_name,
+        base_url: values.baseUrl,
+        api_key: values.apiKey,
+        enable: values.enabled,
+        alias: values.alias,
+      });
+      
+      // TODO: 调用后端测试连接接口（如果有的话）
+      // await Service.TestProviderConnection(providerData);
       
       // 模拟测试
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -186,22 +212,55 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     message.info('添加供应商功能开发中...');
   };
 
-  const handleDeleteProvider = (providerId: string) => {
-    const updatedProviders = providers.filter(p => p.id !== providerId);
-    setProviders(updatedProviders);
-    
-    // 如果删除的是当前选中的供应商，切换到第一个
-    if (selectedProvider === providerId && updatedProviders.length > 0) {
-      setSelectedProvider(updatedProviders[0].id);
+  const handleDeleteProvider = async (providerId: number) => {
+    try {
+      // 调用后端删除接口
+      await Service.DeleteProvider(providerId);
+      
+      const updatedProviders = providers.filter(p => p.id !== providerId);
+      setProviders(updatedProviders);
+      
+      // 如果删除的是当前选中的供应商，切换到第一个
+      if (selectedProvider === providerId && updatedProviders.length > 0) {
+        setSelectedProvider(updatedProviders[0].id);
+      }
+      
+      message.success('供应商删除成功');
+    } catch (error) {
+      console.error('删除供应商失败:', error);
+      message.error('删除供应商失败');
     }
-    
-    message.success('供应商删除成功');
-    // TODO: 调用后端API删除
-    // await Service.DeleteProvider(providerId);
   };
 
-  const handleDeleteCurrentProvider = () => {
-    handleDeleteProvider(selectedProvider);
+  const handleDeleteCurrentProvider = async () => {
+    if (selectedProvider !== null) {
+      await handleDeleteProvider(selectedProvider);
+    }
+  };
+
+  // 获取供应商图标和描述的辅助函数
+  const getProviderExtras = (providerName: string) => {
+    const extras: { [key: string]: { icon: string; description: string } } = {
+      'openai': {
+        icon: '🤖',
+        description: '强大的GPT系列模型，支持聊天和文本生成'
+      },
+      'anthropic': {
+        icon: '🧠', 
+        description: 'Claude系列模型，注重安全性和有用性'
+      },
+      'gemini': {
+        icon: '✨',
+        description: 'Google最新的多模态AI模型'
+      },
+      'google': {
+        icon: '✨',
+        description: 'Google最新的多模态AI模型'
+      }
+    };
+    
+    const key = providerName.toLowerCase();
+    return extras[key] || { icon: '🔧', description: '第三方AI模型提供商' };
   };
 
   const getProviderIcon = (provider: ProviderConfig) => {
@@ -210,7 +269,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         <Avatar 
           size={28} 
           style={{ 
-            backgroundColor: provider.enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
+            backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
             fontSize: '16px',
             display: 'flex',
             alignItems: 'center',
@@ -226,7 +285,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         size={28} 
         icon={<ApiOutlined />} 
         style={{ 
-          backgroundColor: provider.enabled ? 'var(--primary-color)' : 'var(--text-color-disabled)' 
+          backgroundColor: provider.enable ? 'var(--primary-color)' : 'var(--text-color-disabled)' 
         }} 
       />
     );
@@ -234,7 +293,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
   const currentProvider = providers.find(p => p.id === selectedProvider);
   const availableModelsForProvider = availableModels.filter(model => 
-    model.id.toLowerCase().includes(selectedProvider.toLowerCase())
+    currentProvider ? model.id.toLowerCase().includes(currentProvider.provider_name.toLowerCase()) : false
   );
 
   return (
@@ -280,20 +339,41 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                          <div className={styles.providerLeft}>
                              {getProviderIcon(provider)}
                              <div className={styles.providerDetails}>
-                                 <div className={styles.providerName}>{provider.name}</div>
+                                 <div className={styles.providerName}>{provider.alias || provider.provider_name}</div>
                              </div>
                          </div>
                          <div className={styles.providerActions}>
-                             <Tooltip title={provider.enabled ? '已启用' : '未启用'}>
+                             <Tooltip title={provider.enable ? '已启用' : '未启用'}>
                                  <Switch
                                      size="small"
-                                     checked={provider.enabled}
+                                     checked={provider.enable}
                                      className={styles.enableSwitch}
-                                     onChange={(checked) => {
-                                         const updatedProviders = providers.map(p =>
-                                             p.id === provider.id ? { ...p, enabled: checked } : p
-                                         );
-                                         setProviders(updatedProviders);
+                                     onChange={async (checked) => {
+                                         try {
+                                           // 先更新UI状态
+                                           const updatedProviders = providers.map(p =>
+                                               p.id === provider.id ? { ...p, enable: checked } : p
+                                           );
+                                           setProviders(updatedProviders);
+                                           
+                                           // 调用后端接口更新
+                                           const providerData = new Provider({
+                                             provider_name: provider.provider_name,
+                                             base_url: provider.base_url,
+                                             api_key: provider.api_key,
+                                             enable: checked,
+                                             alias: provider.alias,
+                                           });
+                                           await Service.UpdateProvider(provider.id, providerData);
+                                         } catch (error) {
+                                           console.error('更新供应商状态失败:', error);
+                                           message.error('更新供应商状态失败');
+                                           // 恢复UI状态
+                                           const revertProviders = providers.map(p =>
+                                               p.id === provider.id ? { ...p, enable: !checked } : p
+                                           );
+                                           setProviders(revertProviders);
+                                         }
                                      }}
                                  />
                              </Tooltip>
@@ -333,7 +413,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 >
                   {currentProvider?.icon || <ApiOutlined />}
                 </Avatar>
-                <span>配置 {currentProvider?.name}</span>
+                <span>配置 {currentProvider?.alias || currentProvider?.provider_name}</span>
                 {currentProvider?.status === 'connected' && (
                   <Badge status="success" />
                 )}
@@ -362,6 +442,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   valuePropName="checked"
                 >
                   <Switch />
+                </Form.Item>
+
+                <Form.Item
+                  label="别名"
+                  name="alias"
+                >
+                  <Input placeholder="为供应商设置一个别名（可选）" />
                 </Form.Item>
 
                 <Form.Item
@@ -432,7 +519,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       description={
                         <div className={styles.deleteConfirm}>
                           <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                          确定要删除 <strong>{currentProvider?.name}</strong> 吗？
+                          确定要删除 <strong>{currentProvider?.alias || currentProvider?.provider_name}</strong> 吗？
                         </div>
                       }
                       onConfirm={handleDeleteCurrentProvider}

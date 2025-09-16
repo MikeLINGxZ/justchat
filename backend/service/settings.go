@@ -20,8 +20,8 @@ func (s *Service) OpenSettingsWindow() {
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/settings",
-		Width:            1000,
-		Height:           700,
+		Width:            1200,
+		Height:           800,
 		MinWidth:         350,
 		MinHeight:        550,
 	})
