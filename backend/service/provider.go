@@ -34,6 +34,9 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 		var modelsVD []view_models.Model
 		for _, model := range models {
 			modelsVD = append(modelsVD, view_models.Model{
+				ID:      model.ID,
+				Enable:  model.Enable,
+				Alias:   model.Alias,
 				Model:   model.Model,
 				OwnedBy: model.OwnedBy,
 				Object:  model.Object,

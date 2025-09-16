@@ -76,7 +76,9 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     const provider = providers.find(p => p.id === selectedProvider);
     if (provider) {
       // 转换字段名以适配表单
-      const defaultModelValue = provider.default_model_id && provider.default_model_id > 0 ? provider.default_model_id : undefined;
+      // 只有当default_model_id存在且大于0时才设置，否则传递undefined以确保不被选中
+      const defaultModelValue = (provider.default_model_id && provider.default_model_id > 0) ? provider.default_model_id : undefined;
+      
       form.setFieldsValue({
         enabled: provider.enable,
         apiKey: provider.api_key,
@@ -84,6 +86,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         providerName: provider.provider_name,
         defaultModel: defaultModelValue,
       });
+      
+      // 如果默认模型值为undefined，显式重置表单字段以确保清空选中状态
+      if (defaultModelValue === undefined) {
+        form.setFieldValue('defaultModel', undefined);
+      }
     }
   }, [selectedProvider, providers, form]);
 
@@ -487,10 +494,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
                 >
                   <Select 
+                    key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
                     placeholder="选择默认模型"
                     allowClear
                     showSearch
-                    value={form.getFieldValue('defaultModel') || undefined} // 显式处理undefined值
+                    notFoundContent="没有可用模型"
                     filterOption={(input, option) => {
                       const label = option?.children?.toString().toLowerCase() || '';
                       return label.includes(input.toLowerCase());
