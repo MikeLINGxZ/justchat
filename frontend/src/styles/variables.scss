@@ -143,6 +143,16 @@ $breakpoints: (
   } @else {
     @warn "Unknown breakpoint: #{$breakpoint}.";
   }
+}
+
+@mixin respond-above($breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
+    @media (min-width: map.get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @warn "Unknown breakpoint: #{$breakpoint}.";
+  }
 } 
 
 // 常用混合器

@@ -447,3 +447,39 @@
     }
   }
 }
+
+// 在设置页面的移动端内容体中的特殊样式
+:global(.mobileContentBody) {
+  .providerSettings {
+    .header {
+      display: none; // 隐藏重复的标题，因为移动端已经有返回按钮和标题
+    }
+    
+    :global(.ant-row) {
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    
+    :global(.ant-col) {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+  
+  .providerList {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .configCard {
+    .buttonGroup {
+      .actionButtons {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        
+        .ant-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

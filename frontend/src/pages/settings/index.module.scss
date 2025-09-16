@@ -74,32 +74,159 @@
   border: 1px dashed var(--border-color);
 }
 
-// 响应式设计
-@include respond-below(md) {
-  .settingsLayout {
-    flex-direction: column;
-  }
+// 移动端样式
+.mobileMenu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--background-color);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
-  .settingsSider {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: none;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color-light);
+  &.hidden {
+    transform: translateX(-100%);
   }
+}
+
+.mobileContentContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--background-color);
+  z-index: 1001;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
-  .siderHeader {
-    text-align: center;
+  &.visible {
+    transform: translateX(0);
   }
+}
+
+.mobileContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileHeader {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--background-color);
+  border-bottom: 1px solid var(--border-color-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   
-  .settingsMenu {
-    .ant-menu-item {
-      text-align: center;
-      margin: 4px !important;
+  .backButton {
+    margin-right: var(--spacing-md);
+    color: var(--primary-color);
+    font-weight: var(--font-weight-medium);
+    
+    &:hover {
+      background: var(--primary-color-light);
     }
   }
   
-  .contentArea {
-    padding: var(--spacing-md);
+  .mobileTitle {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+  }
+}
+
+.mobileContentBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+// 响应式设计
+@include respond-below(md) {
+  .settingsLayout {
+    // 移动端不使用 flex-direction: column，由 JS 控制显示
+  }
+  
+  // 移动端隐藏桌面版布局
+  .settingsSider,
+  .settingsContent {
+    display: none;
+  }
+  
+  // 移动端菜单样式优化
+  .mobileMenu {
+    .siderHeader {
+      padding: var(--spacing-lg);
+      text-align: center;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border-bottom: 1px solid var(--border-color-light);
+      
+      h3 {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-color);
+      }
+    }
+    
+    .settingsMenu {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+      
+      .ant-menu-item {
+        margin: var(--spacing-sm) 0 !important;
+        padding: var(--spacing-md) var(--spacing-lg) !important;
+        height: auto !important;
+        line-height: 1.5 !important;
+        border-radius: var(--border-radius-lg) !important;
+        
+        &:hover {
+          background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05)) !important;
+        }
+        
+        &.ant-menu-item-selected {
+          background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(114, 46, 209, 0.08)) !important;
+          color: var(--primary-color) !important;
+          
+          .anticon {
+            color: var(--primary-color) !important;
+          }
+        }
+        
+        .anticon {
+          margin-right: var(--spacing-md);
+          font-size: 18px;
+        }
+      }
+    }
+  }
+  
+  // 移动端内容区域样式优化
+  .mobileContentBody {
+    // 对于 provider 页面的特殊处理
+    :global(.providerSettings) {
+      .header {
+        text-align: left;
+        margin-bottom: var(--spacing-md);
+        
+        h3 {
+          font-size: var(--font-size-lg);
+        }
+      }
+    }
+  }
+}
+
+// 桌面端样式（保持原有逻辑）
+@include respond-above(md) {
+  // 移动端特有元素隐藏
+  .mobileMenu,
+  .mobileContentContainer {
+    display: none;
   }
 }
