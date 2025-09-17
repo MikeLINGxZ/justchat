@@ -35,12 +35,13 @@
   --border-radius-sm: 4px;
   --border-radius-lg: 8px;
   
-  // 字体
+  // 字体（基础值，可通过CSS变量动态调整）
   --font-size: 14px;
   --font-size-sm: 12px;
   --font-size-lg: 16px;
   --font-size-xl: 18px;
   --font-size-xxl: 20px;
+  --font-size-xs: 10px; // 新增极小字体
   
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -112,6 +113,8 @@
   --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-3: 0 4px 16px rgba(0, 0, 0, 0.3);
+  
+  // 字体大小变量继承自浅色主题，无需重复定义
 }
 
 // 响应式断点

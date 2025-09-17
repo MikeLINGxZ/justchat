@@ -11,7 +11,9 @@ import {
 } from '@ant-design/icons';
 import ProviderSettingPage from './provider';
 import AboutPage from './about';
+import GeneralSettingsPage from './general';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
+import { initializeFontSize } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
 
 const { Sider, Content } = Layout;
@@ -36,6 +38,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       setShowContent(false);
     }
   }, [isMobile]);
+
+  // 初始化字体大小设置
+  useEffect(() => {
+    initializeFontSize();
+  }, []);
 
   const menuItems = [
     {
@@ -74,7 +81,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
         case 'provider':
           return <ProviderSettingPage />;
         case 'general':
-          return <div className={styles.placeholder}>通用设置功能开发中...</div>;
+          return <GeneralSettingsPage />;
         case 'account':
           return <div className={styles.placeholder}>账户设置功能开发中...</div>;
         case 'security':

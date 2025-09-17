@@ -1,0 +1,273 @@
+@use '../../../styles/variables.scss' as *;
+
+.generalSettings {
+  padding: var(--spacing-lg);
+  max-width: 1000px;
+  margin: 0 auto;
+
+  .header {
+    margin-bottom: var(--spacing-xl);
+    
+    h3 {
+      margin-bottom: var(--spacing-xs);
+      color: var(--text-color);
+    }
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .settingCard {
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--border-color-light);
+    transition: box-shadow var(--transition-normal);
+
+    &:hover {
+      box-shadow: var(--shadow-2);
+    }
+
+    :global(.ant-card-head) {
+      border-bottom: 1px solid var(--border-color-light);
+      
+      :global(.ant-card-head-title) {
+        color: var(--text-color);
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+      }
+    }
+
+    :global(.ant-card-body) {
+      background: var(--background-color);
+    }
+  }
+
+  .settingItem {
+    margin-bottom: var(--spacing-xl);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .settingLabel {
+    margin-bottom: var(--spacing-lg);
+    
+    h5 {
+      margin-bottom: var(--spacing-xs);
+      color: var(--text-color);
+    }
+  }
+
+  .fontSizeControl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .sliderContainer {
+    .fontSizeSlider {
+      :global(.ant-slider-rail) {
+        background-color: var(--border-color-light);
+      }
+
+      :global(.ant-slider-track) {
+        background-color: var(--primary-color);
+      }
+
+      :global(.ant-slider-handle) {
+        border-color: var(--primary-color);
+        
+        &:focus {
+          box-shadow: 0 0 0 5px rgba(24, 144, 255, 0.12);
+        }
+      }
+
+      :global(.ant-slider-mark-text) {
+        font-size: 12px;
+        color: var(--text-color-secondary);
+      }
+
+      :global(.ant-slider-mark-text-active) {
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+    }
+
+    .currentSize {
+      text-align: center;
+      
+      .sizeDesc {
+        display: block;
+        font-size: var(--font-size-sm);
+        line-height: 1.2;
+      }
+    }
+  }
+
+  .presetOptions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+
+    .fontSizeRadio {
+      :global(.ant-radio-button-wrapper) {
+        border-color: var(--border-color);
+        color: var(--text-color);
+        
+        &:hover {
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+        }
+
+        &:global(.ant-radio-button-wrapper-checked) {
+          border-color: var(--primary-color);
+          background-color: var(--primary-color);
+          color: white;
+          
+          &:hover {
+            border-color: var(--primary-color-hover);
+            background-color: var(--primary-color-hover);
+          }
+        }
+      }
+    }
+
+    .radioLabel {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      
+      small {
+        font-size: 10px;
+        opacity: 0.8;
+        margin-top: 2px;
+      }
+    }
+  }
+
+  .previewArea {
+    background: var(--background-color-light);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+
+    h5 {
+      margin-bottom: var(--spacing-md);
+      color: var(--text-color);
+    }
+
+    .previewContent {
+      line-height: var(--line-height);
+      
+      p {
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      span {
+        display: inline-block;
+        margin-bottom: var(--spacing-xs);
+      }
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color-light);
+
+    .applyButton {
+      &:global(.ant-btn-primary) {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        
+        &:hover {
+          background-color: var(--primary-color-hover);
+          border-color: var(--primary-color-hover);
+        }
+      }
+    }
+  }
+
+  .placeholderContent {
+    padding: var(--spacing-xl);
+    text-align: center;
+    background: var(--background-color-light);
+    border-radius: var(--border-radius);
+    color: var(--text-color-disabled);
+  }
+}
+
+// 移动端适配
+@include respond-below(md) {
+  .generalSettings {
+    padding: var(--spacing-md);
+
+    .sliderContainer {
+      :global(.ant-row) {
+        flex-direction: column;
+        gap: var(--spacing-md);
+      }
+
+      :global(.ant-col) {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .currentSize {
+        text-align: left;
+      }
+    }
+
+    .presetOptions {
+      .fontSizeRadio {
+        :global(.ant-space) {
+          width: 100%;
+        }
+
+        :global(.ant-radio-button-wrapper) {
+          flex: 1;
+          text-align: center;
+          min-width: 0;
+        }
+      }
+    }
+
+    .actions {
+      flex-direction: column-reverse;
+
+      .ant-btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// 响应式字体大小按钮
+@include respond-below(sm) {
+  .generalSettings {
+    .presetOptions {
+      .fontSizeRadio {
+        :global(.ant-space) {
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          
+          > :global(.ant-space-item) {
+            width: 100%;
+          }
+        }
+
+        :global(.ant-radio-button-wrapper) {
+          width: 100%;
+          text-align: center;
+        }
+      }
+    }
+  }
+}
