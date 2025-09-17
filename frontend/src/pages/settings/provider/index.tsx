@@ -10,7 +10,6 @@ import {
   Divider,
   Alert,
   message,
-  Spin,
   Typography,
   Row,
   Col,
@@ -537,8 +536,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             }
             className={styles.configCard}
           >
-            <Spin spinning={loading}>
-              <Form
+            <Form
                 form={form}
                 layout="vertical"
                 onFinish={isCreatingNew ? handleCreateProvider : handleSave} // 根据状态决定调用哪个函数
@@ -731,8 +729,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   </Space>
                 </Form.Item>
               </Form>
-            </Spin>
-          </Card>
+            </Card>
         </Col>
       </Row>
     </div>

@@ -1,4 +1,4 @@
-# Chat 组件重构说明
+# Chat 组件重构与加载动画优化说明
 
 ## 优化内容
 
@@ -43,7 +43,17 @@ Chat 组件现在支持两种使用模式：
 - 流畅的动画效果，视觉体验更佳
 - 移动端适配：较小的条形尺寸和字体
 
-### 3. 新增独立的 ChatPage 组件
+### 3. 设置页面加载动画优化
+
+为设置页面添加了类似的自定义加载动画：
+
+- **统一的加载体验**：与Chat组件使用相同的波浪条形动画
+- **具有针对性的占位符**：模拟设置页面的左侧菜单和右侧卡片布局
+- **响应式设计**：移动端和桌面端的不同占位符布局
+- **保证最小加载时间**：同样至少持续500ms
+- **移除旧加载动画**：替换了Provider设置页面中的Ant Design Spin组件，实现视觉统一
+
+### 4. 新增独立的 ChatPage 组件
 
 创建了 `/src/pages/ChatPage.tsx`，可以作为独立页面使用：
 
@@ -54,54 +64,33 @@ import ChatPage from '@/pages/ChatPage';
 <Route path="/chat/:chatUuid?" component={ChatPage} />
 ```
 
-## 使用方式
+### 5. 📁 文件结构
 
-### 在现有项目中嵌入使用
-
-```tsx
-import Chat from '@/pages/home/chat';
-
-function MyComponent() {
-    return (
-        <div>
-            <Chat
-                standalone={false}
-                chatTitle="我的对话"
-                currentMessages={messages}
-                onSendMessage={handleSendMessage}
-                onModelChange={handleModelChange}
-                // ... 其他必要的 props
-            />
-        </div>
-    );
-}
+```
+frontend/src/
+├── pages/
+│   ├── ChatPage.tsx              # 新增：独立聊天页面
+│   ├── settings/
+│   │   ├── index.tsx             # 更新：添加加载动画
+│   │   └── index.module.scss     # 更新：加载动画样式
+│   └── home/
+│       ├── chat/
+│       │   ├── index.tsx         # 重构：支持独立/嵌入模式
+│       │   └── index.module.scss # 新增：加载动画样式
+│       └── index.tsx             # 更新：使用重构后的Chat组件
+└── doc/
+    └── CHAT_REFACTOR.md          # 新增：重构说明文档
 ```
 
-### 作为独立页面使用
+### 6. 🎆 加载动画统一优化
 
-```tsx
-import ChatPage from '@/pages/ChatPage';
+**第二次优化：移除重复的内部loading**
 
-function App() {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/chat/:chatUuid?" element={<ChatPage />} />
-            </Routes>
-        </Router>
-    );
-}
+- **统一的路由级loading**：在App.tsx中为懒加载的路由添加了统一的波浪条形loading动画
+- **移除重复逻辑**：移除了设置页面内部的loading动画，避免重复显示
+- **简化代码**：设置页面组件变得更加简洁，去除了复杂的加载状态管理
+- **优化体验**：用户在路由切换时只会看到一次loading动画，体验更加流畅
+
+### 7. 🎯 代码质量
+
 ```
-
-## 主要改进
-
-1. **灵活性增强**：Chat 组件现在可以既作为页面组件使用，也可以嵌入到其他组件中
-2. **加载体验优化**：添加了骨架屏加载动画，提升用户体验
-3. **类型安全**：所有 props 都支持可选，提高了组件的容错性
-4. **样式优化**：支持独立模式和嵌入模式的不同样式表现
-
-## 注意事项
-
-- 独立模式下会显示标题栏，嵌入模式下标题栏的显示取决于是否传入 `onTitleChange` 回调
-- 加载动画使用了 Ant Design 的 Spin 组件，确保了一致的视觉体验
-- 所有的事件回调都是可选的，未传入时组件会优雅降级

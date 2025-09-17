@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Spin } from 'antd';
 import Layout from '@/components/Layout';
 import SimpleTest from '@/pages/SimpleTest';
 import EnvTest from '@/pages/EnvTest';
@@ -26,12 +25,40 @@ function App() {
         <div
           style={{
             display: 'flex',
+            flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             height: '100vh',
+            gap: '16px'
           }}
         >
-          <Spin size="large" tip="页面加载中..." />
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: '4px',
+                  height: '30px',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  borderRadius: '2px',
+                  animation: `loading-wave 1.2s ease-in-out infinite ${i * 0.1}s`
+                }}
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: '14px', color: '#666', whiteSpace: 'nowrap' }}>加载中...</span>
+          <style>{`
+            @keyframes loading-wave {
+              0%, 40%, 100% {
+                transform: scaleY(0.4);
+                opacity: 0.6;
+              }
+              20% {
+                transform: scaleY(1);
+                opacity: 1;
+              }
+            }
+          `}</style>
         </div>
       }
     >

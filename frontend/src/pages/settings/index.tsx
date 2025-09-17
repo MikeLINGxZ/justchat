@@ -41,6 +41,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
 
   // 初始化字体大小设置
   useEffect(() => {
+    // 初始化字体大小设置
     initializeFontSize();
   }, []);
 
@@ -74,6 +75,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
     // 移动端返回菜单
     setShowContent(false);
   };
+
+  // 决定是否显示加载状态 - 已移除，使用App.tsx的统一loading
 
   const renderContent = () => {
     const content = (() => {

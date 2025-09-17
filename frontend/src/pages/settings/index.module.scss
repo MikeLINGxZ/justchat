@@ -3,6 +3,7 @@
 .settingsLayout {
   height: 100%;
   background: var(--background-color);
+  position: relative;
 }
 
 .settingsSider {
@@ -246,5 +247,32 @@
   .mobileMenu,
   .mobileContentContainer {
     display: none;
+  }
+}
+
+// 暗色主题适配
+:root.dark {
+  .settingsLayout {
+    background: var(--background-color-dark, #1a1a1a);
+  }
+  
+  .settingsLoadingContainer {
+    background: var(--background-color-dark, #1a1a1a);
+  }
+  
+  // 暗色主题下的加载动画
+  .loadingBar {
+    background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  }
+  
+  .loadingText {
+    color: var(--text-color, #ffffff);
+  }
+  
+  // 暗色主题下的占位符
+  .loadingMenu,
+  .loadingCard {
+    background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+    background-size: 200% 100%;
   }
 }

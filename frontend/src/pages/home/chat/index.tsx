@@ -83,7 +83,7 @@ const Chat: React.FC<ChatProps> = ({
     // 内部加载状态管理（用于保证最小加载时间）
     const [internalLoading, setInternalLoading] = useState(false);
     const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-    const minLoadingDuration = 500; // 最小加载时间500ms
+    const minLoadingDuration = 200; // 最小加载时间200ms
     // 滚动状态管理
     const [autoScroll, setAutoScroll] = useState(true); // 是否启用自动滚动
     const [isUserScrolling, setIsUserScrolling] = useState(false); // 用户是否在手动滚动
