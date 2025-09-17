@@ -1,109 +1,162 @@
 @use '../../../styles/variables.scss' as *;
 
 .generalSettings {
-  padding: var(--spacing-lg);
-  max-width: 1000px;
+  padding: var(--spacing-xl);
+  max-width: 800px;
   margin: 0 auto;
+  background: var(--background-color);
+  min-height: 100vh;
 
   .header {
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-xxl);
+    text-align: center;
     
     h3 {
-      margin-bottom: var(--spacing-xs);
+      margin-bottom: var(--spacing-sm);
       color: var(--text-color);
+      font-weight: 700;
+      font-size: 28px;
+    }
+    
+    span {
+      font-size: var(--font-size-lg);
+      color: var(--text-color-secondary);
     }
   }
 
   .content {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);
   }
 
   .settingCard {
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-1);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--border-color-light);
-    transition: box-shadow var(--transition-normal);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    background: var(--background-color);
 
     &:hover {
-      box-shadow: var(--shadow-2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
     }
 
     :global(.ant-card-head) {
       border-bottom: 1px solid var(--border-color-light);
+      background: linear-gradient(135deg, var(--primary-color-light), rgba(255, 255, 255, 0.8));
+      padding: var(--spacing-lg) var(--spacing-xl);
       
       :global(.ant-card-head-title) {
-        color: var(--text-color);
+        color: var(--primary-color);
         font-weight: 600;
-        font-size: var(--font-size-lg);
+        font-size: var(--font-size-xl);
       }
     }
 
     :global(.ant-card-body) {
       background: var(--background-color);
+      padding: var(--spacing-xl);
     }
   }
 
   .settingItem {
-    margin-bottom: var(--spacing-xl);
-
-    &:last-child {
-      margin-bottom: 0;
-    }
+    margin-bottom: 0;
   }
 
   .settingLabel {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
     
     h5 {
-      margin-bottom: var(--spacing-xs);
+      margin-bottom: var(--spacing-sm);
       color: var(--text-color);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+    
+    span {
+      color: var(--text-color-secondary);
+      font-size: var(--font-size);
     }
   }
 
   .fontSizeControl {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xxl);
   }
 
   .sliderContainer {
+    .sliderHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      padding: 0 var(--spacing-sm);
+    }
+
     .fontSizeSlider {
+      margin: var(--spacing-lg) 0;
+      
       :global(.ant-slider-rail) {
-        background-color: var(--border-color-light);
+        background: linear-gradient(90deg, var(--border-color-light), var(--border-color));
+        height: 8px;
+        border-radius: 4px;
       }
 
       :global(.ant-slider-track) {
-        background-color: var(--primary-color);
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-color-hover));
+        height: 8px;
+        border-radius: 4px;
       }
 
       :global(.ant-slider-handle) {
-        border-color: var(--primary-color);
+        border: 3px solid var(--primary-color);
+        width: 20px;
+        height: 20px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
         
         &:focus {
-          box-shadow: 0 0 0 5px rgba(24, 144, 255, 0.12);
+          box-shadow: 0 0 0 8px rgba(24, 144, 255, 0.15);
+        }
+        
+        &:hover {
+          transform: scale(1.1);
+          transition: transform 0.2s;
         }
       }
 
       :global(.ant-slider-mark-text) {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-color-secondary);
+        font-weight: 500;
+        transform: translateX(-50%);
       }
 
       :global(.ant-slider-mark-text-active) {
         color: var(--primary-color);
-        font-weight: 500;
+        font-weight: 600;
       }
     }
 
     .currentSize {
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      
+      .sizeLabel {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+      }
       
       .sizeDesc {
-        display: block;
         font-size: var(--font-size-sm);
-        line-height: 1.2;
+        color: var(--text-color-secondary);
+        margin-top: 2px;
       }
     }
   }
@@ -111,163 +164,300 @@
   .presetOptions {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
-
-    .fontSizeRadio {
-      :global(.ant-radio-button-wrapper) {
-        border-color: var(--border-color);
-        color: var(--text-color);
-        
-        &:hover {
-          border-color: var(--primary-color);
-          color: var(--primary-color);
-        }
-
-        &:global(.ant-radio-button-wrapper-checked) {
-          border-color: var(--primary-color);
-          background-color: var(--primary-color);
-          color: white;
-          
-          &:hover {
-            border-color: var(--primary-color-hover);
-            background-color: var(--primary-color-hover);
-          }
-        }
-      }
+    gap: var(--spacing-md);
+    
+    > span {
+      color: var(--text-color);
+      font-weight: 600;
+      margin-bottom: var(--spacing-sm);
     }
 
-    .radioLabel {
+    .presetButtons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: var(--spacing-sm);
+    }
+
+    .presetButton {
       display: flex;
       flex-direction: column;
-      line-height: 1.2;
+      align-items: center;
+      padding: var(--spacing-md) var(--spacing-sm);
+      border: 2px solid var(--border-color-light);
+      border-radius: 12px;
+      background: var(--background-color);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
       
-      small {
-        font-size: 10px;
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        transition: left 0.5s;
+      }
+      
+      &:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(24, 144, 255, 0.2);
+        
+        &::before {
+          left: 100%;
+        }
+      }
+      
+      &.active {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, var(--primary-color-light), rgba(24, 144, 255, 0.1));
+        color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 12px rgba(24, 144, 255, 0.25);
+      }
+      
+      .buttonLabel {
+        font-weight: 600;
+        font-size: var(--font-size);
+        margin-bottom: 4px;
+      }
+      
+      .buttonSize {
+        font-size: var(--font-size-sm);
+        color: var(--text-color-secondary);
         opacity: 0.8;
-        margin-top: 2px;
+      }
+      
+      &.active .buttonSize {
+        color: var(--primary-color);
+        opacity: 1;
       }
     }
   }
 
   .previewArea {
-    background: var(--background-color-light);
-    border: 1px solid var(--border-color-light);
-    border-radius: var(--border-radius);
-    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, var(--background-color-light), rgba(248, 250, 252, 0.8));
+    border: 2px solid var(--border-color-light);
+    border-radius: 16px;
+    padding: var(--spacing-xl);
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-color-hover));
+    }
 
-    h5 {
-      margin-bottom: var(--spacing-md);
-      color: var(--text-color);
+    .previewHeader {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-lg);
+      
+      .previewIcon {
+        font-size: var(--font-size-lg);
+        color: var(--primary-color);
+      }
+      
+      h5 {
+        margin: 0;
+        color: var(--text-color);
+        font-weight: 600;
+      }
     }
 
     .previewContent {
-      line-height: var(--line-height);
+      line-height: 1.6;
+      transition: all 0.3s ease;
       
-      p {
-        margin-bottom: var(--spacing-sm);
+      .previewText {
+        margin-bottom: var(--spacing-md);
+        color: var(--text-color);
+        line-height: inherit;
       }
       
-      span {
-        display: inline-block;
-        margin-bottom: var(--spacing-xs);
+      .previewSmall {
+        margin-bottom: var(--spacing-sm);
+        color: var(--text-color-secondary);
+        line-height: inherit;
+      }
+      
+      .previewBold {
+        margin-bottom: var(--spacing-sm);
+        color: var(--text-color);
+        line-height: inherit;
+      }
+      
+      .previewSecondary {
+        color: var(--text-color-secondary);
+        line-height: inherit;
       }
     }
   }
 
   .actions {
     display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-color-light);
+    gap: var(--spacing-md);
+    justify-content: center;
+    padding-top: var(--spacing-xl);
+    
+    .resetButton {
+      min-width: 120px;
+      height: 40px;
+      border-radius: 20px;
+      border: 2px solid var(--border-color);
+      background: var(--background-color);
+      color: var(--text-color-secondary);
+      font-weight: 500;
+      transition: all 0.3s ease;
+      
+      &:hover:not(:disabled) {
+        border-color: var(--warning-color);
+        color: var(--warning-color);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(250, 173, 20, 0.2);
+      }
+      
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
 
     .applyButton {
+      min-width: 120px;
+      height: 40px;
+      border-radius: 20px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      
       &:global(.ant-btn-primary) {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+        border: none;
         
-        &:hover {
-          background-color: var(--primary-color-hover);
-          border-color: var(--primary-color-hover);
+        &:hover:not(:disabled) {
+          background: linear-gradient(135deg, var(--primary-color-hover), var(--primary-color-active));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(24, 144, 255, 0.3);
+        }
+        
+        &:disabled {
+          background: var(--border-color-light);
+          color: var(--text-color-disabled);
+          cursor: not-allowed;
         }
       }
     }
   }
 
-  .placeholderContent {
-    padding: var(--spacing-xl);
-    text-align: center;
-    background: var(--background-color-light);
-    border-radius: var(--border-radius);
-    color: var(--text-color-disabled);
-  }
+
 }
 
 // 移动端适配
 @include respond-below(md) {
   .generalSettings {
     padding: var(--spacing-md);
+    min-height: auto;
+
+    .header {
+      margin-bottom: var(--spacing-xl);
+      
+      h3 {
+        font-size: 24px;
+      }
+    }
+
+    .settingCard {
+      border-radius: 12px;
+      
+      :global(.ant-card-head) {
+        padding: var(--spacing-md) var(--spacing-lg);
+      }
+      
+      :global(.ant-card-body) {
+        padding: var(--spacing-lg);
+      }
+    }
 
     .sliderContainer {
-      :global(.ant-row) {
+      .sliderHeader {
         flex-direction: column;
-        gap: var(--spacing-md);
-      }
-
-      :global(.ant-col) {
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-
-      .currentSize {
-        text-align: left;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        
+        .currentSize {
+          align-self: flex-end;
+        }
       }
     }
 
     .presetOptions {
-      .fontSizeRadio {
-        :global(.ant-space) {
-          width: 100%;
+      .presetButtons {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-xs);
+      }
+      
+      .presetButton {
+        padding: var(--spacing-sm);
+        
+        .buttonLabel {
+          font-size: var(--font-size-sm);
         }
-
-        :global(.ant-radio-button-wrapper) {
-          flex: 1;
-          text-align: center;
-          min-width: 0;
+        
+        .buttonSize {
+          font-size: 11px;
         }
       }
     }
 
     .actions {
-      flex-direction: column-reverse;
+      flex-direction: column;
+      gap: var(--spacing-sm);
 
-      .ant-btn {
+      .resetButton,
+      .applyButton {
         width: 100%;
+        min-width: auto;
       }
     }
   }
 }
 
-// 响应式字体大小按钮
+// 小屏幕设备适配
 @include respond-below(sm) {
   .generalSettings {
-    .presetOptions {
-      .fontSizeRadio {
-        :global(.ant-space) {
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          
-          > :global(.ant-space-item) {
-            width: 100%;
-          }
-        }
-
-        :global(.ant-radio-button-wrapper) {
-          width: 100%;
-          text-align: center;
-        }
+    padding: var(--spacing-sm);
+    
+    .header {
+      h3 {
+        font-size: 20px;
       }
+    }
+    
+    .settingCard {
+      :global(.ant-card-body) {
+        padding: var(--spacing-md);
+      }
+    }
+
+    .presetOptions {
+      .presetButtons {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xs);
+      }
+    }
+    
+    .previewArea {
+      padding: var(--spacing-md);
     }
   }
 }

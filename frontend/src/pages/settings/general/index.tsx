@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, Radio, Space, Typography, Slider, Row, Col, Button, Divider } from 'antd';
-import { ReloadOutlined, CheckOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Radio, Space, Typography, Slider, Row, Col, Button, message } from 'antd';
+import { ReloadOutlined, CheckOutlined, FontSizeOutlined } from '@ant-design/icons';
 import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS, getFontSizeLabel } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
 
@@ -8,10 +8,28 @@ const { Title, Text, Paragraph } = Typography;
 
 const GeneralSettingsPage: React.FC = () => {
   const { fontSizeOffset, setFontSizeOffset, resetFontSize } = useFontSizeStore();
+  
+  // 临时预览状态
+  const [previewOffset, setPreviewOffset] = useState(fontSizeOffset);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // 处理字体大小变更
-  const handleFontSizeChange = (value: number) => {
-    setFontSizeOffset(value as any);
+  // 处理字体大小预览变更
+  const handlePreviewChange = (value: number) => {
+    setPreviewOffset(value as any);
+    setHasChanges(value !== fontSizeOffset);
+  };
+
+  // 应用设置
+  const handleApplySettings = () => {
+    setFontSizeOffset(previewOffset as any);
+    setHasChanges(false);
+    message.success('字体设置已应用');
+  };
+
+  // 重置设置
+  const handleResetSettings = () => {
+    setPreviewOffset(FONT_SIZE_OFFSETS.NORMAL);
+    setHasChanges(FONT_SIZE_OFFSETS.NORMAL !== fontSizeOffset);
   };
 
   // 滑块标记
@@ -42,66 +60,68 @@ const GeneralSettingsPage: React.FC = () => {
             <div className={styles.fontSizeControl}>
               {/* 滑块控制 */}
               <div className={styles.sliderContainer}>
-                <Row gutter={[16, 16]} align="middle">
-                  <Col span={4}>
-                    <Text strong>字体大小</Text>
-                  </Col>
-                  <Col span={16}>
-                    <Slider
-                      min={FONT_SIZE_OFFSETS.VERY_SMALL}
-                      max={FONT_SIZE_OFFSETS.EXTRA_LARGE}
-                      step={2}
-                      value={fontSizeOffset}
-                      onChange={handleFontSizeChange}
-                      marks={sliderMarks}
-                      className={styles.fontSizeSlider}
-                    />
-                  </Col>
-                  <Col span={4}>
-                    <div className={styles.currentSize}>
-                      <Text strong>{getFontSizeLabel(fontSizeOffset)}</Text>
-                      <Text type="secondary" className={styles.sizeDesc}>
-                        {14 + fontSizeOffset}px
-                      </Text>
-                    </div>
-                  </Col>
-                </Row>
+                <div className={styles.sliderHeader}>
+                  <Text strong>字体大小</Text>
+                  <div className={styles.currentSize}>
+                    <Text strong className={styles.sizeLabel}>{getFontSizeLabel(previewOffset)}</Text>
+                    <Text type="secondary" className={styles.sizeDesc}>
+                      {14 + previewOffset}px
+                    </Text>
+                  </div>
+                </div>
+                <Slider
+                  min={FONT_SIZE_OFFSETS.VERY_SMALL}
+                  max={FONT_SIZE_OFFSETS.EXTRA_LARGE}
+                  step={2}
+                  value={previewOffset}
+                  onChange={handlePreviewChange}
+                  marks={sliderMarks}
+                  className={styles.fontSizeSlider}
+                />
               </div>
 
               {/* 预设选项 */}
               <div className={styles.presetOptions}>
-                <Text strong>快速选择：</Text>
-                <Radio.Group 
-                  value={fontSizeOffset} 
-                  onChange={(e) => handleFontSizeChange(e.target.value)}
-                  className={styles.fontSizeRadio}
-                >
-                  <Space wrap>
-                    {FONT_SIZE_OPTIONS.map((option) => (
-                      <Radio.Button key={option.value} value={option.value}>
-                        <span className={styles.radioLabel}>
-                          {option.label}
-                          <small>({option.description})</small>
-                        </span>
-                      </Radio.Button>
-                    ))}
-                  </Space>
-                </Radio.Group>
+                <Text strong>快速选择</Text>
+                <div className={styles.presetButtons}>
+                  {FONT_SIZE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      className={`${styles.presetButton} ${previewOffset === option.value ? styles.active : ''}`}
+                      onClick={() => handlePreviewChange(option.value)}
+                    >
+                      <span className={styles.buttonLabel}>{option.label}</span>
+                      <span className={styles.buttonSize}>{option.description}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* 预览区域 */}
               <div className={styles.previewArea}>
-                <Title level={5}>预览效果</Title>
-                <div className={styles.previewContent}>
-                  <Paragraph>
-                    这是标准字体大小的文本预览。你可以通过调整上方的设置来改变文字的大小，
-                    找到最适合你阅读习惯的字体尺寸。
-                  </Paragraph>
-                  <Text>小号文字：这是较小的辅助信息文本。</Text>
-                  <br />
-                  <Text strong>粗体文字：这是重要的加粗文本。</Text>
-                  <br />
-                  <Text type="secondary">次要文字：这是次要信息文本。</Text>
+                <div className={styles.previewHeader}>
+                  <FontSizeOutlined className={styles.previewIcon} />
+                  <Title level={5}>预览效果</Title>
+                </div>
+                <div 
+                  className={styles.previewContent}
+                  style={{
+                    fontSize: `${14 + previewOffset}px`,
+                    lineHeight: 1.5715 + (previewOffset > 0 ? -0.05 : previewOffset < 0 ? 0.05 : 0)
+                  }}
+                >
+                  <div className={styles.previewText}>
+                    这是标准字体大小的文本预览。你可以通过调整上方的设置来改变文字的大小，找到最适合你阅读习惯的字体尺寸。
+                  </div>
+                  <div className={styles.previewSmall} style={{ fontSize: `${12 + previewOffset}px` }}>
+                    小号文字：这是较小的辅助信息文本。
+                  </div>
+                  <div className={styles.previewBold} style={{ fontSize: `${14 + previewOffset}px`, fontWeight: 600 }}>
+                    粗体文字：这是重要的加粗文本。
+                  </div>
+                  <div className={styles.previewSecondary} style={{ fontSize: `${14 + previewOffset}px`, opacity: 0.65 }}>
+                    次要文字：这是次要信息文本。
+                  </div>
                 </div>
               </div>
 
@@ -109,14 +129,17 @@ const GeneralSettingsPage: React.FC = () => {
               <div className={styles.actions}>
                 <Button 
                   icon={<ReloadOutlined />}
-                  onClick={resetFontSize}
-                  disabled={fontSizeOffset === FONT_SIZE_OFFSETS.NORMAL}
+                  onClick={handleResetSettings}
+                  disabled={previewOffset === FONT_SIZE_OFFSETS.NORMAL}
+                  className={styles.resetButton}
                 >
                   恢复默认
                 </Button>
                 <Button 
                   type="primary" 
                   icon={<CheckOutlined />}
+                  onClick={handleApplySettings}
+                  disabled={!hasChanges}
                   className={styles.applyButton}
                 >
                   应用设置
@@ -126,12 +149,7 @@ const GeneralSettingsPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* 其他设置区域预留 */}
-        <Card title="其他设置" className={styles.settingCard}>
-          <div className={styles.placeholderContent}>
-            <Text type="secondary">更多个性化设置功能正在开发中...</Text>
-          </div>
-        </Card>
+
       </div>
     </div>
   );
