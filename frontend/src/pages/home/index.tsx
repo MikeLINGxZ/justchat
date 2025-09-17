@@ -386,6 +386,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             <Layout className={styles.mainLayout}>
                 <Content className={styles.mainContent} hidden={isMobile && !isSidebarCollapsed}>
                     <Chat
+                        standalone={false}
+                        initialLoading={isLoadingMessages}
                         chatTitle={chatTitle}
                         chatUuid={currentChatUuid}
                         currentMessages={currentMessages}

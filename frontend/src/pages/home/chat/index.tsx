@@ -1,5 +1,6 @@
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
+import { Spin } from 'antd';
 import ChatInput from "@/pages/home/chat/chat_input";
 import styles from "@/pages/home/chat/index.module.scss";
 import ChatMessages, {type ChatMessagesRef} from "@/pages/home/chat/chat_messages.tsx";
@@ -8,33 +9,37 @@ import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 
 interface ChatProps {
     // 聊天标题
-    chatTitle: string;
+    chatTitle?: string;
     // 聊天UUID
     chatUuid?: string;
     // 所有消息
-    currentMessages: Message[]; // 修改为 Message[]
+    currentMessages?: Message[];
     // 是否加载中
-    isLoading: boolean;
+    isLoading?: boolean;
     // 是否显示loading消息
     showLoadingMessage?: boolean;
     // 所选模型
-    selectedModel: string;
+    selectedModel?: string;
     // 可用模型
-    availableModels: ModelOption[];
-    // 是否为h5
-    isMobile: boolean;
+    availableModels?: ModelOption[];
+    // 是否为移动端
+    isMobile?: boolean;
     // 侧边栏是否收起
     isSidebarCollapsed?: boolean;
     // 是否正在生成消息
     isGenerating?: boolean;
+    // 是否为独立模式（不嵌入其他页面）
+    standalone?: boolean;
+    // 初始化加载中
+    initialLoading?: boolean;
     // 聊天标题变更事件
-    onTitleChange: (newTitle: string) => void;
-    // 点击发送按钮事件（现在会接收消息内容）
-    onSendMessage: (message: string) => void;
+    onTitleChange?: (newTitle: string) => void;
+    // 点击发送按钮事件
+    onSendMessage?: (message: string) => void;
     // 点击停止生成按钮事件
     onStopGeneration?: () => void;
     // 模型变更事件
-    onModelChange: (model: string) => void;
+    onModelChange?: (model: string) => void;
     // 切换侧边栏事件
     onToggleSidebar?: () => void;
     // 复制消息事件
@@ -52,16 +57,18 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({
-    chatTitle,
+    chatTitle = '新建对话',
     chatUuid,
-    currentMessages,
-    isLoading,
-    showLoadingMessage,
-    selectedModel,
-    availableModels,
-    isMobile,
-    isSidebarCollapsed,
-    isGenerating,
+    currentMessages = [],
+    isLoading = false,
+    showLoadingMessage = false,
+    selectedModel = '',
+    availableModels = [],
+    isMobile = false,
+    isSidebarCollapsed = false,
+    isGenerating = false,
+    standalone = false,
+    initialLoading = false,
     onTitleChange,
     onSendMessage,
     onStopGeneration,
@@ -72,7 +79,12 @@ const Chat: React.FC<ChatProps> = ({
     onRegenerateMessage,
     onFileUpload,
     onImageUpload,
+    className
 }) => {
+    // 内部加载状态管理（用于保证最小加载时间）
+    const [internalLoading, setInternalLoading] = useState(false);
+    const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+    const minLoadingDuration = 500; // 最小加载时间500ms
     // 滚动状态管理
     const [autoScroll, setAutoScroll] = useState(true); // 是否启用自动滚动
     const [isUserScrolling, setIsUserScrolling] = useState(false); // 用户是否在手动滚动
@@ -197,45 +209,105 @@ const Chat: React.FC<ChatProps> = ({
         }
     }, [currentMessages.length]);
 
+    // 管理加载状态，确保最小加载时间
+    useEffect(() => {
+        if (initialLoading || isLoading) {
+            if (!internalLoading) {
+                setInternalLoading(true);
+                setLoadingStartTime(Date.now());
+            }
+        } else if (internalLoading && loadingStartTime) {
+            const elapsed = Date.now() - loadingStartTime;
+            const remaining = Math.max(0, minLoadingDuration - elapsed);
+            
+            if (remaining > 0) {
+                setTimeout(() => {
+                    setInternalLoading(false);
+                    setLoadingStartTime(null);
+                }, remaining);
+            } else {
+                setInternalLoading(false);
+                setLoadingStartTime(null);
+            }
+        }
+    }, [initialLoading, isLoading, internalLoading, loadingStartTime]);
+
+    // 决定是否显示加载状态
+    const shouldShowLoading = internalLoading || initialLoading;
+
     return (
-        <div className={`${styles.chatPage}`}>
-            <ChatTitle 
-                chatTitle={chatTitle}
-                chatUuid={chatUuid}
-                onTitleChange={onTitleChange}
-                isMobile={isMobile}
-                isSidebarCollapsed={isSidebarCollapsed}
-                onToggleSidebar={onToggleSidebar}
-            />
-            <div className={`${styles.chatMessagesContent}`}>
-                <ChatMessages
-                    ref={chatMessagesRef}
-                    messages={currentMessages}
-                    isLoading={isLoading}
-                    showLoadingMessage={showLoadingMessage}
-                    isMobile={isMobile}
-                    onCopyMessage={onCopyMessage}
-                    onDeleteMessage={onDeleteMessage}
-                    onRegenerateMessage={onRegenerateMessage}
-                    autoScrollBottom={autoScroll}
-                    onUserScroll={handleUserScroll}
-                />
-            </div>
-            <ChatInput className={`${styles.chatInput}`}
-                selectedModel={selectedModel}
-                availableModels={availableModels}
-                isMobile={isMobile}
-                isGenerating={isGenerating}
-                onSendMessage={onSendMessage}
-                onStopGeneration={onStopGeneration}
-                onModelChange={onModelChange}
-                onFileUpload={onFileUpload}
-                onImageUpload={onImageUpload}
-                onMessageListScrollToBottom={handleScrollToBottom}
-                showScrollToBottom={showScrollButton}
-            />
+        <div className={`${styles.chatPage} ${standalone ? styles.standalone : ''} ${className || ''}`}>
+            {shouldShowLoading ? (
+                <div className={styles.chatLoadingContainer}>
+                    <Spin size="large" tip="正在加载聊天内容...">
+                        <div className={styles.loadingPlaceholder}>
+                            {/* 占位内容，防止布局跳动 */}
+                            <div className={styles.loadingTitle}></div>
+                            <div className={styles.loadingMessages}>
+                                <div className={styles.loadingMessage}></div>
+                                <div className={styles.loadingMessage}></div>
+                                <div className={styles.loadingMessage}></div>
+                            </div>
+                            <div className={styles.loadingInput}></div>
+                        </div>
+                    </Spin>
+                </div>
+            ) : (
+                <>
+                    {standalone && onTitleChange && (
+                        <ChatTitle 
+                            chatTitle={chatTitle}
+                            chatUuid={chatUuid}
+                            onTitleChange={onTitleChange}
+                            isMobile={isMobile}
+                            isSidebarCollapsed={isSidebarCollapsed}
+                            onToggleSidebar={onToggleSidebar}
+                        />
+                    )}
+                    {!standalone && onTitleChange && (
+                        <ChatTitle 
+                            chatTitle={chatTitle}
+                            chatUuid={chatUuid}
+                            onTitleChange={onTitleChange}
+                            isMobile={isMobile}
+                            isSidebarCollapsed={isSidebarCollapsed}
+                            onToggleSidebar={onToggleSidebar}
+                        />
+                    )}
+                    <div className={`${styles.chatMessagesContent}`}>
+                        <ChatMessages
+                            ref={chatMessagesRef}
+                            messages={currentMessages}
+                            isLoading={isLoading}
+                            showLoadingMessage={showLoadingMessage}
+                            isMobile={isMobile}
+                            onCopyMessage={onCopyMessage}
+                            onDeleteMessage={onDeleteMessage}
+                            onRegenerateMessage={onRegenerateMessage}
+                            autoScrollBottom={autoScroll}
+                            onUserScroll={handleUserScroll}
+                        />
+                    </div>
+                    {(onSendMessage || onModelChange) && (
+                        <ChatInput className={`${styles.chatInput}`}
+                            selectedModel={selectedModel}
+                            availableModels={availableModels}
+                            isMobile={isMobile}
+                            isGenerating={isGenerating}
+                            onSendMessage={onSendMessage || (() => {})}
+                            onStopGeneration={onStopGeneration}
+                            onModelChange={onModelChange || (() => {})}
+                            onFileUpload={onFileUpload}
+                            onImageUpload={onImageUpload}
+                            onMessageListScrollToBottom={handleScrollToBottom}
+                            showScrollToBottom={showScrollButton}
+                        />
+                    )}
+                </>
+            )}
         </div>
     );
 };
 
 export default Chat;
+export type { ChatProps };
