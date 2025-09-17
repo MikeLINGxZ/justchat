@@ -50,6 +50,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [showModelMenu, setShowModelMenu] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isComposing, setIsComposing] = useState(false);
+    const [modelSearchValue, setModelSearchValue] = useState(''); // 新增：模型搜索值
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const addMenuRef = useRef<HTMLDivElement>(null);
@@ -113,6 +114,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     const handleModelClick = useCallback(() => {
         setShowModelMenu(!showModelMenu);
+        // 打开菜单时清空搜索值
+        if (!showModelMenu) {
+            setModelSearchValue('');
+        }
     }, [showModelMenu]);
 
     const handleImageUpload = useCallback(() => {
@@ -142,7 +147,24 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const handleModelSelect = useCallback((model: string) => {
         onModelChange(model);
         setShowModelMenu(false);
+        setModelSearchValue(''); // 选择后清空搜索值
     }, [onModelChange]);
+
+    // 处理模型搜索
+    const handleModelSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setModelSearchValue(e.target.value);
+    }, []);
+
+    // 过滤模型列表
+    const filteredModels = useCallback(() => {
+        if (!modelSearchValue.trim()) {
+            return availableModels;
+        }
+        return availableModels.filter(model => 
+            model.name.toLowerCase().includes(modelSearchValue.toLowerCase()) ||
+            model.id.toLowerCase().includes(modelSearchValue.toLowerCase())
+        );
+    }, [availableModels, modelSearchValue]);
 
     const handleSend = useCallback(() => {
         if (onMessageListScrollToBottom != null) {
@@ -198,6 +220,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             }
             if (modelMenuRef.current && !modelMenuRef.current.contains(event.target as Node)) {
                 setShowModelMenu(false);
+                setModelSearchValue(''); // 关闭菜单时清空搜索值
             }
         };
 
@@ -286,16 +309,39 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             
                             {showModelMenu && (
                                 <div className={`${styles.modelMenu} ${isMobile ? styles.mobileMenu : ''}`}>
-                                    {availableModels.map((model) => (
-                                        <button
-                                            key={model.id}
-                                            className={`${styles.menuItem} ${model.id === selectedModel ? styles.selected : ''}`}
-                                            onClick={() => handleModelSelect(model.id)}
-                                            type="button"
-                                        >
-                                            {model.name}
-                                        </button>
-                                    ))}
+                                    {/* 模型列表 */}
+                                    <div className={styles.modelList}>
+                                        {filteredModels().map((model) => (
+                                            <button
+                                                key={model.id}
+                                                className={`${styles.menuItem} ${model.id === selectedModel ? styles.selected : ''}`}
+                                                onClick={() => handleModelSelect(model.id)}
+                                                type="button"
+                                            >
+                                                <span className={styles.modelName}>{model.name}</span>
+                                                {model.name !== model.id && (
+                                                    <span className={styles.modelId}>{model.id}</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                        {/* 无结果提示 */}
+                                        {filteredModels().length === 0 && (
+                                            <div className={styles.noResults}>
+                                                没有找到匹配的模型
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* 搜索输入框 */}
+                                    <div className={styles.searchContainer}>
+                                        <input
+                                            type="text"
+                                            placeholder="搜索模型..."
+                                            value={modelSearchValue}
+                                            onChange={handleModelSearch}
+                                            className={styles.searchInput}
+                                            autoFocus
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
