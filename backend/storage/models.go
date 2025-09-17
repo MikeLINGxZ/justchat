@@ -105,5 +105,5 @@ func (s *Storage) AddProviderModel(ctx context.Context, model data_models.Model)
 
 // DeleteAllProviderModel 删除供应商模型
 func (s *Storage) DeleteAllProviderModel(ctx context.Context, providerId uint) error {
-	return s.sqliteDB.Model(&data_models.Model{}).Where("provider_id = ?", providerId).Delete(&data_models.Model{}).Error
+	return s.sqliteDB.Model(&data_models.Model{}).Where("provider_id = ? AND is_custom = 0", providerId).Delete(&data_models.Model{}).Error
 }

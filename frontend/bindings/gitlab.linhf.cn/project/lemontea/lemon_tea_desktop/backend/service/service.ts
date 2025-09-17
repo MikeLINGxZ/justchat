@@ -112,6 +112,13 @@ export function UpdateProvider(id: number, provider: view_models$0.Provider | nu
     return $Call.ByID(2109525354, id, provider);
 }
 
+/**
+ * UpdateProviderModels 更新供应商
+ */
+export function UpdateProviderModels(providerId: number): $CancellablePromise<void> {
+    return $Call.ByID(3054855516, providerId);
+}
+
 // Private type creation functions
 const $$createType0 = view_models$0.ChatList.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

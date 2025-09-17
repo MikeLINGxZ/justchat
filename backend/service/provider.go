@@ -130,6 +130,15 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 	return nil
 }
 
+// UpdateProviderModels 更新供应商
+func (s *Service) UpdateProviderModels(providerId uint) error {
+	err := s.updateProviderModel(providerId)
+	if err != nil {
+		return ierror.NewError(err)
+	}
+	return nil
+}
+
 // DeleteProvider 删除供应商
 func (s *Service) DeleteProvider(providerId uint) error {
 	return s.storage.DeleteProvider(context.Background(), providerId)

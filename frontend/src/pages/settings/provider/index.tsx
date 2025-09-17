@@ -282,7 +282,26 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     }
   };
 
-  // 取消新建供应商
+  // 刷新供应商模型列表
+  const handleRefreshModels = async () => {
+    if (selectedProvider === null || isCreatingNew) return;
+    
+    setLoading(true);
+    try {
+      // 调用后端接口刷新模型
+      await Service.UpdateProviderModels(selectedProvider);
+      
+      // 重新加载供应商列表以获取最新的模型数据
+      await loadProviderConfigs();
+      
+      message.success('模型列表刷新成功');
+    } catch (error) {
+      console.error('刷新模型失败:', error);
+      message.error('刷新模型失败');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleCancelCreate = () => {
     if (newProviderTempId !== null) {
       // 从列表中移除占位符
@@ -583,28 +602,45 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   name="defaultModel"
                   help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
                 >
-                  <Select 
-                    key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
-                    placeholder="选择默认模型"
-                    allowClear
-                    showSearch
-                    notFoundContent="没有可用模型"
-                    filterOption={(input, option) => {
-                      const label = option?.children?.toString().toLowerCase() || '';
-                      return label.includes(input.toLowerCase());
-                    }}
-                  >
-                    {availableModelsForProvider.map(model => (
-                      <Option key={model.id} value={model.id}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>{model.alias || model.model}</span>
-                          <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
-                            {model.model}
-                          </span>
-                        </div>
-                      </Option>
-                    ))}
-                  </Select>
+                  <Input.Group compact>
+                    <Form.Item 
+                      name="defaultModel" 
+                      noStyle
+                    >
+                      <Select 
+                        key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
+                        placeholder="选择默认模型"
+                        allowClear
+                        showSearch
+                        notFoundContent="没有可用模型"
+                        style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
+                        filterOption={(input, option) => {
+                          const label = option?.children?.toString().toLowerCase() || '';
+                          return label.includes(input.toLowerCase());
+                        }}
+                      >
+                        {availableModelsForProvider.map(model => (
+                          <Option key={model.id} value={model.id}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{model.alias || model.model}</span>
+                              <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
+                                {model.model}
+                              </span>
+                            </div>
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                    <Tooltip title="刷新模型列表">
+                      <Button 
+                        icon={<ReloadOutlined />}
+                        onClick={handleRefreshModels}
+                        loading={loading}
+                        disabled={isCreatingNew}
+                        style={{ width: '40px' }}
+                      />
+                    </Tooltip>
+                  </Input.Group>
                 </Form.Item>
 
                 <Divider className={styles.formDivider} />
