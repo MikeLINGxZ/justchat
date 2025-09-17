@@ -45,12 +45,12 @@ const GeneralSettingsPage: React.FC = () => {
 
   return (
     <div className={styles.generalSettings}>
-      {!isMobile && (
+      {/* {!isMobile && (
         <div className={styles.header}>
           <Title level={3}>通用设置</Title>
           <Text type="secondary">个性化你的使用体验</Text>
         </div>
-      )}
+      )} */}
 
       <div className={styles.content}>
         {/* 字体设置区域 */}
