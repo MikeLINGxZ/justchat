@@ -39,30 +39,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
 
   const menuItems = [
     {
-      key: 'provider',
-      icon: <ApiOutlined />,
-      label: '模型供应商',
-    },
-    {
       key: 'general',
       icon: <SettingOutlined />,
       label: '通用设置',
     },
     {
-      key: 'account',
-      icon: <UserOutlined />,
-      label: '账户设置',
+      key: 'provider',
+      icon: <ApiOutlined />,
+      label: '模型供应商',
     },
-    {
-      key: 'security',
-      icon: <SecurityScanOutlined />,
-      label: '安全设置',
-    },
-    {
-      key: 'notifications',
-      icon: <BellOutlined />,
-      label: '通知设置',
-    },
+    // {
+    //   key: 'notifications',
+    //   icon: <BellOutlined />,
+    //   label: '通知设置',
+    // },
     {
       key: 'about',
       icon: <InfoCircleOutlined />,
