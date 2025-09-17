@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Card, Radio, Space, Typography, Slider, Row, Col, Button, message } from 'antd';
 import { ReloadOutlined, CheckOutlined, FontSizeOutlined } from '@ant-design/icons';
 import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS, getFontSizeLabel } from '@/stores/fontSizeStore';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 import styles from './index.module.scss';
 
 const { Title, Text, Paragraph } = Typography;
 
 const GeneralSettingsPage: React.FC = () => {
   const { fontSizeOffset, setFontSizeOffset, resetFontSize } = useFontSizeStore();
+  const { isMobile } = useViewportHeight();
   
   // 临时预览状态
   const [previewOffset, setPreviewOffset] = useState(fontSizeOffset);
@@ -43,10 +45,12 @@ const GeneralSettingsPage: React.FC = () => {
 
   return (
     <div className={styles.generalSettings}>
-      <div className={styles.header}>
-        <Title level={3}>通用设置</Title>
-        <Text type="secondary">个性化你的使用体验</Text>
-      </div>
+      {!isMobile && (
+        <div className={styles.header}>
+          <Title level={3}>通用设置</Title>
+          <Text type="secondary">个性化你的使用体验</Text>
+        </div>
+      )}
 
       <div className={styles.content}>
         {/* 字体设置区域 */}
