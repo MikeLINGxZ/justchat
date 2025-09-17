@@ -6,9 +6,11 @@ import {
   UserOutlined,
   SecurityScanOutlined,
   BellOutlined,
+  InfoCircleOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import ProviderSettingPage from './provider';
+import AboutPage from './about';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import styles from './index.module.scss';
 
@@ -61,6 +63,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       icon: <BellOutlined />,
       label: '通知设置',
     },
+    {
+      key: 'about',
+      icon: <InfoCircleOutlined />,
+      label: '关于',
+    },
   ];
 
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -89,6 +96,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           return <div className={styles.placeholder}>安全设置功能开发中...</div>;
         case 'notifications':
           return <div className={styles.placeholder}>通知设置功能开发中...</div>;
+        case 'about':
+          return <AboutPage />;
         default:
           return <ProviderSettingPage />;
       }

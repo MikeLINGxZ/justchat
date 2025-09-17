@@ -615,8 +615,21 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                         notFoundContent="没有可用模型"
                         style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
                         filterOption={(input, option) => {
-                          const label = option?.children?.toString().toLowerCase() || '';
-                          return label.includes(input.toLowerCase());
+                          if (!input) return true;
+                          const searchValue = input.toLowerCase();
+                          // 从 option 中获取模型数据
+                          const modelId = option?.value;
+                          const model = availableModelsForProvider.find(m => m.id === modelId);
+                          if (!model) return false;
+                          
+                          // 搜索模型名称、别名和模型 ID
+                          const modelName = (model.model || '').toLowerCase();
+                          const modelAlias = (model.alias || '').toLowerCase();
+                          const modelIdStr = String(model.id || '').toLowerCase();
+                          
+                          return modelName.includes(searchValue) || 
+                                 modelAlias.includes(searchValue) || 
+                                 modelIdStr.includes(searchValue);
                         }}
                       >
                         {availableModelsForProvider.map(model => (
