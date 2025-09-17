@@ -1,6 +1,5 @@
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
-import { Spin } from 'antd';
 import ChatInput from "@/pages/home/chat/chat_input";
 import styles from "@/pages/home/chat/index.module.scss";
 import ChatMessages, {type ChatMessagesRef} from "@/pages/home/chat/chat_messages.tsx";
@@ -239,18 +238,33 @@ const Chat: React.FC<ChatProps> = ({
         <div className={`${styles.chatPage} ${standalone ? styles.standalone : ''} ${className || ''}`}>
             {shouldShowLoading ? (
                 <div className={styles.chatLoadingContainer}>
-                    <Spin size="large" tip="正在加载聊天内容...">
-                        <div className={styles.loadingPlaceholder}>
-                            {/* 占位内容，防止布局跳动 */}
-                            <div className={styles.loadingTitle}></div>
-                            <div className={styles.loadingMessages}>
-                                <div className={styles.loadingMessage}></div>
-                                <div className={styles.loadingMessage}></div>
-                                <div className={styles.loadingMessage}></div>
-                            </div>
-                            <div className={styles.loadingInput}></div>
+                    <div className={styles.customLoadingSpinner}>
+                        <div className={styles.loadingAnimation}>
+                            <div className={styles.loadingBar}></div>
+                            <div className={styles.loadingBar}></div>
+                            <div className={styles.loadingBar}></div>
+                            <div className={styles.loadingBar}></div>
+                            <div className={styles.loadingBar}></div>
                         </div>
-                    </Spin>
+                        <div className={styles.loadingText}>
+                            <span>正在加载聊天内容</span>
+                            <div className={styles.loadingDots}>
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className={styles.loadingPlaceholder}>
+                        {/* 占位内容，防止布局跳动 */}
+                        <div className={styles.loadingTitle}></div>
+                        <div className={styles.loadingMessages}>
+                            <div className={styles.loadingMessage}></div>
+                            <div className={styles.loadingMessage}></div>
+                            <div className={styles.loadingMessage}></div>
+                        </div>
+                        <div className={styles.loadingInput}></div>
+                    </div>
                 </div>
             ) : (
                 <>
