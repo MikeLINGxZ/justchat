@@ -48,11 +48,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       icon: <ApiOutlined />,
       label: '模型供应商',
     },
-    // {
-    //   key: 'notifications',
-    //   icon: <BellOutlined />,
-    //   label: '通知设置',
-    // },
     {
       key: 'about',
       icon: <InfoCircleOutlined />,
