@@ -108,26 +108,27 @@ func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
 			Name: "read_memory",
-			Desc: "根据关键词或时间范围查询个人记忆记录",
+			Desc: "根据语义关键词、时间范围、记忆类型或情感特征，检索用户过往的记忆片段。用于帮助AI回忆共同经历，实现个性化共情对话。",
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 				"keyword": {
 					Type:     "string",
-					Desc:     "用于模糊搜索记忆的标题或内容，例如“杭州旅行”，可为空",
+					Desc:     "用于模糊搜索记忆的标题或内容，支持自然语言短语，例如“北京旅行”、“压力大的时候”、“她送我的礼物”、“吃”。可为空。",
 					Required: false,
 				},
 				"start_at": {
 					Type:     "string",
-					Desc:     "只返回此日期之后（含）发生的记忆，格式 YYYY-MM-DD，可为空",
+					Desc:     "返回此日期之后（含）的记忆，格式 YYYY-MM-DD。",
 					Required: false,
 				},
 				"end_at": {
 					Type:     "string",
-					Desc:     "只返回此日期之前（含）发生的记忆，格式 YYYY-MM-DD，可为空",
+					Desc:     "返回此日期之前（含）的记忆，格式 YYYY-MM-DD。",
 					Required: false,
 				},
 			}),
 		},
 		func(ctx context.Context, in *ReadMemoryToolRequest) (output *ReadMemoryToolResponse, err error) {
+			fmt.Println("in:", in)
 			// 初始化响应
 			response := &ReadMemoryToolResponse{
 				Success:  false,

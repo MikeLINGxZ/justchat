@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/cloudwego/eino-ext/components/model/ark"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/flow/agent"
 	"github.com/cloudwego/eino/flow/agent/multiagent/host"
+	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/storage"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/tools"
@@ -19,6 +21,50 @@ import (
 
 //go:embed memory.prompt.md
 var memoryAgentPrompt string
+
+func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
+
+	arkModel, err := ark.NewChatModel(ctx, &ark.ChatModelConfig{
+		BaseURL: baseURL,
+		APIKey:  apiKey,
+		Model:   model,
+	})
+	if err != nil {
+		slog.Error(fmt.Sprintf("new memory agent: %v", err))
+		return nil, err
+	}
+
+	writeMemoryTool := tools.NewWriteMemoryTool(storage)
+	readMemoryTool := tools.NewReadMemoryTool(storage)
+	getCurrentTimeTool := tools.NewGetCurrentTimeTool()
+
+	ragent, err := react.NewAgent(ctx, &react.AgentConfig{
+		ToolCallingModel: arkModel,
+		ToolsConfig: compose.ToolsNodeConfig{
+			Tools: []tool.BaseTool{writeMemoryTool, readMemoryTool, getCurrentTimeTool},
+		},
+	})
+	if err != nil {
+		slog.Error(fmt.Sprintf("new memory agent: %v", err))
+		return nil, err
+	}
+
+	return &host.Specialist{
+		AgentMeta: host.AgentMeta{
+			Name:        "Memory_Weaver",
+			IntendedUse: "Responsible for storing, organizing, and managing the user's personal memories with context awareness and emotional sensitivity. Simulates human-like long-term memory behaviors including encoding, association, and retrieval. Must actively recall past experiences when queried, support personalized interaction, experiential accumulation, and answer questions about the user's history accurately and naturally.",
+		},
+		Streamable: func(ctx context.Context, input []*schema.Message, opts ...agent.AgentOption) (output *schema.StreamReader[*schema.Message], err error) {
+			var agentMessages []*schema.Message
+			agentMessages = append(agentMessages, &schema.Message{
+				Role:    schema.System,
+				Content: memoryAgentPrompt,
+			})
+			agentMessages = append(agentMessages, input...)
+			return ragent.Stream(ctx, agentMessages, opts...)
+		},
+	}, nil
+}
 
 func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
 

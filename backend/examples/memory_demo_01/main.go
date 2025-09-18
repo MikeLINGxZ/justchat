@@ -30,7 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	memoryAgent, err := agents.NewMemory(ctx, openAIBaseURL, openAIAPIKey, openAIModelName, is)
+	memoryAgent, err := agents.NewMemoryAgent(ctx, openAIBaseURL, openAIAPIKey, openAIModelName, is)
 	if err != nil {
 		panic(err)
 	}
