@@ -21,14 +21,20 @@ func (s *Storage) WriterMemory(ctx context.Context, title, content string, date 
 func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt *time.Time) ([]models.Memory, error) {
 	var memories []models.Memory
 
+	if keyword == "" {
+		err := s.sqliteDb.WithContext(ctx).Find(&memories).Error
+		if err != nil {
+			return nil, err
+		}
+		return memories, nil
+	}
+
 	// 开始构建查询
 	db := s.sqliteDb.WithContext(ctx).Model(&models.Memory{})
 
 	// 模糊匹配 Title 或 Content
-	if keyword != "" {
-		likeKeyword := "%" + keyword + "%"
-		db = db.Where("title LIKE ? OR content LIKE ?", likeKeyword, likeKeyword)
-	}
+	likeKeyword := "%" + keyword + "%"
+	db = db.Where("title LIKE ? OR content LIKE ?", likeKeyword, likeKeyword)
 
 	// 时间范围过滤：DateOccurred 在 [startAt, endAt] 之间
 	if startAt != nil {

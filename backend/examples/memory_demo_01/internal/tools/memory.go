@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudwego/eino/components/tool"
@@ -92,9 +93,9 @@ func NewWriteMemoryTool(storage *storage.Storage) tool.InvokableTool {
 }
 
 type ReadMemoryToolRequest struct {
-	Keyword string  `json:"keyword,omitempty" jsonschema:"title=关键词;description=用于模糊搜索记忆的标题或内容，例如‘杭州旅行’；required=false"`
-	StartAt *string `json:"start_at,omitempty" jsonschema:"title=起始日期;description=只返回此日期之后（含）发生的记忆，格式 YYYY-MM-DD；required=false"`
-	EndAt   *string `json:"end_at,omitempty" jsonschema:"title=结束日期;description=只返回此日期之前（含）发生的记忆，格式 YYYY-MM-DD；required=false"`
+	Keyword string `json:"keyword,omitempty" jsonschema:"title=关键词;description=用于模糊搜索记忆的标题或内容，例如‘杭州旅行’；required=false"`
+	StartAt string `json:"start_at,omitempty" jsonschema:"title=起始日期;description=只返回此日期之后（含）发生的记忆，格式 YYYY-MM-DD；required=false"`
+	EndAt   string `json:"end_at,omitempty" jsonschema:"title=结束日期;description=只返回此日期之前（含）发生的记忆，格式 YYYY-MM-DD；required=false"`
 }
 
 type ReadMemoryToolResponse struct {
@@ -108,27 +109,26 @@ func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
 			Name: "read_memory",
-			Desc: "根据语义关键词、时间范围、记忆类型或情感特征，检索用户过往的记忆片段。用于帮助AI回忆共同经历，实现个性化共情对话。",
+			Desc: "检索用户过往的记忆片段，支持关键词搜索和时间范围过滤。当用户询问过去经历、回忆往事或需要回顾历史时使用。返回相关记忆的标题、内容和发生时间。",
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 				"keyword": {
 					Type:     "string",
-					Desc:     "用于模糊搜索记忆的标题或内容，支持自然语言短语，例如“北京旅行”、“压力大的时候”、“她送我的礼物”、“吃”。可为空。",
+					Desc:     "一个搜索关键词，支持记忆标题和内容的模糊匹配。例如：'旅行'、'工作'、'吃饭'、'朋友'等。可为空表示查询所有记忆。",
 					Required: false,
 				},
 				"start_at": {
 					Type:     "string",
-					Desc:     "返回此日期之后（含）的记忆，格式 YYYY-MM-DD。",
+					Desc:     "查询起始日期（包含），格式：YYYY-MM-DD。例如：'2024-01-01'。",
 					Required: false,
 				},
 				"end_at": {
 					Type:     "string",
-					Desc:     "返回此日期之前（含）的记忆，格式 YYYY-MM-DD。",
+					Desc:     "查询结束日期（包含），格式：YYYY-MM-DD。例如：'2024-12-31'。",
 					Required: false,
 				},
 			}),
 		},
 		func(ctx context.Context, in *ReadMemoryToolRequest) (output *ReadMemoryToolResponse, err error) {
-			fmt.Println("in:", in)
 			// 初始化响应
 			response := &ReadMemoryToolResponse{
 				Success:  false,
@@ -143,23 +143,40 @@ func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
 				return response, nil
 			}
 
-			// 解析日期
-			var startAt, endAt *time.Time
-			if in.StartAt != nil {
-				parseDate, err := time.Parse(time.DateOnly, *in.StartAt)
-				if err == nil {
-					startAt = &parseDate
-				}
+			// 参数验证和清理
+			keyword := strings.TrimSpace(in.Keyword)
+			if keyword == "" {
+				keyword = "" // 空字符串表示查询所有记忆
 			}
-			if in.EndAt != nil {
-				parseDate, err := time.Parse(time.DateOnly, *in.EndAt)
-				if err == nil {
-					endAt = &parseDate
+
+			// 解析和验证日期
+			var startAt, endAt *time.Time
+			if in.StartAt != "" && strings.TrimSpace(in.StartAt) != "" {
+				if parsedDate, err := time.Parse(time.DateOnly, strings.TrimSpace(in.StartAt)); err == nil {
+					startAt = &parsedDate
+				} else {
+					response.Message = fmt.Sprintf("起始日期格式错误: %s，应为 YYYY-MM-DD 格式", in.StartAt)
+					return response, nil
 				}
 			}
 
+			if in.EndAt != "" && strings.TrimSpace(in.EndAt) != "" {
+				if parsedDate, err := time.Parse(time.DateOnly, strings.TrimSpace(in.EndAt)); err == nil {
+					endAt = &parsedDate
+				} else {
+					response.Message = fmt.Sprintf("结束日期格式错误: %s，应为 YYYY-MM-DD 格式", in.EndAt)
+					return response, nil
+				}
+			}
+
+			// 验证日期范围逻辑
+			if startAt != nil && endAt != nil && startAt.After(*endAt) {
+				response.Message = "起始日期不能晚于结束日期"
+				return response, nil
+			}
+
 			// 调用 Storage 层查询数据
-			memories, err := storage.ReadMemory(ctx, in.Keyword, startAt, endAt)
+			memories, err := storage.ReadMemory(ctx, keyword, startAt, endAt)
 			if err != nil {
 				response.Message = "查询记忆失败: " + err.Error()
 				return response, nil // 返回给 AI 友好的结构，不抛出 error
@@ -168,15 +185,22 @@ func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
 			// 转换为摘要列表
 			summaries := make([]ReadMemorySummary, 0, len(memories))
 			for _, m := range memories {
-				excerpt := m.Content
+				excerpt := strings.TrimSpace(m.Content)
 				if len(excerpt) > 100 {
 					excerpt = excerpt[:97] + "..."
 				} else if excerpt == "" {
 					excerpt = "(无内容)"
 				}
+
+				// 确保标题不为空
+				title := strings.TrimSpace(m.Title)
+				if title == "" {
+					title = "(无标题)"
+				}
+
 				summaries = append(summaries, ReadMemorySummary{
 					ID:           m.ID,
-					Title:        m.Title,
+					Title:        title,
 					Excerpt:      excerpt,
 					DateOccurred: m.DateOccurred,
 					CreatedAt:    m.CreatedAt,
@@ -188,10 +212,15 @@ func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
 			response.Memories = summaries
 			response.Total = len(summaries)
 
+			// 生成更友好的消息
 			if len(summaries) == 0 {
-				response.Message = "没有找到匹配的记忆记录"
+				if keyword != "" {
+					response.Message = fmt.Sprintf("没有找到包含'%s'的记忆记录", keyword)
+				} else {
+					response.Message = "没有找到匹配的记忆记录"
+				}
 			} else {
-				response.Message = fmt.Sprintf("成功加载 %d 条相关记忆", len(summaries))
+				response.Message = fmt.Sprintf("成功找到 %d 条相关记忆", len(summaries))
 			}
 
 			return response, nil

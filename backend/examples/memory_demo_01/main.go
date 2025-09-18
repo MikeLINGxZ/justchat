@@ -20,9 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	openAIAPIKey := "sk-a088b4e6835e444e85096c12395e5aba"
-	openAIBaseURL := "https://api.deepseek.com/v1"
-	openAIModelName := "deepseek-chat"
+	openAIAPIKey := "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"
+	openAIBaseURL := "https://openrouter.ai/api/v1"
+	openAIModelName := "google/gemini-2.5-flash"
 
 	ctx := context.Background()
 	h, err := internal.NewHost(ctx, openAIBaseURL, openAIAPIKey, openAIModelName)
