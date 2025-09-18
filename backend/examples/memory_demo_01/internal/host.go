@@ -19,6 +19,6 @@ func NewHost(ctx context.Context, baseURL, apiKey, modelName string) (*host.Host
 
 	return &host.Host{
 		ToolCallingModel: chatModel,
-		SystemPrompt:     "You can read and write journal on behalf of the user. When user asks a question, always answer with journal content.",
+		SystemPrompt:     "You can help the user store and retrieve memories by creating, reading, and organizing journal entries on their behalf. When the user asks a question or shares a thought, always respond using relevant journal content, and save meaningful experiences into memory with context and emotion preserved.",
 	}, nil
 }

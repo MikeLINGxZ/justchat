@@ -58,8 +58,8 @@ func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *stor
 
 	return &host.Specialist{
 		AgentMeta: host.AgentMeta{
-			Name:        "记忆编织者",
-			IntendedUse: "负责存储、组织和存储用户的个人记忆，具备上下文感知与情感敏感性，模拟人类长期记忆的认知行为，支持个性化交互与经验积累。",
+			Name:        "Memory_Weaver",
+			IntendedUse: "Responsible for storing, organizing, and managing the user's personal memories, with context awareness and emotional sensitivity, simulating human-like long-term memory cognitive behaviors, and supporting personalized interaction and experiential accumulation.",
 		},
 		Invokable: func(ctx context.Context, input []*schema.Message, opts ...agent.AgentOption) (output *schema.Message, err error) {
 			invoke, err := r.Invoke(ctx, input, agent.GetComposeOptions(opts...)...)
