@@ -3,6 +3,10 @@ package tools
 import (
 	"context"
 	"time"
+
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/components/tool/utils"
+	"github.com/cloudwego/eino/schema"
 )
 
 // GetCurrentTimeToolRequest 是获取当前时间工具的输入参数
@@ -17,23 +21,30 @@ type GetCurrentTimeToolResponse struct {
 	Timezone  string `json:"timezone,omitempty" jsonschema:"title=时区;description=系统返回时间所处的时区名称，例如 'UTC' 或 'Asia/Shanghai'"`
 }
 
-// NewGetCurrentTimeTool 返回一个可被调用的工具函数，用于获取当前时间
-func NewGetCurrentTimeTool() func(ctx context.Context, in *GetCurrentTimeToolRequest) (*GetCurrentTimeToolResponse, error) {
-	return func(ctx context.Context, in *GetCurrentTimeToolRequest) (*GetCurrentTimeToolResponse, error) {
-		// 初始化响应
-		response := &GetCurrentTimeToolResponse{
-			Success: false,
-		}
+// NewGetCurrentTimeTool 返回一个标准化的可调用工具，用于获取当前时间
+func NewGetCurrentTimeTool() tool.InvokableTool {
+	return utils.NewTool(
+		&schema.ToolInfo{
+			Name:        "get_current_time",
+			Desc:        "获取当前的标准时间（UTC）和时区信息",
+			ParamsOneOf: schema.NewParamsOneOfByParams(nil), // 表示无参数或可选参数为空
+		},
+		func(ctx context.Context, in *GetCurrentTimeToolRequest) (output *GetCurrentTimeToolResponse, err error) {
+			// 初始化响应
+			response := &GetCurrentTimeToolResponse{
+				Success: false,
+			}
 
-		// 获取当前时间（UTC 时间，确保标准化）
-		now := time.Now().UTC()
+			// 获取当前时间（使用 UTC 确保一致性）
+			now := time.Now().UTC()
 
-		// 设置成功响应
-		response.Success = true
-		response.Message = "当前时间获取成功"
-		response.Timestamp = now.Format(time.RFC3339) // 标准 ISO 8601 / RFC3339 格式
-		response.Timezone = "UTC"                     // 明确标注为 UTC，也可根据需求改为本地时区或传参指定
+			// 填充响应数据
+			response.Success = true
+			response.Message = "当前时间获取成功"
+			response.Timestamp = now.Format(time.RFC3339) // ISO 8601 标准格式
+			response.Timezone = "UTC"                     // 固定为 UTC，可后续扩展支持动态时区
 
-		return response, nil
-	}
+			return response, nil
+		},
+	)
 }

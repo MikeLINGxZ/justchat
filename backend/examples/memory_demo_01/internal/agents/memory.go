@@ -3,10 +3,12 @@ package agents
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"log/slog"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/components/tool"
-	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/flow/agent"
 	"github.com/cloudwego/eino/flow/agent/multiagent/host"
@@ -19,40 +21,73 @@ import (
 var memoryAgentPrompt string
 
 func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
+
+	// 1. 创建对话模板
+	chatTpl := prompt.FromMessages(schema.FString,
+		schema.SystemMessage(memoryAgentPrompt),
+		schema.MessagesPlaceholder("message_histories", true),
+		schema.UserMessage("{user_query}"),
+	)
+
+	// 2. 创建对话模型
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: baseURL,
 		Model:   model,
 		APIKey:  apiKey,
 	})
 	if err != nil {
+		slog.Error(fmt.Sprintf("new chat model err: %v", err))
 		return nil, err
 	}
 
-	baseTools, err := newMemoryTools(storage)
-	if err != nil {
-		return nil, err
-	}
-
-	// 创建 tools 节点
-	toolsNode, err := compose.NewToolNode(context.Background(), &compose.ToolsNodeConfig{
-		Tools: baseTools,
+	// 3. 绑定工具
+	writeMemoryTool := tools.NewWriteMemoryTool(storage)
+	readMemoryTool := tools.NewReadMemoryTool(storage)
+	getCurrentTimeTool := tools.NewGetCurrentTimeTool()
+	toolInfos, err := newMemoryTools(ctx, []tool.InvokableTool{
+		writeMemoryTool,
+		readMemoryTool,
+		getCurrentTimeTool,
 	})
-
-	chain := compose.NewChain[[]*schema.Message, []*schema.Message]()
-	// 添加一个系统提示词
-	chain.
-		AppendLambda(compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) ([]*schema.Message, error) {
-			systemMsg := &schema.Message{
-				Role:    schema.System,
-				Content: memoryAgentPrompt,
-			}
-			return append([]*schema.Message{systemMsg}, input...), nil
-		})).
-		AppendChatModel(chatModel).
-		AppendToolsNode(toolsNode)
-
-	r, err := chain.Compile(ctx)
 	if err != nil {
+		slog.Error(fmt.Sprintf("new memory tools error: %v", err))
+		return nil, err
+	}
+	err = chatModel.BindForcedTools(toolInfos)
+	if err != nil {
+		slog.Error(fmt.Sprintf("bind forced tools error: %v", err))
+		return nil, err
+	}
+
+	// 4. 创建node实例
+	toolsNode, err := compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
+		Tools: []tool.BaseTool{writeMemoryTool, readMemoryTool, getCurrentTimeTool},
+	})
+	if err != nil {
+		slog.Error(fmt.Sprintf("new tool err: %v", err))
+		return nil, err
+	}
+
+	const (
+		nodeKeyOfTemplate  = "template"
+		nodeKeyOfChatModel = "chat_model"
+		nodeKeyOfTools     = "tools"
+	)
+
+	// 5. 创建一个graph
+	g := compose.NewGraph[map[string]any, []*schema.Message]()
+
+	_ = g.AddChatTemplateNode(nodeKeyOfTemplate, chatTpl)
+	_ = g.AddChatModelNode(nodeKeyOfChatModel, chatModel)
+	_ = g.AddToolsNode(nodeKeyOfTools, toolsNode)
+	_ = g.AddEdge(compose.START, nodeKeyOfTemplate)
+	_ = g.AddEdge(nodeKeyOfTemplate, nodeKeyOfChatModel)
+	_ = g.AddEdge(nodeKeyOfChatModel, nodeKeyOfTools)
+	_ = g.AddEdge(nodeKeyOfTools, compose.END)
+
+	r, err := g.Compile(ctx)
+	if err != nil {
+		slog.Error(fmt.Sprintf("compile err: %v", err))
 		return nil, err
 	}
 
@@ -62,47 +97,33 @@ func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *stor
 			IntendedUse: "Responsible for storing, organizing, and managing the user's personal memories, with context awareness and emotional sensitivity, simulating human-like long-term memory cognitive behaviors, and supporting personalized interaction and experiential accumulation.",
 		},
 		Invokable: func(ctx context.Context, input []*schema.Message, opts ...agent.AgentOption) (output *schema.Message, err error) {
-			invoke, err := r.Invoke(ctx, input, agent.GetComposeOptions(opts...)...)
-			if err != nil {
-				return nil, err
+			var historyMessages []*schema.Message
+			if len(input) > 1 {
+				historyMessages = input[1:]
 			}
-			return invoke[0], nil
+			out, err := r.Invoke(ctx, map[string]any{
+				"message_histories": historyMessages,
+				"user_query":        input[len(input)-1],
+			})
+			if err != nil {
+				return
+			}
+			return out[len(out)-1], nil
 		},
+		Streamable: nil,
 	}, nil
 }
 
-func newMemoryTools(storage *storage.Storage) ([]tool.BaseTool, error) {
-	writerMemory, err := utils.InferTool(
-		"write_memory",
-		"Record a personal memory or life event with title, content, and optional date",
-		tools.NewWriteMemoryTool(storage))
-	if err != nil {
-		return nil, err
+func newMemoryTools(ctx context.Context, invokableTools []tool.InvokableTool) ([]*schema.ToolInfo, error) {
+	var toolInfos []*schema.ToolInfo
+
+	for _, invokableTool := range invokableTools {
+		toolInfo, err := invokableTool.Info(ctx)
+		if err != nil {
+			return nil, err
+		}
+		toolInfos = append(toolInfos, toolInfo)
 	}
 
-	readMemory, err := utils.InferTool(
-		"read_memory",
-		"Search and retrieve personal memories based on a keyword and/or optional date range. "+
-			"Use this when the user asks about past events, experiences, or wants to recall something they've shared before.",
-		tools.NewReadMemoryTool(storage),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	getCurrentTime, err := utils.InferTool(
-		"get_current_time",
-		"Get the current date and time in UTC. "+
-			"Use this whenever the user asks about the current time, today's date, or needs time context for reasoning (e.g., 'What's the date today?' or 'When did this happen?').",
-		tools.NewGetCurrentTimeTool(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return []tool.BaseTool{
-		writerMemory,
-		readMemory,
-		getCurrentTime,
-	}, nil
+	return toolInfos, nil
 }
