@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

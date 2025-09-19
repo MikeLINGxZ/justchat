@@ -15,11 +15,11 @@ import (
 	"github.com/cloudwego/eino/flow/agent/multiagent/host"
 	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/storage"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/tools"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/tools"
 )
 
-//go:embed memory.prompt.md
+//go:embed agent.prompt.md
 var memoryAgentPrompt string
 
 func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {

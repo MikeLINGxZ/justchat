@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
 )
 
 func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {

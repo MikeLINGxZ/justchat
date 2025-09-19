@@ -14,6 +14,7 @@ const (
 	MemoryTypeSkill MemoryType = "skill" // 技能类记忆
 	MemoryTypeEvent MemoryType = "event" // 事件类记忆
 	MemoryTypeFlow  MemoryType = "flow"  // 流程类记忆
+	MemoryTypePlan  MemoryType = "plan " // 流程类记忆
 )
 
 type Memory struct {

@@ -8,9 +8,9 @@ import (
 
 	"github.com/cloudwego/eino/flow/agent/multiagent/host"
 	"github.com/cloudwego/eino/schema"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/agents"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/storage"
+	agents "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/example/internal"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 )
 
 func main() {

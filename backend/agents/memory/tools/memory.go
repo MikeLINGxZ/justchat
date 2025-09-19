@@ -8,8 +8,8 @@ import (
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/models"
-	istorage "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/storage"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
+	istorage "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 )
 
 type WriteMemoryToolRequest struct {
@@ -19,6 +19,7 @@ type WriteMemoryToolRequest struct {
 	TimeRangeEnd     *string  `json:"time_range_end,omitempty" jsonschema:"title=结束日期,description=记忆结束的日期（格式同上），适用于持续性事件，如旅行、恋情等，可为空"`
 	Location         *string  `json:"location,omitempty" jsonschema:"title=发生地点,description=该记忆发生的地点，多个地点可用逗号分隔，例如“北京,朝阳公园”"`
 	Characters       *string  `json:"characters,omitempty" jsonschema:"title=相关人物,description=涉及的人物名称，多个用逗号分隔，例如“父亲,小明”"`
+	MemoryType       string   `json:"memory_type" jsonschema:"title=记忆类型,description=这个记忆的类型，可以不填，如果填则需要在以下范围内：skill、event、plan"`
 	EmotionalValence *float64 `json:"emotional_valence,omitempty" jsonschema:"title=情感极性,description=情绪倾向评分，范围 -1.0（极度负面）到 +1.0（极度正面），默认为 0.0，可为空"`
 	Importance       *float64 `json:"importance,omitempty" jsonschema:"title=重要性评分,description=此记忆的重要性，范围 0.0 ~ 1.0，默认为 0.5，可为空"`
 	Context          *string  `json:"context,omitempty" jsonschema:"title=上下文元数据,description=额外的 JSON 格式元数据，例如设备来源、天气、心情标签等，可为空，格式必须是合法 JSON"`
