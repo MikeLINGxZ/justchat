@@ -34,9 +34,18 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 		return nil, err
 	}
 
-	writeMemoryTool := tools.NewWriteMemoryTool(storage)
-	readMemoryTool := tools.NewReadMemoryTool(storage)
-	getCurrentTimeTool := tools.NewGetCurrentTimeTool()
+	writeMemoryTool, err := tools.NewWriteMemoryTool(storage)
+	if err != nil {
+		return nil, err
+	}
+	readMemoryTool, err := tools.NewReadMemoryTool(storage)
+	if err != nil {
+		return nil, err
+	}
+	getCurrentTimeTool, err := tools.NewGetCurrentTimeTool()
+	if err != nil {
+		return nil, err
+	}
 
 	ragent, err := react.NewAgent(ctx, &react.AgentConfig{
 		ToolCallingModel: arkModel,
@@ -87,9 +96,18 @@ func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *stor
 	}
 
 	// 3. 绑定工具
-	writeMemoryTool := tools.NewWriteMemoryTool(storage)
-	readMemoryTool := tools.NewReadMemoryTool(storage)
-	getCurrentTimeTool := tools.NewGetCurrentTimeTool()
+	writeMemoryTool, err := tools.NewWriteMemoryTool(storage)
+	if err != nil {
+		return nil, err
+	}
+	readMemoryTool, err := tools.NewReadMemoryTool(storage)
+	if err != nil {
+		return nil, err
+	}
+	getCurrentTimeTool, err := tools.NewGetCurrentTimeTool()
+	if err != nil {
+		return nil, err
+	}
 	toolInfos, err := newMemoryTools(ctx, []tool.InvokableTool{
 		writeMemoryTool,
 		readMemoryTool,

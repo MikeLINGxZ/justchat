@@ -6,7 +6,6 @@ import (
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
-	"github.com/cloudwego/eino/schema"
 )
 
 // GetCurrentTimeToolRequest 是获取当前时间工具的输入参数
@@ -22,13 +21,10 @@ type GetCurrentTimeToolResponse struct {
 }
 
 // NewGetCurrentTimeTool 返回一个标准化的可调用工具，用于获取当前时间
-func NewGetCurrentTimeTool() tool.InvokableTool {
-	return utils.NewTool(
-		&schema.ToolInfo{
-			Name:        "get_current_time",
-			Desc:        "获取当前的标准时间（UTC）和时区信息",
-			ParamsOneOf: schema.NewParamsOneOfByParams(nil), // 表示无参数或可选参数为空
-		},
+func NewGetCurrentTimeTool() (tool.InvokableTool, error) {
+	return utils.InferTool(
+		"get_current_time",
+		"获取当前的标准时间（UTC）和时区信息",
 		func(ctx context.Context, in *GetCurrentTimeToolRequest) (output *GetCurrentTimeToolResponse, err error) {
 			// 初始化响应
 			response := &GetCurrentTimeToolResponse{
@@ -47,4 +43,5 @@ func NewGetCurrentTimeTool() tool.InvokableTool {
 			return response, nil
 		},
 	)
+
 }

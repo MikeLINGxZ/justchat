@@ -8,7 +8,6 @@ import (
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
-	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/storage"
 )
 
@@ -24,29 +23,10 @@ type WriteMemoryToolResponse struct {
 	MemoryID uint   `json:"memory_id,omitempty" jsonschema:"title=记忆ID;description=成功时返回新创建的记忆唯一标识符"`
 }
 
-func NewWriteMemoryTool(storage *storage.Storage) tool.InvokableTool {
-	return utils.NewTool(
-		&schema.ToolInfo{
-			Name: "write_memory",
-			Desc: "Record a personal memory or life event with title, content, and optional date",
-			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-				"title": {
-					Type:     "string",
-					Desc:     "记忆或事件的简短标题，例如“童年第一次骑自行车",
-					Required: true,
-				},
-				"content": {
-					Type:     "string",
-					Desc:     "详细的记忆描述，可以包括人物、地点、感受等",
-					Required: true,
-				},
-				"date": {
-					Type:     "string",
-					Desc:     "该记忆实际发生的日期（格式：YYYY-MM-DD），如果不确定可为空",
-					Required: false,
-				},
-			}),
-		},
+func NewWriteMemoryTool(storage *storage.Storage) (tool.InvokableTool, error) {
+	return utils.InferTool(
+		"write_memory",
+		"Record a personal memory or life event with title, content, and optional date",
 		func(ctx context.Context, in *WriteMemoryToolRequest) (output *WriteMemoryToolResponse, err error) {
 			// 初始化响应
 			response := &WriteMemoryToolResponse{
@@ -105,29 +85,10 @@ type ReadMemoryToolResponse struct {
 	Total    int                 `json:"total" jsonschema:"title=总数;description=返回的记忆条数"`
 }
 
-func NewReadMemoryTool(storage *storage.Storage) tool.InvokableTool {
-	return utils.NewTool(
-		&schema.ToolInfo{
-			Name: "read_memory",
-			Desc: "检索用户过往的记忆片段，支持关键词搜索和时间范围过滤。当用户询问过去经历、回忆往事或需要回顾历史时使用。返回相关记忆的标题、内容和发生时间。",
-			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-				"keyword": {
-					Type:     "string",
-					Desc:     "一个搜索关键词，支持记忆标题和内容的模糊匹配。例如：'旅行'、'工作'、'吃饭'、'朋友'等。可为空表示查询所有记忆。",
-					Required: false,
-				},
-				"start_at": {
-					Type:     "string",
-					Desc:     "查询起始日期（包含），格式：YYYY-MM-DD。例如：'2024-01-01'。",
-					Required: false,
-				},
-				"end_at": {
-					Type:     "string",
-					Desc:     "查询结束日期（包含），格式：YYYY-MM-DD。例如：'2024-12-31'。",
-					Required: false,
-				},
-			}),
-		},
+func NewReadMemoryTool(storage *storage.Storage) (tool.InvokableTool, error) {
+	return utils.InferTool(
+		"read_memory",
+		"根据语义关键词、时间范围、记忆类型或情感特征，检索用户过往的记忆片段。用于帮助AI回忆共同经历，实现个性化共情对话。",
 		func(ctx context.Context, in *ReadMemoryToolRequest) (output *ReadMemoryToolResponse, err error) {
 			// 初始化响应
 			response := &ReadMemoryToolResponse{
