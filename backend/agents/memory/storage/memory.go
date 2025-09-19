@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
+	"gorm.io/gorm"
 )
 
 func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {
@@ -184,4 +185,72 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 	}
 
 	return memories, nil
+}
+
+// UpdateMemory 更新指定的记忆
+func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memory) error {
+	// 首先检查记忆是否存在
+	var existingMemory models.Memory
+	result := s.sqliteDb.WithContext(ctx).First(&existingMemory, id)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return fmt.Errorf("记忆 ID %d 不存在", id)
+		}
+		return fmt.Errorf("查询记忆失败: %w", result.Error)
+	}
+
+	// 更新记忆，只更新非零值字段
+	updateData := make(map[string]interface{})
+
+	if memory.Summary != "" {
+		updateData["summary"] = memory.Summary
+	}
+	if memory.Content != "" {
+		updateData["content"] = memory.Content
+	}
+	if memory.Type != "" {
+		updateData["type"] = memory.Type
+	}
+	if memory.TimeRangStart != nil {
+		updateData["time_rang_start"] = memory.TimeRangStart
+	}
+	if memory.TimeRangeEnd != nil {
+		updateData["time_range_end"] = memory.TimeRangeEnd
+	}
+	if memory.Location != nil {
+		updateData["location"] = memory.Location
+	}
+	if memory.Characters != nil {
+		updateData["characters"] = memory.Characters
+	}
+	if memory.Context != nil {
+		updateData["context"] = memory.Context
+	}
+	if memory.Importance != 0 {
+		updateData["importance"] = memory.Importance
+	}
+	if memory.EmotionalValence != 0 {
+		updateData["emotional_valence"] = memory.EmotionalValence
+	}
+
+	// 更新修改时间
+	updateData["updated_at"] = time.Now()
+
+	// 执行更新
+	result = s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).Updates(updateData)
+	if result.Error != nil {
+		return fmt.Errorf("更新记忆失败: %w", result.Error)
+	}
+
+	// 如果更新了 content 或 summary，需要更新 FTS 索引
+	if memory.Summary != "" || memory.Content != "" {
+		// 重新构建 FTS 索引（这里简化处理，实际可能需要更复杂的逻辑）
+		err := s.sqliteDb.Exec((&models.Memory{}).Fts()).Error
+		if err != nil {
+			// FTS 更新失败不应该影响主更新操作，只记录错误
+			fmt.Printf("警告：FTS 索引更新失败: %v\n", err)
+		}
+	}
+
+	return nil
 }

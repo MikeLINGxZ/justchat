@@ -299,6 +299,106 @@ func NewReadMemoryTool(storage *istorage.Storage) (tool.InvokableTool, error) {
 	)
 }
 
+type EditMemoryIn struct {
+	MemoryID uint `json:"memory_id" jsonschema:"title=记忆ID,description=需要编辑的记忆的唯一编号"`
+	WriteMemoryToolRequest
+}
+
+type EditMemoryResponse struct {
+	WriteMemoryToolResponse
+}
+
+func NewEditMemoryTool(storage *istorage.Storage) (tool.InvokableTool, error) {
+	return utils.InferTool(
+		"edit_memory",
+		"对某一段记忆进行编辑，支持更新标题、内容、时间、地点、人物、情感极性、重要性等字段。只有提供的字段才会被更新，未提供的字段保持原值不变。",
+		func(ctx context.Context, input *EditMemoryIn) (output *EditMemoryResponse, err error) {
+			response := &EditMemoryResponse{
+				WriteMemoryToolResponse: WriteMemoryToolResponse{
+					Success: false,
+				},
+			}
+
+			// 基础验证
+			if input == nil {
+				response.Message = "无法编辑记忆：输入参数为空"
+				return response, nil
+			}
+
+			if input.MemoryID == 0 {
+				response.Message = "无法编辑记忆：缺少记忆ID（memory_id）"
+				return response, nil
+			}
+
+			// 解析时间范围
+			var startTime, endTime *time.Time
+			if input.TimeRangeStart != nil {
+				t, err := parseTime(*input.TimeRangeStart)
+				if err != nil {
+					response.Message = "无法解析开始时间：" + err.Error()
+					return response, nil
+				}
+				startTime = &t
+			}
+			if input.TimeRangeEnd != nil {
+				t, err := parseTime(*input.TimeRangeEnd)
+				if err != nil {
+					response.Message = "无法解析结束时间：" + err.Error()
+					return response, nil
+				}
+				endTime = &t
+			}
+
+			// 验证时间范围逻辑
+			if startTime != nil && endTime != nil && startTime.After(*endTime) {
+				response.Message = "开始时间不能晚于结束时间"
+				return response, nil
+			}
+
+			// 构造要更新的 Memory 对象
+			memoryData := models.Memory{
+				Summary:       input.Title,
+				Content:       input.Content,
+				Type:          models.MemoryType(input.MemoryType),
+				TimeRangStart: startTime,
+				TimeRangeEnd:  endTime,
+				Location:      input.Location,
+				Characters:    input.Characters,
+				Context:       input.Context,
+			}
+
+			// 设置可选浮点值（带验证）
+			if input.Importance != nil {
+				if *input.Importance < 0.0 || *input.Importance > 1.0 {
+					response.Message = "重要性评分必须在 0.0 ~ 1.0 之间"
+					return response, nil
+				}
+				memoryData.Importance = *input.Importance
+			}
+			if input.EmotionalValence != nil {
+				if *input.EmotionalValence < -1.0 || *input.EmotionalValence > 1.0 {
+					response.Message = "情感极性必须在 -1.0 ~ +1.0 之间"
+					return response, nil
+				}
+				memoryData.EmotionalValence = *input.EmotionalValence
+			}
+
+			// 调用存储层更新记忆
+			err = storage.UpdateMemory(ctx, input.MemoryID, memoryData)
+			if err != nil {
+				response.Message = "更新失败：" + err.Error()
+				return response, nil
+			}
+
+			// 成功响应
+			response.Success = true
+			response.Message = "记忆已成功更新"
+			response.MemoryID = input.MemoryID
+			return response, nil
+		},
+	)
+}
+
 func trimContent(content string, maxLen int) string {
 	content = strings.TrimSpace(content)
 	if content == "" {

@@ -42,6 +42,10 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 	if err != nil {
 		return nil, err
 	}
+	editMemoryTool, err := tools.NewEditMemoryTool(storage)
+	if err != nil {
+		return nil, err
+	}
 	getCurrentTimeTool, err := tools.NewGetCurrentTimeTool()
 	if err != nil {
 		return nil, err
@@ -50,7 +54,7 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 	ragent, err := react.NewAgent(ctx, &react.AgentConfig{
 		ToolCallingModel: arkModel,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools: []tool.BaseTool{writeMemoryTool, readMemoryTool, getCurrentTimeTool},
+			Tools: []tool.BaseTool{writeMemoryTool, readMemoryTool, editMemoryTool, getCurrentTimeTool},
 		},
 	})
 	if err != nil {
