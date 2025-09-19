@@ -20,28 +20,32 @@ type GetCurrentTimeToolResponse struct {
 	Timezone  string `json:"timezone,omitempty" jsonschema:"title=时区;description=系统返回时间所处的时区名称，例如 'UTC' 或 'Asia/Shanghai'"`
 }
 
-// NewGetCurrentTimeTool 返回一个标准化的可调用工具，用于获取当前时间
+// NewGetCurrentTimeTool 返回一个标准化的可调用工具，用于获取当前时间（北京时间）
 func NewGetCurrentTimeTool() (tool.InvokableTool, error) {
 	return utils.InferTool(
 		"get_current_time",
-		"获取当前的标准时间（UTC）和时区信息",
+		"获取当前的北京时间（CST, UTC+8）和时区信息",
 		func(ctx context.Context, in *GetCurrentTimeToolRequest) (output *GetCurrentTimeToolResponse, err error) {
 			// 初始化响应
 			response := &GetCurrentTimeToolResponse{
 				Success: false,
 			}
 
-			// 获取当前时间（使用 UTC 确保一致性）
-			now := time.Now().UTC()
+			// 获取北京时间（UTC+8）
+			loc, err := time.LoadLocation("Asia/Shanghai")
+			if err != nil {
+				response.Message = "无法加载时区信息: " + err.Error()
+				return response, nil
+			}
+			now := time.Now().In(loc)
 
 			// 填充响应数据
 			response.Success = true
 			response.Message = "当前时间获取成功"
 			response.Timestamp = now.Format(time.RFC3339) // ISO 8601 标准格式
-			response.Timezone = "UTC"                     // 固定为 UTC，可后续扩展支持动态时区
+			response.Timezone = "Asia/Shanghai"           // 明确表示时区
 
 			return response, nil
 		},
 	)
-
 }

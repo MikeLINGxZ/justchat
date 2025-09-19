@@ -20,9 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	openAIAPIKey := "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"
-	openAIBaseURL := "https://openrouter.ai/api/v1"
-	openAIModelName := "google/gemini-2.5-flash"
+	openAIAPIKey := os.Getenv("ALICCLOUD_API_KEY")
+	openAIBaseURL := "https://dashscope.aliyuncs.com/compatible-mode/v1"
+	openAIModelName := "qwen-flash"
 
 	ctx := context.Background()
 	h, err := internal.NewHost(ctx, openAIBaseURL, openAIAPIKey, openAIModelName)

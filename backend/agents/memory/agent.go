@@ -19,7 +19,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/tools"
 )
 
-//go:embed agent.prompt.md
+//go:embed agent.prompt.v0.md
 var memoryAgentPrompt string
 
 func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
