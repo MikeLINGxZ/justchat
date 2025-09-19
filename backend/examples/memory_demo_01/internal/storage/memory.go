@@ -62,17 +62,15 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 
 // sanitizeFTSQuery 清理并格式化用于 FTS5 查询的关键词
 func sanitizeFTSQuery(keyword string) string {
-	// 移除危险字符，保留字母数字和基本符号
-	re := regexp.MustCompile(`[^a-zA-Z0-9\u4e00-\u9fa5\s\-_\*]+`)
+	// 使用 \p{Han} 匹配所有汉字，支持中文；使用原始字符串 `` `...` `` 没问题
+	re := regexp.MustCompile(`[^a-zA-Z0-9\p{Han}\s\-_*]+`)
 	cleaned := re.ReplaceAllString(keyword, " ")
 
-	// 分词后加上双引号进行短语匹配？或者用 OR 联合
 	words := strings.Fields(cleaned)
 	if len(words) == 0 {
 		return ""
 	}
 
-	// 使用 NEAR 或 OR 取决于需求；这里用 OR 实现宽松匹配
 	return strings.Join(words, " OR ")
 }
 
@@ -93,7 +91,7 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 	db := s.sqliteDb.WithContext(ctx)
 
 	// 基础查询：排除已遗忘的记忆
-	query := db.Model(&models.Memory{}).Where("is_forget = ?", false)
+	query := db.Model(&models.Memory{}).Where("is_forgotten = ?", false)
 
 	// 1. 关键词搜索（summary & content）→ 使用 FTS5
 	if q.Keyword != "" {
