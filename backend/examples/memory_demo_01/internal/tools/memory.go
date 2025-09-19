@@ -163,7 +163,7 @@ type ReadMemorySummary struct {
 func NewReadMemoryTool(storage *istorage.Storage) (tool.InvokableTool, error) {
 	return utils.InferTool(
 		"read_memory",
-		"根据关键词、时间、地点、人物、情感、重要性等多种条件组合检索用户的记忆片段。可用于帮助AI回顾共同经历、理解用户偏好和情绪轨迹。",
+		"提供多维度复合查询能力，支持基于关键词模糊匹配、时空范围限定（YYYY-MM-DD HH:MM:SS）、人物关联、地理位置、情感倾向（emotional_valence）与重要性权重（importance）的记忆检索。适用于构建上下文连贯性、追溯用户决策路径、识别情绪变化趋势及触发个性化回应。",
 		func(ctx context.Context, in *ReadMemoryToolRequest) (output *ReadMemoryToolResponse, err error) {
 			response := &ReadMemoryToolResponse{
 				Success:  false,

@@ -37,11 +37,13 @@ type Memory struct {
 
 func (m *Memory) Fts() string {
 	return `CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
-				summary,
-				content,
-				content='memories',           -- 关联到实际的数据表
-				content_rowid='id'            -- 使用原表的 id 作为 rowid 映射
-			);`
+             summary,
+             content,
+             location,
+             characters,
+             content='memories',           -- 关联到实际的数据表
+             content_rowid='id'            -- 使用原表的 id 作为 rowid 映射
+          );`
 }
 
 // AfterCreate 创建后更新 FTS
