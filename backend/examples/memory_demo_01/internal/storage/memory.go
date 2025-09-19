@@ -10,9 +10,9 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/memory_demo_01/internal/models"
 )
 
-func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) error {
+func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {
 	result := s.sqliteDb.WithContext(ctx).Create(&memory)
-	return result.Error
+	return memory.ID, result.Error
 }
 
 func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt *time.Time) ([]models.Memory, error) {
@@ -74,4 +74,116 @@ func sanitizeFTSQuery(keyword string) string {
 
 	// 使用 NEAR 或 OR 取决于需求；这里用 OR 实现宽松匹配
 	return strings.Join(words, " OR ")
+}
+
+type MemoryQuery struct {
+	Keyword        string
+	Location       *string
+	Characters     *string
+	EmotionalMin   *float64
+	EmotionalMax   *float64
+	ImportanceMin  *float64
+	Type           *string
+	TimeRangeStart *time.Time
+	TimeRangeEnd   *time.Time
+}
+
+func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Memory, error) {
+	var memories []models.Memory
+	db := s.sqliteDb.WithContext(ctx)
+
+	// 基础查询：排除已遗忘的记忆
+	query := db.Model(&models.Memory{}).Where("is_forget = ?", false)
+
+	// 1. 关键词搜索（summary & content）→ 使用 FTS5
+	if q.Keyword != "" {
+		ftsArgs := sanitizeFTSQuery(q.Keyword)
+		if ftsArgs != "" {
+			subQuery := db.Table("memory_fts").Select("rowid").Where("memory_fts MATCH ?", ftsArgs)
+			query = query.Where("id IN (?)", subQuery)
+		}
+	}
+
+	// 2. 地点匹配（模糊包含）
+	if q.Location != nil && *q.Location != "" {
+		likePattern := "%" + *q.Location + "%"
+		query = query.Where("location LIKE ?", likePattern)
+	}
+
+	// 3. 人物匹配（模糊包含）
+	if q.Characters != nil && *q.Characters != "" {
+		likePattern := "%" + *q.Characters + "%"
+		query = query.Where("characters LIKE ?", likePattern)
+	}
+
+	// 4. 情感极性范围过滤
+	if q.EmotionalMin != nil {
+		query = query.Where("emotional_valence >= ?", *q.EmotionalMin)
+	}
+	if q.EmotionalMax != nil {
+		query = query.Where("emotional_valence <= ?", *q.EmotionalMax)
+	}
+
+	// 5. 重要性阈值过滤
+	if q.ImportanceMin != nil {
+		query = query.Where("importance >= ?", *q.ImportanceMin)
+	}
+
+	// 6. 记忆类型匹配
+	if q.Type != nil && *q.Type != "" {
+		query = query.Where("type = ?", *q.Type)
+	}
+
+	// 7. 时间范围交集判断（关键逻辑）
+	// 我们希望查询区间 [q.Start, q.End] 与记忆时间 [Start, End] 存在交集
+	//
+	// 区间相交条件：!(A_end < B_start || A_start > B_end)
+	// 即：A 和 B 相交 ⇔ A_start <= B_end && B_start <= A_end
+	//
+	// 这里 A 是 memory 的时间区间，B 是查询区间
+	if q.TimeRangeStart != nil || q.TimeRangeEnd != nil {
+		// 构建动态 WHERE 条件
+		conditions := ""
+
+		// 如果查询有结束时间，则 memory 开始时间不能晚于它
+		if q.TimeRangeEnd != nil {
+			conditions += "time_rang_start <= ? OR time_rang_start IS NULL"
+		}
+
+		// 如果查询有开始时间，则 memory 结束时间不能早于它
+		// 注意：如果 memory.TimeRangeEnd 为 NULL，我们认为它是“持续中”或“瞬时事件”，应视为满足条件
+		if q.TimeRangeStart != nil {
+			if conditions != "" {
+				conditions += " AND "
+			}
+			conditions += "(time_range_end >= ? OR time_range_end IS NULL)"
+		}
+
+		// 准备参数
+		var args []interface{}
+		if q.TimeRangeEnd != nil {
+			args = append(args, *q.TimeRangeEnd)
+		}
+		if q.TimeRangeStart != nil {
+			args = append(args, *q.TimeRangeStart)
+		}
+
+		if conditions != "" {
+			query = query.Where(conditions, args...)
+		}
+	}
+
+	// 8. 排序：优先级顺序
+	query = query.
+		Order("importance DESC").                           // 首要：按重要性降序
+		Order("recall_count DESC").                         // 其次：常被回忆的优先
+		Order("COALESCE(time_rang_start, created_at) DESC") // 最近发生的靠前
+
+	// 执行最终查询
+	err := query.Find(&memories).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query memories: %w", err)
+	}
+
+	return memories, nil
 }
