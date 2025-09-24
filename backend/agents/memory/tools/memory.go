@@ -130,7 +130,7 @@ func parseTime(s string) (time.Time, error) {
 }
 
 type ReadMemoryToolRequest struct {
-	Keyword        *string  `json:"keyword,omitempty" jsonschema:"title=关键词,description=在标题或内容中进行模糊匹配的词语，例如‘杭州旅行’"`
+	Keyword        *string  `json:"keyword,omitempty" jsonschema:"title=关键词,description=用于在标题或内容中进行模糊匹配的关键词，可填写多个，使用英文逗号“,”分隔。例如：“杭州,旅行,游玩”。"`
 	Location       *string  `json:"location,omitempty" jsonschema:"title=发生地点,description=精确或模糊匹配记忆发生的地点，例如‘北京’或‘西湖’"`
 	Characters     *string  `json:"characters,omitempty" jsonschema:"title=相关人物,description=包含某个人物的记忆，多个名字可用逗号分隔，系统会匹配任一出现的人物"`
 	EmotionalMin   *float64 `json:"emotional_min,omitempty" jsonschema:"title=最小情感值,description=只返回情感极性大于等于该值的记忆，范围 -1.0 ~ +1.0，例如 0.5 表示只看正面情绪"`
@@ -300,8 +300,9 @@ func NewReadMemoryTool(storage *istorage.Storage) (tool.InvokableTool, error) {
 }
 
 type EditMemoryIn struct {
-	MemoryID uint `json:"memory_id" jsonschema:"title=记忆ID,description=需要编辑的记忆的唯一编号"`
 	WriteMemoryToolRequest
+	MemoryID  uint `json:"memory_id" jsonschema:"title=记忆ID,description=需要编辑的记忆的唯一编号"`
+	IsDeleted bool `json:"is_deleted" jsonschema:"title=是否废弃,description=该记忆是否被废弃"`
 }
 
 type EditMemoryResponse struct {
@@ -410,9 +411,10 @@ func trimContent(content string, maxLen int) string {
 	return content
 }
 
-func derefOrEmpty(s *string) string {
+func derefOrEmpty(s *string) []string {
 	if s == nil {
-		return ""
+		return []string{}
 	}
-	return *s
+
+	return strings.Split(*s, ",")
 }

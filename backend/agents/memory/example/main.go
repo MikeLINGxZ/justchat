@@ -22,7 +22,7 @@ func main() {
 
 	openAIAPIKey := os.Getenv("ALICCLOUD_API_KEY")
 	openAIBaseURL := "https://dashscope.aliyuncs.com/compatible-mode/v1"
-	openAIModelName := "qwen-flash"
+	openAIModelName := "qwen3-max-2025-09-23"
 
 	ctx := context.Background()
 	h, err := internal.NewHost(ctx, openAIBaseURL, openAIAPIKey, openAIModelName)

@@ -28,7 +28,7 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 	if keyword != "" {
 		// 使用 FTS5 匹配
 		ftsCondition := "memory_fts MATCH ?"
-		ftsArgs := sanitizeFTSQuery(keyword) // 防止特殊字符导致语法错误
+		ftsArgs := sanitizeFTSQuery([]string{keyword}) // 防止特殊字符导致语法错误
 
 		// 子查询获取匹配的 rowid
 		subQuery := db.Table("memory_fts").Select("rowid").Where(ftsCondition, ftsArgs)
@@ -62,21 +62,30 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 }
 
 // sanitizeFTSQuery 清理并格式化用于 FTS5 查询的关键词
-func sanitizeFTSQuery(keyword string) string {
-	// 使用 \p{Han} 匹配所有汉字，支持中文；使用原始字符串 `` `...` `` 没问题
-	re := regexp.MustCompile(`[^a-zA-Z0-9\p{Han}\s\-_*]+`)
-	cleaned := re.ReplaceAllString(keyword, " ")
-
-	words := strings.Fields(cleaned)
-	if len(words) == 0 {
+func sanitizeFTSQuery(keywords []string) string {
+	if len(keywords) == 0 {
 		return ""
 	}
 
-	return strings.Join(words, " OR ")
+	// 使用 \p{Han} 匹配所有汉字，支持中文；使用原始字符串 `` `...` `` 没问题
+	re := regexp.MustCompile(`[^a-zA-Z0-9\p{Han}\s\-_*]+`)
+
+	var allWords []string
+	for _, keyword := range keywords {
+		cleaned := re.ReplaceAllString(keyword, " ")
+		words := strings.Fields(cleaned)
+		allWords = append(allWords, words...)
+	}
+
+	if len(allWords) == 0 {
+		return ""
+	}
+
+	return strings.Join(allWords, " OR ")
 }
 
 type MemoryQuery struct {
-	Keyword        string
+	Keyword        []string
 	Location       *string
 	Characters     *string
 	EmotionalMin   *float64
@@ -95,7 +104,7 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 	query := db.Model(&models.Memory{}).Where("is_forgotten = ?", false)
 
 	// 1. 关键词搜索（summary & content）→ 使用 FTS5
-	if q.Keyword != "" {
+	if len(q.Keyword) > 0 {
 		ftsArgs := sanitizeFTSQuery(q.Keyword)
 		if ftsArgs != "" {
 			subQuery := db.Table("memory_fts").Select("rowid").Where("memory_fts MATCH ?", ftsArgs)

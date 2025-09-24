@@ -11,7 +11,7 @@ type Storage struct {
 }
 
 func NewStorage() (*Storage, error) {
-	db, err := gorm.Open(sqlite.Open("./memory_demo.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("./agent_memory.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
