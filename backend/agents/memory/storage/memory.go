@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,19 +21,13 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 	db := s.sqliteDb.WithContext(ctx)
 
 	// 构建基础查询
-	query := db.Model(&models.Memory{}).Where("is_forbidden = ?", false) // 排除已遗忘的记忆（可选）
+	query := db.Model(&models.Memory{}).Where("is_forgotten = ?", false) // 排除已遗忘的记忆（可选）
 
-	// 1. 处理关键词搜索：使用 FTS5 搜索 summary 和 content
+	// 1. 处理关键词搜索：使用 LIKE 搜索 summary 和 content
 	if keyword != "" {
-		// 使用 FTS5 匹配
-		ftsCondition := "memory_fts MATCH ?"
-		ftsArgs := sanitizeFTSQuery([]string{keyword}) // 防止特殊字符导致语法错误
-
-		// 子查询获取匹配的 rowid
-		subQuery := db.Table("memory_fts").Select("rowid").Where(ftsCondition, ftsArgs)
-
-		// 主查询限制 ID 在 FTS 结果中
-		query = query.Where("id IN (?)", subQuery)
+		// 使用 LIKE 模糊匹配 summary 或 content
+		likePattern := "%" + keyword + "%"
+		query = query.Where("summary LIKE ? OR content LIKE ?", likePattern, likePattern)
 	}
 
 	// 2. 处理时间范围过滤：要求 TimeRangStart 在 [startAt, endAt] 区间内有交集
@@ -61,29 +54,6 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 	return memories, nil
 }
 
-// sanitizeFTSQuery 清理并格式化用于 FTS5 查询的关键词
-func sanitizeFTSQuery(keywords []string) string {
-	if len(keywords) == 0 {
-		return ""
-	}
-
-	// 使用 \p{Han} 匹配所有汉字，支持中文；使用原始字符串 `` `...` `` 没问题
-	re := regexp.MustCompile(`[^a-zA-Z0-9\p{Han}\s\-_*]+`)
-
-	var allWords []string
-	for _, keyword := range keywords {
-		cleaned := re.ReplaceAllString(keyword, " ")
-		words := strings.Fields(cleaned)
-		allWords = append(allWords, words...)
-	}
-
-	if len(allWords) == 0 {
-		return ""
-	}
-
-	return strings.Join(allWords, " OR ")
-}
-
 type MemoryQuery struct {
 	Keyword        []string
 	Location       *string
@@ -103,12 +73,24 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 	// 基础查询：排除已遗忘的记忆
 	query := db.Model(&models.Memory{}).Where("is_forgotten = ?", false)
 
-	// 1. 关键词搜索（summary & content）→ 使用 FTS5
+	// 1. 关键词搜索（summary & content）→ 使用 LIKE
 	if len(q.Keyword) > 0 {
-		ftsArgs := sanitizeFTSQuery(q.Keyword)
-		if ftsArgs != "" {
-			subQuery := db.Table("memory_fts").Select("rowid").Where("memory_fts MATCH ?", ftsArgs)
-			query = query.Where("id IN (?)", subQuery)
+		// 构建LIKE查询条件
+		var conditions []string
+		var args []interface{}
+
+		for _, keyword := range q.Keyword {
+			if strings.TrimSpace(keyword) != "" {
+				likePattern := "%" + strings.TrimSpace(keyword) + "%"
+				conditions = append(conditions, "(summary LIKE ? OR content LIKE ?)")
+				args = append(args, likePattern, likePattern)
+			}
+		}
+
+		if len(conditions) > 0 {
+			// 使用 OR 连接多个关键词条件
+			combinedCondition := strings.Join(conditions, " OR ")
+			query = query.Where(combinedCondition, args...)
 		}
 	}
 
@@ -251,15 +233,8 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 		return fmt.Errorf("更新记忆失败: %w", result.Error)
 	}
 
-	// 如果更新了 content 或 summary，需要更新 FTS 索引
-	if memory.Summary != "" || memory.Content != "" {
-		// 重新构建 FTS 索引（这里简化处理，实际可能需要更复杂的逻辑）
-		err := s.sqliteDb.Exec((&models.Memory{}).Fts()).Error
-		if err != nil {
-			// FTS 更新失败不应该影响主更新操作，只记录错误
-			fmt.Printf("警告：FTS 索引更新失败: %v\n", err)
-		}
-	}
+	// 如果更新了 content 或 summary，不需要更新 FTS 索引（已移除FTS）
+	// 直接使用LIKE查询，无需FTS索引维护
 
 	return nil
 }

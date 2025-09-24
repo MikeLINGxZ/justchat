@@ -21,10 +21,5 @@ func NewStorage() (*Storage, error) {
 		return nil, err
 	}
 
-	err = db.Exec((&models.Memory{}).Fts()).Error
-	if err != nil {
-		return nil, err
-	}
-
 	return &Storage{sqliteDb: db}, nil
 }
