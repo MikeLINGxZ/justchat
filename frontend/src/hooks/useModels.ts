@@ -33,62 +33,7 @@ export interface UseModelsParams {
 
 // 默认模拟数据
 const getDefaultModels = (): ModelOption[] => {
-  return [
-    {
-      id: 'gpt-4o',
-      name: 'GPT-4o',
-      ownedBy: 'openai',
-      enabled: true,
-    },
-    {
-      id: 'gpt-4o-mini',
-      name: 'GPT-4o Mini',
-      ownedBy: 'openai', 
-      enabled: true,
-    },
-    {
-      id: 'gpt-4-turbo',
-      name: 'GPT-4 Turbo',
-      ownedBy: 'openai',
-      enabled: true,
-    },
-    {
-      id: 'gpt-3.5-turbo',
-      name: 'GPT-3.5 Turbo',
-      ownedBy: 'openai',
-      enabled: true,
-    },
-    {
-      id: 'claude-3-5-sonnet-20241022',
-      name: 'Claude 3.5 Sonnet',
-      ownedBy: 'anthropic',
-      enabled: true,
-    },
-    {
-      id: 'claude-3-5-haiku-20241022',
-      name: 'Claude 3.5 Haiku',
-      ownedBy: 'anthropic',
-      enabled: true,
-    },
-    {
-      id: 'claude-3-opus-20240229',
-      name: 'Claude 3 Opus',
-      ownedBy: 'anthropic',
-      enabled: true,
-    },
-    {
-      id: 'gemini-1.5-pro',
-      name: 'Gemini 1.5 Pro',
-      ownedBy: 'google',
-      enabled: true,
-    },
-    {
-      id: 'gemini-1.5-flash',
-      name: 'Gemini 1.5 Flash',
-      ownedBy: 'google',
-      enabled: true,
-    },
-  ];
+  return [];
 };
 
 /**

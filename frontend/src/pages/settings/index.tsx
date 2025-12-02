@@ -23,7 +23,7 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
-  const [selectedKey, setSelectedKey] = useState('provider');
+  const [selectedKey, setSelectedKey] = useState('general');
   const [showContent, setShowContent] = useState(false); // 控制移动端内容显示
   const { isMobile } = useViewportHeight(); // 使用移动端检测
 
@@ -94,7 +94,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
         case 'about':
           return <AboutPage />;
         default:
-          return <ProviderSettingPage />;
+          return <GeneralSettingsPage />;
       }
     })();
 
@@ -162,7 +162,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             </div>
             <Menu
               mode="inline"
-              selectedKeys={[selectedKey]} // 桌面端显示选中状态
+              selectedKeys={[selectedKey]}
               items={menuItems}
               onClick={handleMenuClick}
               className={styles.settingsMenu}
