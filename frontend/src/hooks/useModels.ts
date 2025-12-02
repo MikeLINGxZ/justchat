@@ -109,7 +109,7 @@ export const useModels = (params: UseModelsParams = {}): UseModelsReturn => {
     
     try {
       // 调用 Wails 后端服务获取模型列表
-      const backendModels = await Service.GetModels();
+      const backendModels = await Service.GetModels(true,true);
       
       // 转换后端数据格式为前端使用的格式
       const convertedModels = backendModels.map(convertBackendModel);

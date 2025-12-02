@@ -451,8 +451,10 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     }, []);
 
     // 检测是否为错误消息
-    const isErrorMessage = useCallback((message: Message) => { // 修改为 Message
-        return message.role === 'assistant' && message.content.includes('错误');
+    const isErrorMessage = useCallback((message: Message) => {
+        // todo
+        // return message.role === 'assistant' && message.content.includes('错误');
+        return false;
     }, []);
 
     // 渲染单条消息
