@@ -1,13 +1,11 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import SimpleTest from '@/pages/SimpleTest';
-import EnvTest from '@/pages/EnvTest';
 import { initializeStores } from '@/stores';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 
 const Chat = React.lazy(() => import('@/pages/home'));
-const NotFound = React.lazy(() => import('@/pages/NotFound'));
+const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
 const Settings = React.lazy(()=>import('@/pages/settings'));
 
 function App() {
@@ -63,16 +61,6 @@ function App() {
       }
     >
       <Routes>
-        {/* 测试路由 */}
-        <Route
-          path="/simple-test"
-          element={<SimpleTest />}
-        />
-        <Route
-          path="/env-test"
-          element={<EnvTest />}
-        />
-
         {/* 聊天页面 - 主页面 */}
         <Route
           path="/"

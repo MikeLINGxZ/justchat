@@ -3,12 +3,12 @@ package internal
 import (
 	"context"
 
-	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino-ext/components/model/deepseek"
 	"github.com/cloudwego/eino/flow/agent/multiagent/host"
 )
 
 func NewHost(ctx context.Context, baseURL, apiKey, modelName string) (*host.Host, error) {
-	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+	chatModel, err := deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
 		BaseURL: baseURL,
 		Model:   modelName,
 		APIKey:  apiKey,

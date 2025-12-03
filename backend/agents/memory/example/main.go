@@ -20,9 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	openAIAPIKey := os.Getenv("ALICCLOUD_API_KEY")
-	openAIBaseURL := "https://dashscope.aliyuncs.com/compatible-mode/v1"
-	openAIModelName := "qwen3-max-2025-09-23"
+	openAIAPIKey := os.Getenv("DEEPSEEK_API_KEY")
+	openAIBaseURL := "https://api.deepseek.com/v1"
+	openAIModelName := "deepseek-chat"
 
 	ctx := context.Background()
 	h, err := internal.NewHost(ctx, openAIBaseURL, openAIAPIKey, openAIModelName)
