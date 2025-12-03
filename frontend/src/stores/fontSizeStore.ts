@@ -71,6 +71,30 @@ export const useFontSizeStore = create<FontSizeState>()(
   )
 );
 
+// 监听 localStorage 变化，实现跨 tab 同步
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    // 只处理字体大小相关的存储变化
+    if (e.key === 'lemon-tea-font-size' && e.newValue) {
+      try {
+        const newState = JSON.parse(e.newValue);
+        const currentState = useFontSizeStore.getState();
+        
+        // 如果字体大小偏移值发生变化，更新状态和CSS
+        if (newState.state?.fontSizeOffset !== undefined && 
+            newState.state.fontSizeOffset !== currentState.fontSizeOffset) {
+          // 直接更新store状态（不触发set以避免循环）
+          useFontSizeStore.setState({ fontSizeOffset: newState.state.fontSizeOffset });
+          // 同步更新CSS变量
+          updateCSSFontSize(newState.state.fontSizeOffset);
+        }
+      } catch (error) {
+        console.error('Failed to sync font size across tabs:', error);
+      }
+    }
+  });
+}
+
 // 更新CSS变量的函数
 function updateCSSFontSize(offset: FontSizeOffset) {
   const root = document.documentElement;
