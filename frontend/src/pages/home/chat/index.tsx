@@ -1,7 +1,7 @@
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
 import styles from "@/pages/home/chat/index.module.scss";
-import ChatMessages, {type ChatMessagesRef} from "@/components/Chat/Messages";
+import MessageList, {type MessageListRef} from "@/components/Chat/MessageList";
 import ChatTitle from "@/pages/home/chat/chat_title.tsx";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import ChatInput from "@/components/Chat/Input";
@@ -89,7 +89,7 @@ const Chat: React.FC<ChatProps> = ({
     const [isUserScrolling, setIsUserScrolling] = useState(false); // 用户是否在手动滚动
     const [isAtBottom, setIsAtBottom] = useState(true); // 是否在底部
     const [showScrollButton, setShowScrollButton] = useState(false); // 是否显示滚动到底部按钮
-    const chatMessagesRef = useRef<ChatMessagesRef>(null);
+    const messageListRef = useRef<MessageListRef>(null);
     const lastMessageCountRef = useRef(0); // 记录上次消息数量
     const isGeneratingRef = useRef(false); // 记录是否正在生成
     const hasInitializedRef = useRef(false); // 记录是否已初始化
@@ -104,8 +104,8 @@ const Chat: React.FC<ChatProps> = ({
         setIsUserScrolling(userScrolling);
         
         // 检查是否在底部
-        if (chatMessagesRef.current) {
-            const atBottom = chatMessagesRef.current.isAtBottom();
+        if (messageListRef.current) {
+            const atBottom = messageListRef.current.isAtBottom();
             setIsAtBottom(atBottom);
             
             if (userScrolling) {
@@ -128,8 +128,8 @@ const Chat: React.FC<ChatProps> = ({
 
     // 滚动到底部的处理函数
     const handleScrollToBottom = useCallback(() => {
-        if (chatMessagesRef.current) {
-            chatMessagesRef.current.scrollToBottomSmooth();
+        if (messageListRef.current) {
+            messageListRef.current.scrollToBottomSmooth();
             setAutoScroll(true);
             setIsUserScrolling(false);
             setIsAtBottom(true);
@@ -140,8 +140,8 @@ const Chat: React.FC<ChatProps> = ({
     // 定期检查底部状态（用于显示/隐藏滚动按钮）
     useEffect(() => {
         const checkBottomStatus = () => {
-            if (!autoScroll && chatMessagesRef.current) {
-                const atBottom = chatMessagesRef.current.isAtBottom();
+            if (!autoScroll && messageListRef.current) {
+                const atBottom = messageListRef.current.isAtBottom();
                 setIsAtBottom(atBottom);
                 setShowScrollButton(!atBottom);
             }
@@ -171,9 +171,9 @@ const Chat: React.FC<ChatProps> = ({
             isGenerating // 正在生成状态
         );
         
-        if (shouldAutoScroll && chatMessagesRef.current && currentMessageCount > 0) {
+        if (shouldAutoScroll && messageListRef.current && currentMessageCount > 0) {
             // 使用immediate滚动确保实时跟进
-            chatMessagesRef.current.scrollToBottom();
+            messageListRef.current.scrollToBottom();
             setIsAtBottom(true);
             setShowScrollButton(false);
         }
@@ -181,12 +181,12 @@ const Chat: React.FC<ChatProps> = ({
 
     // 首次进入聊天时自动滚动到底部
     useEffect(() => {
-        if (!hasInitializedRef.current && chatMessagesRef.current && currentMessages.length > 0) {
+        if (!hasInitializedRef.current && messageListRef.current && currentMessages.length > 0) {
             hasInitializedRef.current = true;
             // 延迟一下确保DOM渲染完成
             setTimeout(() => {
-                if (chatMessagesRef.current) {
-                    chatMessagesRef.current.scrollToBottomSmooth();
+                if (messageListRef.current) {
+                    messageListRef.current.scrollToBottomSmooth();
                     setIsAtBottom(true);
                     setShowScrollButton(false);
                 }
@@ -272,8 +272,8 @@ const Chat: React.FC<ChatProps> = ({
                         />
                     )}
                     <div className={`${styles.chatMessagesContent}`}>
-                        <ChatMessages
-                            ref={chatMessagesRef}
+                        <MessageList
+                            ref={messageListRef}
                             messages={currentMessages}
                             isLoading={isLoading}
                             showLoadingMessage={showLoadingMessage}

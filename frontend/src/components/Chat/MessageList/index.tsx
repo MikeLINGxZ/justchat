@@ -8,7 +8,7 @@ import styles from "./index.module.scss";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import ReasoningContent from "@/pages/home/chat/reasoning_message.tsx";
 
-interface ChatMessagesProps {
+interface MessageListProps {
     // 类名
     className?: string;
     // 所有消息
@@ -31,7 +31,7 @@ interface ChatMessagesProps {
     onUserScroll?: (isUserScrolling: boolean) => void;
 }
 
-export interface ChatMessagesRef {
+export interface MessageListRef {
     scrollToBottom: () => void;
     scrollToBottomSmooth: () => void;
     isAtBottom: () => boolean;
@@ -39,7 +39,7 @@ export interface ChatMessagesRef {
     enableAutoScroll: () => void;
 }
 
-const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessagesProps> = ({
+const MessageList:  React.ForwardRefRenderFunction<MessageListRef,MessageListProps> = ({
     messages = [],
     isLoading,
     showLoadingMessage,
@@ -50,7 +50,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     onRegenerateMessage,
     onUserScroll,
     className
-},ref) => {
+}, ref) => {
 
     const chatMessagesPageRef = useRef<HTMLDivElement>(null);
     const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -60,6 +60,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
     const scrollStartTimeRef = useRef<number>(0); // 记录滚动开始时间
     const isScrollingByUserRef = useRef<boolean>(false); // 用户正在滚动的标记
     const userInteractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [showScrollToBottom,setShowScrollToBottom] = useState<boolean>(true);
     
     // 检查是否滚动到底部
     const isAtBottom = useCallback(() => {
@@ -506,10 +507,32 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
                     </div>
                 )}
             </div>
+            {/* 滚动到底部按钮 */}
+            {showScrollToBottom && (
+                <div className={`${styles.bottomAction}`}>
+                    <div className={`${styles.bottomArrow}`}>
+                        <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M7 10L12 15L17 10"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-ChatMessages.displayName = 'ChatMessages';
+MessageList.displayName = 'MessageList';
 
-export default forwardRef(ChatMessages);
+export default forwardRef(MessageList);

@@ -472,6 +472,58 @@
   }
 }
 
+.bottomAction {
+  width: 100%;
+  bottom: 0;
+  height: 50px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  float: left;
+}
+
+.bottomArrow {
+  width: 32px;
+  height: 32px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+
+  svg {
+    color: #6b7280;
+    transition: all 0.3s ease;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 0, 0, 0.2);
+
+    svg {
+      color: #374151;
+      transform: translateY(2px);
+    }
+  }
+
+  &:active {
+    transform: translateX(-50%) translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  // 添加轻微的脉冲动画
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
 // 加载动画关键帧
 @keyframes loadingPulse {
   0%, 80%, 100% {
