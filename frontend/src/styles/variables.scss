@@ -1,6 +1,8 @@
 // 导入 map 模块
 @use "sass:map";
 
+$mobile-max-width: 768px;
+
 // CSS变量定义
 :root {
   // 主色调

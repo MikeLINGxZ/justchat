@@ -1,11 +1,16 @@
 @use '@/styles/variables.scss' as *;
 
-.messageWrapper {
+.ChatMessage {
+  width: 100%;
   display: flex;
+  flex-direction: column;
+}
+
+.message {
+  display: inline-block;
   flex-direction: column;
   gap: var(--spacing-xs);
   color: var(--text-color);
-
   .messageContainer {
     padding: var(--spacing-md);
     border-radius: 12px;
@@ -21,7 +26,6 @@
 // AI 消息包装器 - 靠左
 .assistantMessageWrapper {
   align-self: flex-start;
-  max-width: 80%;
 
   .messageContainer {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -30,36 +34,17 @@
       color: #ffffff;
     }
   }
-
-  .messageActions {
-    align-self: flex-start;
-
-    .actionButton {
-      background: rgba(255, 255, 255, 0.9);
-      color: #374151;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-
-      &:hover {
-        background: #ffffff;
-        color: #1f2937;
-        transform: scale(1.1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      }
-    }
-  }
 }
 
 // 用户消息包装器 - 靠右
 .userMessageWrapper {
   align-self: flex-end;
-  max-width: 80%;
 
   .messageContainer {
     background: #f8f9fa;
 
     .messageContent {
       color: #2c3e50;
-
       // 用户消息的 Markdown 样式
       &.markdownContent {
         .inlineCode {
@@ -107,23 +92,6 @@
             background: rgba(44, 62, 80, 0.05);
           }
         }
-      }
-    }
-  }
-
-  .messageActions {
-    align-self: flex-end;
-
-    .actionButton {
-      background: rgba(255, 255, 255, 0.9);
-      color: #374151;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-
-      &:hover {
-        background: #ffffff;
-        color: #1f2937;
-        transform: scale(1.1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
     }
   }

@@ -32,89 +32,91 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     //  wrapperClass = styles.errorMessageWrapper;
 
     return (
-        <div className={`${styles.messageWrapper} ${wrapperClass}`}> {/* 使用 index 作为 key */}
-            <div className={styles.messageContainer}>
-                {isUser ? (
-                    <div className={styles.messageContent}>
-                        {message.content}
-                    </div>
-                ):(
-                    <div>
-                        {/* 渲染思考过程（如果存在） */}
-                        {message.reasoning_content && (
-                            <ReasoningContent
-                                content={message.reasoning_content}
-                                isStreaming={(message as any).isStreaming || false} // Message 类没有 isStreaming 属性
-                            />
-                        )}
-
-                        {/* 渲染主要内容 */}
-                        <div className={`${styles.messageContent} ${styles.markdownContent}`}>
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    code(props: any) {
-                                        const { node, inline, className, children, ...rest } = props;
-                                        const match = /language-(\w+)/.exec(className || '');
-                                        const language = match ? match[1] : '';
-
-                                        return !inline && language ? (
-                                            <SyntaxHighlighter
-                                                style={tomorrow}
-                                                language={language}
-                                                PreTag="div"
-                                                customStyle={{
-                                                    margin: '8px 0',
-                                                    borderRadius: '8px',
-                                                    fontSize: '14px'
-                                                } as any}
-                                                {...rest}
-                                            >
-                                                {String(children).replace(/\n$/, '')}
-                                            </SyntaxHighlighter>
-                                        ) : (
-                                            <code className={`${className} ${styles.inlineCode}`} {...rest}>
-                                                {children}
-                                            </code>
-                                        );
-                                    },
-                                    // 自定义表格样式
-                                    table: ({children}) => (
-                                        <div className={styles.tableWrapper}>
-                                            <table className={styles.markdownTable}>{children}</table>
-                                        </div>
-                                    ),
-                                    // 自定义链接样式
-                                    a: ({children, href}) => (
-                                        <a
-                                            href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.markdownLink}
-                                        >
-                                            {children}
-                                        </a>
-                                    ),
-                                    // 自定义引用块样式
-                                    blockquote: ({children}) => (
-                                        <blockquote className={styles.markdownBlockquote}>
-                                            {children}
-                                        </blockquote>
-                                    ),
-                                    // 自定义列表样式
-                                    ul: ({children}) => (
-                                        <ul className={styles.markdownList}>{children}</ul>
-                                    ),
-                                    ol: ({children}) => (
-                                        <ol className={styles.markdownList}>{children}</ol>
-                                    ),
-                                }}
-                            >
-                                {message.content}
-                            </ReactMarkdown>
+        <div className={styles.ChatMessage}>
+            <div className={`${styles.message} ${wrapperClass}`}>
+                <div className={styles.messageContainer} >
+                    {isUser ? (
+                        <div className={styles.messageContent}>
+                            {message.content}
                         </div>
-                    </div>
-                )}
+                    ):(
+                        <div>
+                            {/* 渲染思考过程（如果存在） */}
+                            {message.reasoning_content && (
+                                <ReasoningContent
+                                    content={message.reasoning_content}
+                                    isStreaming={(message as any).isStreaming || false} // Message 类没有 isStreaming 属性
+                                />
+                            )}
+
+                            {/* 渲染主要内容 */}
+                            <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        code(props: any) {
+                                            const { node, inline, className, children, ...rest } = props;
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            const language = match ? match[1] : '';
+
+                                            return !inline && language ? (
+                                                <SyntaxHighlighter
+                                                    style={tomorrow}
+                                                    language={language}
+                                                    PreTag="div"
+                                                    customStyle={{
+                                                        margin: '8px 0',
+                                                        borderRadius: '8px',
+                                                        fontSize: '14px'
+                                                    } as any}
+                                                    {...rest}
+                                                >
+                                                    {String(children).replace(/\n$/, '')}
+                                                </SyntaxHighlighter>
+                                            ) : (
+                                                <code className={`${className} ${styles.inlineCode}`} {...rest}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        },
+                                        // 自定义表格样式
+                                        table: ({children}) => (
+                                            <div className={styles.tableWrapper}>
+                                                <table className={styles.markdownTable}>{children}</table>
+                                            </div>
+                                        ),
+                                        // 自定义链接样式
+                                        a: ({children, href}) => (
+                                            <a
+                                                href={href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={styles.markdownLink}
+                                            >
+                                                {children}
+                                            </a>
+                                        ),
+                                        // 自定义引用块样式
+                                        blockquote: ({children}) => (
+                                            <blockquote className={styles.markdownBlockquote}>
+                                                {children}
+                                            </blockquote>
+                                        ),
+                                        // 自定义列表样式
+                                        ul: ({children}) => (
+                                            <ul className={styles.markdownList}>{children}</ul>
+                                        ),
+                                        ol: ({children}) => (
+                                            <ol className={styles.markdownList}>{children}</ol>
+                                        ),
+                                    }}
+                                >
+                                    {message.content}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )
