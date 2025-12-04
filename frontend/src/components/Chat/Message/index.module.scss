@@ -1,0 +1,131 @@
+@use '@/styles/variables.scss' as *;
+
+.messageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  color: var(--text-color);
+
+  .messageContainer {
+    padding: var(--spacing-md);
+    border-radius: 12px;
+    transition: all var(--transition-fast);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  }
+}
+
+// AI 消息包装器 - 靠左
+.assistantMessageWrapper {
+  align-self: flex-start;
+  max-width: 80%;
+
+  .messageContainer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    .messageContent {
+      color: #ffffff;
+    }
+  }
+
+  .messageActions {
+    align-self: flex-start;
+
+    .actionButton {
+      background: rgba(255, 255, 255, 0.9);
+      color: #374151;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+
+      &:hover {
+        background: #ffffff;
+        color: #1f2937;
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}
+
+// 用户消息包装器 - 靠右
+.userMessageWrapper {
+  align-self: flex-end;
+  max-width: 80%;
+
+  .messageContainer {
+    background: #f8f9fa;
+
+    .messageContent {
+      color: #2c3e50;
+
+      // 用户消息的 Markdown 样式
+      &.markdownContent {
+        .inlineCode {
+          background: rgba(44, 62, 80, 0.1);
+          color: #2c3e50;
+          border: 1px solid rgba(44, 62, 80, 0.2);
+        }
+
+        .markdownBlockquote {
+          border-left-color: rgba(44, 62, 80, 0.3);
+          background: rgba(44, 62, 80, 0.05);
+        }
+
+        .markdownLink {
+          color: #3498db;
+
+          &:hover {
+            color: #2980b9;
+          }
+        }
+
+        h1, h2 {
+          border-bottom-color: rgba(44, 62, 80, 0.2);
+        }
+
+        hr {
+          border-top-color: rgba(44, 62, 80, 0.2);
+        }
+
+        .tableWrapper {
+          border-color: rgba(44, 62, 80, 0.2);
+        }
+
+        .markdownTable {
+          th, td {
+            border-bottom-color: rgba(44, 62, 80, 0.1);
+          }
+
+          th {
+            background: rgba(44, 62, 80, 0.1);
+            border-bottom-color: rgba(44, 62, 80, 0.2);
+          }
+
+          tr:hover {
+            background: rgba(44, 62, 80, 0.05);
+          }
+        }
+      }
+    }
+  }
+
+  .messageActions {
+    align-self: flex-end;
+
+    .actionButton {
+      background: rgba(255, 255, 255, 0.9);
+      color: #374151;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+
+      &:hover {
+        background: #ffffff;
+        color: #1f2937;
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}
+

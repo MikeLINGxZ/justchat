@@ -1,4 +1,13 @@
-import React, {forwardRef, useImperativeHandle, useRef, useCallback, useEffect, useState, useMemo} from "react";
+import React, {
+    forwardRef,
+    useImperativeHandle,
+    useRef,
+    useCallback,
+    useEffect,
+    useState,
+    useMemo,
+    type ReactNode
+} from "react";
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -7,6 +16,7 @@ import MessageAction from "@/components/MessageAction";
 import styles from "./index.module.scss";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import ReasoningContent from "@/pages/home/chat/reasoning_message.tsx";
+import ChatMessage from "@/components/Chat/Message";
 
 interface MessageListProps {
     // 类名
@@ -451,44 +461,10 @@ const MessageList:  React.ForwardRefRenderFunction<MessageListRef,MessageListPro
         );
     }, []);
 
-    // 检测是否为错误消息
-    const isErrorMessage = useCallback((message: Message) => {
-        // todo
-        // return message.role === 'assistant' && message.content.includes('错误');
-        return false;
-    }, []);
-
-    // 渲染单条消息
-    const renderMessage = useCallback((message: Message, index: number) => { // 修改为 Message
-        const isUser = message.role === 'user';
-        const isErrorMsg = isErrorMessage(message);
-        
-        // 如果是AI消息且内容和思考过程都为空，则不渲染
-        if (!isUser && !message.content.trim() && !message.reasoning_content?.trim()) {
-            return null;
-        }
-        
-        let wrapperClass = styles.assistantMessageWrapper;
-        if (isUser) {
-            wrapperClass = styles.userMessageWrapper;
-        } else if (isErrorMsg) {
-            wrapperClass = styles.errorMessageWrapper;
-        }
-
-        return (
-            <div key={index} className={`${styles.messageWrapper} ${wrapperClass}`}> {/* 使用 index 作为 key */}
-                <div className={styles.messageContainer}>
-                    {renderMessageContent(message)}
-                </div>
-                {renderMessageActions(message, index)}
-            </div>
-        );
-    }, [isErrorMessage, renderMessageContent, renderMessageActions]);
-
     // 优化消息列表渲染
     const renderedMessages = useMemo(() => {
-        return messages.map((message, index) => renderMessage(message, index));
-    }, [messages, renderMessage]);
+        return messages.map((message, index) => ChatMessage({message}) as ReactNode);
+    }, [messages]);
 
     return (
         <div className={`${styles.chatMessagesPage} ${className || ''}`} ref={chatMessagesPageRef}>
