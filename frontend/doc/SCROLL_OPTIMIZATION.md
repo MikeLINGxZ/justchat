@@ -86,7 +86,7 @@ useEffect(() => {
 }, [currentMessages.length]);
 ```
 
-### 3. v2.1 高敏感度滚动检测优化 (`src/pages/home/chat/chat_messages.tsx`)
+### 3. v2.1 高敏感度滚动检测优化 (`src/pages/home/chat/index.tsx`)
 
 #### 问题识别
 在AI消息生成过程中，用户需要大范围滚动才能停止自动滚动，影响用户体验。
@@ -117,7 +117,7 @@ element.addEventListener('touchstart', handleScrollStart, { passive: true });
 element.addEventListener('touchmove', handleScrollStart, { passive: true });
 ```
 
-### 4. v2.2 极致敏感滚动检测优化 (`src/pages/home/chat/chat_messages.tsx`)
+### 4. v2.2 极致敏感滚动检测优化 (`src/pages/home/chat/index.tsx`)
 
 #### 问题反馈
 在v2.1版本中，尽管添加了多事件监听，但用户在AI生成过程中仍需要大范围滚动才能停止自动滚动。

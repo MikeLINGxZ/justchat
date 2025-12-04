@@ -1,75 +1,52 @@
+// utils/mobile.ts 或直接放在 useViewportHeight.ts 文件中
 import { useEffect, useState } from 'react';
 
 /**
- * 移动端视口高度检测 Hook
+ * 独立的工具函数：判断是否为移动设备
+ * 可在非 React 环境中使用
+ */
+export const isMobileDevice = (widthThreshold = 768): boolean => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+
+    const userAgent = navigator.userAgent;
+    const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    return mobileRegex.test(userAgent) || window.innerWidth <= widthThreshold;
+};
+
+/**
+ * React Hook: 移动端视口高度检测
  * 解决移动端浏览器地址栏和底部菜单栏遮挡问题
  */
+// 修改 useViewportHeight
 export const useViewportHeight = () => {
     const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile(768); // 复用新 Hook
 
     useEffect(() => {
-        // 检测是否为移动设备
-        const checkIsMobile = () => {
-            const userAgent = navigator.userAgent;
-            const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-            return mobileRegex.test(userAgent) || window.innerWidth <= 768;
+        const updateHeight = () => {
+            const height = window.visualViewport?.height || window.innerHeight;
+            setViewportHeight(height);
+            document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+            document.documentElement.style.setProperty('--viewport-height', `${height}px`);
         };
 
-        // 更新视口高度
-        const updateViewportHeight = () => {
-            const vh = window.innerHeight;
-            setViewportHeight(vh);
-            
-            // 设置 CSS 自定义属性
-            document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
-            document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
-        };
+        updateHeight();
 
-        // 初始化
-        setIsMobile(checkIsMobile());
-        updateViewportHeight();
+        const handleResize = () => updateHeight();
+        const handleOrientation = () => setTimeout(updateHeight, 100);
+        const handleVisualViewport = () => window.visualViewport && updateHeight();
 
-        // 监听窗口大小变化
-        const handleResize = () => {
-            setIsMobile(checkIsMobile());
-            updateViewportHeight();
-        };
-
-        // 监听屏幕方向变化（移动端特有）
-        const handleOrientationChange = () => {
-            // 延迟执行，等待浏览器完成方向变化
-            setTimeout(() => {
-                updateViewportHeight();
-            }, 100);
-        };
-
-        // 监听可视区域变化（主要为了检测移动端浏览器工具栏显示/隐藏）
-        const handleVisualViewportChange = () => {
-            if (window.visualViewport) {
-                const vh = window.visualViewport.height;
-                setViewportHeight(vh);
-                document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
-                document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
-            }
-        };
-
-        // 添加事件监听器
         window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleOrientationChange);
-        
-        // 现代浏览器支持 Visual Viewport API
+        window.addEventListener('orientationchange', handleOrientation);
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+            window.visualViewport.addEventListener('resize', handleVisualViewport);
         }
 
-        // 清理函数
         return () => {
             window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleOrientationChange);
-            
+            window.removeEventListener('orientationchange', handleOrientation);
             if (window.visualViewport) {
-                window.visualViewport.removeEventListener('resize', handleVisualViewportChange);
+                window.visualViewport.removeEventListener('resize', handleVisualViewport);
             }
         };
     }, []);
@@ -77,12 +54,45 @@ export const useViewportHeight = () => {
     return {
         viewportHeight,
         isMobile,
-        // 提供一个方法手动触发更新
         updateHeight: () => {
-            const vh = window.visualViewport?.height || window.innerHeight;
-            setViewportHeight(vh);
-            document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
-            document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
-        }
+            const height = window.visualViewport?.height || window.innerHeight;
+            setViewportHeight(height);
+            document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+            document.documentElement.style.setProperty('--viewport-height', `${height}px`);
+        },
     };
+};
+
+/**
+ * React Hook: 实时监听是否为移动设备
+ * 自动响应窗口缩放、横竖屏切换等
+ */
+export const useIsMobile = (widthThreshold = 768): boolean => {
+    const [isMobile, setIsMobile] = useState(() => isMobileDevice(widthThreshold));
+
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+
+        const update = () => {
+            // 防抖优化，防止频繁触发
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                setIsMobile(isMobileDevice(widthThreshold));
+            }, 100);
+        };
+
+        // 监听 resize
+        window.addEventListener('resize', update);
+        // 移动端横屏/竖屏切换
+        window.addEventListener('orientationchange', update);
+
+        // 清理
+        return () => {
+            window.removeEventListener('resize', update);
+            window.removeEventListener('orientationchange', update);
+            clearTimeout(timeout);
+        };
+    }, [widthThreshold]);
+
+    return isMobile;
 };

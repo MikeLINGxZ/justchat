@@ -4,11 +4,13 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import MessageAction from "@/components/MessageAction";
-import ReasoningContent from "@/components/ReasoningContent";
-import styles from "@/pages/home/chat/chat_messages.module.scss";
+import styles from "./index.module.scss";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
+import ReasoningContent from "@/pages/home/chat/reasoning_message.tsx";
 
 interface ChatMessagesProps {
+    // 类名
+    className?: string;
     // 所有消息
     messages?: Message[]; // 修改为 Message[]
     // 是否加载中
@@ -27,8 +29,6 @@ interface ChatMessagesProps {
     onRegenerateMessage?: (messageId: string) => void;
     // 用户滚动事件
     onUserScroll?: (isUserScrolling: boolean) => void;
-    // 类名
-    className?: string;
 }
 
 export interface ChatMessagesRef {
@@ -375,7 +375,7 @@ const ChatMessages:  React.ForwardRefRenderFunction<ChatMessagesRef,ChatMessages
             <>
                 {/* 渲染思考过程（如果存在） */}
                 {message.reasoning_content && (
-                    <ReasoningContent 
+                    <ReasoningContent
                         content={message.reasoning_content} 
                         isStreaming={(message as any).isStreaming || false} // Message 类没有 isStreaming 属性
                     />

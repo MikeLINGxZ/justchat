@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import styles from "./chat_input.module.scss";
+import styles from "./index.module.scss";
 import type { ModelOption } from '@/hooks/useModels';
+import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 
 interface ChatInputProps {
     // 类名
@@ -11,8 +12,6 @@ interface ChatInputProps {
     availableModels: ModelOption[];
     // 是否显示滚动到底部按钮
     showScrollToBottom?: boolean;
-    // 是否为移动端
-    isMobile?: boolean;
     // 是否正在生成消息
     isGenerating?: boolean;
     // 点击发送按钮事件（现在会传递输入的文本）
@@ -42,8 +41,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onImageUpload,
     onMessageListScrollToBottom,
     onClearInput,
-    showScrollToBottom = true,
-    isMobile,
+    showScrollToBottom = false,
     className
 }) => {
     const [showAddMenu, setShowAddMenu] = useState(false);
@@ -57,6 +55,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const modelMenuRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastHeightRef = useRef<number>(0);
+    const isMobile =  useIsMobile();
 
     // 优化的高度调整函数
     const adjustTextareaHeight = useCallback(() => {
@@ -108,10 +107,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
         adjustTextareaHeight();
     }, [adjustTextareaHeight]);
 
+    // 添加按钮点击事件
     const handleAddClick = useCallback(() => {
         setShowAddMenu(!showAddMenu);
     }, [showAddMenu]);
 
+    // 模型选择框点击事件
     const handleModelClick = useCallback(() => {
         setShowModelMenu(!showModelMenu);
         // 打开菜单时清空搜索值
@@ -120,11 +121,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [showModelMenu]);
 
+    // 图像上传事件
     const handleImageUpload = useCallback(() => {
         imageInputRef.current?.click();
         setShowAddMenu(false);
     }, []);
 
+    // 文件上传事件
     const handleFileUpload = useCallback(() => {
         fileInputRef.current?.click();
         setShowAddMenu(false);
@@ -137,6 +140,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [onImageUpload]);
 
+    //
     const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length > 0 && onFileUpload) {
@@ -144,6 +148,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [onFileUpload]);
 
+    // 模型选择事件
     const handleModelSelect = useCallback((model: string) => {
         onModelChange(model);
         setShowModelMenu(false);
@@ -166,6 +171,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         );
     }, [availableModels, modelSearchValue]);
 
+    // 消息发送事件
     const handleSend = useCallback(() => {
         if (onMessageListScrollToBottom != null) {
             onMessageListScrollToBottom();
@@ -177,6 +183,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [inputValue, onSendMessage, onMessageListScrollToBottom, clearInput]);
 
+    //
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         // 如果正在使用中文输入法（composition状态），不处理回车键
         if (isComposing) {
@@ -189,6 +196,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [handleSend, isComposing]);
 
+    //
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInputValue(value);

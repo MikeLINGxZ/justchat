@@ -1,10 +1,10 @@
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
-import ChatInput from "@/pages/home/chat/chat_input";
 import styles from "@/pages/home/chat/index.module.scss";
-import ChatMessages, {type ChatMessagesRef} from "@/pages/home/chat/chat_messages.tsx";
+import ChatMessages, {type ChatMessagesRef} from "@/components/Chat/Messages";
 import ChatTitle from "@/pages/home/chat/chat_title.tsx";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
+import ChatInput from "@/components/Chat/Input";
 
 interface ChatProps {
     // 聊天标题
@@ -286,19 +286,21 @@ const Chat: React.FC<ChatProps> = ({
                         />
                     </div>
                     {(onSendMessage || onModelChange) && (
-                        <ChatInput className={`${styles.chatInput}`}
-                            selectedModel={selectedModel}
-                            availableModels={availableModels}
-                            isMobile={isMobile}
-                            isGenerating={isGenerating}
-                            onSendMessage={onSendMessage || (() => {})}
-                            onStopGeneration={onStopGeneration}
-                            onModelChange={onModelChange || (() => {})}
-                            onFileUpload={onFileUpload}
-                            onImageUpload={onImageUpload}
-                            onMessageListScrollToBottom={handleScrollToBottom}
-                            showScrollToBottom={showScrollButton}
-                        />
+                        <div className={`${styles.chatInput}`}>
+                            <ChatInput
+                                       selectedModel={selectedModel}
+                                       availableModels={availableModels}
+                                       isGenerating={isGenerating}
+                                       onSendMessage={onSendMessage || (() => {})}
+                                       onStopGeneration={onStopGeneration}
+                                       onModelChange={onModelChange || (() => {})}
+                                       onFileUpload={onFileUpload}
+                                       onImageUpload={onImageUpload}
+                                       onMessageListScrollToBottom={handleScrollToBottom}
+                                       showScrollToBottom={showScrollButton}
+                            />
+                        </div>
+
                     )}
                 </>
             )}
