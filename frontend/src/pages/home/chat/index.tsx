@@ -1,10 +1,10 @@
 import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
 import styles from "@/pages/home/chat/index.module.scss";
-import MessageList, {type MessageListRef} from "@/components/Chat/MessageList";
+import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/pages/home/chat/chat_title.tsx";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
-import ChatInput from "@/components/Chat/Input";
+import ChatInput from "@/components/chat/input";
 
 interface ChatProps {
     // 聊天标题
@@ -159,7 +159,7 @@ const Chat: React.FC<ChatProps> = ({
         const currentMessageCount = currentMessages.length;
         const hasNewMessage = currentMessageCount > lastMessageCountRef.current;
         const lastMessage = currentMessages[currentMessages.length - 1];
-        const isStreamingMessage = (lastMessage as any)?.isStreaming; // Message 类没有 isStreaming 属性
+        const isStreamingMessage = (lastMessage as any)?.isStreaming; // message 类没有 isStreaming 属性
         
         // 更新消息数量引用
         lastMessageCountRef.current = currentMessageCount;

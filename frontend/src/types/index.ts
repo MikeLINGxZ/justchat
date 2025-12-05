@@ -165,7 +165,7 @@ export interface ChatInfo {
 export interface ChatState {
   // 当前激活的聊天
   currentChatUuid: string | null;
-  currentMessages: any[]; // 使用 any[] 替代 schema.Message[]
+  currentMessages: any[]; // 使用 any[] 替代 schema.message[]
   
   // 聊天列表
   chatList: ChatInfo[];

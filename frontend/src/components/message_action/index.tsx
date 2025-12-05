@@ -4,7 +4,7 @@ import styles from "./index.module.scss";
 
 interface MessageActionProps {
     // 消息对象
-    message: Message; // 修改为 schema.Message
+    message: Message; // 修改为 schema.message
     // 复制消息事件
     onCopyMessage?: (content: string) => void;
     // 删除消息事件
@@ -106,7 +106,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
             {/*{!isUser && isLastAssistantMessage && (*/}
             {/*    <button*/}
             {/*        className={styles.actionButton}*/}
-            {/*        onClick={() => handleRegenerateMessage('')} // Message 类没有 id 属性*/}
+            {/*        onClick={() => handleRegenerateMessage('')} // message 类没有 id 属性*/}
             {/*        title="重新生成回答"*/}
             {/*    >*/}
             {/*        <svg */}
@@ -131,7 +131,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
             {/* 删除按钮 */}
             {/*<button*/}
             {/*    className={styles.actionButton}*/}
-            {/*    onClick={() => handleDeleteMessage('')} // Message 类没有 id 属性*/}
+            {/*    onClick={() => handleDeleteMessage('')} // message 类没有 id 属性*/}
             {/*    title="删除这条消息"*/}
             {/*>*/}
             {/*    <svg */}

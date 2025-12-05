@@ -45,7 +45,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                             {message.reasoning_content && (
                                 <ReasoningContent
                                     content={message.reasoning_content}
-                                    isStreaming={(message as any).isStreaming || false} // Message 类没有 isStreaming 属性
+                                    isStreaming={(message as any).isStreaming || false} // message 类没有 isStreaming 属性
                                 />
                             )}
 
