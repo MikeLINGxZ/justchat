@@ -5,16 +5,35 @@
   justify-content: center;
   align-items: center;
   display: flex;
+  position: relative;
 
-  .Content{
+
+  .content{
     width: 80%;
+    @media (max-width: $mobile-max-width) {
+      width: 100%;
+    }
     padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
 
-    @media (max-width: $mobile-max-width) {
-      width: 100%;
+    .scrollButton {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .scrollButtonIcon {
+        width: 30px;
+        height: 30px;
+        padding: var(--spacing-xs);
+        border-radius: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f3f4f5;
+      }
     }
+
   }
 }
