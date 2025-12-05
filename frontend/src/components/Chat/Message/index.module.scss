@@ -32,19 +32,7 @@
 
     .messageContent {
       color: #ffffff;
-    }
-  }
-}
 
-// 用户消息包装器 - 靠右
-.userMessageWrapper {
-  align-self: flex-end;
-
-  .messageContainer {
-    background: #f8f9fa;
-
-    .messageContent {
-      color: #2c3e50;
       // 用户消息的 Markdown 样式
       &.markdownContent {
         .inlineCode {
@@ -92,7 +80,23 @@
             background: rgba(44, 62, 80, 0.05);
           }
         }
+        .markdownList {
+          margin-left: var(--spacing-md);
+        }
       }
+    }
+  }
+}
+
+// 用户消息包装器 - 靠右
+.userMessageWrapper {
+  align-self: flex-end;
+
+  .messageContainer {
+    background: #f8f9fa;
+
+    .messageContent {
+      color: #2c3e50;
     }
   }
 }
