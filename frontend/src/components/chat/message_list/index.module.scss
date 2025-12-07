@@ -6,6 +6,7 @@
   align-items: center;
   display: flex;
   position: relative;
+  flex-direction: column;
 
 
   .content{
@@ -17,23 +18,24 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+  }
 
-    .scrollButton {
+  .scrollButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xs);
+    position: fixed;
+
+    .scrollButtonIcon {
+      width: 30px;
+      height: 30px;
+      padding: var(--spacing-xs);
+      border-radius: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-
-      .scrollButtonIcon {
-        width: 30px;
-        height: 30px;
-        padding: var(--spacing-xs);
-        border-radius: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #f3f4f5;
-      }
+      align-items: center;
+      background: #f3f4f5;
     }
-
   }
 }

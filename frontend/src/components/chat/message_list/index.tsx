@@ -31,6 +31,7 @@ const MessageList:  React.FC<MessageListProps> = ({
     isGenerating
 }) => {
 
+    // todo 获取组件到可显示界面底部的距离，给scrollButton的bottom设置为这个距离
 
 
     return (
@@ -44,25 +45,25 @@ const MessageList:  React.FC<MessageListProps> = ({
                         </div>
                     ))
                 }
-                {/* 滚动到底部按钮 */}
-                <div className={`${styles.scrollButton}`}>
-                    <div className={`${styles.scrollButtonIcon}`}>
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                d="M7 10L12 15L17 10"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    </div>
+            </div>
+            {/* 滚动到底部按钮 */}
+            <div id="scrollButton" className={`${styles.scrollButton}`}>
+                <div className={`${styles.scrollButtonIcon}`}>
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M7 10L12 15L17 10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
                 </div>
             </div>
         </div>
