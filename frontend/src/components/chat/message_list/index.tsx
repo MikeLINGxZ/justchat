@@ -46,9 +46,14 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     const isInitialLoadRef = useRef(true);
     const lastScrollTimeRef = useRef(0); // 上次滚动时间，用于防抖
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动防抖定时器
+    const isScrollingToBottomRef = useRef(false); // 标记是否正在滚动到底部
 
     // 检查是否在底部
     const checkIsAtBottom = useCallback(() => {
+        // 如果正在滚动到底部，跳过检查，避免在滚动过程中重新显示按钮
+        if (isScrollingToBottomRef.current) {
+            return true;
+        }
         if (containerRef.current) {
             // 获取可滚动的父容器
             const scrollContainer = containerRef.current.closest('[class*="chatMessagesContent"]') || 
@@ -98,6 +103,9 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     // 滚动到底部（平滑）
     const scrollToBottomSmooth = useCallback(() => {
         if (containerRef.current) {
+            // 设置滚动标记，防止在滚动过程中重新显示按钮
+            isScrollingToBottomRef.current = true;
+            
             // 获取可滚动的父容器
             const scrollContainer = containerRef.current.closest('[class*="chatMessagesContent"]') || 
                                     containerRef.current.parentElement;
@@ -109,6 +117,13 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 });
                 setIsAtBottom(true);
                 setShowScrollButton(false);
+                
+                // 平滑滚动通常需要 300-500ms，我们等待滚动完成后再清除标记
+                setTimeout(() => {
+                    isScrollingToBottomRef.current = false;
+                    // 滚动完成后再次检查底部状态
+                    checkIsAtBottom();
+                }, 600);
                 return;
             }
             
@@ -119,8 +134,15 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             });
             setIsAtBottom(true);
             setShowScrollButton(false);
+            
+            // 平滑滚动通常需要 300-500ms，我们等待滚动完成后再清除标记
+            setTimeout(() => {
+                isScrollingToBottomRef.current = false;
+                // 滚动完成后再次检查底部状态
+                checkIsAtBottom();
+            }, 600);
         }
-    }, []);
+    }, [checkIsAtBottom]);
 
     // 暴露给父组件的方法
     useImperativeHandle(ref, () => ({

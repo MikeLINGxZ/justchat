@@ -96,6 +96,7 @@ const Chat: React.FC<ChatProps> = ({
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动防抖定时器
     const lastScrollTimeRef = useRef(0); // 上次滚动时间
     const justCompletedRef = useRef(false); // 标记是否刚刚完成生成
+    const isScrollingToBottomRef = useRef(false); // 标记是否正在滚动到底部
 
     // 更新生成状态引用，检测生成完成时刻
     useEffect(() => {
@@ -115,17 +116,37 @@ const Chat: React.FC<ChatProps> = ({
     // 滚动到底部的处理函数
     const handleScrollToBottom = useCallback(() => {
         if (messageListRef.current) {
-            messageListRef.current.scrollToBottomSmooth();
+            // 设置滚动标记，防止在滚动过程中重新显示按钮
+            isScrollingToBottomRef.current = true;
             setAutoScroll(true);
             setIsUserScrolling(false);
             setIsAtBottom(true);
             setShowScrollButton(false);
+            
+            messageListRef.current.scrollToBottomSmooth();
+            
+            // 平滑滚动通常需要 300-500ms，我们等待滚动完成后再清除标记
+            // 使用稍长的时间确保滚动完成
+            setTimeout(() => {
+                isScrollingToBottomRef.current = false;
+                // 滚动完成后再次检查底部状态，确保状态正确
+                if (messageListRef.current) {
+                    const atBottom = messageListRef.current.isAtBottom();
+                    setIsAtBottom(atBottom);
+                    setShowScrollButton(!atBottom);
+                }
+            }, 600);
         }
     }, []);
 
     // 定期检查底部状态（用于显示/隐藏滚动按钮）
     useEffect(() => {
         const checkBottomStatus = () => {
+            // 如果正在滚动到底部，跳过检查，避免在滚动过程中重新显示按钮
+            if (isScrollingToBottomRef.current) {
+                return;
+            }
+            
             if (!autoScroll && messageListRef.current) {
                 const atBottom = messageListRef.current.isAtBottom();
                 setIsAtBottom(atBottom);
