@@ -99,33 +99,6 @@ const Chat: React.FC<ChatProps> = ({
         isGeneratingRef.current = isGenerating || false;
     }, [isGenerating]);
 
-    // 处理用户滚动事件
-    const handleUserScroll = useCallback((userScrolling: boolean) => {
-        setIsUserScrolling(userScrolling);
-        
-        // 检查是否在底部
-        if (messageListRef.current) {
-            const atBottom = messageListRef.current.isAtBottom();
-            setIsAtBottom(atBottom);
-            
-            if (userScrolling) {
-                // 用户开始滚动时，立即根据情况禁用自动滚动（包括AI生成期间）
-                if (!atBottom) {
-                    // 用户滚动到非底部位置，立即禁用自动滚动并显示按钮
-                    setAutoScroll(false);
-                    setShowScrollButton(true);
-                } else {
-                    // 用户滚动到底部，恢复自动滚动并隐藏按钮
-                    setAutoScroll(true);
-                    setShowScrollButton(false);
-                }
-            } else {
-                // 更新按钮显示状态
-                setShowScrollButton(!atBottom && !autoScroll);
-            }
-        }
-    }, [autoScroll]);
-
     // 滚动到底部的处理函数
     const handleScrollToBottom = useCallback(() => {
         if (messageListRef.current) {
