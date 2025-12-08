@@ -212,8 +212,7 @@
   overflow-y: auto; // 消息过多时可滚动
   min-height: 0; // 确保 flex 子项可以收缩
   width: 100%;
-  align-items: center;
-  justify-items: center;
+  position: relative; // 为按钮定位提供参考
 }
 
 .chatInput {
