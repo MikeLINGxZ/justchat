@@ -1,7 +1,7 @@
 import React, {forwardRef} from "react";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema";
 import styles from "./index.module.scss";
-import ReasoningContent from "@/pages/home/chat/reasoning_message.tsx";
+import ReasoningContent from "@/components/chat/reasoning_message";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";

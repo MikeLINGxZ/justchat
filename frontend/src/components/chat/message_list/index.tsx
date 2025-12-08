@@ -23,48 +23,56 @@ interface MessageListProps {
     isGenerating?: boolean;
 }
 
+export interface MessageListRef {
+    scrollToBottom: () => void;
+    isAtBottom: () => boolean;
+    enableAutoScroll: () => void;
+    disableAutoScroll: () => void;
+}
 
-const MessageList:  React.FC<MessageListProps> = ({
+const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListProps> = ({
     className,
     messages = [],
     isLoading,
     isGenerating
-}) => {
+}, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 暴露给父组件的方法
+    useImperativeHandle(ref, () => ({
+        scrollToBottom: () => {
+            if (containerRef.current) {
+                containerRef.current.scrollTop = containerRef.current.scrollHeight;
+            }
+        },
+        isAtBottom: () => {
+            if (containerRef.current) {
+                const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+                return scrollHeight - scrollTop - clientHeight < 10;
+            }
+            return true;
+        },
+        enableAutoScroll: () => {
+            // 可以在这里添加自动滚动的逻辑
+        },
+        disableAutoScroll: () => {
+            // 可以在这里添加禁用自动滚动的逻辑
+        }
+    }));
 
     // todo 获取组件到可显示界面底部的距离，给scrollButton的bottom设置为这个距离
 
-
     return (
-        <div className={`${className} ${styles.MessageList}`}>
+        <div ref={containerRef} className={`${className} ${styles.MessageList}`}>
             {/* 消息 */}
             <div className={styles.content}>
                 {
-                    messages.map((message, index) => (
-                        <div>
+                    messages.map((message: Message, index: number) => (
+                        <div key={index}>
                             <ChatMessage message={message}/>
                         </div>
                     ))
                 }
-            </div>
-            {/* 滚动到底部按钮 */}
-            <div id="scrollButton" className={`${styles.scrollButton}`}>
-                <div className={`${styles.scrollButtonIcon}`}>
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M7 10L12 15L17 10"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
-                </div>
             </div>
         </div>
     )
@@ -72,4 +80,4 @@ const MessageList:  React.FC<MessageListProps> = ({
 
 MessageList.displayName = 'MessageList';
 
-export default MessageList;
+export default forwardRef(MessageList);

@@ -2,7 +2,7 @@ import type { ModelOption } from '@/hooks/useModels';
 import React, {useRef, useState, useEffect, useCallback} from "react";
 import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
-import ChatTitle from "@/pages/home/chat/chat_title.tsx";
+import ChatTitle from "@/components/chat/title";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import ChatInput from "@/components/chat/input";
 
@@ -89,7 +89,7 @@ const Chat: React.FC<ChatProps> = ({
     const [isUserScrolling, setIsUserScrolling] = useState(false); // 用户是否在手动滚动
     const [isAtBottom, setIsAtBottom] = useState(true); // 是否在底部
     const [showScrollButton, setShowScrollButton] = useState(false); // 是否显示滚动到底部按钮
-    const messageListRef = useRef<MessageListRef>(null);
+    const messageListRef = useRef<Message   ListRef>(null);
     const lastMessageCountRef = useRef(0); // 记录上次消息数量
     const isGeneratingRef = useRef(false); // 记录是否正在生成
     const hasInitializedRef = useRef(false); // 记录是否已初始化

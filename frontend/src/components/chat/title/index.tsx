@@ -1,16 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { message } from 'antd';
-import styles from '@/pages/home/chat/chat_title.module.scss';
+import styles from '@/components/chat/title/index.module.scss';
+import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 
 interface ChatTitleProps {
   // 聊天标题
-  chatTitle: string;
+  title: string;
   // 聊天UUID（用于API调用）
-  chatUuid?: string;
+  uuid?: string;
   // 聊天标题变更事件
   onTitleChange: (newTitle: string) => void;
-  // 是否为移动端
-  isMobile?: boolean;
   // 侧边栏是否收起
   isSidebarCollapsed?: boolean;
   // 切换侧边栏事件
@@ -18,21 +17,21 @@ interface ChatTitleProps {
 }
 
 const ChatTitle: React.FC<ChatTitleProps> = ({
-  chatTitle,
-  chatUuid,
+  title,
+  uuid,
   onTitleChange,
-  isMobile = false,
   isSidebarCollapsed = false,
   onToggleSidebar,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(chatTitle);
+  const [editValue, setEditValue] = useState(title);
   const [inputWidth, setInputWidth] = useState(120); // 默认宽度
   const inputRef = useRef<HTMLInputElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
 
   // 判断是否允许编辑标题：只有当 chatUuid 不为空且不是空字符串时才允许编辑
-  const canEditTitle = Boolean(chatUuid && chatUuid.trim() !== '');
+  const canEditTitle = Boolean(uuid && uuid.trim() !== '');
+  const isMobile =  useIsMobile();
 
   // 计算输入框宽度
   const calculateInputWidth = (text: string) => {
@@ -54,7 +53,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
       return;
     }
 
-    const initialValue = chatTitle || '';
+    const initialValue = title || '';
     setEditValue(initialValue);
     setInputWidth(calculateInputWidth(initialValue));
     setIsEditing(true);
@@ -63,9 +62,9 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
   // 确认编辑 (模拟实现)
   const handleConfirm = async () => {
     const trimmedValue = editValue.trim();
-    if (trimmedValue && trimmedValue !== chatTitle) {
+    if (trimmedValue && trimmedValue !== title) {
       // 如果有chatUuid，模拟保存标题
-      if (chatUuid) {
+      if (uuid) {
         try {
           // 模拟保存延迟
           await new Promise(resolve => setTimeout(resolve, 200));
@@ -86,7 +85,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
 
   // 取消编辑
   const handleCancel = () => {
-    setEditValue(chatTitle || '');
+    setEditValue(title || '');
     setIsEditing(false);
   };
 
@@ -200,9 +199,9 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
         ) : (
           <div className={styles.titleContainer}>
             <div
-              className={`${styles.title} ${!chatTitle ? styles.defaultTitle : ''}`}
+              className={`${styles.title} ${!title ? styles.defaultTitle : ''}`}
             >
-              {chatTitle || '新建对话'}
+              {title || '新建对话'}
             </div>
             <button
               className={`${styles.editButton} ${!canEditTitle ? styles.editButtonDisabled : ''}`}
