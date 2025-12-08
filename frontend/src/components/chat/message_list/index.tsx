@@ -4,6 +4,7 @@ import React, {
     useRef,
     useCallback,
     useEffect,
+    useLayoutEffect,
     useState,
     useMemo,
     type ReactNode
@@ -38,6 +39,8 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     isGenerating
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollButton, setShowScrollButton] = useState(false);
     const isInitialLoadRef = useRef(true);
@@ -146,6 +149,46 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         }
     }));
 
+    // 更新按钮位置，使其相对于内容区域居中，并避免与输入框重叠
+    const updateButtonPosition = useCallback(() => {
+        if (!contentRef.current || !buttonRef.current) return;
+        
+        const button = buttonRef.current;
+        
+        // 临时禁用过渡动画，避免位置改变时的动画效果
+        const originalTransition = button.style.transition;
+        button.style.transition = 'none';
+        
+        const contentRect = contentRef.current.getBoundingClientRect();
+        
+        // 计算内容区域的中心位置
+        const centerX = contentRect.left + contentRect.width / 2;
+        button.style.left = `${centerX}px`;
+        // 确保 transform 保持，用于居中
+        button.style.transform = 'translateX(-50%)';
+        
+        // 计算输入框高度，确保按钮不重叠
+        const chatInput = document.querySelector('[class*="chatInput"]') as HTMLElement;
+        if (chatInput) {
+            const inputRect = chatInput.getBoundingClientRect();
+            const inputHeight = inputRect.height;
+            // 按钮距离输入框顶部至少 20px
+            const minBottom = inputHeight + 20;
+            // 移动端间距较小（只多10px）
+            const isMobile = window.innerWidth <= 768;
+            const bottom = isMobile ? Math.max(minBottom + 10, 100) : Math.max(minBottom, 120);
+            button.style.bottom = `${bottom}px`;
+        }
+        
+        // 使用 flushSync 或强制重排，确保样式立即应用
+        void button.offsetHeight; // 强制重排
+        
+        // 恢复过渡动画（延迟恢复，确保位置更新完成）
+        requestAnimationFrame(() => {
+            button.style.transition = originalTransition || '';
+        });
+    }, []);
+
     // 监听滚动事件（监听父容器的滚动）
     useEffect(() => {
         const container = containerRef.current;
@@ -170,6 +213,52 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         };
     }, [checkIsAtBottom]);
 
+    // 使用 useLayoutEffect 确保按钮在显示时立即设置正确位置，避免闪烁
+    useLayoutEffect(() => {
+        if (!showScrollButton || !buttonRef.current) return;
+        // 立即同步设置位置
+        updateButtonPosition();
+    }, [showScrollButton, updateButtonPosition]);
+
+    // 监听窗口大小变化和内容区域变化，更新按钮位置
+    useEffect(() => {
+        if (!showScrollButton || !buttonRef.current) return;
+
+        const handleResize = () => {
+            updateButtonPosition();
+        };
+
+        window.addEventListener('resize', handleResize);
+        // 使用 ResizeObserver 监听内容区域大小变化
+        let contentResizeObserver: ResizeObserver | null = null;
+        if (contentRef.current) {
+            contentResizeObserver = new ResizeObserver(() => {
+                updateButtonPosition();
+            });
+            contentResizeObserver.observe(contentRef.current);
+        }
+
+        // 监听输入框大小变化
+        const chatInput = document.querySelector('[class*="chatInput"]') as HTMLElement;
+        let inputResizeObserver: ResizeObserver | null = null;
+        if (chatInput) {
+            inputResizeObserver = new ResizeObserver(() => {
+                updateButtonPosition();
+            });
+            inputResizeObserver.observe(chatInput);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (contentResizeObserver && contentRef.current) {
+                contentResizeObserver.unobserve(contentRef.current);
+            }
+            if (inputResizeObserver && chatInput) {
+                inputResizeObserver.unobserve(chatInput);
+            }
+        };
+    }, [showScrollButton, updateButtonPosition]);
+
     // 初次加载时自动滚动到底部
     useEffect(() => {
         if (isInitialLoadRef.current && messages.length > 0 && !isLoading) {
@@ -192,7 +281,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         <>
             <div ref={containerRef} className={`${className} ${styles.MessageList}`}>
                 {/* 消息 */}
-                <div className={styles.content}>
+                <div ref={contentRef} className={styles.content}>
                     {
                         messages.map((message: Message, index: number) => (
                             <div key={index}>
@@ -204,7 +293,11 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             </div>
             {/* 滚动到底部按钮 - 使用固定定位，不跟随滚动 */}
             {showScrollButton && (
-                <div className={styles.scrollToBottomButton} onClick={scrollToBottomSmooth}>
+                <div 
+                    ref={buttonRef}
+                    className={styles.scrollToBottomButton} 
+                    onClick={scrollToBottomSmooth}
+                >
                     <svg
                         width="20"
                         height="20"
