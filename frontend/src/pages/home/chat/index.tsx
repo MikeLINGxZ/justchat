@@ -251,38 +251,18 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
             ) : (
                 <>
-                    {standalone && onTitleChange && (
-                        <ChatTitle 
-                            chatTitle={chatTitle}
-                            chatUuid={chatUuid}
-                            onTitleChange={onTitleChange}
-                            isMobile={isMobile}
-                            isSidebarCollapsed={isSidebarCollapsed}
-                            onToggleSidebar={onToggleSidebar}
-                        />
-                    )}
-                    {!standalone && onTitleChange && (
-                        <ChatTitle 
-                            chatTitle={chatTitle}
-                            chatUuid={chatUuid}
-                            onTitleChange={onTitleChange}
-                            isMobile={isMobile}
-                            isSidebarCollapsed={isSidebarCollapsed}
-                            onToggleSidebar={onToggleSidebar}
-                        />
-                    )}
+                    <ChatTitle
+                        title={chatTitle}
+                        uuid={chatUuid}
+                        onTitleChange={onTitleChange}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onToggleSidebar={onToggleSidebar}
+                    />
                     <div className={`${styles.chatMessagesContent}`}>
                         <MessageList
                             ref={messageListRef}
                             messages={currentMessages}
                             isLoading={isLoading}
-                            showLoadingMessage={showLoadingMessage}
-                            isMobile={isMobile}
-                            onCopyMessage={onCopyMessage}
-                            onDeleteMessage={onDeleteMessage}
-                            onRegenerateMessage={onRegenerateMessage}
-                            autoScrollBottom={autoScroll}
-                            onUserScroll={handleUserScroll}
                         />
                     </div>
                     {(onSendMessage || onModelChange) && (

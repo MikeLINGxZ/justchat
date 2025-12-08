@@ -141,6 +141,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         // 当 chatUuid 为空的时候，表面此对话为新建对话
         if (!chatUuid) {
             setCurrentMessages([]);
+            setChatTitle('新建对话');
             return;
         }
         // 显示加载动画
@@ -149,8 +150,22 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             const response: MessageList | null = await Service.ChatMessages(chatUuid, 0, 50);
             console.log("response.messages:", response?.messages);
             setCurrentMessages(response?.messages!);
+            
+            // 加载消息成功后，获取聊天信息并设置标题
+            try {
+                const chatListResponse = await Service.ChatList(0, 100, null, false);
+                if (chatListResponse?.lists) {
+                    const chat = chatListResponse.lists.find(c => c.uuid === chatUuid);
+                    if (chat && chat.title) {
+                        setChatTitle(chat.title);
+                    }
+                }
+            } catch (chatError) {
+                console.error('获取聊天信息失败:', chatError);
+                // 如果获取聊天信息失败，不影响消息加载，只记录错误
+            }
         } catch (error) {
-            // todo 显示”加载历史消息错误“
+            // todo 显示"加载历史消息错误"
             console.error('获取聊天消息失败:', error);
             message.error('获取聊天消息失败');
             setCurrentMessages([]);
