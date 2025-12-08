@@ -36,7 +36,7 @@ export async function CompletionsUtils(
 
         // 设置事件监听器
         cancel = Events.On(GenEventsKey(resp?.message_uuid!), (event) => {
-            const responseMessage: Message = event.data[0];
+            const responseMessage: Message = event.data;
             try {
                 // 第一次接收到内容时标记
                 if (!hasReceivedFirstResponse && responseMessage) {
