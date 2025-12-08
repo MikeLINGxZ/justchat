@@ -12,17 +12,45 @@ interface ReasoningContentProps {
 }
 
 const ReasoningContent: React.FC<ReasoningContentProps> = ({ content, className, isStreaming = false }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  // 初始状态：如果正在生成且有内容，则展开
+  const [isExpanded, setIsExpanded] = useState(() => isStreaming && content.trim().length > 0);
+  const prevIsStreamingRef = React.useRef(isStreaming);
 
   console.log('ReasoningContent渲染:', { content, isStreaming, contentLength: content?.length });
 
-  // 当开始流式输入思考过程时自动展开
+  // 当开始流式输入思考过程时自动展开，生成完成后自动折叠
   useEffect(() => {
-    if (isStreaming && content.trim()) {
-      console.log('自动展开思考过程');
-      setIsExpanded(true);
+    const wasStreaming = prevIsStreamingRef.current;
+    const isNowStreaming = isStreaming;
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    // 如果正在生成中且有内容，自动展开
+    if (isNowStreaming && content.trim()) {
+      if (!isExpanded) {
+        console.log('生成中，自动展开思考过程');
+        setIsExpanded(true);
+      }
     }
-  }, [isStreaming, content]);
+    // 如果从生成中变为完成，自动折叠（无条件）
+    else if (wasStreaming && !isNowStreaming && content.trim()) {
+      console.log('生成完成，自动折叠思考过程');
+      // 延迟一下折叠，确保用户能看到最后的更新
+      timeoutId = setTimeout(() => {
+        setIsExpanded(false);
+      }, 300);
+    }
+    
+    // 更新引用
+    prevIsStreamingRef.current = isStreaming;
+    
+    // 清理函数
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isStreaming, content, isExpanded]);
 
   if (!content.trim()) {
     console.log('内容为空，不渲染ReasoningContent');

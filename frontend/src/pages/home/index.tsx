@@ -279,6 +279,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                                     latestMsg.content = newContent;
                                     latestMsg.reasoning_content = newReasoningContent;
                                 }
+                                // 设置 isStreaming 为 true，表示正在生成中
+                                (latestMsg as any).isStreaming = true;
                             }
                             return updatedMessages;
                         });
@@ -287,6 +289,15 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     setIsLoading(false);
                     setIsStreaming(false);
                     setShowLoadingMessage(false); // 隐藏loading消息
+                    // 更新消息的 isStreaming 状态为 false
+                    setCurrentMessages(prev => {
+                        const updatedMessages = [...prev];
+                        const latestMsg = updatedMessages[updatedMessages.length - 1];
+                        if (latestMsg && latestMsg.role === 'assistant') {
+                            (latestMsg as any).isStreaming = false;
+                        }
+                        return updatedMessages;
+                    });
                     setAbortController(null); // 清理 AbortController
                     console.error('发送消息失败:', error);
                     message.error('发送消息失败');
@@ -294,6 +305,15 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     setIsLoading(false);
                     setIsStreaming(false);
                     setShowLoadingMessage(false); // 隐藏loading消息
+                    // 更新消息的 isStreaming 状态为 false，表示生成完成
+                    setCurrentMessages(prev => {
+                        const updatedMessages = [...prev];
+                        const latestMsg = updatedMessages[updatedMessages.length - 1];
+                        if (latestMsg && latestMsg.role === 'assistant') {
+                            (latestMsg as any).isStreaming = false;
+                        }
+                        return updatedMessages;
+                    });
                     setAbortController(null); // 清理 AbortController
                     if (currentChatUuid == "") {
                         setCurrentChatUuid(chatUuid);
@@ -308,6 +328,15 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 setIsLoading(false);
                 setIsStreaming(false);
                 setShowLoadingMessage(false); // 隐藏loading消息
+                // 更新消息的 isStreaming 状态为 false
+                setCurrentMessages(prev => {
+                    const updatedMessages = [...prev];
+                    const latestMsg = updatedMessages[updatedMessages.length - 1];
+                    if (latestMsg && latestMsg.role === 'assistant') {
+                        (latestMsg as any).isStreaming = false;
+                    }
+                    return updatedMessages;
+                });
                 setAbortController(null); // 清理 AbortController
                 console.error('发送消息失败:', error);
                 message.error('发送消息失败');

@@ -44,6 +44,8 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollButton, setShowScrollButton] = useState(false);
     const isInitialLoadRef = useRef(true);
+    const lastScrollTimeRef = useRef(0); // 上次滚动时间，用于防抖
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动防抖定时器
 
     // 检查是否在底部
     const checkIsAtBottom = useCallback(() => {
@@ -271,10 +273,33 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     }, [messages.length, isLoading, scrollToBottomSmooth]);
 
     // 消息变化时，如果在底部则自动滚动
-    useEffect(() => {
-        if (!isInitialLoadRef.current && isAtBottom && messages.length > 0) {
-            scrollToBottom();
+    // 使用 useLayoutEffect 确保在 DOM 更新后立即同步滚动，避免视觉闪烁
+    useLayoutEffect(() => {
+        // 清理之前的滚动定时器
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
         }
+
+        if (!isInitialLoadRef.current && isAtBottom && messages.length > 0) {
+            // 使用防抖机制，避免短时间内多次滚动导致闪烁
+            const now = Date.now();
+            const timeSinceLastScroll = now - lastScrollTimeRef.current;
+            const scrollDelay = timeSinceLastScroll < 50 ? 50 - timeSinceLastScroll : 0;
+            
+            scrollTimeoutRef.current = setTimeout(() => {
+                scrollToBottom();
+                lastScrollTimeRef.current = Date.now();
+            }, scrollDelay);
+        }
+        
+        // 清理函数
+        return () => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+                scrollTimeoutRef.current = null;
+            }
+        };
     }, [messages.length, isAtBottom, scrollToBottom]);
 
     return (

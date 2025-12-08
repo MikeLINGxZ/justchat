@@ -1,5 +1,5 @@
 import type { ModelOption } from '@/hooks/useModels';
-import React, {useRef, useState, useEffect, useCallback} from "react";
+import React, {useRef, useState, useEffect, useCallback, useLayoutEffect} from "react";
 import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
@@ -93,10 +93,23 @@ const Chat: React.FC<ChatProps> = ({
     const lastMessageCountRef = useRef(0); // 记录上次消息数量
     const isGeneratingRef = useRef(false); // 记录是否正在生成
     const hasInitializedRef = useRef(false); // 记录是否已初始化
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动防抖定时器
+    const lastScrollTimeRef = useRef(0); // 上次滚动时间
+    const justCompletedRef = useRef(false); // 标记是否刚刚完成生成
 
-    // 更新生成状态引用
+    // 更新生成状态引用，检测生成完成时刻
     useEffect(() => {
+        const wasGenerating = isGeneratingRef.current;
         isGeneratingRef.current = isGenerating || false;
+        
+        // 如果从生成中变为完成，标记为刚刚完成
+        if (wasGenerating && !isGeneratingRef.current) {
+            justCompletedRef.current = true;
+            // 300ms 后清除标记，避免影响后续的正常滚动
+            setTimeout(() => {
+                justCompletedRef.current = false;
+            }, 300);
+        }
     }, [isGenerating]);
 
     // 滚动到底部的处理函数
@@ -129,27 +142,54 @@ const Chat: React.FC<ChatProps> = ({
 
     // 消息变化时的自动滚动逻辑
     useEffect(() => {
+        // 清理之前的滚动定时器
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
+        }
+
         const currentMessageCount = currentMessages.length;
         const hasNewMessage = currentMessageCount > lastMessageCountRef.current;
         const lastMessage = currentMessages[currentMessages.length - 1];
         const isStreamingMessage = (lastMessage as any)?.isStreaming; // message 类没有 isStreaming 属性
         
         // 更新消息数量引用
+        const prevMessageCount = lastMessageCountRef.current;
         lastMessageCountRef.current = currentMessageCount;
         
         // 决定是否需要自动滚动
-        const shouldAutoScroll = autoScroll && (
-            hasNewMessage || // 有新消息
-            isStreamingMessage || // 消息正在流式生成
-            isGenerating // 正在生成状态
+        // 只有在生成过程中或消息内容变化时才滚动，避免在生成完成时（isGenerating 从 true 变为 false）触发滚动
+        // 如果刚刚完成生成，不触发滚动，避免闪烁
+        const shouldAutoScroll = autoScroll && !justCompletedRef.current && (
+            hasNewMessage || // 有新消息（消息数量增加）
+            (isGenerating && currentMessageCount > 0) // 正在生成状态且有消息（包括内容更新时的滚动）
         );
         
         if (shouldAutoScroll && messageListRef.current && currentMessageCount > 0) {
-            // 使用immediate滚动确保实时跟进
-            messageListRef.current.scrollToBottom();
-            setIsAtBottom(true);
-            setShowScrollButton(false);
+            // 使用防抖机制，避免短时间内多次滚动导致闪烁
+            const now = Date.now();
+            const timeSinceLastScroll = now - lastScrollTimeRef.current;
+            // 减少防抖延迟，提高响应速度，但仍避免频繁滚动
+            const scrollDelay = timeSinceLastScroll < 16 ? 16 - timeSinceLastScroll : 0;
+            
+            scrollTimeoutRef.current = setTimeout(() => {
+                if (messageListRef.current && autoScroll && !justCompletedRef.current) {
+                    // 使用immediate滚动确保实时跟进
+                    messageListRef.current.scrollToBottom();
+                    setIsAtBottom(true);
+                    setShowScrollButton(false);
+                    lastScrollTimeRef.current = Date.now();
+                }
+            }, scrollDelay);
         }
+        
+        // 清理函数
+        return () => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+                scrollTimeoutRef.current = null;
+            }
+        };
     }, [currentMessages, autoScroll, isGenerating]);
 
     // 首次进入聊天时自动滚动到底部
