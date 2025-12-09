@@ -317,6 +317,11 @@ export class Provider {
     "base_url": string;
 
     /**
+     * 文件上传url
+     */
+    "file_upload_base_url": string | null;
+
+    /**
      * api key
      */
     "api_key": string;
@@ -348,6 +353,9 @@ export class Provider {
         if (!("base_url" in $$source)) {
             this["base_url"] = "";
         }
+        if (!("file_upload_base_url" in $$source)) {
+            this["file_upload_base_url"] = null;
+        }
         if (!("api_key" in $$source)) {
             this["api_key"] = "";
         }
@@ -368,10 +376,10 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField9_0 = $$createType8;
+        const $$createField10_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
-            $$parsedSource["models"] = $$createField9_0($$parsedSource["models"]);
+            $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
         }
         return new Provider($$parsedSource as Partial<Provider>);
     }

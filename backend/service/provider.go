@@ -58,13 +58,14 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 	res := make([]view_models.Provider, len(providers))
 	for i, provider := range providers {
 		res[i] = view_models.Provider{
-			ID:             provider.ID,
-			ApiKey:         provider.ApiKey,
-			BaseUrl:        provider.BaseUrl,
-			Enable:         provider.Enable,
-			ProviderName:   provider.ProviderName,
-			Models:         providerIds2ModelsVD[provider.ID],
-			DefaultModelId: providerIds2DefaultModelIdVD[provider.ID],
+			ID:                provider.ID,
+			ApiKey:            provider.ApiKey,
+			BaseUrl:           provider.BaseUrl,
+			FileUploadBaseUrl: provider.FileUploadBaseUrl,
+			Enable:            provider.Enable,
+			ProviderName:      provider.ProviderName,
+			Models:            providerIds2ModelsVD[provider.ID],
+			DefaultModelId:    providerIds2DefaultModelIdVD[provider.ID],
 		}
 	}
 	return res, nil
@@ -73,10 +74,11 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 // AddProvider 添加供应商
 func (s *Service) AddProvider(provider view_models.Provider) error {
 	providerId, err := s.storage.AddProvider(context.Background(), data_models.Provider{
-		ProviderName: provider.ProviderName,
-		BaseUrl:      provider.BaseUrl,
-		ApiKey:       provider.ApiKey,
-		Enable:       provider.Enable,
+		ProviderName:      provider.ProviderName,
+		BaseUrl:           provider.BaseUrl,
+		FileUploadBaseUrl: provider.FileUploadBaseUrl,
+		ApiKey:            provider.ApiKey,
+		Enable:            provider.Enable,
 	})
 	if err != nil {
 		return ierror.NewError(err)
@@ -105,10 +107,11 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 			OrmModel: data_models.OrmModel{
 				ID: id,
 			},
-			ProviderName: provider.ProviderName,
-			BaseUrl:      provider.BaseUrl,
-			ApiKey:       provider.ApiKey,
-			Enable:       provider.Enable,
+			ProviderName:      provider.ProviderName,
+			BaseUrl:           provider.BaseUrl,
+			FileUploadBaseUrl: provider.FileUploadBaseUrl,
+			ApiKey:            provider.ApiKey,
+			Enable:            provider.Enable,
 		})
 		if err != nil {
 			return err

@@ -32,6 +32,7 @@ import {
   ExclamationCircleOutlined,
   SettingOutlined,
   ArrowLeftOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
@@ -51,6 +52,7 @@ interface ProviderConfig {
   provider_name: string; // 使用后端字段名
   api_key: string; // 使用后端字段名
   base_url: string; // 使用后端字段名
+  file_upload_base_url?: string | null; // 文件上传URL
   enable: boolean; // 使用后端字段名
   default_model_id: number | null; // 默认模型ID，允许null
   models: any[]; // 供应商模型列表
@@ -102,6 +104,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         enabled: provider.enable,
         apiKey: provider.api_key,
         baseUrl: provider.base_url,
+        fileUploadBaseUrl: provider.file_upload_base_url || '',
         providerName: provider.provider_name,
         defaultModel: defaultModelValue,
       });
@@ -156,6 +159,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       const providerData = new Provider({
         provider_name: values.providerName || currentProvider.provider_name, // 使用用户输入的名称
         base_url: values.baseUrl,
+        file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,
         enable: values.enabled,
         default_model_id: defaultModelId,
@@ -171,6 +175,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           provider_name: values.providerName || p.provider_name, // 更新供应商名称
           api_key: values.apiKey,
           base_url: values.baseUrl,
+          file_upload_base_url: values.fileUploadBaseUrl || null,
           enable: values.enabled,
           default_model_id: defaultModelId,
         } : p
@@ -206,6 +211,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       const providerData = new Provider({
         provider_name: currentProvider.provider_name,
         base_url: values.baseUrl,
+        file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,
         enable: values.enabled,
         default_model_id: currentProvider.default_model_id,
@@ -269,6 +275,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       providerName: supportProvider.name,
       apiKey: '',
       baseUrl: supportProvider.base_url,
+      fileUploadBaseUrl: supportProvider.file_upload_base_url || '',
       defaultModel: undefined,
     });
   };
@@ -289,6 +296,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       const newProviderData = new Provider({
         provider_name: values.providerName || selectedSupportProvider.name,
         base_url: values.baseUrl || selectedSupportProvider.base_url,
+        file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,
         enable: values.enabled,
         default_model_id: values.defaultModel || 0,
@@ -534,6 +542,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                            const providerData = new Provider({
                                              provider_name: provider.provider_name,
                                              base_url: provider.base_url,
+                                             file_upload_base_url: provider.file_upload_base_url || null,
                                              api_key: provider.api_key,
                                              enable: checked,
                                              default_model_id: provider.default_model_id,
@@ -652,6 +661,23 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   ]}
                 >
                   <Input placeholder="https://api.example.com/v1" />
+                </Form.Item>
+
+                <Form.Item
+                  label={
+                    <Space>
+                      <span>文件上传URL</span>
+                      <Tooltip title="多模态模型文件上传地址">
+                        <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  name="fileUploadBaseUrl"
+                  rules={[
+                    { type: 'url', message: '请输入正确的URL格式' },
+                  ]}
+                >
+                  <Input placeholder="https://api.example.com/v1/uploads" />
                 </Form.Item>
 
                 <Form.Item
@@ -942,6 +968,23 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               ]}
             >
               <Input placeholder="https://api.example.com/v1" />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <Space>
+                  <span>文件上传URL</span>
+                  <Tooltip title="多模态模型文件上传地址">
+                    <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="fileUploadBaseUrl"
+              rules={[
+                { type: 'url', message: '请输入正确的URL格式' },
+              ]}
+            >
+              <Input placeholder="https://api.example.com/v1/uploads" />
             </Form.Item>
 
             <Form.Item
