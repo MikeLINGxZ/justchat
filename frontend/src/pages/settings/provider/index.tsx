@@ -876,12 +876,17 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     avatar={
                       <Avatar 
                         size={40} 
+                        src={
+                          item.icon 
+                            ? (item.icon.startsWith('data:') ? item.icon : `data:image/png;base64,${item.icon}`)
+                            : undefined
+                        }
                         style={{ 
-                          backgroundColor: 'var(--primary-color-light)',
+                          backgroundColor: item.icon ? 'transparent' : 'var(--primary-color-light)',
                           fontSize: '20px',
                         }}
                       >
-                        {extras.icon}
+                        {!item.icon && extras.icon}
                       </Avatar>
                     }
                     title={

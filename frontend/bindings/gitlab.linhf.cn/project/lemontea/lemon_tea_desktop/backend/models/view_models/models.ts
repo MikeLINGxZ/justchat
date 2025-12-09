@@ -386,12 +386,16 @@ export class Provider {
 }
 
 export class SupportProvider {
+    "icon": string;
     "name": string;
     "base_url": string;
     "file_upload_base_url": string | null;
 
     /** Creates a new SupportProvider instance. */
     constructor($$source: Partial<SupportProvider> = {}) {
+        if (!("icon" in $$source)) {
+            this["icon"] = "";
+        }
         if (!("name" in $$source)) {
             this["name"] = "";
         }

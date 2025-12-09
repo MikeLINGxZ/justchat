@@ -7,6 +7,7 @@ import (
 )
 
 type SupportProvider struct {
+	Icon              string  `json:"icon"`
 	Name              string  `json:"name"`
 	BaseUrl           string  `json:"base_url"`
 	FileUploadBaseUrl *string `json:"file_upload_base_url"`
