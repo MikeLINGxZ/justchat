@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import styles from "./index.module.scss";
-import type { ModelOption } from '@/hooks/useModels';
+import type {ModelOption} from '@/hooks/useModels';
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
+import {File, FileType} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatInputProps {
     // 类名
@@ -20,10 +22,6 @@ interface ChatInputProps {
     onStopGeneration?: () => void;
     // 模型变更事件
     onModelChange: (model: string) => void;
-    // 文件上传事件
-    onFileUpload?: (files: File[]) => void;
-    // 图片上传事件
-    onImageUpload?: (files: File[]) => void;
     // 消息列表滚动到底部按钮点击事件
     onMessageListScrollToBottom?: () => void;
     // 清空输入框的回调
@@ -39,8 +37,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onSendMessage,
     onStopGeneration,
     onModelChange,
-    onFileUpload,
-    onImageUpload,
     onMessageListScrollToBottom,
     onClearInput,
     onModelSelectorClick,
@@ -60,6 +56,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastHeightRef = useRef<number>(0);
     const isMobile =  useIsMobile();
+    const [files, setFiles] = useState<File[]>([]);
 
     // 优化的高度调整函数
     const adjustTextareaHeight = useCallback(() => {
@@ -131,29 +128,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 图像上传事件
     const handleImageUpload = useCallback(() => {
         imageInputRef.current?.click();
-        setShowAddMenu(false);
+        Service.SelectFiles(FileType.FileTypeImg).then((data: File[]) => {
+            if (data && data.length > 0) {
+                setFiles(prevFiles => {
+                    const existingPaths = new Set(prevFiles.map(f => f.file_path));
+                    const newFiles = data.filter(f => !existingPaths.has(f.file_path));
+                    return [...prevFiles, ...newFiles];
+                });
+            }
+        }).catch((err) => {
+
+        }).finally(() => {
+            setShowAddMenu(false);
+        })
     }, []);
 
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
         fileInputRef.current?.click();
-        setShowAddMenu(false);
+        Service.SelectFiles(FileType.FileTypeText).then((data: File[]) => {
+            if (data && data.length > 0) {
+                setFiles(prevFiles => {
+                    const existingPaths = new Set(prevFiles.map(f => f.file_path));
+                    const newFiles = data.filter(f => !existingPaths.has(f.file_path));
+                    return [...prevFiles, ...newFiles];
+                });
+            }
+        }).catch((err) => {
+
+        }).finally(() => {
+            setShowAddMenu(false);
+        })
     }, []);
-
-    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length > 0 && onImageUpload) {
-            onImageUpload(files);
-        }
-    }, [onImageUpload]);
-
-    //
-    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length > 0 && onFileUpload) {
-            onFileUpload(files);
-        }
-    }, [onFileUpload]);
 
     // 模型选择事件
     const handleModelSelect = useCallback((model: string) => {
@@ -302,7 +308,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
                                         </svg>
-                                        上传文件
+                                        上传文本
                                     </button>
                                 </div>
                             )}
@@ -388,23 +394,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </div>
                 </div>
             </div>
-            
-            {/* 隐藏的文件输入 */}
-            <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                style={{ display: 'none' }}
-            />
-            <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-            />
 
             {/* 滚动到底部按钮 */}
             {showScrollToBottom && (
