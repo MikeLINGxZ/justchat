@@ -332,6 +332,7 @@ export class Provider {
     "enable": boolean;
     "default_model_id": number | null;
     "models": Model[];
+    "provider_type": string;
 
     /** Creates a new Provider instance. */
     constructor($$source: Partial<Provider> = {}) {
@@ -368,6 +369,9 @@ export class Provider {
         if (!("models" in $$source)) {
             this["models"] = [];
         }
+        if (!("provider_type" in $$source)) {
+            this["provider_type"] = "";
+        }
 
         Object.assign(this, $$source);
     }
@@ -386,6 +390,7 @@ export class Provider {
 }
 
 export class SupportProvider {
+    "ProviderType": string;
     "icon": string;
     "name": string;
     "base_url": string;
@@ -393,6 +398,9 @@ export class SupportProvider {
 
     /** Creates a new SupportProvider instance. */
     constructor($$source: Partial<SupportProvider> = {}) {
+        if (!("ProviderType" in $$source)) {
+            this["ProviderType"] = "";
+        }
         if (!("icon" in $$source)) {
             this["icon"] = "";
         }

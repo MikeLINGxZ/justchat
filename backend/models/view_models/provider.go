@@ -7,6 +7,7 @@ import (
 )
 
 type SupportProvider struct {
+	ProviderType      string  `gorm:"provider_type"`
 	Icon              string  `json:"icon"`
 	Name              string  `json:"name"`
 	BaseUrl           string  `json:"base_url"`
@@ -25,4 +26,5 @@ type Provider struct {
 	Enable            bool           `json:"enable"`               // 启用
 	DefaultModelId    *uint          `json:"default_model_id"`
 	Models            []Model        `json:"models"`
+	ProviderType      string         `json:"provider_type"`
 }

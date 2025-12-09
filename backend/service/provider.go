@@ -64,6 +64,7 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 			FileUploadBaseUrl: provider.FileUploadBaseUrl,
 			Enable:            provider.Enable,
 			ProviderName:      provider.ProviderName,
+			ProviderType:      provider.ProviderType,
 			Models:            providerIds2ModelsVD[provider.ID],
 			DefaultModelId:    providerIds2DefaultModelIdVD[provider.ID],
 		}
@@ -75,6 +76,7 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 func (s *Service) AddProvider(provider view_models.Provider) error {
 	providerId, err := s.storage.AddProvider(context.Background(), data_models.Provider{
 		ProviderName:      provider.ProviderName,
+		ProviderType:      provider.ProviderType,
 		BaseUrl:           provider.BaseUrl,
 		FileUploadBaseUrl: provider.FileUploadBaseUrl,
 		ApiKey:            provider.ApiKey,
@@ -108,6 +110,7 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 				ID: id,
 			},
 			ProviderName:      provider.ProviderName,
+			ProviderType:      provider.ProviderType,
 			BaseUrl:           provider.BaseUrl,
 			FileUploadBaseUrl: provider.FileUploadBaseUrl,
 			ApiKey:            provider.ApiKey,

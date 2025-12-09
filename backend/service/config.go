@@ -9,21 +9,25 @@ import (
 func (s *Service) GetSupportProviders() ([]view_models.SupportProvider, error) {
 	return []view_models.SupportProvider{
 		{
+			ProviderType:      "deepseek",
 			Icon:              "/providers/deepseek_icon.png",
 			Name:              "深度求索",
 			BaseUrl:           "https://api.deepseek.com/v1",
 			FileUploadBaseUrl: nil,
 		}, {
+			ProviderType:      "aliyuns",
 			Icon:              "/providers/qwen_icon.png",
 			Name:              "阿里云百炼",
 			BaseUrl:           "https://dashscope.aliyuncs.com/compatible-mode/v1",
 			FileUploadBaseUrl: utils.StringPointer("https://dashscope.aliyuncs.com/api/v1/uploads"),
 		}, {
+			ProviderType:      "openrouter",
 			Icon:              "/providers/openrouter_icon.png",
 			Name:              "OpenRouter",
 			BaseUrl:           "https://openrouter.ai/api/v1",
 			FileUploadBaseUrl: nil,
 		}, {
+			ProviderType:      "other",
 			Icon:              "/providers/openai_icon.png",
 			Name:              "Openai 标准接口",
 			BaseUrl:           "",
