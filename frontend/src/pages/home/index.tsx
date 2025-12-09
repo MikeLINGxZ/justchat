@@ -4,7 +4,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
 import {Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import {useViewportHeight} from '@/hooks/useViewportHeight';
-import {useModels} from '@/hooks/useModels';
+import {useModelStore} from '@/stores/modelStore';
 import './index.module.scss';
 import Chat from '@/pages/home/chat';
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
@@ -42,12 +42,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     // 使用视口高度检测 Hook
     const {isMobile} = useViewportHeight();
 
-    // 使用模型获取 Hook
+    // 使用模型 Store
     const {
         models: availableModels,
         isLoading: isLoadingModels,
         error: modelsError,
-    } = useModels();
+        refetch: refetchModels,
+    } = useModelStore();
 
     // 聊天相关状态
     const [chatTitle, setChatTitle] = useState('新建对话');
@@ -77,6 +78,11 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     useEffect(() => {
         document.title = 'AI聊天 - Lemon Tea';
     }, []);
+
+    // 初始化时获取模型列表
+    useEffect(() => {
+        refetchModels();
+    }, [refetchModels]);
 
     // 同步URL参数与当前聊天UUID
     useEffect(() => {
@@ -446,6 +452,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                         onSendMessage={handleSendMessage}
                         onStopGeneration={handleStopGeneration}
                         onModelChange={handleModelChange}
+                        onModelSelectorClick={refetchModels}
                         onToggleSidebar={handleToggleSidebar}
                         onCopyMessage={handleCopyMessage}
                         onDeleteMessage={handleDeleteMessage}

@@ -28,6 +28,8 @@ interface ChatInputProps {
     onMessageListScrollToBottom?: () => void;
     // 清空输入框的回调
     onClearInput?: () => void;
+    // 模型选择框点击事件（用于刷新模型数据）
+    onModelSelectorClick?: () => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -41,6 +43,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onImageUpload,
     onMessageListScrollToBottom,
     onClearInput,
+    onModelSelectorClick,
     showScrollToBottom = true,
     className
 }) => {
@@ -115,12 +118,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     // 模型选择框点击事件
     const handleModelClick = useCallback(() => {
-        setShowModelMenu(!showModelMenu);
-        // 打开菜单时清空搜索值
-        if (!showModelMenu) {
+        const willOpen = !showModelMenu;
+        setShowModelMenu(willOpen);
+        // 打开菜单时清空搜索值并刷新模型数据
+        if (willOpen) {
             setModelSearchValue('');
+            // 调用回调刷新模型数据
+            onModelSelectorClick?.();
         }
-    }, [showModelMenu]);
+    }, [showModelMenu, onModelSelectorClick]);
 
     // 图像上传事件
     const handleImageUpload = useCallback(() => {

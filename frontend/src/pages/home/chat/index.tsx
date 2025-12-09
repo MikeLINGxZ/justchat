@@ -39,6 +39,8 @@ interface ChatProps {
     onStopGeneration?: () => void;
     // 模型变更事件
     onModelChange?: (model: string) => void;
+    // 模型选择框点击事件（用于刷新模型数据）
+    onModelSelectorClick?: () => void;
     // 切换侧边栏事件
     onToggleSidebar?: () => void;
     // 复制消息事件
@@ -72,6 +74,7 @@ const Chat: React.FC<ChatProps> = ({
     onSendMessage,
     onStopGeneration,
     onModelChange,
+    onModelSelectorClick,
     onToggleSidebar,
     onCopyMessage,
     onDeleteMessage,
@@ -308,6 +311,7 @@ const Chat: React.FC<ChatProps> = ({
                                        onSendMessage={onSendMessage || (() => {})}
                                        onStopGeneration={onStopGeneration}
                                        onModelChange={onModelChange || (() => {})}
+                                       onModelSelectorClick={onModelSelectorClick}
                                        onFileUpload={onFileUpload}
                                        onImageUpload={onImageUpload}
                                        onMessageListScrollToBottom={handleScrollToBottom}

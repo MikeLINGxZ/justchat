@@ -31,6 +31,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
+import { useModelStore } from '@/stores/modelStore';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { Provider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import styles from './index.module.scss';
@@ -66,11 +67,20 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [newProviderTempId, setNewProviderTempId] = useState<number | null>(null); // 新增：临时ID
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
+  const { refetch: refetchModels } = useModelStore();
 
   // 加载保存的配置
   useEffect(() => {
     loadProviderConfigs();
   }, []);
+
+  // 页面关闭前刷新模型数据
+  useEffect(() => {
+    return () => {
+      // 组件卸载时刷新模型数据
+      refetchModels();
+    };
+  }, [refetchModels]);
 
   // 当选中的供应商变化时，更新表单
   useEffect(() => {
@@ -158,7 +168,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         } : p
       );
       setProviders(updatedProviders);
-      
+
       message.success('保存成功');
     } catch (error) {
       console.error('保存失败:', error);
@@ -267,7 +277,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (selectedProvider === providerId && updatedProviders.length > 0) {
         setSelectedProvider(updatedProviders[0].id);
       }
-      
+
       message.success('供应商删除成功');
     } catch (error) {
       console.error('删除供应商失败:', error);
@@ -292,7 +302,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       
       // 重新加载供应商列表以获取最新的模型数据
       await loadProviderConfigs();
-      
+
       message.success('模型列表刷新成功');
     } catch (error) {
       console.error('刷新模型失败:', error);
@@ -345,7 +355,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 重置创建状态
       setIsCreatingNew(false);
       setNewProviderTempId(null);
-      
+
       message.success('供应商创建成功');
     } catch (error) {
       console.error('创建供应商失败:', error);
