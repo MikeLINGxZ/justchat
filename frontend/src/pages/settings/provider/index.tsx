@@ -183,6 +183,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       const defaultModelId = values.defaultModel || 0; // 如果没有选择默认模型，传递0
       const providerData = new Provider({
         provider_name: values.providerName || currentProvider.provider_name, // 使用用户输入的名称
+        provider_type: values.provider_type,
         base_url: values.baseUrl,
         file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,
@@ -320,6 +321,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 构造新供应商数据
       const newProviderData = new Provider({
         provider_name: values.providerName || selectedSupportProvider.name,
+        provider_type: values.provider_type,
         base_url: values.baseUrl || selectedSupportProvider.base_url,
         file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,

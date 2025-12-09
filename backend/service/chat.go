@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -59,7 +58,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	if providerModel == nil {
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
-	fmt.Println("providerModel:", providerModel)
+
 	// 当chatUuid为空说明是新建聊天
 	if chatUuid == "" {
 		chatUuid = uuid.New().String()
@@ -93,7 +92,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		return nil, ierror.NewError(err)
 	}
 
-	provider := llm.NewLlmProvider(providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
+	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
 	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
 	if err != nil {
 		return nil, ierror.NewError(err)

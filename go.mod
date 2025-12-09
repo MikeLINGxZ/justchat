@@ -7,6 +7,7 @@ require (
 	github.com/cloudwego/eino-ext/components/model/ark v0.1.28
 	github.com/cloudwego/eino-ext/components/model/deepseek v0.1.0
 	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250905035413-86dbae6351d5
+	github.com/cloudwego/eino-ext/components/model/qwen v0.1.2
 	github.com/fatih/color v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.41
