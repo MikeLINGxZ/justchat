@@ -10,6 +10,9 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as schema$0 from "../../../../../../../github.com/cloudwego/eino/schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as llm$0 from "../../utils/llm/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -332,7 +335,7 @@ export class Provider {
     "enable": boolean;
     "default_model_id": number | null;
     "models": Model[];
-    "provider_type": string;
+    "provider_type": llm$0.ProviderType;
 
     /** Creates a new Provider instance. */
     constructor($$source: Partial<Provider> = {}) {
@@ -370,7 +373,7 @@ export class Provider {
             this["models"] = [];
         }
         if (!("provider_type" in $$source)) {
-            this["provider_type"] = "";
+            this["provider_type"] = llm$0.ProviderType.$zero;
         }
 
         Object.assign(this, $$source);
@@ -390,7 +393,7 @@ export class Provider {
 }
 
 export class SupportProvider {
-    "ProviderType": string;
+    "provider_type": llm$0.ProviderType;
     "icon": string;
     "name": string;
     "base_url": string;
@@ -398,8 +401,8 @@ export class SupportProvider {
 
     /** Creates a new SupportProvider instance. */
     constructor($$source: Partial<SupportProvider> = {}) {
-        if (!("ProviderType" in $$source)) {
-            this["ProviderType"] = "";
+        if (!("provider_type" in $$source)) {
+            this["provider_type"] = llm$0.ProviderType.$zero;
         }
         if (!("icon" in $$source)) {
             this["icon"] = "";

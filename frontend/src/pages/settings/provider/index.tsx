@@ -134,7 +134,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           let icon: string | undefined;
           if (provider.provider_type && supportProviders.length > 0) {
             const matchedSupportProvider = supportProviders.find(
-              sp => sp.ProviderType === provider.provider_type
+              sp => sp.provider_type === provider.provider_type
             );
             if (matchedSupportProvider && matchedSupportProvider.icon) {
               icon = matchedSupportProvider.icon;

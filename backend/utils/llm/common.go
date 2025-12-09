@@ -2,9 +2,23 @@ package llm
 
 import (
 	"context"
+
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/schema"
 )
+
+type ProviderType string
+
+const (
+	ProviderTypeDeepseek   ProviderType = "deepseek"
+	ProviderTypeAliyuns    ProviderType = "aliyuns"
+	ProviderTypeOpenrouter ProviderType = "openrouter"
+	ProviderTypeOther      ProviderType = "other"
+)
+
+func (p ProviderType) String() string {
+	return string(p)
+}
 
 type LlmProvider struct {
 	baseURL string
