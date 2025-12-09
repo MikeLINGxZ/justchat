@@ -908,6 +908,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         }}
         footer={null}
         width={selectedSupportProvider ? 700 : 600}
+        centered
       >
         {!selectedSupportProvider ? (
           // 供应商列表
