@@ -81,8 +81,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
   // 加载保存的配置
   useEffect(() => {
-    loadProviderConfigs();
+    loadSupportProviders(); // 先加载支持的供应商列表
   }, []);
+
+  // 当 supportProviders 加载完成后，加载供应商配置
+  useEffect(() => {
+    if (supportProviders.length > 0) {
+      loadProviderConfigs();
+    }
+  }, [supportProviders]);
 
   // 页面关闭前刷新模型数据
   useEffect(() => {
@@ -123,10 +130,28 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (providers && providers.length > 0) {
         // 转换后端数据格式，添加前端需要的字段
         const formattedProviders = providers.map(provider => {
+          // 根据 provider_type 从 supportProviders 中匹配对应的 icon
+          let icon: string | undefined;
+          if (provider.provider_type && supportProviders.length > 0) {
+            const matchedSupportProvider = supportProviders.find(
+              sp => sp.ProviderType === provider.provider_type
+            );
+            if (matchedSupportProvider && matchedSupportProvider.icon) {
+              icon = matchedSupportProvider.icon;
+            }
+          }
+          
+          // 获取默认的 extras（用于 description 和 fallback icon）
           const extras = getProviderExtras(provider.provider_name);
+          
+          // 如果没有匹配到 icon，使用默认的 getProviderExtras
+          if (!icon) {
+            icon = extras.icon;
+          }
+          
           return {
             ...provider,
-            icon: extras.icon,
+            icon: icon,
             description: extras.description,
             status: 'disconnected' as const
           };
@@ -449,20 +474,39 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
   const getProviderIcon = (provider: ProviderConfig) => {
     if (provider.icon) {
-      return (
-        <Avatar 
-          size={28} 
-          style={{ 
-            backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
-            fontSize: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          {provider.icon}
-        </Avatar>
-      );
+      // 判断是否是图片路径（以 / 开头或者是 http/https 开头）
+      const isImagePath = provider.icon.startsWith('/') || 
+                         provider.icon.startsWith('http://') || 
+                         provider.icon.startsWith('https://') ||
+                         provider.icon.startsWith('data:');
+      
+      if (isImagePath) {
+        return (
+          <Avatar 
+            size={28} 
+            src={provider.icon}
+            style={{ 
+              backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
+            }}
+          />
+        );
+      } else {
+        // 否则作为 emoji 或文本显示
+        return (
+          <Avatar 
+            size={28} 
+            style={{ 
+              backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {provider.icon}
+          </Avatar>
+        );
+      }
     }
     return (
       <Avatar 
@@ -590,12 +634,32 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           <Card 
             title={
               <Space>
-                <Avatar 
-                  size={24} 
-                  style={{ backgroundColor: 'var(--primary-color)' }}
-                >
-                  {currentProvider?.icon || <ApiOutlined />}
-                </Avatar>
+                {currentProvider?.icon ? (
+                  (() => {
+                    const isImagePath = currentProvider.icon.startsWith('/') || 
+                                       currentProvider.icon.startsWith('http://') || 
+                                       currentProvider.icon.startsWith('https://') ||
+                                       currentProvider.icon.startsWith('data:');
+                    return (
+                      <Avatar 
+                        size={24} 
+                        src={isImagePath ? currentProvider.icon : undefined}
+                        style={{ 
+                          backgroundColor: isImagePath ? 'transparent' : 'var(--primary-color)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        {!isImagePath && currentProvider.icon}
+                      </Avatar>
+                    );
+                  })()
+                ) : (
+                  <Avatar 
+                    size={24} 
+                    icon={<ApiOutlined />}
+                    style={{ backgroundColor: 'var(--primary-color)' }}
+                  />
+                )}
                 <span>配置 {currentProvider?.provider_name}</span>
                 {currentProvider?.status === 'connected' && (
                   <Badge status="success" />
