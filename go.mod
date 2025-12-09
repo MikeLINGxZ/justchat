@@ -10,6 +10,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.41
+	golang.org/x/image v0.24.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.5
 )

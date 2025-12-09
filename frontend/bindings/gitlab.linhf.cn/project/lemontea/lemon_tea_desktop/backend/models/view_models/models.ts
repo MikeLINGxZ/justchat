@@ -138,6 +138,45 @@ export class Completions {
     }
 }
 
+export class File {
+    "preview": string | null;
+    "name": string;
+    "file_path": string;
+
+    /** Creates a new File instance. */
+    constructor($$source: Partial<File> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = null;
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("file_path" in $$source)) {
+            this["file_path"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new File instance from a string or object.
+     */
+    static createFrom($$source: any = {}): File {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new File($$parsedSource as Partial<File>);
+    }
+}
+
+export enum FileType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    FileTypeImg = 0,
+    FileTypeText = 1,
+};
+
 export class MatchMessage {
     "role": string;
     "content": string;

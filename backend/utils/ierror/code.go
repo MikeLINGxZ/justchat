@@ -25,4 +25,6 @@ const (
 	ErrCodeModelNotFound = "ErrCodeModelNotFound"
 	// ErrCodeChatNotFound 对话不存在
 	ErrCodeChatNotFound = "ErrCodeChatNotFound"
+	// ErrCodeUnsupportedFileType 不支持的文件类型
+	ErrCodeUnsupportedFileType = "ErrCodeUnsupportedFileType"
 )

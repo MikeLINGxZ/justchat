@@ -5,6 +5,8 @@ export {
     Chat,
     ChatList,
     Completions,
+    File,
+    FileType,
     MatchMessage,
     MessageList,
     Model,

@@ -105,6 +105,12 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
     return $Call.ByID(2654224378, chatUuid, title);
 }
 
+export function SelectFiles(fileType: view_models$0.FileType): $CancellablePromise<view_models$0.File[]> {
+    return $Call.ByID(1220601789, fileType).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 /**
  * UpdateProvider 更新供应商
  */
@@ -130,3 +136,5 @@ const $$createType6 = view_models$0.Model.createFrom;
 const $$createType7 = $Create.Array($$createType6);
 const $$createType8 = view_models$0.Provider.createFrom;
 const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = view_models$0.File.createFrom;
+const $$createType11 = $Create.Array($$createType10);
