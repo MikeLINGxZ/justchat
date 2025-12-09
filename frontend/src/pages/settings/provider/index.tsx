@@ -17,6 +17,8 @@ import {
   Badge,
   Avatar,
   Tooltip,
+  Modal,
+  List,
 } from 'antd';
 import {
   ApiOutlined,
@@ -29,11 +31,12 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   SettingOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
-import { Provider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
+import { Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import styles from './index.module.scss';
 
 const { Title, Text } = Typography;
@@ -65,6 +68,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null); // 改为number类型
   const [isCreatingNew, setIsCreatingNew] = useState(false); // 新增：是否正在创建新供应商
   const [newProviderTempId, setNewProviderTempId] = useState<number | null>(null); // 新增：临时ID
+  const [addProviderModalVisible, setAddProviderModalVisible] = useState(false); // 添加供应商对话框显示状态
+  const [supportProviders, setSupportProviders] = useState<SupportProvider[]>([]); // 支持的供应商列表
+  const [loadingSupportProviders, setLoadingSupportProviders] = useState(false); // 加载支持的供应商状态
+  const [selectedSupportProvider, setSelectedSupportProvider] = useState<SupportProvider | null>(null); // 选中的支持供应商
+  const [addProviderForm] = Form.useForm(); // 添加供应商表单
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
   const { refetch: refetchModels } = useModelStore();
@@ -230,39 +238,80 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     }
   };
 
+  // 加载支持的供应商列表
+  const loadSupportProviders = async () => {
+    setLoadingSupportProviders(true);
+    try {
+      const providers = await Service.GetSupportProviders();
+      setSupportProviders(providers || []);
+    } catch (error) {
+      console.error('加载支持的供应商列表失败:', error);
+      message.error('加载支持的供应商列表失败');
+    } finally {
+      setLoadingSupportProviders(false);
+    }
+  };
+
+  // 打开添加供应商对话框
   const handleAddProvider = () => {
-    // 生成临时ID（负数以区分于真实的供应商ID）
-    const tempId = -Date.now();
-    
-    // 创建新供应商占位
-    const newProvider: ProviderConfig = {
-      id: tempId,
-      provider_name: '新建供应商',
-      api_key: '',
-      base_url: '',
-      enable: true,
-      default_model_id: null,
-      models: [],
-      icon: '🆕',
-      description: '新创建的供应商',
-      status: 'disconnected'
-    };
-    
-    // 添加到列表并选中
-    setProviders(prev => [...prev, newProvider]);
-    setSelectedProvider(tempId);
-    setIsCreatingNew(true);
-    setNewProviderTempId(tempId);
-    
-    // 清空表单并设置默认值
-    form.resetFields();
-    form.setFieldsValue({
+    setAddProviderModalVisible(true);
+    setSelectedSupportProvider(null);
+    addProviderForm.resetFields();
+    loadSupportProviders();
+  };
+
+  // 选择支持的供应商
+  const handleSelectSupportProvider = (supportProvider: SupportProvider) => {
+    setSelectedSupportProvider(supportProvider);
+    // 设置表单默认值
+    addProviderForm.setFieldsValue({
       enabled: true,
-      providerName: '新建供应商',
+      providerName: supportProvider.name,
       apiKey: '',
-      baseUrl: '',
+      baseUrl: supportProvider.base_url,
       defaultModel: undefined,
     });
+  };
+
+  // 取消选择供应商，返回列表
+  const handleCancelSelectProvider = () => {
+    setSelectedSupportProvider(null);
+    addProviderForm.resetFields();
+  };
+
+  // 在对话框中创建供应商
+  const handleCreateProviderInModal = async (values: any) => {
+    if (!selectedSupportProvider) return;
+    
+    setLoading(true);
+    try {
+      // 构造新供应商数据
+      const newProviderData = new Provider({
+        provider_name: values.providerName || selectedSupportProvider.name,
+        base_url: values.baseUrl || selectedSupportProvider.base_url,
+        api_key: values.apiKey,
+        enable: values.enabled,
+        default_model_id: values.defaultModel || 0,
+      });
+      
+      // 调用后端创建接口
+      await Service.AddProvider(newProviderData);
+      
+      // 重新加载供应商列表
+      await loadProviderConfigs();
+      
+      // 关闭对话框并重置状态
+      setAddProviderModalVisible(false);
+      setSelectedSupportProvider(null);
+      addProviderForm.resetFields();
+
+      message.success('供应商创建成功');
+    } catch (error) {
+      console.error('创建供应商失败:', error);
+      message.error('创建供应商失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteProvider = async (providerId: number) => {
@@ -742,6 +791,201 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             </Card>
         </Col>
       </Row>
+
+      {/* 添加供应商对话框 */}
+      <Modal
+        title={
+          selectedSupportProvider ? (
+            <Space>
+              <Button 
+                type="text" 
+                icon={<ArrowLeftOutlined />} 
+                onClick={handleCancelSelectProvider}
+                style={{ padding: 0 }}
+                title="返回选择列表"
+              />
+              <span>添加供应商 - {selectedSupportProvider.name}</span>
+            </Space>
+          ) : (
+            '选择供应商'
+          )
+        }
+        open={addProviderModalVisible}
+        onCancel={() => {
+          setAddProviderModalVisible(false);
+          setSelectedSupportProvider(null);
+          addProviderForm.resetFields();
+        }}
+        footer={null}
+        width={selectedSupportProvider ? 700 : 600}
+      >
+        {!selectedSupportProvider ? (
+          // 供应商列表
+          <List
+            loading={loadingSupportProviders}
+            dataSource={supportProviders}
+            renderItem={(item) => {
+              const extras = getProviderExtras(item.name);
+              return (
+                <List.Item
+                  style={{
+                    cursor: 'pointer',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    marginBottom: '8px',
+                    border: '1px solid var(--border-color)',
+                    transition: 'all 0.3s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--background-color-light)';
+                    e.currentTarget.style.borderColor = 'var(--primary-color)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                  }}
+                  onClick={() => handleSelectSupportProvider(item)}
+                >
+                  <List.Item.Meta
+                    avatar={
+                      <Avatar 
+                        size={40} 
+                        style={{ 
+                          backgroundColor: 'var(--primary-color-light)',
+                          fontSize: '20px',
+                        }}
+                      >
+                        {extras.icon}
+                      </Avatar>
+                    }
+                    title={
+                      <Space>
+                        <span style={{ fontSize: '16px', fontWeight: 500 }}>{item.name}</span>
+                      </Space>
+                    }
+                    description={
+                      <div>
+                        <div style={{ marginTop: '4px', color: 'var(--text-color-secondary)' }}>
+                          {extras.description}
+                        </div>
+                        {item.base_url && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-color-disabled)' }}>
+                            <ApiOutlined style={{ marginRight: '4px' }} />
+                            {item.base_url}
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                  <Button type="primary" icon={<PlusOutlined />}>
+                    选择
+                  </Button>
+                </List.Item>
+              );
+            }}
+            locale={{ emptyText: '暂无可用的供应商' }}
+          />
+        ) : (
+          // 供应商配置表单
+          <Form
+            form={addProviderForm}
+            layout="vertical"
+            onFinish={handleCreateProviderInModal}
+          >
+            <Alert
+              message="API密钥将加密保存在本地，不会上传到任何服务器。"
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            <Form.Item
+              label="启用状态"
+              name="enabled"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              label="供应商名称"
+              name="providerName"
+              rules={[
+                { required: true, message: '请输入供应商名称' },
+                { max: 50, message: '供应商名称不能超过50个字符' },
+              ]}
+            >
+              <Input 
+                placeholder="为供应商设置一个名称" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="API 密钥"
+              name="apiKey"
+              rules={[
+                { required: true, message: '请输入API密钥' },
+              ]}
+            >
+              <Input.Password
+                placeholder="请输入API密钥"
+                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="API 基础URL"
+              name="baseUrl"
+              rules={[
+                { required: true, message: '请输入API基础URL' },
+                { type: 'url', message: '请输入正确的URL格式' },
+              ]}
+            >
+              <Input placeholder="https://api.example.com/v1" />
+            </Form.Item>
+
+            <Form.Item
+              label="默认模型"
+              name="defaultModel"
+              help="保存供应商后可以刷新模型列表"
+            >
+              <Select 
+                placeholder="保存供应商后可选择默认模型"
+                allowClear
+                showSearch
+                disabled
+                notFoundContent="请先保存供应商"
+              >
+                <Option value={0} disabled>请先保存供应商</Option>
+              </Select>
+            </Form.Item>
+
+            <Divider />
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                <Button 
+                  onClick={() => {
+                    setAddProviderModalVisible(false);
+                    setSelectedSupportProvider(null);
+                    addProviderForm.resetFields();
+                  }}
+                >
+                  取消
+                </Button>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  icon={<PlusOutlined />}
+                  loading={loading}
+                >
+                  创建供应商
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
     </div>
   );
 };
