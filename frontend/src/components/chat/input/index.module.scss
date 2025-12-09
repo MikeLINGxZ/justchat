@@ -10,6 +10,116 @@
   }
 }
 
+.filesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--background-color-light);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color-light);
+}
+
+.fileItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  position: relative;
+}
+
+.filePreview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  
+  &:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .fileRemove {
+      opacity: 1;
+    }
+  }
+}
+
+.fileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fileIcon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary);
+  background: linear-gradient(135deg, var(--background-color-light) 0%, var(--background-color) 100%);
+}
+
+.fileRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  
+  &:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.fileItem:hover .fileRemove {
+  opacity: 0.8;
+}
+
+.fileName {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-color-secondary);
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
 .inputContainer {
   background: var(--background-color);
   border: 1px solid var(--border-color);
@@ -491,6 +601,32 @@
     font-size: var(--font-size);
     padding: var(--spacing-sm);
   }
+  
+  // 移动端文件列表适配
+  .filesContainer {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+  
+  .fileItem {
+    width: 70px;
+  }
+  
+  .filePreview {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .fileRemove {
+    opacity: 1; // 移动端始终显示删除按钮
+    width: 20px;
+    height: 20px;
+    
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
 }
 
 // 暗色主题适配
@@ -556,6 +692,30 @@
       &:hover {
         background: var(--text-color-disabled);
       }
+    }
+  }
+  
+  // 文件列表暗色主题
+  .filesContainer {
+    background: var(--background-color);
+    border-color: var(--border-color);
+  }
+  
+  .filePreview {
+    background: var(--background-color-dark);
+    border-color: var(--border-color);
+  }
+  
+  .fileIcon {
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--background-color-dark) 100%);
+    color: var(--text-color-secondary);
+  }
+  
+  .fileRemove {
+    background: rgba(255, 255, 255, 0.2);
+    
+    &:hover {
+      background: rgba(220, 53, 69, 0.8);
     }
   }
 }

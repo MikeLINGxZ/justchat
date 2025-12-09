@@ -161,6 +161,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
         })
     }, []);
 
+    // 删除文件
+    const handleRemoveFile = useCallback((filePath: string) => {
+        setFiles(prevFiles => prevFiles.filter(f => f.file_path !== filePath));
+    }, []);
+
     // 模型选择事件
     const handleModelSelect = useCallback((model: string) => {
         onModelChange(model);
@@ -256,6 +261,43 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     return (
         <div className={`${styles.chatInput} ${className || ''}`}>
+            {/* 文件列表显示区域 */}
+            {files.length > 0 && (
+                <div className={styles.filesContainer}>
+                    {files.map((file) => (
+                        <div key={file.file_path} className={styles.fileItem}>
+                            <div className={styles.filePreview}>
+                                {file.preview ? (
+                                    <img 
+                                        src={file.preview} 
+                                        alt={file.name}
+                                        className={styles.fileImage}
+                                    />
+                                ) : (
+                                    <div className={styles.fileIcon}>
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M14 2H6C4.89 2 4 2.89 4 4V20C4 21.11 4.89 22 6 22H18C19.11 22 20 21.11 20 20V8L14 2ZM18 20H6V4H13V9H18V20Z" fill="currentColor"/>
+                                        </svg>
+                                    </div>
+                                )}
+                                <button
+                                    className={styles.fileRemove}
+                                    onClick={() => handleRemoveFile(file.file_path)}
+                                    type="button"
+                                    title="删除文件"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className={styles.fileName} title={file.name}>
+                                {file.name}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className={styles.inputContainer}>
                 <textarea
                     ref={textareaRef}
