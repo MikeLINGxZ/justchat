@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -50,7 +51,6 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 
 // Completions 聊天
 func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
-
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(context.Background(), model)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	if providerModel == nil {
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
-
+	fmt.Println("providerModel:", providerModel)
 	// 当chatUuid为空说明是新建聊天
 	if chatUuid == "" {
 		chatUuid = uuid.New().String()

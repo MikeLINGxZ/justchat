@@ -142,6 +142,7 @@ export class File {
     "preview": string | null;
     "name": string;
     "file_path": string;
+    "part": schema$0.MessageInputPart;
 
     /** Creates a new File instance. */
     constructor($$source: Partial<File> = {}) {
@@ -154,6 +155,9 @@ export class File {
         if (!("file_path" in $$source)) {
             this["file_path"] = "";
         }
+        if (!("part" in $$source)) {
+            this["part"] = (new schema$0.MessageInputPart());
+        }
 
         Object.assign(this, $$source);
     }
@@ -162,7 +166,11 @@ export class File {
      * Creates a new File instance from a string or object.
      */
     static createFrom($$source: any = {}): File {
+        const $$createField3_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("part" in $$parsedSource) {
+            $$parsedSource["part"] = $$createField3_0($$parsedSource["part"]);
+        }
         return new File($$parsedSource as Partial<File>);
     }
 }
@@ -222,7 +230,7 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
@@ -360,7 +368,7 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField9_0 = $$createType7;
+        const $$createField9_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField9_0($$parsedSource["models"]);
@@ -369,12 +377,42 @@ export class Provider {
     }
 }
 
+export class SupportProvider {
+    "name": string;
+    "base_url": string;
+    "file_upload_base_url": string | null;
+
+    /** Creates a new SupportProvider instance. */
+    constructor($$source: Partial<SupportProvider> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("base_url" in $$source)) {
+            this["base_url"] = "";
+        }
+        if (!("file_upload_base_url" in $$source)) {
+            this["file_upload_base_url"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SupportProvider instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SupportProvider {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SupportProvider($$parsedSource as Partial<SupportProvider>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = MatchMessage.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = Chat.createFrom;
 const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = schema$0.Message.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = Model.createFrom;
-const $$createType7 = $Create.Array($$createType6);
+const $$createType4 = schema$0.MessageInputPart.createFrom;
+const $$createType5 = schema$0.Message.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = Model.createFrom;
+const $$createType8 = $Create.Array($$createType7);

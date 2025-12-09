@@ -2,10 +2,11 @@ package data_models
 
 type Provider struct {
 	OrmModel
-	ProviderName string `gorm:"type:varchar(255)" json:"provider_name"`  // 提供方名称
-	BaseUrl      string `gorm:"type:varchar(255)" json:"base_url"`       // 基础url
-	ApiKey       string `gorm:"type:varchar(255)" json:"api_key"`        // api key
-	Enable       bool   `gorm:"index;type:bool;default:1" json:"enable"` // 启用
+	ProviderName      string  `gorm:"type:varchar(255)" json:"provider_name"`        // 提供方名称
+	BaseUrl           string  `gorm:"type:varchar(255)" json:"base_url"`             // 基础url
+	FileUploadBaseUrl *string `gorm:"type:varchar(255)" json:"file_upload_base_url"` // 文件上传地址
+	ApiKey            string  `gorm:"type:varchar(255)" json:"api_key"`              // api key
+	Enable            bool    `gorm:"index;type:bool;default:1" json:"enable"`       // 启用
 }
 
 type ProviderDefaultModel struct {

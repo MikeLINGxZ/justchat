@@ -6,6 +6,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type SupportProvider struct {
+	Name              string  `json:"name"`
+	BaseUrl           string  `json:"base_url"`
+	FileUploadBaseUrl *string `json:"file_upload_base_url"`
+}
+
 type Provider struct {
 	ID             uint           `json:"id"`
 	CreatedAt      time.Time      `json:"created_at"`

@@ -94,6 +94,15 @@ export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     });
 }
 
+/**
+ * GetSupportProviders 获取支持的供应商列表
+ */
+export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
+    return $Call.ByID(4035154853).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 export function OpenSettingsWindow(): $CancellablePromise<void> {
     return $Call.ByID(3479182543);
 }
@@ -107,7 +116,7 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
 
 export function SelectFiles(fileType: view_models$0.FileType): $CancellablePromise<view_models$0.File[]> {
     return $Call.ByID(1220601789, fileType).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType13($result);
     });
 }
 
@@ -136,5 +145,7 @@ const $$createType6 = view_models$0.Model.createFrom;
 const $$createType7 = $Create.Array($$createType6);
 const $$createType8 = view_models$0.Provider.createFrom;
 const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = view_models$0.File.createFrom;
+const $$createType10 = view_models$0.SupportProvider.createFrom;
 const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = view_models$0.File.createFrom;
+const $$createType13 = $Create.Array($$createType12);

@@ -10,5 +10,6 @@ export {
     MatchMessage,
     MessageList,
     Model,
-    Provider
+    Provider,
+    SupportProvider
 } from "./models.js";
