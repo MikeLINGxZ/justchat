@@ -18,7 +18,7 @@ func (s *Service) SelectFiles(fileType view_models.FileType) ([]view_models.File
 		pattern = "*.jpg;*.png;*.jpeg;*.bmp"
 	case view_models.FileTypeText:
 		displayName = "选择文本"
-		pattern = "*.txt;*.log;*.text"
+		pattern = "*.txt;*.log;*.text;*.json;*.html;*.css;*.scss"
 	default:
 		return nil, ierror.New(ierror.ErrCodeUnsupportedFileType)
 	}
