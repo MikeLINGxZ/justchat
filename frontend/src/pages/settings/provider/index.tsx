@@ -878,7 +878,12 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                         size={40} 
                         src={
                           item.icon 
-                            ? (item.icon.startsWith('data:') ? item.icon : `data:image/png;base64,${item.icon}`)
+                            ? (item.icon.startsWith('data:') || 
+                                item.icon.startsWith('http://') || 
+                                item.icon.startsWith('https://') ||
+                                item.icon.startsWith('/')
+                                ? item.icon 
+                                : `data:image/png;base64,${item.icon}`)
                             : undefined
                         }
                         style={{ 
