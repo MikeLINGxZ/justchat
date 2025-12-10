@@ -91,11 +91,12 @@ func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_
 	}
 
 	return &wrapper_models.ProviderModel{
-		ProviderType: provider.ProviderType,
-		BaseUrl:      provider.BaseUrl,
-		ApiKey:       provider.ApiKey,
-		Model:        modelInfo.Model,
-		ModelId:      modelInfo.ID,
+		ProviderType:      provider.ProviderType,
+		BaseUrl:           provider.BaseUrl,
+		FileUploadBaseUrl: provider.FileUploadBaseUrl,
+		ApiKey:            provider.ApiKey,
+		Model:             modelInfo.Model,
+		ModelId:           modelInfo.ID,
 	}, nil
 }
 

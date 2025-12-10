@@ -12,6 +12,7 @@ type File struct {
 type FileType int
 
 const (
-	FileTypeImg FileType = iota
+	FileTypeUnknown FileType = iota
+	FileTypeImg
 	FileTypeText
 )

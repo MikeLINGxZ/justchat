@@ -92,6 +92,13 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		return nil, ierror.NewError(err)
 	}
 
+	// 处理消息中的文件
+	prtMessage, err := llm.ProcessMessageFile(providerModel, message)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	message = *prtMessage
+
 	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
 	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
 	if err != nil {
