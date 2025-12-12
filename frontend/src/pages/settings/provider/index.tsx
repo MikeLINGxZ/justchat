@@ -921,7 +921,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         }}
         footer={null}
         width={isMobile ? 'calc(100vw - 32px)' : (selectedSupportProvider ? 700 : 600)}
-        centered={!isMobile}
+        centered
         getContainer={() => document.body}
         zIndex={2002}
         maskStyle={{ zIndex: 2001 }}

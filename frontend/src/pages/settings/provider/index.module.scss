@@ -509,11 +509,13 @@
       .ant-modal {
         z-index: 2002 !important;
         position: fixed !important;
+        max-width: calc(100vw - 32px) !important;
+        max-height: calc(100vh - 32px) !important;
+        // 确保居中显示
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         margin: 0 !important;
-        max-width: calc(100vw - 32px) !important;
       }
     }
   }
