@@ -8,29 +8,17 @@ import (
 	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 )
-
-type ProviderType string
-
-const (
-	ProviderTypeDeepseek   ProviderType = "deepseek"
-	ProviderTypeAliyuns    ProviderType = "aliyuns"
-	ProviderTypeOpenrouter ProviderType = "openrouter"
-	ProviderTypeOther      ProviderType = "other"
-)
-
-func (p ProviderType) String() string {
-	return string(p)
-}
 
 type LlmProvider struct {
-	providerType ProviderType
+	providerType data_models.ProviderType
 	baseURL      string
 	apiKey       string
 	model        string
 }
 
-func NewLlmProvider(providerType ProviderType, baseUrl, apiKey, model string) *LlmProvider {
+func NewLlmProvider(providerType data_models.ProviderType, baseUrl, apiKey, model string) *LlmProvider {
 	return &LlmProvider{
 		providerType: providerType,
 		baseURL:      baseUrl,
@@ -45,13 +33,13 @@ func (l *LlmProvider) Completions(ctx context.Context, messages []schema.Message
 
 	// 创建llm模型实例
 	switch l.providerType {
-	case ProviderTypeDeepseek:
+	case data_models.ProviderTypeDeepseek:
 		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
 			BaseURL: l.baseURL,
 			Model:   l.model,
 			APIKey:  l.apiKey,
 		})
-	case ProviderTypeAliyuns:
+	case data_models.ProviderTypeAliyuns:
 		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
 			BaseURL: l.baseURL,
 			Model:   l.model,

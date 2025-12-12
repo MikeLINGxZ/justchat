@@ -3,7 +3,7 @@ import styles from "./index.module.scss";
 import type {ModelOption} from '@/hooks/useModels';
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
-import {File, FileType} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import {File} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatInputProps {
     // 类名
@@ -128,7 +128,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 图像上传事件
     const handleImageUpload = useCallback(() => {
         imageInputRef.current?.click();
-        Service.SelectFiles(FileType.FileTypeImg).then((data: File[]) => {
+        Service.SelectFiles().then((data: File[]) => {
             if (data && data.length > 0) {
                 setFiles(prevFiles => {
                     const existingPaths = new Set(prevFiles.map(f => f.file_path));
@@ -146,7 +146,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
         fileInputRef.current?.click();
-        Service.SelectFiles(FileType.FileTypeText).then((data: File[]) => {
+        Service.SelectFiles().then((data: File[]) => {
             if (data && data.length > 0) {
                 setFiles(prevFiles => {
                     const existingPaths = new Set(prevFiles.map(f => f.file_path));

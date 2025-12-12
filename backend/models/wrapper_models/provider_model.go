@@ -1,9 +1,11 @@
 package wrapper_models
 
-import "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/llm"
+import (
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+)
 
 type ProviderModel struct {
-	ProviderType      llm.ProviderType
+	ProviderType      data_models.ProviderType
 	BaseUrl           string
 	FileUploadBaseUrl *string
 	ApiKey            string

@@ -1,43 +1,12 @@
 package llm
 
 import (
+	"encoding/base64"
 	"strings"
-
-	"github.com/cloudwego/eino/schema"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 )
 
-func ProcessMessageFile(provider *wrapper_models.ProviderModel, message schema.Message) (*schema.Message, error) {
-	userInputMultiContent := message.UserInputMultiContent
-	for _, part := range userInputMultiContent {
-		switch part.Type {
-		case schema.ChatMessagePartTypeImageURL:
-			if part.Image == nil || part.Image.URL == nil {
-				continue
-			}
-			if provider.ProviderType == ProviderTypeAliyuns {
-				url, err := uploadFile2Aliyuns(*provider.FileUploadBaseUrl, provider.ApiKey, *part.Image.URL)
-				if err != nil {
-					return nil, err
-				}
-				part.Image.URL = &url
-			} else {
-				base64, err := imgbase64(*part.Image.URL)
-				if err != nil {
-					return nil, err
-				}
-				part.Image.Base64Data = &base64
-			}
-
-		default:
-			continue
-		}
-	}
-	return &message, nil
-}
-
 func uploadFile2Aliyuns(uploadBaseUrl, uploadKey string, filePath string) (string, error) {
-	path := strings.Replace(filePath, "@local:", "", 1)
+	// path := strings.Replace(filePath, "@local:", "", 1)
 	// todo 读取文件，
 	// demo:
 	// def get_upload_policy(api_key, model_name):
@@ -89,9 +58,11 @@ func uploadFile2Aliyuns(uploadBaseUrl, uploadKey string, filePath string) (strin
 	//    oss_url = upload_file_to_oss(policy_data, file_path)
 	//
 	//    return oss_url
+	return "", nil
 }
 
 func imgbase64(filePath string) (string, error) {
 	path := strings.Replace(filePath, "@local:", "", 1)
 	// todo 读取图片，封装为格式：data:[<mediatype>][;base64],<data> 的字符串返回
+	return base64.StdEncoding.EncodeToString([]byte(path)), nil
 }
