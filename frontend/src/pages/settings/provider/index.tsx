@@ -36,6 +36,7 @@ import {
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
+import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import styles from './index.module.scss';
@@ -78,6 +79,16 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
   const { refetch: refetchModels } = useModelStore();
+  const [isMobile, setIsMobile] = useState(() => isMobileDevice());
+
+  // 监听窗口大小变化，更新移动端状态
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(isMobileDevice());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 加载保存的配置
   useEffect(() => {
@@ -909,8 +920,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           addProviderForm.resetFields();
         }}
         footer={null}
-        width={selectedSupportProvider ? 700 : 600}
-        centered
+        width={isMobile ? 'calc(100vw - 32px)' : (selectedSupportProvider ? 700 : 600)}
+        centered={!isMobile}
+        getContainer={() => document.body}
+        zIndex={2002}
+        maskStyle={{ zIndex: 2001 }}
+        wrapClassName={styles.addProviderModal}
+        bodyStyle={isMobile ? { maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' } : undefined}
       >
         {!selectedSupportProvider ? (
           // 供应商列表

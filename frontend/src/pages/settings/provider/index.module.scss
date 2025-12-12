@@ -483,3 +483,38 @@
     }
   }
 }
+
+// 添加供应商对话框样式 - 确保在移动端正确显示
+:global {
+  .addProviderModal {
+    z-index: 2001 !important;
+    
+    .ant-modal-mask {
+      z-index: 2001 !important;
+    }
+    
+    .ant-modal {
+      z-index: 2002 !important;
+      position: fixed !important;
+    }
+    
+    // 移动端特殊处理
+    @media (max-width: 768px) {
+      z-index: 2001 !important;
+      
+      .ant-modal-mask {
+        z-index: 2001 !important;
+      }
+      
+      .ant-modal {
+        z-index: 2002 !important;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
+        max-width: calc(100vw - 32px) !important;
+      }
+    }
+  }
+}
