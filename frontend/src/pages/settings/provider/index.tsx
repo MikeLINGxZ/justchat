@@ -969,7 +969,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     description={
                       <div>
                         <div style={{ marginTop: '4px', color: 'var(--text-color-secondary)' }}>
-                          {extras.description}
+                          {item.description || extras.description}
                         </div>
                         {item.base_url && (
                           <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-color-disabled)' }}>

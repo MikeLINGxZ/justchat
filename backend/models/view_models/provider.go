@@ -13,6 +13,7 @@ type SupportProvider struct {
 	Name              string                   `json:"name"`
 	BaseUrl           string                   `json:"base_url"`
 	FileUploadBaseUrl *string                  `json:"file_upload_base_url"`
+	Description       string                   `json:"description"`
 }
 
 type Provider struct {
