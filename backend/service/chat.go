@@ -60,14 +60,18 @@ func (s *Service) Completions(chatUuid, model string, message view_models.Messag
 	}
 
 	// 当chatUuid为空说明是新建聊天
+	// todo 此处应该生成一个标题
 	if chatUuid == "" {
 		chatUuid = uuid.New().String()
+		title := message.Content
 		// 创建一个聊天
-		err = s.storage.CreateChat(context.Background(), chatUuid, message.Content, providerModel.ModelId)
+		err = s.storage.CreateChat(context.Background(), chatUuid, title)
 		if err != nil {
 			return nil, ierror.NewError(err)
 		}
 	}
+
+	// 处理消息文件
 
 	// 查找历史消息
 	historyMessageData, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 10)
@@ -92,9 +96,7 @@ func (s *Service) Completions(chatUuid, model string, message view_models.Messag
 		return nil, ierror.NewError(err)
 	}
 
-	// todo 处理消息中的文件
-
-	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
+	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.FileUploadBaseUrl, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
 	stream, err := provider.Completions(context.Background(), append(historyMessages, message.Message))
 	if err != nil {
 		return nil, ierror.NewError(err)

@@ -57,17 +57,15 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 }
 
 // CreateChat 创建对话
-func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string, modelId uint) error {
+func (s *Storage) CreateChat(ctx context.Context, chatUuid, title string) error {
 	now := time.Now()
 	chat := &data_models.Chat{
 		OrmModel: data_models.OrmModel{
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
-		Uuid:    chatUuid,
-		ModelID: modelId,
-		Title:   title,
-		Prompt:  "",
+		Uuid:  chatUuid,
+		Title: title,
 	}
 
 	err := s.sqliteDB.Create(chat).Error

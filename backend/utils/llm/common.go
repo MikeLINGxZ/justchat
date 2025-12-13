@@ -12,18 +12,20 @@ import (
 )
 
 type LlmProvider struct {
-	providerType data_models.ProviderType
-	baseURL      string
-	apiKey       string
-	model        string
+	providerType      data_models.ProviderType
+	baseURL           string
+	apiKey            string
+	model             string
+	fileUploadBaseUrl *string
 }
 
-func NewLlmProvider(providerType data_models.ProviderType, baseUrl, apiKey, model string) *LlmProvider {
+func NewLlmProvider(providerType data_models.ProviderType, fileUploadBaseUrl *string, baseUrl, apiKey, model string) *LlmProvider {
 	return &LlmProvider{
-		providerType: providerType,
-		baseURL:      baseUrl,
-		apiKey:       apiKey,
-		model:        model,
+		providerType:      providerType,
+		baseURL:           baseUrl,
+		apiKey:            apiKey,
+		model:             model,
+		fileUploadBaseUrl: fileUploadBaseUrl,
 	}
 }
 
@@ -56,6 +58,12 @@ func (l *LlmProvider) Completions(ctx context.Context, messages []schema.Message
 		return nil, err
 	}
 
+	// 处理文件上传
+	messages, err = l.processFile(messages)
+	if err != nil {
+		return nil, err
+	}
+
 	var messagesPoint []*schema.Message
 	for _, item := range messages {
 		messagesPoint = append(messagesPoint, &item)
@@ -67,4 +75,8 @@ func (l *LlmProvider) Completions(ctx context.Context, messages []schema.Message
 	}
 
 	return streamResult, nil
+}
+
+func (l *LlmProvider) processFile(messages []schema.Message) ([]schema.Message, error) {
+	return messages, nil
 }

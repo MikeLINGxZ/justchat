@@ -24,7 +24,6 @@ export class Chat {
     "updated_at": time$0.Time;
     "deleted_at": gorm$0.DeletedAt;
     "uuid": string;
-    "model_id": number;
     "title": string;
     "prompt": string;
     "is_collection": boolean;
@@ -47,9 +46,6 @@ export class Chat {
         }
         if (!("uuid" in $$source)) {
             this["uuid"] = "";
-        }
-        if (!("model_id" in $$source)) {
-            this["model_id"] = 0;
         }
         if (!("title" in $$source)) {
             this["title"] = "";
@@ -74,14 +70,14 @@ export class Chat {
      * Creates a new Chat instance from a string or object.
      */
     static createFrom($$source: any = {}): Chat {
+        const $$createField8_0 = $$createType1;
         const $$createField9_0 = $$createType1;
-        const $$createField10_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("content" in $$parsedSource) {
-            $$parsedSource["content"] = $$createField9_0($$parsedSource["content"]);
+            $$parsedSource["content"] = $$createField8_0($$parsedSource["content"]);
         }
         if ("reasoning_content" in $$parsedSource) {
-            $$parsedSource["reasoning_content"] = $$createField10_0($$parsedSource["reasoning_content"]);
+            $$parsedSource["reasoning_content"] = $$createField9_0($$parsedSource["reasoning_content"]);
         }
         return new Chat($$parsedSource as Partial<Chat>);
     }
