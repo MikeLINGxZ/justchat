@@ -6,6 +6,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
 
@@ -30,14 +31,21 @@ func (s *Service) SelectFiles() ([]view_models.File, error) {
 			mimeType = "application/octet-stream"
 		}
 
+		// 通过mineType获取消息类型
+		chatMessagePartType, err := utils.MimeType2ChatMessagePartType(mimeType)
+		if err != nil {
+			return nil, ierror.NewError(err)
+		}
+
 		// todo 如果为图像，则设置预览base64 200x200
 		var previewImg *string
 
 		file := view_models.File{
-			PreviewImg: previewImg,
-			Name:       filepath.Base(path),
-			FilePath:   path,
-			MineType:   mimeType,
+			ChatMessagePartType: chatMessagePartType,
+			PreviewImg:          previewImg,
+			Name:                filepath.Base(path),
+			FilePath:            path,
+			MineType:            mimeType,
 		}
 
 		files = append(files, file)

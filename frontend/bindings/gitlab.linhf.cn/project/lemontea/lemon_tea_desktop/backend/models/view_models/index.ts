@@ -7,7 +7,6 @@ export {
     Completions,
     File,
     MatchMessage,
-    Message,
     MessageList,
     Model,
     Provider,

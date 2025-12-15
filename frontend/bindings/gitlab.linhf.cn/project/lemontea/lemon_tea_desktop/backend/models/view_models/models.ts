@@ -142,6 +142,7 @@ export class File {
     "name": string;
     "file_path": string;
     "mine_type": string;
+    "chat_message_part_type": schema$0.ChatMessagePartType;
 
     /** Creates a new File instance. */
     constructor($$source: Partial<File> = {}) {
@@ -156,6 +157,9 @@ export class File {
         }
         if (!("mine_type" in $$source)) {
             this["mine_type"] = "";
+        }
+        if (!("chat_message_part_type" in $$source)) {
+            this["chat_message_part_type"] = schema$0.ChatMessagePartType.$zero;
         }
 
         Object.assign(this, $$source);
@@ -195,111 +199,6 @@ export class MatchMessage {
     }
 }
 
-export class Message {
-    "role": schema$0.RoleType;
-
-    /**
-     * Content is for user text input and model text output.
-     */
-    "content": string;
-
-    /**
-     * if MultiContent is not empty, use this instead of Content
-     * if MultiContent is empty, use Content
-     * Deprecated: Use UserInputMultiContent for user multimodal inputs and AssistantGenMultiContent for model multimodal outputs.
-     */
-    "multi_content"?: schema$0.ChatMessagePart[];
-
-    /**
-     * UserInputMultiContent passes multimodal content provided by the user to the model.
-     */
-    "user_input_multi_content"?: schema$0.MessageInputPart[];
-
-    /**
-     * AssistantGenMultiContent is for receiving multimodal output from the model.
-     */
-    "assistant_output_multi_content"?: schema$0.MessageOutputPart[];
-    "name"?: string;
-
-    /**
-     * only for AssistantMessage
-     */
-    "tool_calls"?: schema$0.ToolCall[];
-
-    /**
-     * only for ToolMessage
-     */
-    "tool_call_id"?: string;
-
-    /**
-     * only for ToolMessage
-     */
-    "tool_name"?: string;
-    "response_meta"?: schema$0.ResponseMeta | null;
-
-    /**
-     * ReasoningContent is the thinking process of the model, which will be included when the model returns reasoning content.
-     */
-    "reasoning_content"?: string;
-
-    /**
-     * customized information for model implementation
-     */
-    "extra"?: { [_: string]: any };
-    "files": File[];
-
-    /** Creates a new Message instance. */
-    constructor($$source: Partial<Message> = {}) {
-        if (!("role" in $$source)) {
-            this["role"] = schema$0.RoleType.$zero;
-        }
-        if (!("content" in $$source)) {
-            this["content"] = "";
-        }
-        if (!("files" in $$source)) {
-            this["files"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Message instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Message {
-        const $$createField2_0 = $$createType5;
-        const $$createField3_0 = $$createType7;
-        const $$createField4_0 = $$createType9;
-        const $$createField6_0 = $$createType11;
-        const $$createField9_0 = $$createType13;
-        const $$createField11_0 = $$createType14;
-        const $$createField12_0 = $$createType16;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("multi_content" in $$parsedSource) {
-            $$parsedSource["multi_content"] = $$createField2_0($$parsedSource["multi_content"]);
-        }
-        if ("user_input_multi_content" in $$parsedSource) {
-            $$parsedSource["user_input_multi_content"] = $$createField3_0($$parsedSource["user_input_multi_content"]);
-        }
-        if ("assistant_output_multi_content" in $$parsedSource) {
-            $$parsedSource["assistant_output_multi_content"] = $$createField4_0($$parsedSource["assistant_output_multi_content"]);
-        }
-        if ("tool_calls" in $$parsedSource) {
-            $$parsedSource["tool_calls"] = $$createField6_0($$parsedSource["tool_calls"]);
-        }
-        if ("response_meta" in $$parsedSource) {
-            $$parsedSource["response_meta"] = $$createField9_0($$parsedSource["response_meta"]);
-        }
-        if ("extra" in $$parsedSource) {
-            $$parsedSource["extra"] = $$createField11_0($$parsedSource["extra"]);
-        }
-        if ("files" in $$parsedSource) {
-            $$parsedSource["files"] = $$createField12_0($$parsedSource["files"]);
-        }
-        return new Message($$parsedSource as Partial<Message>);
-    }
-}
-
 export class MessageList {
     "messages": schema$0.Message[];
     "total": number;
@@ -320,7 +219,7 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType18;
+        const $$createField0_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
@@ -470,7 +369,7 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType20;
+        const $$createField10_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -525,20 +424,7 @@ const $$createType0 = MatchMessage.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = Chat.createFrom;
 const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = schema$0.ChatMessagePart.createFrom;
+const $$createType4 = schema$0.Message.createFrom;
 const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = schema$0.MessageInputPart.createFrom;
+const $$createType6 = Model.createFrom;
 const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = schema$0.MessageOutputPart.createFrom;
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = schema$0.ToolCall.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = schema$0.ResponseMeta.createFrom;
-const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = $Create.Map($Create.Any, $Create.Any);
-const $$createType15 = File.createFrom;
-const $$createType16 = $Create.Array($$createType15);
-const $$createType17 = schema$0.Message.createFrom;
-const $$createType18 = $Create.Array($$createType17);
-const $$createType19 = Model.createFrom;
-const $$createType20 = $Create.Array($$createType19);

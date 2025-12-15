@@ -49,7 +49,7 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 }
 
 // Completions 聊天
-func (s *Service) Completions(chatUuid, model string, message view_models.Message) (*view_models.Completions, error) {
+func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(context.Background(), model)
 	if err != nil {
@@ -71,7 +71,7 @@ func (s *Service) Completions(chatUuid, model string, message view_models.Messag
 		}
 	}
 
-	// 处理消息文件
+	// todo 处理消息文件
 
 	// 查找历史消息
 	historyMessageData, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 10)
@@ -90,14 +90,14 @@ func (s *Service) Completions(chatUuid, model string, message view_models.Messag
 	err = s.storage.CreateMessage(context.Background(), chatUuid, data_models.Message{
 		Uuid:     uuid.New().String(),
 		ChatUuid: chatUuid,
-		Message:  &message.Message,
+		Message:  &message,
 	})
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
 
 	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.FileUploadBaseUrl, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
-	stream, err := provider.Completions(context.Background(), append(historyMessages, message.Message))
+	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
