@@ -39,6 +39,49 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return '';
     };
 
+    // 获取文件列表：从 user_input_multi_content 的第2个元素开始（索引1）
+    // 支持所有类型：image、audio、video、file
+    const getFileList = () => {
+        if (!message.user_input_multi_content || message.user_input_multi_content.length <= 1) {
+            return [];
+        }
+        return message.user_input_multi_content.slice(1)
+            .map(part => {
+                // 根据类型获取对应的 extra 信息
+                let extra: any = null;
+                let type = 'file';
+                
+                if (part.image?.extra) {
+                    extra = part.image.extra;
+                    type = 'image';
+                } else if (part.audio?.extra) {
+                    extra = part.audio.extra;
+                    type = 'audio';
+                } else if (part.video?.extra) {
+                    extra = part.video.extra;
+                    type = 'video';
+                } else if (part.file?.extra) {
+                    extra = part.file.extra;
+                    type = 'file';
+                }
+                
+                // 如果没有 extra，跳过
+                if (!extra) {
+                    return null;
+                }
+                
+                return {
+                    name: extra.name || '未知文件',
+                    path: extra.path || '',
+                    mime_type: extra.mime_type || '',
+                    type: type
+                };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+    };
+
+    const fileList = getFileList();
+
     // todo
     //  wrapperClass = styles.errorMessageWrapper;
 
@@ -47,10 +90,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             <div className={`${styles.message} ${wrapperClass}`}>
                 <div className={styles.messageContainer} >
                     {isUser ? (
-                        <div className={styles.messageContent}>
-                            {getDisplayContent()}
-                        
-                        </div>
+                        <>
+                            <div className={styles.messageContent}>
+                                {getDisplayContent()}
+                            </div>
+                            {fileList.length > 0 && (
+                                <div className={styles.fileList}>
+                                    {fileList.map((file, index) => (
+                                        <div key={index} className={styles.fileItem}>
+                                            <span className={styles.fileType}>{file.type}</span>
+                                            <span className={styles.fileName}>{file.name}</span>
+                                            {file.mime_type && (
+                                                <span className={styles.fileMimeType}>{file.mime_type}</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     ):(
                         <div>
                             {/* 渲染思考过程（如果存在） */}
