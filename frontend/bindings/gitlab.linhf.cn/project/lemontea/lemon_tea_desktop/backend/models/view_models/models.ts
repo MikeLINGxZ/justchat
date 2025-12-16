@@ -235,7 +235,7 @@ export class MessageList {
 export class MessagePkg {
     "chatUuid": string;
     "model": string;
-    "message": schema$0.Message;
+    "content": string;
     "files": File[];
 
     /** Creates a new MessagePkg instance. */
@@ -246,8 +246,8 @@ export class MessagePkg {
         if (!("model" in $$source)) {
             this["model"] = "";
         }
-        if (!("message" in $$source)) {
-            this["message"] = (new schema$0.Message());
+        if (!("content" in $$source)) {
+            this["content"] = "";
         }
         if (!("files" in $$source)) {
             this["files"] = [];
@@ -260,12 +260,8 @@ export class MessagePkg {
      * Creates a new MessagePkg instance from a string or object.
      */
     static createFrom($$source: any = {}): MessagePkg {
-        const $$createField2_0 = $$createType4;
         const $$createField3_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("message" in $$parsedSource) {
-            $$parsedSource["message"] = $$createField2_0($$parsedSource["message"]);
-        }
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField3_0($$parsedSource["files"]);
         }

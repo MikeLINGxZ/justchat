@@ -1,6 +1,8 @@
 package view_models
 
-import "github.com/cloudwego/eino/schema"
+import (
+	"github.com/cloudwego/eino/schema"
+)
 
 type File struct {
 	PreviewImg          *string                    `json:"preview"`

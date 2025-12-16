@@ -9,11 +9,13 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 )
 
 type IProvider interface {
 	Completions(ctx context.Context, messages []schema.Message) (*schema.StreamReader[*schema.Message], error)
+	BuildUserMessage(ctx context.Context, message view_models.MessagePkg) (*schema.Message, error)
 }
 
 func NewLlmProvider(providerModel wrapper_models.ProviderModel) IProvider {

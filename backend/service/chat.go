@@ -2,15 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/file_uploader"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
@@ -63,31 +60,16 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
-	marshal, _ := json.Marshal(providerModel)
-	fmt.Println("---------------", string(marshal))
-
 	// 当chatUuid为空说明是新建聊天
 	// todo 此处应该生成一个标题
 	if message.ChatUuid == "" {
 		message.ChatUuid = uuid.New().String()
-		title := ""
-		for _, part := range message.Message.UserInputMultiContent {
-			if part.Text != "" {
-				title = part.Text
-			}
-		}
+		title := message.Content
 		// 创建一个聊天
 		err = s.storage.CreateChat(context.Background(), message.ChatUuid, title)
 		if err != nil {
 			return nil, ierror.NewError(err)
 		}
-	}
-
-	// 处理消息中的文件
-	converter := file_uploader.NewConverter(providerModel)
-	err = converter.ConvertMessageUserInputMultiContent(&message)
-	if err != nil {
-		return nil, ierror.NewError(err)
 	}
 
 	// 查找历史消息
@@ -103,18 +85,26 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		historyMessages = append(historyMessages, *item.Message)
 	}
 
+	provider := llm_provider.NewLlmProvider(*providerModel)
+
+	// 转换消息内容
+	schemaMessage, err := provider.BuildUserMessage(context.Background(), message)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+
 	// 创建用户消息
 	err = s.storage.CreateMessage(context.Background(), message.ChatUuid, data_models.Message{
 		Uuid:     uuid.New().String(),
 		ChatUuid: message.ChatUuid,
-		Message:  &message.Message,
+		Message:  schemaMessage,
 	})
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
 
-	provider := llm_provider.NewLlmProvider(*providerModel)
-	stream, err := provider.Completions(context.Background(), append(historyMessages, message.Message))
+	// 生成
+	stream, err := provider.Completions(context.Background(), append(historyMessages, *schemaMessage))
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}

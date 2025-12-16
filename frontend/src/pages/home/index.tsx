@@ -2,12 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
-import {
-    ChatMessagePartType,
-    Message,
-    MessageInputPart,
-    RoleType
-} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
+import {ChatMessagePartType, Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModelStore} from '@/stores/modelStore';
 import './index.module.scss';
@@ -243,6 +238,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 // 创建用户消息
                 const userMessage = new Message();
                 userMessage.role = RoleType.User;
+                userMessage.content = messageContent.trim();
                 userMessage.user_input_multi_content = [
                     {
                         type: ChatMessagePartType.ChatMessagePartTypeText,
@@ -272,7 +268,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 let messagePkg:MessagePkg = {
                     chatUuid: currentChatUuid,
                     model: selectedModel,
-                    message: userMessage,
+                    content: messageContent.trim(),
                     files: files,
                 }
                 await CompletionsUtils(messagePkg, (message: Message) => {

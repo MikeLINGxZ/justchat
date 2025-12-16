@@ -8,8 +8,8 @@ type MessageList struct {
 }
 
 type MessagePkg struct {
-	ChatUuid string         `json:"chatUuid"`
-	Model    string         `json:"model"`
-	Message  schema.Message `json:"message"`
-	Files    []File         `json:"files"`
+	ChatUuid string `json:"chatUuid"`
+	Model    string `json:"model"`
+	Content  string `json:"content"`
+	Files    []File `json:"files"`
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 )
 
@@ -39,4 +40,14 @@ func (d *Deepseek) Completions(ctx context.Context, messages []schema.Message) (
 	}
 
 	return streamResult, nil
+}
+
+func (d *Deepseek) UploadFile(paths []string) (map[string]string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (d *Deepseek) BuildUserMessage(ctx context.Context, message view_models.MessagePkg) (*schema.Message, error) {
+	//TODO implement me
+	panic("implement me")
 }
