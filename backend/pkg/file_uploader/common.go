@@ -46,9 +46,11 @@ func (d *Converter) ConvertMessageUserInputMultiContent(message *view_models.Mes
 		return nil
 	}
 
-	paths := d.getPaths(&message.Message)
-	if len(paths) == 0 {
-		return nil
+	var paths []string
+	path2files := make(map[string]view_models.File)
+	for _, file := range message.Files {
+		paths = append(paths, file.FilePath)
+		path2files[file.FilePath] = file
 	}
 
 	path2url, err := uploader.Upload(paths)
@@ -56,19 +58,37 @@ func (d *Converter) ConvertMessageUserInputMultiContent(message *view_models.Mes
 		return err
 	}
 
-	for i := range message.Message.UserInputMultiContent {
-		part := &message.Message.UserInputMultiContent[i]
-		if !isFilePartType(part.Type) {
+	for _, file := range message.Files {
+		fileItem := path2files[file.FilePath]
+		fileUrl := path2url[file.FilePath]
+		if message.Message.UserInputMultiContent == nil {
+			message.Message.UserInputMultiContent = []schema.MessageInputPart{}
+		}
+		switch file.ChatMessagePartType {
+		case schema.ChatMessagePartTypeText:
+			message.Message.UserInputMultiContent = append(message.Message.UserInputMultiContent, schema.MessageInputPart{
+				Type: schema.ChatMessagePartTypeText,
+				Text: "",
+			})
+		case schema.ChatMessagePartTypeImageURL:
+			message.Message.UserInputMultiContent = append(message.Message.UserInputMultiContent, schema.MessageInputPart{
+				Type: schema.ChatMessagePartTypeImageURL,
+				Image: &schema.MessageInputImage{
+					MessagePartCommon: schema.MessagePartCommon{
+						URL:        &fileUrl,
+						Base64Data: nil,
+						MIMEType:   fileItem.MineType,
+						Extra:      map[string]interface{}{},
+					},
+					Detail: schema.ImageURLDetailHigh,
+				},
+			})
+		case schema.ChatMessagePartTypeAudioURL:
+		case schema.ChatMessagePartTypeVideoURL:
+		case schema.ChatMessagePartTypeFileURL:
+		default:
 			continue
 		}
-
-		path, ok := getFilePathFromPart(part)
-		if !ok {
-			continue
-		}
-
-		url := path2url[path]
-		setURLToPart(part, url)
 	}
 
 	return nil
@@ -130,70 +150,4 @@ func getFilePathFromPart(part *schema.MessageInputPart) (string, bool) {
 	}
 
 	return path, true
-}
-
-// setURLToPart 设置不同类型的 part 的 URL
-func setURLToPart(part *schema.MessageInputPart, url string) bool {
-	if url == "" {
-		return false
-	}
-
-	switch part.Type {
-	case schema.ChatMessagePartTypeImageURL:
-		if part.Image != nil {
-			part.Image.URL = &url
-			return true
-		}
-	case schema.ChatMessagePartTypeAudioURL:
-		if part.Audio != nil {
-			part.Audio.URL = &url
-			return true
-		}
-	case schema.ChatMessagePartTypeVideoURL:
-		if part.Video != nil {
-			part.Video.URL = &url
-			return true
-		}
-	case schema.ChatMessagePartTypeFileURL:
-		if part.File != nil {
-			part.File.URL = &url
-			return true
-		}
-	}
-
-	return false
-}
-
-// isFilePartType 检查是否为需要上传的文件类型
-func isFilePartType(partType schema.ChatMessagePartType) bool {
-	switch partType {
-	case schema.ChatMessagePartTypeImageURL,
-		schema.ChatMessagePartTypeAudioURL,
-		schema.ChatMessagePartTypeVideoURL,
-		schema.ChatMessagePartTypeFileURL:
-		return true
-	default:
-		return false
-	}
-}
-
-func (d *Converter) getPaths(message *schema.Message) []string {
-	if message == nil {
-		return nil
-	}
-
-	var paths []string
-	for i := range message.UserInputMultiContent {
-		part := &message.UserInputMultiContent[i]
-		if !isFilePartType(part.Type) {
-			continue
-		}
-
-		path, ok := getFilePathFromPart(part)
-		if ok {
-			paths = append(paths, path)
-		}
-	}
-
-	return paths
 }
