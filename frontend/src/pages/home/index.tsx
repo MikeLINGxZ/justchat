@@ -2,7 +2,12 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
-import {Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
+import {
+    ChatMessagePartType,
+    Message,
+    MessageInputPart,
+    RoleType
+} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModelStore} from '@/stores/modelStore';
 import './index.module.scss';
@@ -11,7 +16,9 @@ import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desk
 import styles from './index.module.scss';
 import {CompletionsUtils} from "@/utils/completions.ts";
 import {
-    MessageList, MessagePkg,File
+    File,
+    MessageList,
+    MessagePkg
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
 
 const {Content, Sider} = Layout;
@@ -236,7 +243,12 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 // 创建用户消息
                 const userMessage = new Message();
                 userMessage.role = RoleType.User;
-                userMessage.content = messageContent.trim();
+                userMessage.user_input_multi_content = [
+                    {
+                        type: ChatMessagePartType.ChatMessagePartTypeText,
+                        text: messageContent.trim(),
+                    }
+                ]
 
                 // 创建AI消息占位符
                 const assistantMessage = new Message();

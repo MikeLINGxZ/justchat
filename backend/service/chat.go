@@ -70,7 +70,12 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 	// todo 此处应该生成一个标题
 	if message.ChatUuid == "" {
 		message.ChatUuid = uuid.New().String()
-		title := message.Message.Content
+		title := ""
+		for _, part := range message.Message.UserInputMultiContent {
+			if part.Text != "" {
+				title = part.Text
+			}
+		}
 		// 创建一个聊天
 		err = s.storage.CreateChat(context.Background(), message.ChatUuid, title)
 		if err != nil {
@@ -108,7 +113,7 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		return nil, ierror.NewError(err)
 	}
 
-	provider := llm_provider.NewLlmProvider(providerModel)
+	provider := llm_provider.NewLlmProvider(*providerModel)
 	stream, err := provider.Completions(context.Background(), append(historyMessages, message.Message))
 	if err != nil {
 		return nil, ierror.NewError(err)
