@@ -8,10 +8,11 @@ import (
 	"github.com/google/uuid"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/file_uploader"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/llm"
 )
 
 // ChatList 聊天列表
@@ -71,7 +72,12 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		}
 	}
 
-	// todo 处理消息文件
+	// 处理消息中的文件
+	converter := file_uploader.NewConverter(providerModel)
+	err = converter.ConvertMessageUserInputMultiContent(&message)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
 
 	// 查找历史消息
 	historyMessageData, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 10)
@@ -96,7 +102,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 		return nil, ierror.NewError(err)
 	}
 
-	provider := llm.NewLlmProvider(providerModel.ProviderType, providerModel.FileUploadBaseUrl, providerModel.BaseUrl, providerModel.ApiKey, providerModel.Model)
+	provider := llm_provider.NewLlmProvider(providerModel)
 	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
 	if err != nil {
 		return nil, ierror.NewError(err)

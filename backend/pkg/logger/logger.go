@@ -108,9 +108,9 @@ func (l *Logger) callerInfo(pc uintptr, file string, line int, ok bool) string {
 	}
 	callerFunction := runtime.FuncForPC(pc)
 	if callerFunction != nil {
-		return fmt.Sprintf("file: %s\nline: %d\nfunction: %s\n", file, line, callerFunction.Name())
+		return fmt.Sprintf("file_uploader: %s\nline: %d\nfunction: %s\n", file, line, callerFunction.Name())
 	}
-	return fmt.Sprintf("file: %s\nline: %d\n", file, line)
+	return fmt.Sprintf("file_uploader: %s\nline: %d\n", file, line)
 }
 
 func (l *Logger) standerLog(color *color.Color, level, debug, content string, any ...any) {

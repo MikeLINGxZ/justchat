@@ -43,7 +43,7 @@ tasks:
       FORMAT: '{{.FORMAT | default "nsis"}}'
 
   generate:syso:
-    summary: Generates Windows `.syso` file
+    summary: Generates Windows `.syso` file_uploader
     dir: build
     cmds:
       - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_{{.ARCH}}.syso

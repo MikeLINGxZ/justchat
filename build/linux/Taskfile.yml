@@ -102,7 +102,7 @@ tasks:
       - wails3 tool package -name {{.APP_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
   generate:dotdesktop:
-    summary: Generates a `.desktop` file
+    summary: Generates a `.desktop` file_uploader
     dir: build
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage

@@ -8,4 +8,5 @@ type File struct {
 	FilePath            string                     `json:"file_path"`
 	MineType            string                     `json:"mine_type"`
 	ChatMessagePartType schema.ChatMessagePartType `json:"chat_message_part_type"`
+	Size                int64                      `json:"size"`
 }

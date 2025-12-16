@@ -5,9 +5,9 @@ import (
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/llm"
 )
 
 // GetProviders 获取所有供应商
@@ -152,7 +152,7 @@ func (s *Service) DeleteProvider(providerId uint) error {
 
 // GetProviderModels 获取供应商模型信息
 func (s *Service) GetProviderModels(provider view_models.Provider) ([]view_models.Model, error) {
-	providerModels, err := llm.GetModels(provider.BaseUrl, provider.ApiKey)
+	providerModels, err := llm_provider.GetModels(provider.BaseUrl, provider.ApiKey)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -181,7 +181,7 @@ func (s *Service) updateProviderModel(providerId uint) error {
 	}
 
 	// 获取模型信息
-	providerModels, err := llm.GetModels(provider.BaseUrl, provider.ApiKey)
+	providerModels, err := llm_provider.GetModels(provider.BaseUrl, provider.ApiKey)
 	if err != nil {
 		return err
 	}

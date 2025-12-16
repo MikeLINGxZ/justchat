@@ -1,4 +1,4 @@
-package llm
+package llm_provider
 
 import (
 	"context"
@@ -9,23 +9,16 @@ import (
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 )
 
 type LlmProvider struct {
-	providerType      data_models.ProviderType
-	baseURL           string
-	apiKey            string
-	model             string
-	fileUploadBaseUrl *string
+	providerModel *wrapper_models.ProviderModel
 }
 
-func NewLlmProvider(providerType data_models.ProviderType, fileUploadBaseUrl *string, baseUrl, apiKey, model string) *LlmProvider {
+func NewLlmProvider(providerModel *wrapper_models.ProviderModel) *LlmProvider {
 	return &LlmProvider{
-		providerType:      providerType,
-		baseURL:           baseUrl,
-		apiKey:            apiKey,
-		model:             model,
-		fileUploadBaseUrl: fileUploadBaseUrl,
+		providerModel: providerModel,
 	}
 }
 
@@ -34,24 +27,24 @@ func (l *LlmProvider) Completions(ctx context.Context, messages []schema.Message
 	var err error
 
 	// 创建llm模型实例
-	switch l.providerType {
+	switch l.providerModel.ProviderType {
 	case data_models.ProviderTypeDeepseek:
 		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
-			BaseURL: l.baseURL,
-			Model:   l.model,
-			APIKey:  l.apiKey,
+			BaseURL: l.providerModel.BaseUrl,
+			Model:   l.providerModel.Model,
+			APIKey:  l.providerModel.ApiKey,
 		})
 	case data_models.ProviderTypeAliyuns:
 		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
-			BaseURL: l.baseURL,
-			Model:   l.model,
-			APIKey:  l.apiKey,
+			BaseURL: l.providerModel.BaseUrl,
+			Model:   l.providerModel.Model,
+			APIKey:  l.providerModel.ApiKey,
 		})
 	default:
 		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
-			BaseURL: l.baseURL,
-			Model:   l.model,
-			APIKey:  l.apiKey,
+			BaseURL: l.providerModel.BaseUrl,
+			Model:   l.providerModel.Model,
+			APIKey:  l.providerModel.ApiKey,
 		})
 	}
 	if err != nil {
