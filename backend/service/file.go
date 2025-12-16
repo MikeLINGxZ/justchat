@@ -53,3 +53,7 @@ func (s *Service) SelectFiles() ([]view_models.File, error) {
 
 	return files, nil
 }
+
+func (s *Service) OpenFile(path string) error {
+	return s.app.Browser.OpenFile(path)
+}

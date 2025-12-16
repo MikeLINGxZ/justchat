@@ -753,6 +753,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   rules={[
                     { type: 'url', message: '请输入正确的URL格式' },
                   ]}
+                  style={{ display: 'none' }}
                 >
                   <Input placeholder="https://api.example.com/v1/uploads" />
                 </Form.Item>
@@ -1076,6 +1077,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               rules={[
                 { type: 'url', message: '请输入正确的URL格式' },
               ]}
+              style={{ display: 'none' }}
             >
               <Input placeholder="https://api.example.com/v1/uploads" />
             </Form.Item>

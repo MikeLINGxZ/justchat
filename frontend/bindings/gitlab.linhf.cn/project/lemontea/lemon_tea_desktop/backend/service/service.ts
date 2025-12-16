@@ -100,6 +100,10 @@ export function GetSupportProviders(): $CancellablePromise<view_models$0.Support
     });
 }
 
+export function OpenFile(path: string): $CancellablePromise<void> {
+    return $Call.ByID(639918028, path);
+}
+
 export function OpenSettingsWindow(): $CancellablePromise<void> {
     return $Call.ByID(3479182543);
 }

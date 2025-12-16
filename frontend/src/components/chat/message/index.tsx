@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
 import {tomorrow} from "react-syntax-highlighter/dist/esm/styles/prism";
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 
 interface ChatMessageProps {
     // 消息
@@ -82,6 +83,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const fileList = getFileList();
 
+    // 处理文件点击事件
+    const handleFileClick = (filePath: string) => {
+        if (filePath) {
+            Service.OpenFile(filePath).catch((err) => {
+                console.error('打开文件失败:', err);
+            });
+        }
+    };
+
     // todo
     //  wrapperClass = styles.errorMessageWrapper;
 
@@ -97,7 +107,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                             {fileList.length > 0 && (
                                 <div className={styles.fileList}>
                                     {fileList.map((file, index) => (
-                                        <div key={index} className={styles.fileItem}>
+                                        <div 
+                                            key={index} 
+                                            className={styles.fileItem}
+                                            onClick={() => handleFileClick(file.path)}
+                                            title={`点击打开: ${file.name}`}
+                                        >
                                             <span className={styles.fileType}>{file.type}</span>
                                             <span className={styles.fileName}>{file.name}</span>
                                             {file.mime_type && (

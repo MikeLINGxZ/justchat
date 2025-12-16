@@ -119,6 +119,19 @@
       gap: 8px;
       font-size: 12px;
       color: #6c757d;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all var(--transition-fast);
+      
+      &:hover {
+        background: rgba(44, 62, 80, 0.08);
+        transform: translateX(2px);
+      }
+      
+      &:active {
+        background: rgba(44, 62, 80, 0.12);
+      }
     }
 
     .fileType {
