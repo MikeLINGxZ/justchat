@@ -78,8 +78,11 @@ func (a *Aliyun) BuildUserMessage(ctx context.Context, message view_models.Messa
 			Base64Data: &base64Data,
 			MIMEType:   item.MineType,
 			Extra: map[string]interface{}{
-				"path":      item.FilePath,
-				"mime_type": item.MineType,
+				"name":                   item.Name,
+				"path":                   item.FilePath,
+				"mime_type":              item.MineType,
+				"chat_message_part_type": item.ChatMessagePartType,
+				"size":                   item.Size,
 			},
 		}
 		switch item.ChatMessagePartType {

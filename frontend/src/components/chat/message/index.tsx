@@ -28,6 +28,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return null;
     }
 
+    // 获取要渲染的内容：如果 content 为空，则使用 user_input_multi_content 的第一个 text 字段
+    const getDisplayContent = () => {
+        if (message.content.trim()) {
+            return message.content;
+        }
+        if (message.user_input_multi_content && message.user_input_multi_content.length > 0) {
+            return message.user_input_multi_content[0].text || '';
+        }
+        return '';
+    };
+
     // todo
     //  wrapperClass = styles.errorMessageWrapper;
 
@@ -37,7 +48,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className={styles.messageContainer} >
                     {isUser ? (
                         <div className={styles.messageContent}>
-                            {message.content}
+                            {getDisplayContent()}
+                        
                         </div>
                     ):(
                         <div>
