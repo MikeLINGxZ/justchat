@@ -7,9 +7,6 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as schema$0 from "../../../../../../github.com/cloudwego/eino/schema/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as view_models$0 from "../models/view_models/models.js";
 
 /**
@@ -47,8 +44,8 @@ export function CollectionChat(chatUuid: string, isCollection: boolean): $Cancel
 /**
  * Completions 聊天
  */
-export function Completions(chatUuid: string, model: string, message: schema$0.Message): $CancellablePromise<view_models$0.Completions | null> {
-    return $Call.ByID(2526998161, chatUuid, model, message).then(($result: any) => {
+export function Completions(message: view_models$0.Message): $CancellablePromise<view_models$0.Completions | null> {
+    return $Call.ByID(2526998161, message).then(($result: any) => {
         return $$createType5($result);
     });
 }

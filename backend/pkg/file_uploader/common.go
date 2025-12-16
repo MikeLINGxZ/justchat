@@ -3,6 +3,7 @@ package file_uploader
 import (
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 )
 
@@ -35,7 +36,7 @@ func NewConverter(providerModel *wrapper_models.ProviderModel) Converter {
 	}
 }
 
-func (d *Converter) ConvertMessageUserInputMultiContent(message *schema.Message) error {
+func (d *Converter) ConvertMessageUserInputMultiContent(message *view_models.Message) error {
 	if message == nil {
 		return nil
 	}
@@ -45,7 +46,7 @@ func (d *Converter) ConvertMessageUserInputMultiContent(message *schema.Message)
 		return nil
 	}
 
-	paths := d.getPaths(message)
+	paths := d.getPaths(&message.Message)
 	if len(paths) == 0 {
 		return nil
 	}
@@ -55,8 +56,8 @@ func (d *Converter) ConvertMessageUserInputMultiContent(message *schema.Message)
 		return err
 	}
 
-	for i := range message.UserInputMultiContent {
-		part := &message.UserInputMultiContent[i]
+	for i := range message.Message.UserInputMultiContent {
+		part := &message.Message.UserInputMultiContent[i]
 		if !isFilePartType(part.Type) {
 			continue
 		}

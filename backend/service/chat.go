@@ -50,9 +50,9 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 }
 
 // Completions 聊天
-func (s *Service) Completions(chatUuid, model string, message schema.Message) (*view_models.Completions, error) {
+func (s *Service) Completions(message view_models.Message) (*view_models.Completions, error) {
 	// 获取模型信息
-	providerModel, err := s.storage.GetProviderModel(context.Background(), model)
+	providerModel, err := s.storage.GetProviderModel(context.Background(), message.Model)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -62,11 +62,11 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 
 	// 当chatUuid为空说明是新建聊天
 	// todo 此处应该生成一个标题
-	if chatUuid == "" {
-		chatUuid = uuid.New().String()
-		title := message.Content
+	if message.ChatUuid == "" {
+		message.ChatUuid = uuid.New().String()
+		title := message.Message.Content
 		// 创建一个聊天
-		err = s.storage.CreateChat(context.Background(), chatUuid, title)
+		err = s.storage.CreateChat(context.Background(), message.ChatUuid, title)
 		if err != nil {
 			return nil, ierror.NewError(err)
 		}
@@ -80,7 +80,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}
 
 	// 查找历史消息
-	historyMessageData, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 10)
+	historyMessageData, _, err := s.storage.GetMessage(context.Background(), message.ChatUuid, 0, 10)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -93,17 +93,17 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}
 
 	// 创建用户消息
-	err = s.storage.CreateMessage(context.Background(), chatUuid, data_models.Message{
+	err = s.storage.CreateMessage(context.Background(), message.ChatUuid, data_models.Message{
 		Uuid:     uuid.New().String(),
-		ChatUuid: chatUuid,
-		Message:  &message,
+		ChatUuid: message.ChatUuid,
+		Message:  &message.Message,
 	})
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
 
 	provider := llm_provider.NewLlmProvider(providerModel)
-	stream, err := provider.Completions(context.Background(), append(historyMessages, message))
+	stream, err := provider.Completions(context.Background(), append(historyMessages, message.Message))
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -134,7 +134,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	go func() {
 		dataModelMsg := data_models.Message{
 			Uuid:     messageUuid,
-			ChatUuid: chatUuid,
+			ChatUuid: message.ChatUuid,
 		}
 		for {
 			select {
@@ -166,7 +166,7 @@ func (s *Service) Completions(chatUuid, model string, message schema.Message) (*
 	}()
 
 	return &view_models.Completions{
-		ChatUuid:    chatUuid,
+		ChatUuid:    message.ChatUuid,
 		MessageUuid: messageUuid,
 	}, nil
 }

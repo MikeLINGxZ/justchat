@@ -1,7 +1,6 @@
 package view_models
 
 import (
-	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 )
 
@@ -24,9 +23,4 @@ type MatchMessage struct {
 type Completions struct {
 	ChatUuid    string `json:"chat_uuid"`
 	MessageUuid string `json:"message_uuid"`
-}
-
-type Message struct {
-	schema.Message
-	Files []File `json:"files"`
 }

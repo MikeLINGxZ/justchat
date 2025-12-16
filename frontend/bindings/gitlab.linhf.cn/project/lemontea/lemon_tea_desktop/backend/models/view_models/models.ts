@@ -203,6 +203,47 @@ export class MatchMessage {
     }
 }
 
+export class Message {
+    "chatUuid": string;
+    "model": string;
+    "message": schema$0.Message;
+    "files": File[];
+
+    /** Creates a new Message instance. */
+    constructor($$source: Partial<Message> = {}) {
+        if (!("chatUuid" in $$source)) {
+            this["chatUuid"] = "";
+        }
+        if (!("model" in $$source)) {
+            this["model"] = "";
+        }
+        if (!("message" in $$source)) {
+            this["message"] = (new schema$0.Message());
+        }
+        if (!("files" in $$source)) {
+            this["files"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Message instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Message {
+        const $$createField2_0 = $$createType4;
+        const $$createField3_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("message" in $$parsedSource) {
+            $$parsedSource["message"] = $$createField2_0($$parsedSource["message"]);
+        }
+        if ("files" in $$parsedSource) {
+            $$parsedSource["files"] = $$createField3_0($$parsedSource["files"]);
+        }
+        return new Message($$parsedSource as Partial<Message>);
+    }
+}
+
 export class MessageList {
     "messages": schema$0.Message[];
     "total": number;
@@ -223,7 +264,7 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
@@ -373,7 +414,7 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType7;
+        const $$createField10_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -429,6 +470,8 @@ const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = Chat.createFrom;
 const $$createType3 = $Create.Array($$createType2);
 const $$createType4 = schema$0.Message.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = Model.createFrom;
-const $$createType7 = $Create.Array($$createType6);
+const $$createType5 = File.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = $Create.Array($$createType4);
+const $$createType8 = Model.createFrom;
+const $$createType9 = $Create.Array($$createType8);
