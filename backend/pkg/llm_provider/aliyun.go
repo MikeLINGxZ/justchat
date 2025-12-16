@@ -86,7 +86,7 @@ func (a *Aliyun) BuildUserMessage(ctx context.Context, message view_models.Messa
 			},
 		}
 		switch item.ChatMessagePartType {
-		case schema.ChatMessagePartTypeText:
+		case schema.ChatMessagePartTypeText, schema.ChatMessagePartTypeFileURL:
 			continue
 		case schema.ChatMessagePartTypeImageURL:
 			img = &schema.MessageInputImage{
@@ -101,12 +101,8 @@ func (a *Aliyun) BuildUserMessage(ctx context.Context, message view_models.Messa
 			video = &schema.MessageInputVideo{
 				MessagePartCommon: messagePartCommon,
 			}
-		case schema.ChatMessagePartTypeFileURL:
-			file = &schema.MessageInputFile{
-				MessagePartCommon: messagePartCommon,
-			}
 		}
-		if img == nil && audio == nil && video == nil && file == nil {
+		if img == nil && audio == nil && video == nil {
 			continue
 		}
 		userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
