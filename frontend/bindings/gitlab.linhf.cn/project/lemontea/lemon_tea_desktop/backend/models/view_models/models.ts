@@ -143,6 +143,7 @@ export class File {
     "file_path": string;
     "mine_type": string;
     "chat_message_part_type": schema$0.ChatMessagePartType;
+    "size": number;
 
     /** Creates a new File instance. */
     constructor($$source: Partial<File> = {}) {
@@ -160,6 +161,9 @@ export class File {
         }
         if (!("chat_message_part_type" in $$source)) {
             this["chat_message_part_type"] = schema$0.ChatMessagePartType.$zero;
+        }
+        if (!("size" in $$source)) {
+            this["size"] = 0;
         }
 
         Object.assign(this, $$source);
