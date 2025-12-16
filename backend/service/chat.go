@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -51,6 +53,7 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 
 // Completions 聊天
 func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Completions, error) {
+
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(context.Background(), message.Model)
 	if err != nil {
@@ -59,6 +62,9 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 	if providerModel == nil {
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
+
+	marshal, _ := json.Marshal(providerModel)
+	fmt.Println("---------------", string(marshal))
 
 	// 当chatUuid为空说明是新建聊天
 	// todo 此处应该生成一个标题
