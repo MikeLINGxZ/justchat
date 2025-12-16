@@ -11,7 +11,7 @@ import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desk
 import styles from './index.module.scss';
 import {CompletionsUtils} from "@/utils/completions.ts";
 import {
-    MessageList, MessagePkg
+    MessageList, MessagePkg,File
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
 
 const {Content, Sider} = Layout;
@@ -225,7 +225,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 处理发送消息
     const handleSendMessage = useCallback(
-        async (messageContent: string) => {
+        async (messageContent: string,files: File[]) => {
             if (!messageContent.trim() || isLoading) return;
 
             try {
@@ -261,8 +261,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     chatUuid: currentChatUuid,
                     model: selectedModel,
                     message: userMessage,
-                    files: []
-                } 
+                    files: files,
+                }
                 await CompletionsUtils(messagePkg, (message: Message) => {
                     if (message) {
                         console.log("message callback:", message)

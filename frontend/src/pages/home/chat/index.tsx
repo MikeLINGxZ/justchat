@@ -5,6 +5,7 @@ import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import ChatInput from "@/components/chat/input";
+import {File} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatProps {
     // 聊天标题
@@ -34,7 +35,7 @@ interface ChatProps {
     // 聊天标题变更事件
     onTitleChange?: (newTitle: string) => void;
     // 点击发送按钮事件
-    onSendMessage?: (message: string) => void;
+    onSendMessage?: (message: string,files:File[]) => void;
     // 点击停止生成按钮事件
     onStopGeneration?: () => void;
     // 模型变更事件

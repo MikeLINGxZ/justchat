@@ -15,7 +15,7 @@ interface ChatInputProps {
     // 是否正在生成消息
     isGenerating?: boolean;
     // 点击发送按钮事件（现在会传递输入的文本）
-    onSendMessage: (message: string) => void;
+    onSendMessage: (message: string,file: File[]) => void;
     // 点击停止生成按钮事件
     onStopGeneration?: () => void;
     // 模型变更事件
@@ -191,7 +191,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
         const trimmedValue = inputValue.trim();
         if (trimmedValue) {
-            onSendMessage(trimmedValue);
+            onSendMessage(trimmedValue,files);
             clearInput();
         }
     }, [inputValue, onSendMessage, onMessageListScrollToBottom, clearInput]);
