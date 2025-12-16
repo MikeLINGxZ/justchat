@@ -2,7 +2,16 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
-import {ChatMessagePartType, Message, RoleType} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
+import {
+    ChatMessagePartType,
+    Message,
+    MessageInputPart,
+    MessageInputImage,
+    MessageInputAudio,
+    MessageInputVideo,
+    MessageInputFile,
+    RoleType
+} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import {useModelStore} from '@/stores/modelStore';
 import './index.module.scss';
@@ -239,12 +248,71 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 const userMessage = new Message();
                 userMessage.role = RoleType.User;
                 userMessage.content = messageContent.trim();
-                userMessage.user_input_multi_content = [
+                
+                // 构建 user_input_multi_content，包含文本和文件
+                const userInputMultiContent: MessageInputPart[] = [
                     {
                         type: ChatMessagePartType.ChatMessagePartTypeText,
                         text: messageContent.trim(),
                     }
-                ]
+                ];
+                
+                // 添加文件到 user_input_multi_content
+                for (const file of files) {
+                    const extra = {
+                        name: file.name,
+                        path: file.file_path,
+                        mime_type: file.mine_type,
+                    };
+                    
+                    let part: MessageInputPart | null = null;
+                    
+                    switch (file.chat_message_part_type) {
+                        case ChatMessagePartType.ChatMessagePartTypeImageURL:
+                            part = new MessageInputPart({
+                                type: ChatMessagePartType.ChatMessagePartTypeImageURL,
+                                image: new MessageInputImage({
+                                    extra: extra,
+                                    mime_type: file.mine_type,
+                                })
+                            });
+                            break;
+                        case ChatMessagePartType.ChatMessagePartTypeAudioURL:
+                            part = new MessageInputPart({
+                                type: ChatMessagePartType.ChatMessagePartTypeAudioURL,
+                                audio: new MessageInputAudio({
+                                    extra: extra,
+                                    mime_type: file.mine_type,
+                                })
+                            });
+                            break;
+                        case ChatMessagePartType.ChatMessagePartTypeVideoURL:
+                            part = new MessageInputPart({
+                                type: ChatMessagePartType.ChatMessagePartTypeVideoURL,
+                                video: new MessageInputVideo({
+                                    extra: extra,
+                                    mime_type: file.mine_type,
+                                })
+                            });
+                            break;
+                        case ChatMessagePartType.ChatMessagePartTypeFileURL:
+                            part = new MessageInputPart({
+                                type: ChatMessagePartType.ChatMessagePartTypeFileURL,
+                                file: new MessageInputFile({
+                                    extra: extra,
+                                    mime_type: file.mine_type,
+                                    name: file.name,
+                                })
+                            });
+                            break;
+                    }
+                    
+                    if (part) {
+                        userInputMultiContent.push(part);
+                    }
+                }
+                
+                userMessage.user_input_multi_content = userInputMultiContent;
 
                 // 创建AI消息占位符
                 const assistantMessage = new Message();

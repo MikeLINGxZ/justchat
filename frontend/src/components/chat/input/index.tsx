@@ -86,6 +86,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 清空输入框
     const clearInput = useCallback(() => {
         setInputValue('');
+        setFiles([]); // 清空文件列表
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = '40px';
@@ -191,10 +192,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
         const trimmedValue = inputValue.trim();
         if (trimmedValue) {
-            onSendMessage(trimmedValue,files);
-            clearInput();
+            onSendMessage(trimmedValue, files);
+            clearInput(); // 清空输入框和文件列表
         }
-    }, [inputValue, onSendMessage, onMessageListScrollToBottom, clearInput]);
+    }, [inputValue, files, onSendMessage, onMessageListScrollToBottom, clearInput]);
 
     //
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
