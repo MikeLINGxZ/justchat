@@ -44,7 +44,7 @@ export function CollectionChat(chatUuid: string, isCollection: boolean): $Cancel
 /**
  * Completions 聊天
  */
-export function Completions(message: view_models$0.Message): $CancellablePromise<view_models$0.Completions | null> {
+export function Completions(message: view_models$0.MessagePkg): $CancellablePromise<view_models$0.Completions | null> {
     return $Call.ByID(2526998161, message).then(($result: any) => {
         return $$createType5($result);
     });

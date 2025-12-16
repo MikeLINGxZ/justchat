@@ -3,11 +3,11 @@ import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desk
 import {Completions} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 import { Events } from '@wailsio/runtime';
 import {GenEventsKey} from "@/utils/events.ts";
+import * as view_models$0
+    from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
 
 export async function CompletionsUtils(
-    chatUuid: string,
-    selectedModel: string,
-    userMessage: Message,
+    messagePkg: view_models$0.MessagePkg,
     onMessage: (message: Message) => void,
     onError: (error: string) => void,
     onComplete: (chatUuid: string) => void,
@@ -32,7 +32,7 @@ export async function CompletionsUtils(
         }
 
         // 调用 Completions API
-        const resp: Completions | null = await Service.Completions(chatUuid, selectedModel, userMessage);
+        const resp: Completions | null = await Service.Completions(messagePkg);
 
         // 设置事件监听器
         cancel = Events.On(GenEventsKey(resp?.message_uuid!), (event) => {

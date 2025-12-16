@@ -7,8 +7,8 @@ export {
     Completions,
     File,
     MatchMessage,
-    Message,
     MessageList,
+    MessagePkg,
     Model,
     Provider,
     SupportProvider

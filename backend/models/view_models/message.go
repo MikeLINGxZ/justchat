@@ -7,7 +7,7 @@ type MessageList struct {
 	Total    int              `json:"total"`
 }
 
-type Message struct {
+type MessagePkg struct {
 	ChatUuid string         `json:"chatUuid"`
 	Model    string         `json:"model"`
 	Message  schema.Message `json:"message"`

@@ -12,8 +12,6 @@ interface ChatInputProps {
     selectedModel: string;
     // 可用模型
     availableModels: ModelOption[];
-    // 是否显示滚动到底部按钮
-    showScrollToBottom?: boolean;
     // 是否正在生成消息
     isGenerating?: boolean;
     // 点击发送按钮事件（现在会传递输入的文本）
@@ -38,9 +36,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onStopGeneration,
     onModelChange,
     onMessageListScrollToBottom,
-    onClearInput,
     onModelSelectorClick,
-    showScrollToBottom = true,
     className
 }) => {
 
@@ -94,8 +90,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = '40px';
         }
-        onClearInput?.();
-    }, [onClearInput]);
+    }, []);
 
     // 处理中文输入开始
     const handleCompositionStart = useCallback(() => {
@@ -224,14 +219,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
             adjustTextareaHeight();
         });
     }, [adjustTextareaHeight]);
-
-    // 暴露清空输入框的方法供外部调用
-    useEffect(() => {
-        if (onClearInput) {
-            // 将clearInput方法暴露给父组件，但由于React的限制，这里我们通过回调的方式处理
-            // 实际的清空逻辑在handleSend中已经处理
-        }
-    }, [onClearInput]);
 
     // 初始化时调整高度
     useEffect(() => {
@@ -436,29 +423,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </div>
                 </div>
             </div>
-
-            {/* 滚动到底部按钮 */}
-            {showScrollToBottom && (
-                <div className={`${styles.bottomAction}`}>
-                    <div className={`${styles.bottomArrow}`} onClick={onMessageListScrollToBottom}>
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                d="M7 10L12 15L17 10"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    </div>
-                </div>
-            )}
 
         </div>
     );

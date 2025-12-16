@@ -50,7 +50,7 @@ func (s *Service) ChatMessages(chatUuid string, offset, limit int) (*view_models
 }
 
 // Completions 聊天
-func (s *Service) Completions(message view_models.Message) (*view_models.Completions, error) {
+func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Completions, error) {
 	// 获取模型信息
 	providerModel, err := s.storage.GetProviderModel(context.Background(), message.Model)
 	if err != nil {

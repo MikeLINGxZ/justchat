@@ -36,7 +36,7 @@ func NewConverter(providerModel *wrapper_models.ProviderModel) Converter {
 	}
 }
 
-func (d *Converter) ConvertMessageUserInputMultiContent(message *view_models.Message) error {
+func (d *Converter) ConvertMessageUserInputMultiContent(message *view_models.MessagePkg) error {
 	if message == nil {
 		return nil
 	}

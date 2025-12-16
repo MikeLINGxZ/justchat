@@ -312,10 +312,7 @@ const Chat: React.FC<ChatProps> = ({
                                        onStopGeneration={onStopGeneration}
                                        onModelChange={onModelChange || (() => {})}
                                        onModelSelectorClick={onModelSelectorClick}
-                                       onFileUpload={onFileUpload}
-                                       onImageUpload={onImageUpload}
                                        onMessageListScrollToBottom={handleScrollToBottom}
-                                       showScrollToBottom={showScrollButton}
                             />
                         </div>
 

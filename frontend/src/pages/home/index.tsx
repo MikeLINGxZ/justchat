@@ -11,7 +11,7 @@ import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desk
 import styles from './index.module.scss';
 import {CompletionsUtils} from "@/utils/completions.ts";
 import {
-    MessageList
+    MessageList, MessagePkg
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
 
 const {Content, Sider} = Layout;
@@ -257,8 +257,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 // 用于累积增量数据的缓冲区
                 let accumulatedContent = "";
                 let accumulatedReasoningContent = "";
-
-                await CompletionsUtils(currentChatUuid, selectedModel, userMessage, (message: Message) => {
+                let messagePkg:MessagePkg = {
+                    chatUuid: currentChatUuid,
+                    model: selectedModel,
+                    message: userMessage,
+                    files: []
+                } 
+                await CompletionsUtils(messagePkg, (message: Message) => {
                     if (message) {
                         console.log("message callback:", message)
                         // 隐藏loading消息
