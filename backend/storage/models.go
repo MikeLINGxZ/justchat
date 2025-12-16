@@ -63,7 +63,7 @@ func (s *Storage) GetProviderDefaultModelByProviderIds(ctx context.Context, prov
 
 func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Model, error) {
 	var models data_models.Model
-	err := s.sqliteDB.Model(&data_models.Model{}).Where("model = ?", model).First(&models).Error
+	err := s.sqliteDB.Model(&data_models.Model{}).Joins("join providers p on p.id = provider_id AND p.deleted_at IS NULL").Where("model = ?", model).First(&models).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
