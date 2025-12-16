@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"encoding/base64"
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/cloudwego/eino/schema"
@@ -42,4 +44,12 @@ func MimeType2ChatMessagePartType(mimeType string) (schema.ChatMessagePartType, 
 
 	// All others → file_url (e.g., application/pdf, application/json, model/gltf-binary, etc.)
 	return schema.ChatMessagePartTypeFileURL, nil
+}
+
+func ReadFile2Base64Data(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err // 保留原始错误（含路径、权限、不存在等信息）
+	}
+	return base64.StdEncoding.EncodeToString(data), nil
 }
