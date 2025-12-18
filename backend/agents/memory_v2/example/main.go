@@ -31,9 +31,9 @@ func main() {
 	dataTool, _ := NewFakeDataTool()
 
 	chatAgent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
-		Name:        "intelligent_assistant",
-		Description: "An intelligent assistant capable of using multiple tools to solve complex problems",
-		Instruction: "You are a professional assistant who can use the provided tools to help users solve problems",
+		Name:        "智能助理",
+		Description: "能够使用多种工具解决复杂问题的智能助手",
+		Instruction: "您是一名专业助理，可以使用提供的工具帮助用户解决问题",
 		Model:       qwenModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
