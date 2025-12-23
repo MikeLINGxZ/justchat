@@ -6,8 +6,6 @@ import React, {
     useEffect,
     useLayoutEffect,
     useState,
-    useMemo,
-    type ReactNode
 } from "react";
 import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import styles from "./index.module.scss";
@@ -18,38 +16,54 @@ interface MessageListProps {
     className?: string;
     // 消息列表
     messages?: Message[];
+    // 是否正在生成消息
+    isGenerating?: boolean;
 }
 
 export interface MessageListRef {
-    scrollToBottomSmooth: () => void;
-    setIsGenerating: (isGenerating:boolean) => void;
-    setIsAutoScroll: (isAutoScroll:boolean) => void;
+    // 手动滚动到底部
+    scrollToBottom: () => void;
+    // 检查是否在底部
     isAtBottom: () => boolean;
 }
 
 const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListProps> = ({
     className,
     messages = [],
+    isGenerating = false,
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollButton, setShowScrollButton] = useState(false);
-    // 是否在生成消息中
-    const [isGenerating,setIsGenerating] = useState(false);
     // 是否启用自动滚动
-    const [isAutoScroll,setIsAutoScroll] = useState(true);
-    // 是否手动接管滚动
-    const [isManualScroll,setIsManualScroll] = useState(false);
+    const [autoScroll, setAutoScroll] = useState(true);
+    // 用户是否正在手动滚动
+    const isUserScrollingRef = useRef(false);
     // 是否初始化滚动
     const isInitialLoadRef = useRef(true);
     // 上次滚动时间
     const lastScrollTimeRef = useRef(0);
+    // 上次滚动位置
+    const lastScrollTopRef = useRef(0);
     // 滚动到底部定时器
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // 用户滚动检测定时器
+    const userScrollDetectionRef = useRef<NodeJS.Timeout | null>(null);
     // 滚动锁
     const scrollingToBottomLockRef = useRef(false);
+    // 上次生成状态
+    const lastGeneratingRef = useRef(false);
+
+    // 获取滚动容器
+    const getScrollContainer = useCallback(() => {
+        if (containerRef.current) {
+            return containerRef.current.closest('[class*="chatMessagesContent"]') || 
+                   containerRef.current.parentElement;
+        }
+        return null;
+    }, []);
 
     // 检查是否在底部
     const checkIsAtBottom = useCallback(() => {
@@ -57,21 +71,19 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         if (scrollingToBottomLockRef.current) {
             return true;
         }
+        const scrollContainer = getScrollContainer();
+        
+        if (scrollContainer && scrollContainer instanceof HTMLElement) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+            const threshold = 50; // 距离底部的阈值
+            const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
+            setIsAtBottom(atBottom);
+            setShowScrollButton(!atBottom);
+            return atBottom;
+        }
+        
+        // 回退到检查当前容器
         if (containerRef.current) {
-            // 获取可滚动的父容器
-            const scrollContainer = containerRef.current.closest('[class*="chatMessagesContent"]') || 
-                                    containerRef.current.parentElement;
-            
-            if (scrollContainer && scrollContainer instanceof HTMLElement) {
-                const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-                const threshold = 50; // 距离底部的阈值
-                const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
-                setIsAtBottom(atBottom);
-                setShowScrollButton(!atBottom);
-                return atBottom;
-            }
-            
-            // 回退到检查当前容器
             const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
             const threshold = 50;
             const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
@@ -80,38 +92,18 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             return atBottom;
         }
         return true;
-    }, []);
+    }, [getScrollContainer]);
 
     // 滚动到底部（平滑）
     const scrollToBottomSmooth = useCallback(() => {
-        if (containerRef.current) {
+        const scrollContainer = getScrollContainer();
+        
+        if (scrollContainer && scrollContainer instanceof HTMLElement) {
             // 设置滚动标记，防止在滚动过程中重新显示按钮
             scrollingToBottomLockRef.current = true;
             
-            // 获取可滚动的父容器
-            const scrollContainer = containerRef.current.closest('[class*="chatMessagesContent"]') || 
-                                    containerRef.current.parentElement;
-            
-            if (scrollContainer && scrollContainer instanceof HTMLElement) {
-                scrollContainer.scrollTo({
-                    top: scrollContainer.scrollHeight,
-                    behavior: 'smooth'
-                });
-                setIsAtBottom(true);
-                setShowScrollButton(false);
-                
-                // 平滑滚动通常需要 300-500ms，我们等待滚动完成后再清除标记
-                setTimeout(() => {
-                    scrollingToBottomLockRef.current = false;
-                    // 滚动完成后再次检查底部状态
-                    checkIsAtBottom();
-                }, 600);
-                return;
-            }
-            
-            // 回退到当前容器
-            containerRef.current.scrollTo({
-                top: containerRef.current.scrollHeight,
+            scrollContainer.scrollTo({
+                top: scrollContainer.scrollHeight,
                 behavior: 'smooth'
             });
             setIsAtBottom(true);
@@ -123,38 +115,47 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 // 滚动完成后再次检查底部状态
                 checkIsAtBottom();
             }, 600);
+            return;
         }
-    }, [checkIsAtBottom]);
+        
+        // 回退到当前容器
+        if (containerRef.current) {
+            scrollingToBottomLockRef.current = true;
+            containerRef.current.scrollTo({
+                top: containerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+            setIsAtBottom(true);
+            setShowScrollButton(false);
+            
+            setTimeout(() => {
+                scrollingToBottomLockRef.current = false;
+                checkIsAtBottom();
+            }, 600);
+        }
+    }, [checkIsAtBottom, getScrollContainer]);
 
 
 
     // 暴露给父组件的方法
     useImperativeHandle(ref, () => ({
-        scrollToBottomSmooth,
+        scrollToBottom: scrollToBottomSmooth,
         isAtBottom: () => {
+            const scrollContainer = getScrollContainer();
+            
+            if (scrollContainer && scrollContainer instanceof HTMLElement) {
+                const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+                return scrollHeight - scrollTop - clientHeight < 10;
+            }
+            
+            // 回退到当前容器
             if (containerRef.current) {
-                // 获取可滚动的父容器
-                const scrollContainer = containerRef.current.closest('[class*="chatMessagesContent"]') || 
-                                        containerRef.current.parentElement;
-                
-                if (scrollContainer && scrollContainer instanceof HTMLElement) {
-                    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-                    return scrollHeight - scrollTop - clientHeight < 10;
-                }
-                
-                // 回退到当前容器
                 const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
                 return scrollHeight - scrollTop - clientHeight < 10;
             }
             return true;
         },
-        setIsGenerating: (isGenerating:boolean) => {
-            setIsGenerating(isGenerating);
-        },
-        setIsAutoScroll: (isAutoScroll:boolean) => {
-            setIsAutoScroll(isAutoScroll);
-        }
-    }));
+    }), [scrollToBottomSmooth, getScrollContainer]);
 
     // 更新滚动到底部按钮位置，使其相对于内容区域居中，并避免与输入框重叠
     const updateScrollToBottomButtonPosition = useCallback(() => {
@@ -196,29 +197,88 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         });
     }, []);
 
+    // 处理用户滚动开始（通过输入事件检测）
+    const handleUserScrollStart = useCallback(() => {
+        // 如果正在生成中，用户开始滚动则取消自动滚动
+        if (isGenerating) {
+            isUserScrollingRef.current = true;
+            setAutoScroll(false);
+        }
+    }, [isGenerating]);
+
     // 监听滚动事件（监听父容器的滚动）
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        // 获取可滚动的父容器
-        const scrollContainer = container.closest('[class*="chatMessagesContent"]') || 
-                                container.parentElement;
-        
-        if (!scrollContainer) return;
+        const scrollContainer = getScrollContainer();
+        if (!scrollContainer || !(scrollContainer instanceof HTMLElement)) return;
 
         const handleScroll = () => {
-            checkIsAtBottom();
+            const currentScrollTop = scrollContainer.scrollTop;
+            // 检查是否为用户主动滚动（通过比较滚动位置）
+            const scrollDiff = Math.abs(currentScrollTop - lastScrollTopRef.current);
+            const isUserInitiated = scrollDiff > 0;
+            
+            if (isUserInitiated && isGenerating) {
+                // 如果正在生成中且用户滚动，取消自动滚动
+                isUserScrollingRef.current = true;
+                setAutoScroll(false);
+            }
+            
+            // 检查是否在底部
+            const atBottom = checkIsAtBottom();
+            
+            // 如果用户滚动到底部，恢复自动滚动
+            if (atBottom && isUserScrollingRef.current) {
+                // 清除之前的定时器
+                if (userScrollDetectionRef.current) {
+                    clearTimeout(userScrollDetectionRef.current);
+                }
+                // 延迟恢复，避免频繁切换
+                userScrollDetectionRef.current = setTimeout(() => {
+                    isUserScrollingRef.current = false;
+                    if (isGenerating) {
+                        setAutoScroll(true);
+                    }
+                }, 150);
+            }
+            
+            lastScrollTopRef.current = currentScrollTop;
         };
 
-        scrollContainer.addEventListener('scroll', handleScroll);
+        // 监听用户输入事件（用于立即检测用户滚动意图）
+        const handleWheel = () => handleUserScrollStart();
+        const handleTouchStart = () => handleUserScrollStart();
+        const handleTouchMove = () => handleUserScrollStart();
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // 检测键盘滚动（PageDown, PageUp, ArrowDown, ArrowUp, Space, End, Home）
+            if (['PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', ' ', 'End', 'Home'].includes(e.key)) {
+                handleUserScrollStart();
+            }
+        };
+
+        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+        scrollContainer.addEventListener('wheel', handleWheel, { passive: true });
+        scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: true });
+        scrollContainer.addEventListener('keydown', handleKeyDown);
+        
         // 初始化检查一次
         checkIsAtBottom();
+        lastScrollTopRef.current = scrollContainer.scrollTop;
         
         return () => {
             scrollContainer.removeEventListener('scroll', handleScroll);
+            scrollContainer.removeEventListener('wheel', handleWheel);
+            scrollContainer.removeEventListener('touchstart', handleTouchStart);
+            scrollContainer.removeEventListener('touchmove', handleTouchMove);
+            scrollContainer.removeEventListener('keydown', handleKeyDown);
+            if (userScrollDetectionRef.current) {
+                clearTimeout(userScrollDetectionRef.current);
+            }
         };
-    }, [checkIsAtBottom]);
+    }, [checkIsAtBottom, isGenerating, getScrollContainer, handleUserScrollStart]);
 
     // 使用 useLayoutEffect 确保按钮在显示时立即设置正确位置，避免闪烁
     useLayoutEffect(() => {
@@ -273,28 +333,60 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             // 延迟一下确保DOM渲染完成
             setTimeout(() => {
                 scrollToBottomSmooth();
+                setAutoScroll(true);
             }, 100);
         }
     }, [messages.length, scrollToBottomSmooth]);
 
-    // 消息变化时，如果在底部则自动滚动
-    // 使用 useLayoutEffect 确保在 DOM 更新后立即同步滚动，避免视觉闪烁
+    // 检测重新生成消息（生成状态从 false 变为 true）
+    useEffect(() => {
+        const wasGenerating = lastGeneratingRef.current;
+        lastGeneratingRef.current = isGenerating;
+        
+        // 如果从非生成状态变为生成状态，恢复自动滚动
+        if (!wasGenerating && isGenerating) {
+            setAutoScroll(true);
+            isUserScrollingRef.current = false;
+        }
+    }, [isGenerating]);
+
+    // 消息变化时的自动滚动逻辑
     useLayoutEffect(() => {
+        // 跳过初始加载时的滚动（由单独的 effect 处理）
+        if (isInitialLoadRef.current) {
+            return;
+        }
+
         // 清理之前的滚动定时器
         if (scrollTimeoutRef.current) {
             clearTimeout(scrollTimeoutRef.current);
             scrollTimeoutRef.current = null;
         }
 
-        if (!isInitialLoadRef.current && isAtBottom && messages.length > 0) {
+        const currentMessageCount = messages.length;
+        
+        // 决定是否需要自动滚动
+        // 1. 必须启用自动滚动
+        // 2. 必须正在生成消息
+        // 3. 用户没有手动滚动
+        // 4. 有消息存在
+        const shouldAutoScroll = autoScroll && 
+                                 isGenerating && 
+                                 !isUserScrollingRef.current && 
+                                 currentMessageCount > 0;
+
+        if (shouldAutoScroll) {
             // 使用防抖机制，避免短时间内多次滚动导致闪烁
             const now = Date.now();
             const timeSinceLastScroll = now - lastScrollTimeRef.current;
-            const scrollDelay = timeSinceLastScroll < 50 ? 50 - timeSinceLastScroll : 0;
+            // 使用 16ms 的帧间隔，确保流畅的滚动体验
+            const scrollDelay = timeSinceLastScroll < 16 ? 16 - timeSinceLastScroll : 0;
             
             scrollTimeoutRef.current = setTimeout(() => {
-                scrollToBottomSmooth();
-                lastScrollTimeRef.current = Date.now();
+                if (autoScroll && isGenerating && !isUserScrollingRef.current) {
+                    scrollToBottomSmooth();
+                    lastScrollTimeRef.current = Date.now();
+                }
             }, scrollDelay);
         }
         
@@ -305,7 +397,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 scrollTimeoutRef.current = null;
             }
         };
-    }, [messages.length, isAtBottom]);
+    }, [messages, autoScroll, isGenerating, scrollToBottomSmooth]);
 
     return (
         <>
@@ -326,7 +418,12 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 <div 
                     ref={buttonRef}
                     className={styles.scrollToBottomButton} 
-                    onClick={scrollToBottomSmooth}
+                    onClick={() => {
+                        scrollToBottomSmooth();
+                        // 点击按钮后恢复自动滚动
+                        setAutoScroll(true);
+                        isUserScrollingRef.current = false;
+                    }}
                 >
                     <svg
                         width="20"
