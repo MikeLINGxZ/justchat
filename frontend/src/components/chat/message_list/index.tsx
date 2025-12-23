@@ -39,6 +39,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     const [showScrollButton, setShowScrollButton] = useState(false);
     // 是否启用自动滚动
     const [autoScroll, setAutoScroll] = useState(true);
+    const autoScrollRef = useRef(true); // 用于在事件处理中获取最新的 autoScroll 状态
     // 用户是否正在手动滚动
     const isUserScrollingRef = useRef(false);
     // 是否初始化滚动
@@ -198,10 +199,13 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     }, []);
 
     // 处理用户滚动开始（通过输入事件检测）
+    // 这是最可靠的用户滚动检测方式，因为这些事件只在用户操作时触发
+    // 输入事件（wheel, touchstart, touchmove, keydown）是用户操作的直接证据
     const handleUserScrollStart = useCallback(() => {
-        // 如果正在生成中，用户开始滚动则取消自动滚动
-        if (isGenerating) {
+        // 如果正在生成中，用户开始滚动则立即取消自动滚动
+        if (isGenerating && autoScrollRef.current) {
             isUserScrollingRef.current = true;
+            autoScrollRef.current = false;
             setAutoScroll(false);
         }
     }, [isGenerating]);
@@ -216,21 +220,28 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
 
         const handleScroll = () => {
             const currentScrollTop = scrollContainer.scrollTop;
-            // 检查是否为用户主动滚动（通过比较滚动位置）
-            const scrollDiff = Math.abs(currentScrollTop - lastScrollTopRef.current);
-            const isUserInitiated = scrollDiff > 0;
+            const lastScrollTop = lastScrollTopRef.current;
+            const scrollDiff = currentScrollTop - lastScrollTop;
             
-            if (isUserInitiated && isGenerating) {
-                // 如果正在生成中且用户滚动，取消自动滚动
-                isUserScrollingRef.current = true;
-                setAutoScroll(false);
+            // 如果正在执行程序化滚动（自动滚动），忽略 scroll 事件中的用户滚动判断
+            // 因为程序化滚动也会触发 scroll 事件，导致误判
+            if (!scrollingToBottomLockRef.current && autoScrollRef.current) {
+                // 只在非程序化滚动期间且自动滚动启用时检测用户滚动
+                // 如果滚动方向向上（scrollDiff < 0），说明用户向上滚动，远离底部
+                // 或者如果滚动位置变化较大（> 50px），可能是用户快速滚动
+                if (isGenerating && (scrollDiff < -10 || Math.abs(scrollDiff) > 50)) {
+                    // 用户向上滚动或快速滚动，取消自动滚动
+                    isUserScrollingRef.current = true;
+                    autoScrollRef.current = false;
+                    setAutoScroll(false);
+                }
             }
             
             // 检查是否在底部
             const atBottom = checkIsAtBottom();
             
             // 如果用户滚动到底部，恢复自动滚动
-            if (atBottom && isUserScrollingRef.current) {
+            if (atBottom && isUserScrollingRef.current && !scrollingToBottomLockRef.current) {
                 // 清除之前的定时器
                 if (userScrollDetectionRef.current) {
                     clearTimeout(userScrollDetectionRef.current);
@@ -239,6 +250,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 userScrollDetectionRef.current = setTimeout(() => {
                     isUserScrollingRef.current = false;
                     if (isGenerating) {
+                        autoScrollRef.current = true;
                         setAutoScroll(true);
                     }
                 }, 150);
@@ -333,10 +345,16 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             // 延迟一下确保DOM渲染完成
             setTimeout(() => {
                 scrollToBottomSmooth();
+                autoScrollRef.current = true;
                 setAutoScroll(true);
             }, 100);
         }
     }, [messages.length, scrollToBottomSmooth]);
+
+    // 确保 autoScrollRef 与 autoScroll state 保持同步
+    useEffect(() => {
+        autoScrollRef.current = autoScroll;
+    }, [autoScroll]);
 
     // 检测重新生成消息（生成状态从 false 变为 true）
     useEffect(() => {
@@ -345,6 +363,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         
         // 如果从非生成状态变为生成状态，恢复自动滚动
         if (!wasGenerating && isGenerating) {
+            autoScrollRef.current = true;
             setAutoScroll(true);
             isUserScrollingRef.current = false;
         }
@@ -370,7 +389,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         // 2. 必须正在生成消息
         // 3. 用户没有手动滚动
         // 4. 有消息存在
-        const shouldAutoScroll = autoScroll && 
+        const shouldAutoScroll = autoScrollRef.current && 
                                  isGenerating && 
                                  !isUserScrollingRef.current && 
                                  currentMessageCount > 0;
@@ -383,7 +402,8 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             const scrollDelay = timeSinceLastScroll < 16 ? 16 - timeSinceLastScroll : 0;
             
             scrollTimeoutRef.current = setTimeout(() => {
-                if (autoScroll && isGenerating && !isUserScrollingRef.current) {
+                // 再次检查状态，确保在延迟期间状态没有改变
+                if (autoScrollRef.current && isGenerating && !isUserScrollingRef.current) {
                     scrollToBottomSmooth();
                     lastScrollTimeRef.current = Date.now();
                 }
@@ -421,6 +441,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                     onClick={() => {
                         scrollToBottomSmooth();
                         // 点击按钮后恢复自动滚动
+                        autoScrollRef.current = true;
                         setAutoScroll(true);
                         isUserScrollingRef.current = false;
                     }}
