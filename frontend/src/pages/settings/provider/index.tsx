@@ -997,9 +997,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       </div>
                     }
                   />
-                  <Button type="primary" icon={<PlusOutlined />}>
-                    选择
-                  </Button>
                 </List.Item>
               );
             }}
