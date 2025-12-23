@@ -1,43 +1,36 @@
 import React, { useState } from 'react';
-import { Card, Radio, Space, Typography, Slider, Row, Col, Button, message } from 'antd';
+import { Card, Typography, Slider, Button, message } from 'antd';
 import { ReloadOutlined, CheckOutlined, FontSizeOutlined } from '@ant-design/icons';
 import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS, getFontSizeLabel } from '@/stores/fontSizeStore';
-import { useViewportHeight } from '@/hooks/useViewportHeight';
 import styles from './index.module.scss';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const GeneralSettingsPage: React.FC = () => {
-  const { fontSizeOffset, setFontSizeOffset, resetFontSize } = useFontSizeStore();
-  const { isMobile } = useViewportHeight();
+  const { fontSizeOffset, setFontSizeOffset } = useFontSizeStore();
   
-  // 临时预览状态
   const [previewOffset, setPreviewOffset] = useState(fontSizeOffset);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // 处理字体大小预览变更
   const handlePreviewChange = (value: number) => {
     setPreviewOffset(value as any);
     setHasChanges(value !== fontSizeOffset);
   };
 
-  // 应用设置
   const handleApplySettings = () => {
     setFontSizeOffset(previewOffset as any);
     setHasChanges(false);
     message.success('字体设置已应用');
   };
 
-  // 重置设置
   const handleResetSettings = () => {
     setPreviewOffset(FONT_SIZE_OFFSETS.NORMAL);
     setHasChanges(FONT_SIZE_OFFSETS.NORMAL !== fontSizeOffset);
   };
 
-  // 滑块标记
   const sliderMarks = FONT_SIZE_OPTIONS.reduce((marks, option) => {
     marks[option.value] = {
-      style: { fontSize: '12px', color: '#666' },
+      style: { fontSize: '11px', color: 'var(--text-color-secondary)' },
       label: option.label,
     };
     return marks;
@@ -46,7 +39,6 @@ const GeneralSettingsPage: React.FC = () => {
   return (
     <div className={styles.generalSettings}>
       <div className={styles.content}>
-        {/* 字体设置区域 */}
         <Card title="显示设置" className={styles.settingCard}>
           <div className={styles.settingItem}>
             <div className={styles.settingLabel}>
@@ -55,7 +47,6 @@ const GeneralSettingsPage: React.FC = () => {
             </div>
             
             <div className={styles.fontSizeControl}>
-              {/* 滑块控制 */}
               <div className={styles.sliderContainer}>
                 <div className={styles.sliderHeader}>
                   <Text strong>字体大小</Text>
@@ -77,7 +68,6 @@ const GeneralSettingsPage: React.FC = () => {
                 />
               </div>
 
-              {/* 预设选项 */}
               <div className={styles.presetOptions}>
                 <Text strong>快速选择</Text>
                 <div className={styles.presetButtons}>
@@ -94,7 +84,6 @@ const GeneralSettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 预览区域 */}
               <div className={styles.previewArea}>
                 <div className={styles.previewHeader}>
                   <FontSizeOutlined className={styles.previewIcon} />
@@ -122,7 +111,6 @@ const GeneralSettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 操作按钮 */}
               <div className={styles.actions}>
                 <Button 
                   icon={<ReloadOutlined />}
@@ -145,8 +133,6 @@ const GeneralSettingsPage: React.FC = () => {
             </div>
           </div>
         </Card>
-
-
       </div>
     </div>
   );
