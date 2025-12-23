@@ -64,7 +64,6 @@ const GeneralSettingsPage: React.FC = () => {
                   value={previewOffset}
                   onChange={handlePreviewChange}
                   marks={sliderMarks}
-                  className={styles.fontSizeSlider}
                 />
               </div>
 
