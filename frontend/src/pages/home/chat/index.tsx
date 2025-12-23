@@ -200,7 +200,7 @@ const Chat: React.FC<ChatProps> = ({
             scrollTimeoutRef.current = setTimeout(() => {
                 if (messageListRef.current && autoScroll && !justCompletedRef.current) {
                     // 使用immediate滚动确保实时跟进
-                    messageListRef.current.scrollToBottom();
+                    messageListRef.current.scrollToBottomSmooth();
                     setIsAtBottom(true);
                     setShowScrollButton(false);
                     lastScrollTimeRef.current = Date.now();
@@ -300,7 +300,6 @@ const Chat: React.FC<ChatProps> = ({
                         <MessageList
                             ref={messageListRef}
                             messages={currentMessages}
-                            isLoading={isLoading}
                         />
                     </div>
                     {(onSendMessage || onModelChange) && (
