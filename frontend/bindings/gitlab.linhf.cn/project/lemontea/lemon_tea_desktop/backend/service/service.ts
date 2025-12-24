@@ -65,6 +65,13 @@ export function DeleteProvider(providerId: number): $CancellablePromise<void> {
 }
 
 /**
+ * GenChatTitle 创建聊天标题
+ */
+export function GenChatTitle(chatUuid: string, model: string, update: boolean): $CancellablePromise<string> {
+    return $Call.ByID(726618912, chatUuid, model, update);
+}
+
+/**
  * GetModels 获取所有模型
  */
 export function GetModels(enableProvider: boolean | null, enableModel: boolean | null): $CancellablePromise<view_models$0.Model[]> {

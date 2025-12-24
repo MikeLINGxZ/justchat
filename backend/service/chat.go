@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/schema"
@@ -60,15 +61,27 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
-	// 当chatUuid为空说明是新建聊天
-	// todo 此处应该生成一个标题
+	// 新建供应商
+	provider := llm_provider.NewLlmProvider(*providerModel)
+
+	// 如果聊天的uuid为空，则代表新建一个聊天
+	isNewChat := false
 	if message.ChatUuid == "" {
+		isNewChat = true
 		message.ChatUuid = uuid.New().String()
 		title := message.Content
 		// 创建一个聊天
 		err = s.storage.CreateChat(context.Background(), message.ChatUuid, title)
 		if err != nil {
 			return nil, ierror.NewError(err)
+		}
+	}
+	genChatTitle := func() {
+		if isNewChat {
+			_, err = s.GenChatTitle(message.ChatUuid, message.Model, true)
+			if err != nil {
+				logger.Error("gen chat title error", err)
+			}
 		}
 	}
 
@@ -84,8 +97,6 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		}
 		historyMessages = append(historyMessages, *item.Message)
 	}
-
-	provider := llm_provider.NewLlmProvider(*providerModel)
 
 	// 转换消息内容
 	schemaMessage, err := provider.BuildUserMessage(context.Background(), message)
@@ -141,20 +152,24 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 			select {
 			case <-doneChan:
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
+				genChatTitle()
 				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 				return
 			case msg, ok := <-msgChan:
 				if !ok || msg == nil {
 					dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "done")
+					genChatTitle()
 					s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 					return
 				}
 				dataModelMsg.Message = msg
 				dataModelMsg = s.fillCompletionsMsg(dataModelMsg, "")
-				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 				if msg.ResponseMeta != nil && msg.ResponseMeta.FinishReason != "" {
+					genChatTitle()
+					s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 					return
 				}
+				s.app.Event.Emit(eventsKey, dataModelMsg.Message)
 			case err := <-errChan:
 				if err == nil {
 					continue
@@ -198,6 +213,49 @@ func (s *Service) CollectionChat(chatUuid string, isCollection bool) error {
 	}
 
 	return nil
+}
+
+// GenChatTitle 创建聊天标题
+func (s *Service) GenChatTitle(chatUuid, model string, update bool) (string, error) {
+
+	// 获取模型信息
+	providerModel, err := s.storage.GetProviderModel(context.Background(), model)
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
+	if providerModel == nil {
+		return "", ierror.New(ierror.ErrCodeModelNotFound)
+	}
+
+	// 新建供应商
+	provider := llm_provider.NewLlmProvider(*providerModel)
+
+	historyMessages, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 2)
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
+	var messages []schema.Message
+	for _, item := range historyMessages {
+		if item.Message == nil {
+			continue
+		}
+		fmt.Println("msg", item.Message)
+		messages = append(messages, *item.Message)
+	}
+
+	title, err := llm_provider.GenChatTitle(provider, messages)
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
+
+	if update {
+		err := s.storage.RenameChat(context.Background(), chatUuid, title)
+		if err != nil {
+			return "", ierror.NewError(err)
+		}
+	}
+
+	return title, nil
 }
 
 func (s *Service) fillCompletionsMsg(dataMsg data_models.Message, finishReason string) data_models.Message {

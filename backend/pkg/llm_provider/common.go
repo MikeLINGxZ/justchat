@@ -81,3 +81,42 @@ func GetModels(baseURL, apiKey string) ([]ModelData, error) {
 
 	return modelsResp.Data, nil
 }
+
+// GenChatTitle 生成一个聊天的标题
+func GenChatTitle(provider IProvider, messages []schema.Message) (string, error) {
+	genTitle := ""
+	contextMessages := []schema.Message{
+		{
+			Role: schema.System,
+			Content: `
+					你是一位专业的对话摘要与标题提炼专家。请根据我提供的聊天记录，生成1个最合适的标题，要求满足以下所有条件：
+					✅ 准确概括核心主题：抓住双方讨论的实质焦点（如问题、决策、情感、事件或共识），而非罗列细节；
+					✅ 简洁有力：控制在8–15个汉字以内，避免标点（除必要顿号）、英文和冗余修饰；
+					✅ 中性客观，不带主观判断或情绪渲染（除非聊天本身是明确的情感倾诉，此时可适度体现温度，如“深夜倾诉：关于成长的迷茫与自我接纳”）；
+					✅ 适配通用场景：标题应便于归档、检索或快速理解，不依赖上下文即可读懂；
+					✅ 直接输出标题，不需要其他内容；
+					❌ 不要解释、不要复述对话、不要添加额外信息、不要输出任何说明文字——只输出标题本身，且仅一行。
+					
+					请严格遵循以上规则。现在，我的聊天记录如下：
+					`,
+		},
+	}
+	contextMessages = append(contextMessages, messages...)
+	resp, err := provider.Completions(context.Background(), contextMessages)
+	if err == nil {
+		for {
+			recv, err := resp.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return "", err
+			}
+			genTitle += recv.Content
+		}
+	}
+	if genTitle == "" {
+		return "", fmt.Errorf("failed to generate title")
+	}
+	return genTitle, nil
+}
