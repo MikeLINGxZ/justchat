@@ -33,7 +33,7 @@ func main() {
 	chatAgent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        "智能助理",
 		Description: "能够使用多种工具解决复杂问题的智能助手",
-		Instruction: "您是一名专业助理，可以使用提供的工具帮助用户解决问题",
+		Instruction: "您是一名专业助理，可以使用提供的工具帮助用户解决问题，以自然语言回答用户的问题",
 		Model:       qwenModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
