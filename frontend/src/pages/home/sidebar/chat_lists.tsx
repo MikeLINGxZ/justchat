@@ -145,53 +145,76 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 const isFavorites = activeTab === 'favorites';
                 const response: ChatList | null = await Service.ChatList(currentOffset, 50, keyword || null, isFavorites);
                 console.log("ChatList response:", response)
-                if (response?.lists) {
-                    const newChats: Chat[] = response.lists;
-                    const total: number = response.total || 0;
-                    let currentTotal = 0;
+                
+                // 处理响应为空的情况
+                if (!response || !response.lists) {
                     if (isLoadMore) {
-                        // 加载更多时追加到现有列表，使用chatUuid去重
-                        setChats(prev => {
-                            // 创建一个Map来存储已有的聊天记录，以chatUuid为key
-                            const existingChatsMap = new Map(
-                                prev.map(chat => [chat.uuid, chat])
-                            );
-
-                            let addedCount = 0;
-                            // 添加新的聊天记录，如果chatUuid已存在则跳过
-                            newChats.forEach(newChat => {
-                                if (
-                                    newChat.uuid &&
-                                    !existingChatsMap.has(newChat.uuid)
-                                ) {
-                                    existingChatsMap.set(newChat.uuid, newChat);
-                                    addedCount++;
-                                }
-                            });
-
-                            const mergedChats = Array.from(existingChatsMap.values());
-                            currentTotal = mergedChats.length;
-                            chatsCountRef.current = currentTotal;
-
-                            return mergedChats;
-                        });
+                        // 加载更多时返回空数据，说明已经加载完所有数据
+                        setHasMore(false);
                     } else {
-                        // 初始加载或搜索时替换列表
-                        setChats(newChats);
-                        currentTotal = newChats.length;
-                        // 更新ref中的聊天数量
-                        chatsCountRef.current = currentTotal;
+                        // 初始加载时返回空数据
+                        setTotalCount(0);
+                        setHasMore(false);
+                        setChats([]);
                     }
-                    setTotalCount(total);
-                    // 判断是否还有更多数据
-                    const hasMoreData = currentTotal < total;
-                    setHasMore(hasMoreData);
+                    return;
                 }
-                if (response?.lists == null || response.lists.length == 0) {
-                    setTotalCount(0);
+
+                const newChats: Chat[] = response.lists;
+                const total: number = response.total || 0;
+                const limit = 50; // 每页加载数量
+                
+                // 如果返回的数据为空，说明已经加载完所有数据
+                if (newChats.length === 0) {
                     setHasMore(false);
-                    setChats([]);
+                    // 如果是初始加载，清空列表
+                    if (!isLoadMore) {
+                        setTotalCount(0);
+                        setChats([]);
+                    }
+                    return;
                 }
+
+                let currentTotal = 0;
+                if (isLoadMore) {
+                    // 加载更多时追加到现有列表，使用chatUuid去重
+                    setChats(prev => {
+                        // 创建一个Map来存储已有的聊天记录，以chatUuid为key
+                        const existingChatsMap = new Map(
+                            prev.map(chat => [chat.uuid, chat])
+                        );
+
+                        // 添加新的聊天记录，如果chatUuid已存在则跳过
+                        newChats.forEach(newChat => {
+                            if (
+                                newChat.uuid &&
+                                !existingChatsMap.has(newChat.uuid)
+                            ) {
+                                existingChatsMap.set(newChat.uuid, newChat);
+                            }
+                        });
+
+                        const mergedChats = Array.from(existingChatsMap.values());
+                        currentTotal = mergedChats.length;
+                        chatsCountRef.current = currentTotal;
+
+                        return mergedChats;
+                    });
+                } else {
+                    // 初始加载或搜索时替换列表
+                    setChats(newChats);
+                    currentTotal = newChats.length;
+                    // 更新ref中的聊天数量
+                    chatsCountRef.current = currentTotal;
+                }
+                
+                setTotalCount(total);
+                
+                // 判断是否还有更多数据：
+                // 1. 当前已加载数量小于总数
+                // 2. 返回的数据数量等于limit，说明可能还有更多数据
+                const hasMoreData = currentTotal < total && newChats.length >= limit;
+                setHasMore(hasMoreData);
 
             } catch (error) {
                 console.error('Failed to load chats:', error);
