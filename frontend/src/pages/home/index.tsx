@@ -24,6 +24,7 @@ import {
     MessageList,
     MessagePkg
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/index.ts";
+import {StopCompletions} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/service.ts";
 
 const {Content, Sider} = Layout;
 
@@ -150,7 +151,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 处理停止生成
     const handleStopGeneration = useCallback(() => {
-        // todo
+        StopCompletions(currentChatUuid)
     }, [abortController]);
 
     // 获取聊天消息

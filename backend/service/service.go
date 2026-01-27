@@ -13,12 +13,15 @@ const (
 )
 
 type Service struct {
-	storage *storage.Storage
-	app     *application.App
+	storage           *storage.Storage
+	app               *application.App
+	completionsStopCh map[string]chan struct{}
 }
 
 func NewService() *Service {
-	return &Service{}
+	return &Service{
+		completionsStopCh: make(map[string]chan struct{}),
+	}
 }
 
 func (s *Service) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {

@@ -125,20 +125,33 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 	doneChan := make(chan struct{})
 
 	go func() {
+
 		defer close(msgChan)
 		defer close(errChan)
 		defer close(doneChan)
+
+		userStopCh := make(chan struct{})
+		s.completionsStopCh[message.ChatUuid] = userStopCh
+		defer close(userStopCh)
+		defer delete(s.completionsStopCh, message.ChatUuid)
+
 		for {
-			message, err := stream.Recv()
-			if err == io.EOF {
-				doneChan <- struct{}{}
+			select {
+			case <-userStopCh:
+				stream.Close()
 				return
+			default:
+				message, err := stream.Recv()
+				if err == io.EOF {
+					doneChan <- struct{}{}
+					return
+				}
+				if err != nil && err != io.EOF {
+					errChan <- err
+					return
+				}
+				msgChan <- message
 			}
-			if err != nil && err != io.EOF {
-				errChan <- err
-				return
-			}
-			msgChan <- message
 		}
 	}()
 	messageUuid := uuid.New().String()
@@ -185,6 +198,18 @@ func (s *Service) Completions(message view_models.MessagePkg) (*view_models.Comp
 		ChatUuid:    message.ChatUuid,
 		MessageUuid: messageUuid,
 	}, nil
+}
+
+func (s *Service) StopCompletions(chatUuid string) error {
+	stopCh, ok := s.completionsStopCh[chatUuid]
+	if !ok {
+		return nil
+	}
+	fmt.Println("stop completions:", chatUuid)
+	if stopCh != nil {
+		stopCh <- struct{}{}
+	}
+	return nil
 }
 
 // DeleteChat 删除聊天

@@ -128,6 +128,10 @@ export function SelectFiles(): $CancellablePromise<view_models$0.File[]> {
     });
 }
 
+export function StopCompletions(chatUuid: string): $CancellablePromise<void> {
+    return $Call.ByID(115959129, chatUuid);
+}
+
 /**
  * UpdateProvider 更新供应商
  */
