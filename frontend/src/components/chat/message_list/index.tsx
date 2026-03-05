@@ -18,11 +18,15 @@ interface MessageListProps {
     messages?: Message[];
     // 是否正在生成消息
     isGenerating?: boolean;
+    // 初次加载时使用立即滚动（无动画），如历史聊天首次加载
+    useInstantScrollOnFirstLoad?: boolean;
 }
 
 export interface MessageListRef {
-    // 手动滚动到底部
+    // 手动滚动到底部（平滑）
     scrollToBottom: () => void;
+    // 立即滚动到底部（无动画）
+    scrollToBottomInstant: () => void;
     // 检查是否在底部
     isAtBottom: () => boolean;
 }
@@ -31,6 +35,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     className,
     messages = [],
     isGenerating = false,
+    useInstantScrollOnFirstLoad = false,
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -136,11 +141,28 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         }
     }, [checkIsAtBottom, getScrollContainer]);
 
+    // 立即滚动到底部（无动画）
+    const scrollToBottomInstant = useCallback(() => {
+        const scrollContainer = getScrollContainer();
 
+        if (scrollContainer && scrollContainer instanceof HTMLElement) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            setIsAtBottom(true);
+            setShowScrollButton(false);
+            return;
+        }
+
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+            setIsAtBottom(true);
+            setShowScrollButton(false);
+        }
+    }, [getScrollContainer]);
 
     // 暴露给父组件的方法
     useImperativeHandle(ref, () => ({
         scrollToBottom: scrollToBottomSmooth,
+        scrollToBottomInstant,
         isAtBottom: () => {
             const scrollContainer = getScrollContainer();
             
@@ -156,7 +178,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             }
             return true;
         },
-    }), [scrollToBottomSmooth, getScrollContainer]);
+    }), [scrollToBottomSmooth, scrollToBottomInstant, getScrollContainer]);
 
     // 更新滚动到底部按钮位置，使其相对于内容区域居中，并避免与输入框重叠
     const updateScrollToBottomButtonPosition = useCallback(() => {
@@ -344,12 +366,17 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             isInitialLoadRef.current = false;
             // 延迟一下确保DOM渲染完成
             setTimeout(() => {
-                scrollToBottomSmooth();
+                // 历史聊天首次加载使用立即滚动，避免动画延迟
+                if (useInstantScrollOnFirstLoad) {
+                    scrollToBottomInstant();
+                } else {
+                    scrollToBottomSmooth();
+                }
                 autoScrollRef.current = true;
                 setAutoScroll(true);
             }, 100);
         }
-    }, [messages.length, scrollToBottomSmooth]);
+    }, [messages.length, scrollToBottomSmooth, scrollToBottomInstant, useInstantScrollOnFirstLoad]);
 
     // 确保 autoScrollRef 与 autoScroll state 保持同步
     useEffect(() => {

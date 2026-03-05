@@ -50,6 +50,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [forceRerender, setForceRerender] = useState(0);
     // 添加loading消息状态
     const [showLoadingMessage, setShowLoadingMessage] = useState(false);
+    // 历史聊天首次加载完成（用于立即滚动到底部，无动画）
+    const [isFirstHistoricalLoad, setIsFirstHistoricalLoad] = useState(false);
 
     // 使用视口高度检测 Hook
     const {isMobile} = useViewportHeight();
@@ -168,7 +170,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             const response: MessageList | null = await Service.ChatMessages(chatUuid, 0, 50);
             console.log("response.messages:", response?.messages);
             setCurrentMessages(response?.messages!);
-            
+            // 历史聊天首次加载，使用立即滚动
+            setIsFirstHistoricalLoad(true);
+
             // 加载消息成功后，获取聊天信息并设置标题
             try {
                 const chatListResponse = await Service.ChatList(0, 100, null, false);
@@ -196,6 +200,14 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     useEffect(() => {
         loadChatMessages(currentChatUuid);
     }, [currentChatUuid, loadChatMessages]);
+
+    // 历史聊天首次加载完成后，短暂保留标记供 MessageList 使用，然后重置
+    useEffect(() => {
+        if (isFirstHistoricalLoad) {
+            const timer = setTimeout(() => setIsFirstHistoricalLoad(false), 200);
+            return () => clearTimeout(timer);
+        }
+    }, [isFirstHistoricalLoad]);
 
     // handleToggleSidebar 展示/隐藏侧边菜单
     const handleToggleSidebar = () => {
@@ -520,6 +532,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     <Chat
                         standalone={false}
                         initialLoading={isLoadingMessages}
+                        useInstantScrollOnFirstLoad={isFirstHistoricalLoad}
                         chatTitle={chatTitle}
                         chatUuid={currentChatUuid}
                         currentMessages={currentMessages}

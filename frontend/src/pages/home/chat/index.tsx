@@ -32,6 +32,8 @@ interface ChatProps {
     standalone?: boolean;
     // 初始化加载中
     initialLoading?: boolean;
+    // 历史聊天首次加载（用于立即滚动到底部，无动画）
+    useInstantScrollOnFirstLoad?: boolean;
     // 聊天标题变更事件
     onTitleChange?: (newTitle: string) => void;
     // 点击发送按钮事件
@@ -71,6 +73,7 @@ const Chat: React.FC<ChatProps> = ({
     isGenerating = false,
     standalone = false,
     initialLoading = false,
+    useInstantScrollOnFirstLoad = false,
     onTitleChange,
     onSendMessage,
     onStopGeneration,
@@ -146,6 +149,7 @@ const Chat: React.FC<ChatProps> = ({
                             ref={messageListRef}
                             messages={currentMessages}
                             isGenerating={isGenerating}
+                            useInstantScrollOnFirstLoad={useInstantScrollOnFirstLoad}
                         />
                     </div>
                     {(onSendMessage || onModelChange) && (
