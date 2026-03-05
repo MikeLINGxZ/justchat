@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
 Name=My Product
-Comment=My Product Description
+Comment=A myapp application
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/lemon_tea_desktop %u
+Exec=/usr/local/bin/myapp %u
 Terminal=false
 Type=Application
-Icon=lemon_tea_desktop
+Icon=myapp
 Categories=Utility;
-StartupWMClass=lemon_tea_desktop
+StartupWMClass=myapp
 
  

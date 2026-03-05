@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Update desktop database for .desktop file_uploader changes
+# Update desktop database for .desktop file changes
 # This makes the application appear in application menus and registers its capabilities.
 if command -v update-desktop-database >/dev/null 2>&1; then
   echo "Updating desktop database..."

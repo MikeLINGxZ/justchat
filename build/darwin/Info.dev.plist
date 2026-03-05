@@ -6,9 +6,9 @@
         <key>CFBundleName</key>
             <string>My Product</string>
         <key>CFBundleExecutable</key>
-            <string>lemon_tea_desktop</string>
+            <string>myapp</string>
         <key>CFBundleIdentifier</key>
-            <string>com.wails.lemon_tea_desktop</string>
+            <string>com.example.myapp</string>
         <key>CFBundleVersion</key>
             <string>0.1.0</string>
         <key>CFBundleGetInfoString</key>
@@ -17,12 +17,14 @@
             <string>0.1.0</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
+        <key>CFBundleIconName</key>
+            <string>appicon</string>
         <key>LSMinimumSystemVersion</key>
             <string>10.15.0</string>
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>© now, My Company</string>
+            <string>© 2026, My Company</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

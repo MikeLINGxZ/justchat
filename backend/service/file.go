@@ -4,7 +4,6 @@ import (
 	"mime"
 	"path/filepath"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
@@ -14,7 +13,7 @@ func (s *Service) SelectFiles() ([]view_models.File, error) {
 
 	// 调用系统接口选择文件
 	pattern := "*.txt;*.log;*.text;*.json;*.html;*.css;*.scss;*.jpg;*.png;*.jpeg;*.bmp"
-	paths, err := application.OpenFileDialog().SetTitle("").AddFilter("选择文件", pattern).PromptForMultipleSelection()
+	paths, err := s.app.Dialog.OpenFile().SetTitle("").AddFilter("选择文件", pattern).PromptForMultipleSelection()
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}

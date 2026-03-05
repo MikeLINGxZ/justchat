@@ -28,7 +28,7 @@ export class ChatMessageAudioURL {
     /**
      * Extra is used to store extra information for the audio url.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new ChatMessageAudioURL instance. */
     constructor($$source: Partial<ChatMessageAudioURL> = {}) {
@@ -72,7 +72,7 @@ export class ChatMessageFileURL {
     /**
      * Extra is used to store extra information for the file url.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new ChatMessageFileURL instance. */
     constructor($$source: Partial<ChatMessageFileURL> = {}) {
@@ -121,7 +121,7 @@ export class ChatMessageImageURL {
     /**
      * Extra is used to store extra information for the image url.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new ChatMessageImageURL instance. */
     constructor($$source: Partial<ChatMessageImageURL> = {}) {
@@ -267,7 +267,7 @@ export class ChatMessageVideoURL {
     /**
      * Extra is used to store extra information for the video url.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new ChatMessageVideoURL instance. */
     constructor($$source: Partial<ChatMessageVideoURL> = {}) {
@@ -529,7 +529,7 @@ export class Message {
     /**
      * customized information for model implementation
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new Message instance. */
     constructor($$source: Partial<Message> = {}) {
@@ -601,7 +601,7 @@ export class MessageInputAudio {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new MessageInputAudio instance. */
     constructor($$source: Partial<MessageInputAudio> = {}) {
@@ -647,7 +647,7 @@ export class MessageInputFile {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /**
      * Name represents the filename.
@@ -699,7 +699,7 @@ export class MessageInputImage {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /**
      * Detail is the quality of the image url.
@@ -811,7 +811,7 @@ export class MessageInputVideo {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new MessageInputVideo instance. */
     constructor($$source: Partial<MessageInputVideo> = {}) {
@@ -856,7 +856,7 @@ export class MessageOutputAudio {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new MessageOutputAudio instance. */
     constructor($$source: Partial<MessageOutputAudio> = {}) {
@@ -901,7 +901,7 @@ export class MessageOutputImage {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new MessageOutputImage instance. */
     constructor($$source: Partial<MessageOutputImage> = {}) {
@@ -1006,7 +1006,7 @@ export class MessageOutputVideo {
     /**
      * Extra is used to store extra information.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new MessageOutputVideo instance. */
     constructor($$source: Partial<MessageOutputVideo> = {}) {
@@ -1208,7 +1208,7 @@ export class ToolCall {
     /**
      * Extra is used to store extra information for the tool call.
      */
-    "extra"?: { [_: string]: any };
+    "extra"?: { [_ in string]?: any };
 
     /** Creates a new ToolCall instance. */
     constructor($$source: Partial<ToolCall> = {}) {
