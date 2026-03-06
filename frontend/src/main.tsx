@@ -23,6 +23,7 @@ function disableAutocomplete() {
   };
 
   // 设置现有的所有 input 和 textarea
+  // @ts-ignore
   document.querySelectorAll('input, textarea').forEach(setAutocomplete);
 
   // 监听 DOM 变化，确保新创建的 input 和 textarea 也禁用 autocomplete
@@ -34,6 +35,7 @@ function disableAutocomplete() {
           // 检查新添加的节点本身
           setAutocomplete(element);
           // 检查新添加节点内的所有 input 和 textarea
+          // @ts-ignore
           element.querySelectorAll?.('input, textarea').forEach(setAutocomplete);
         }
       });
