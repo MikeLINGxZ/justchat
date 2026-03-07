@@ -1,5 +1,5 @@
 // 使用 Eino 框架实现的 AI 聊天应用
-// Agent-to-Agent 架构：Chat 本身是主 Agent，通过 AgentTool 委托给 DateTimeAgent、FruitPriceAgent
+// Agent-to-Agent 架构：Chat 本身是主 Agent，通过 AgentTool 委托给 DateTimeAgent、FruitPriceAgent、MemoryAgent
 
 package main
 
@@ -12,10 +12,12 @@ import (
 	"os"
 	"strings"
 
+	ollamaembed "github.com/cloudwego/eino-ext/components/embedding/ollama"
 	"github.com/cloudwego/eino-ext/components/model/ollama"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/adk"
+	"github.com/cloudwego/eino/components/embedding"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/examples/mutil_agent/agents"
@@ -25,8 +27,9 @@ const (
 	providerQwen   = "qwen"
 	providerOllama = "ollama"
 	providerOpenAI = "openai"
-	defaultModel   = "llama3.2"
-	ollamaBaseURL  = "http://localhost:11434"
+	defaultModel       = "llama3.2"
+	ollamaBaseURL      = "http://localhost:11434"
+	ollamaEmbedModel   = "nomic-embed-text"
 	qwenBaseURL    = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	qwenDefault    = "qwen-plus-latest"
 	exitCommand    = "/exit"
@@ -53,13 +56,21 @@ func main() {
 		if err != nil {
 			log.Printf("水果价格 Agent 初始化失败: %v\n", err)
 		}
+		memoryEmbedder := initMemoryEmbedder(ctx)
+		memoryAgent, err := agents.NewMemoryAgent(ctx, tcm, memoryEmbedder)
+		if err != nil {
+			log.Printf("记忆 Agent 初始化失败: %v\n", err)
+		}
 
-		subAgents := make([]adk.Agent, 0, 2)
+		subAgents := make([]adk.Agent, 0, 3)
 		if dateTimeAgent != nil {
 			subAgents = append(subAgents, dateTimeAgent)
 		}
 		if fruitAgent != nil {
 			subAgents = append(subAgents, fruitAgent)
+		}
+		if memoryAgent != nil {
+			subAgents = append(subAgents, memoryAgent)
 		}
 
 		chatAgent, err := agents.NewChatAgent(ctx, tcm, subAgents)
@@ -76,10 +87,11 @@ func main() {
 	}
 
 	fmt.Printf("\n🤖 AI Chat 已启动 (Provider: %s, Model: %s)\n", provider, modelName)
-	fmt.Printf("架构: ChatAgent → [DateTimeAgent | FruitPriceAgent]\n")
+	fmt.Printf("架构: ChatAgent → [DateTimeAgent | FruitPriceAgent | MemoryAgent]\n")
 	fmt.Printf("命令: %s 退出 | %s 清空 | %s 帮助\n\n", exitCommand, clearCommand, helpCommand)
 
 	reader := bufio.NewReader(os.Stdin)
+	var history []adk.Message
 
 	for {
 		fmt.Print("你: ")
@@ -103,23 +115,27 @@ func main() {
 			fmt.Println("再见！")
 			return
 		case clearCommand:
-			// Agent 模式每次 Query 独立，清空仅提示
-			fmt.Println("（下次对话将开启新会话）")
+			history = nil
+			fmt.Println("已清空对话历史，下次对话将开启新会话。")
 			continue
 		case helpCommand:
 			fmt.Printf("命令: %s 退出 | %s 清空\n", exitCommand, clearCommand)
 			fmt.Println("直接输入问题即可，ChatAgent 会自动决定是否调用子 Agent：")
-			fmt.Println("  - 日期时间 → DateTimeAgent  - 水果价格 → FruitPriceAgent  - 其他 → 直接回答")
+			fmt.Println("  - 日期时间 → DateTimeAgent  - 水果价格 → FruitPriceAgent  - 记录/查看日常 → MemoryAgent  - 其他 → 直接回答")
 			continue
 		}
 
-		runAgent(ctx, runner, input)
+		history = runAgent(ctx, runner, input, history)
 	}
 }
 
-func runAgent(ctx context.Context, runner *adk.Runner, input string) {
+func runAgent(ctx context.Context, runner *adk.Runner, input string, history []adk.Message) []adk.Message {
 	fmt.Print("AI: ")
-	iter := runner.Query(ctx, input)
+	messages := make([]adk.Message, 0, len(history)+1)
+	messages = append(messages, history...)
+	messages = append(messages, &schema.Message{Role: schema.User, Content: input})
+
+	iter := runner.Run(ctx, messages)
 	var reply strings.Builder
 
 	for {
@@ -129,7 +145,7 @@ func runAgent(ctx context.Context, runner *adk.Runner, input string) {
 		}
 		if event.Err != nil {
 			log.Printf("\nAgent 执行失败: %v\n", event.Err)
-			return
+			return history
 		}
 		if event.Output == nil || event.Output.MessageOutput == nil {
 			continue
@@ -146,7 +162,7 @@ func runAgent(ctx context.Context, runner *adk.Runner, input string) {
 				}
 				if err != nil {
 					log.Printf("\n流式读取失败: %v\n", err)
-					return
+					return history
 				}
 				if msg != nil && msg.Content != "" {
 					fmt.Print(msg.Content)
@@ -166,6 +182,13 @@ func runAgent(ctx context.Context, runner *adk.Runner, input string) {
 	}
 	fmt.Println()
 	fmt.Println()
+
+	// 将本轮用户消息与助手回复加入历史，供后续对话使用
+	next := make([]adk.Message, 0, len(history)+2)
+	next = append(next, history...)
+	next = append(next, &schema.Message{Role: schema.User, Content: input})
+	next = append(next, &schema.Message{Role: schema.Assistant, Content: replyStr})
+	return next
 }
 
 func initChatModel(ctx context.Context) (model.BaseChatModel, string, string) {
@@ -229,4 +252,26 @@ func initChatModel(ctx context.Context) (model.BaseChatModel, string, string) {
 	}
 
 	return chatModel, providerOllama, modelName
+}
+
+// initMemoryEmbedder 初始化 RAG 用的 Embedder（Ollama nomic-embed-text）
+func initMemoryEmbedder(ctx context.Context) embedding.Embedder {
+	baseURL := os.Getenv("OLLAMA_BASE_URL")
+	if baseURL == "" {
+		baseURL = ollamaBaseURL
+	}
+	model := os.Getenv("OLLAMA_EMBED_MODEL")
+	if model == "" {
+		model = ollamaEmbedModel
+	}
+	emb, err := ollamaembed.NewEmbedder(ctx, &ollamaembed.EmbeddingConfig{
+		BaseURL: baseURL,
+		Model:   model,
+	})
+	if err != nil {
+		log.Printf("RAG Embedder 初始化失败（将回退到关键词检索）: %v\n", err)
+		log.Printf("建议: ollama pull %s\n", model)
+		return nil
+	}
+	return emb
 }

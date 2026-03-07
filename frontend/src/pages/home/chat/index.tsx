@@ -124,16 +124,7 @@ const Chat: React.FC<ChatProps> = ({
         <div className={`${styles.chatPage} ${standalone ? styles.standalone : ''} ${className || ''}`}>
             {shouldShowLoading ? (
                 <div className={styles.chatLoadingContainer}>
-                    <div className={styles.loadingPlaceholder}>
-                        {/* 占位内容，防止布局跳动 */}
-                        <div className={styles.loadingTitle}></div>
-                        <div className={styles.loadingMessages}>
-                            <div className={styles.loadingMessage}></div>
-                            <div className={styles.loadingMessage}></div>
-                            <div className={styles.loadingMessage}></div>
-                        </div>
-                        <div className={styles.loadingInput}></div>
-                    </div>
+                    <div className={styles.loadingSpinner} />
                 </div>
             ) : (
                 <>
