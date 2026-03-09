@@ -13,6 +13,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed frontend/public/wails.png
+var trayIcon []byte
+
 func main() {
 	app := application.New(application.Options{
 		Name:        "lemon_tea_desktop",
