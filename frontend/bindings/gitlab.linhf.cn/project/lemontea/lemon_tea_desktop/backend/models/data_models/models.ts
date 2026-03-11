@@ -5,6 +5,208 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as schema$0 from "../../../../../../../github.com/cloudwego/eino/schema/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as time$0 from "../../../../../../../time/models.js";
+
+export class AssistantMessageExtra {
+    "finish_reason": string;
+    "finish_error": string;
+
+    /** Creates a new AssistantMessageExtra instance. */
+    constructor($$source: Partial<AssistantMessageExtra> = {}) {
+        if (!("finish_reason" in $$source)) {
+            this["finish_reason"] = "";
+        }
+        if (!("finish_error" in $$source)) {
+            this["finish_error"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AssistantMessageExtra instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AssistantMessageExtra {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
+    }
+}
+
+export class Chat {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "uuid": string;
+    "title": string;
+    "prompt": string;
+    "is_collection": boolean;
+
+    /** Creates a new Chat instance. */
+    constructor($$source: Partial<Chat> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("uuid" in $$source)) {
+            this["uuid"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("prompt" in $$source)) {
+            this["prompt"] = "";
+        }
+        if (!("is_collection" in $$source)) {
+            this["is_collection"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Chat instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Chat {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Chat($$parsedSource as Partial<Chat>);
+    }
+}
+
+export class File {
+    "name": string;
+    "path": string;
+
+    /**
+     * 如果是图像的话，生成60x60的预览图
+     */
+    "preview": string | null;
+    "mine_type": string;
+    "size": number;
+
+    /** Creates a new File instance. */
+    constructor($$source: Partial<File> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("preview" in $$source)) {
+            this["preview"] = null;
+        }
+        if (!("mine_type" in $$source)) {
+            this["mine_type"] = "";
+        }
+        if (!("size" in $$source)) {
+            this["size"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new File instance from a string or object.
+     */
+    static createFrom($$source: any = {}): File {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new File($$parsedSource as Partial<File>);
+    }
+}
+
+export class Message {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "chat_uuid": string;
+    "message_uuid": string;
+    "role": schema$0.RoleType;
+    "content": string;
+    "reasoning_content": string;
+    "user_message_extra_content": string;
+    "assistant_message_extra_content": string;
+    "user_message_extra": UserMessageExtra | null;
+    "assistant_message_extra": AssistantMessageExtra | null;
+
+    /** Creates a new Message instance. */
+    constructor($$source: Partial<Message> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("message_uuid" in $$source)) {
+            this["message_uuid"] = "";
+        }
+        if (!("role" in $$source)) {
+            this["role"] = schema$0.RoleType.$zero;
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("reasoning_content" in $$source)) {
+            this["reasoning_content"] = "";
+        }
+        if (!("user_message_extra_content" in $$source)) {
+            this["user_message_extra_content"] = "";
+        }
+        if (!("assistant_message_extra_content" in $$source)) {
+            this["assistant_message_extra_content"] = "";
+        }
+        if (!("user_message_extra" in $$source)) {
+            this["user_message_extra"] = null;
+        }
+        if (!("assistant_message_extra" in $$source)) {
+            this["assistant_message_extra"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Message instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Message {
+        const $$createField11_0 = $$createType1;
+        const $$createField12_0 = $$createType3;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("user_message_extra" in $$parsedSource) {
+            $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
+        }
+        if ("assistant_message_extra" in $$parsedSource) {
+            $$parsedSource["assistant_message_extra"] = $$createField12_0($$parsedSource["assistant_message_extra"]);
+        }
+        return new Message($$parsedSource as Partial<Message>);
+    }
+}
+
 export enum ProviderType {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -16,3 +218,68 @@ export enum ProviderType {
     ProviderTypeOpenrouter = "openrouter",
     ProviderTypeOther = "other",
 };
+
+export class UserMessageExtra {
+    /**
+     * 模型id
+     */
+    "model_id": number;
+
+    /**
+     * 模型名称
+     */
+    "model_name": string;
+
+    /**
+     * 文件路径
+     */
+    "files": File[];
+
+    /**
+     * 工具id
+     */
+    "tools": string[];
+
+    /** Creates a new UserMessageExtra instance. */
+    constructor($$source: Partial<UserMessageExtra> = {}) {
+        if (!("model_id" in $$source)) {
+            this["model_id"] = 0;
+        }
+        if (!("model_name" in $$source)) {
+            this["model_name"] = "";
+        }
+        if (!("files" in $$source)) {
+            this["files"] = [];
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UserMessageExtra instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UserMessageExtra {
+        const $$createField2_0 = $$createType5;
+        const $$createField3_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("files" in $$parsedSource) {
+            $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
+        }
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField3_0($$parsedSource["tools"]);
+        }
+        return new UserMessageExtra($$parsedSource as Partial<UserMessageExtra>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = UserMessageExtra.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = AssistantMessageExtra.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = File.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = $Create.Array($Create.Any);

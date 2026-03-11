@@ -7,9 +7,6 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as schema$0 from "../../../../../../../github.com/cloudwego/eino/schema/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as data_models$0 from "../data_models/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -18,70 +15,8 @@ import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../../time/models.js";
 
-export class Chat {
-    "id": number;
-    "created_at": time$0.Time;
-    "updated_at": time$0.Time;
-    "deleted_at": gorm$0.DeletedAt;
-    "uuid": string;
-    "title": string;
-    "prompt": string;
-    "is_collection": boolean;
-    "content": MatchMessage[];
-    "reasoning_content": MatchMessage[];
-
-    /** Creates a new Chat instance. */
-    constructor($$source: Partial<Chat> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = 0;
-        }
-        if (!("created_at" in $$source)) {
-            this["created_at"] = null;
-        }
-        if (!("updated_at" in $$source)) {
-            this["updated_at"] = null;
-        }
-        if (!("deleted_at" in $$source)) {
-            this["deleted_at"] = null;
-        }
-        if (!("uuid" in $$source)) {
-            this["uuid"] = "";
-        }
-        if (!("title" in $$source)) {
-            this["title"] = "";
-        }
-        if (!("prompt" in $$source)) {
-            this["prompt"] = "";
-        }
-        if (!("is_collection" in $$source)) {
-            this["is_collection"] = false;
-        }
-        if (!("content" in $$source)) {
-            this["content"] = [];
-        }
-        if (!("reasoning_content" in $$source)) {
-            this["reasoning_content"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Chat instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Chat {
-        const $$createField8_0 = $$createType1;
-        const $$createField9_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("content" in $$parsedSource) {
-            $$parsedSource["content"] = $$createField8_0($$parsedSource["content"]);
-        }
-        if ("reasoning_content" in $$parsedSource) {
-            $$parsedSource["reasoning_content"] = $$createField9_0($$parsedSource["reasoning_content"]);
-        }
-        return new Chat($$parsedSource as Partial<Chat>);
-    }
-}
+export const Chat = data_models$0.Chat;
+export type Chat = data_models$0.Chat;
 
 export class ChatList {
     "lists": Chat[];
@@ -103,7 +38,7 @@ export class ChatList {
      * Creates a new ChatList instance from a string or object.
      */
     static createFrom($$source: any = {}): ChatList {
-        const $$createField0_0 = $$createType3;
+        const $$createField0_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("lists" in $$parsedSource) {
             $$parsedSource["lists"] = $$createField0_0($$parsedSource["lists"]);
@@ -115,6 +50,7 @@ export class ChatList {
 export class Completions {
     "chat_uuid": string;
     "message_uuid": string;
+    "message_key": string;
 
     /** Creates a new Completions instance. */
     constructor($$source: Partial<Completions> = {}) {
@@ -123,6 +59,9 @@ export class Completions {
         }
         if (!("message_uuid" in $$source)) {
             this["message_uuid"] = "";
+        }
+        if (!("message_key" in $$source)) {
+            this["message_key"] = "";
         }
 
         Object.assign(this, $$source);
@@ -137,74 +76,14 @@ export class Completions {
     }
 }
 
-export class File {
-    "preview": string | null;
-    "name": string;
-    "file_path": string;
-    "mine_type": string;
-    "chat_message_part_type": schema$0.ChatMessagePartType;
-    "size": number;
+export const FileInfo = data_models$0.File;
+export type FileInfo = data_models$0.File;
 
-    /** Creates a new File instance. */
-    constructor($$source: Partial<File> = {}) {
-        if (!("preview" in $$source)) {
-            this["preview"] = null;
-        }
-        if (!("name" in $$source)) {
-            this["name"] = "";
-        }
-        if (!("file_path" in $$source)) {
-            this["file_path"] = "";
-        }
-        if (!("mine_type" in $$source)) {
-            this["mine_type"] = "";
-        }
-        if (!("chat_message_part_type" in $$source)) {
-            this["chat_message_part_type"] = schema$0.ChatMessagePartType.$zero;
-        }
-        if (!("size" in $$source)) {
-            this["size"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new File instance from a string or object.
-     */
-    static createFrom($$source: any = {}): File {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new File($$parsedSource as Partial<File>);
-    }
-}
-
-export class MatchMessage {
-    "role": string;
-    "content": string;
-
-    /** Creates a new MatchMessage instance. */
-    constructor($$source: Partial<MatchMessage> = {}) {
-        if (!("role" in $$source)) {
-            this["role"] = "";
-        }
-        if (!("content" in $$source)) {
-            this["content"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new MatchMessage instance from a string or object.
-     */
-    static createFrom($$source: any = {}): MatchMessage {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new MatchMessage($$parsedSource as Partial<MatchMessage>);
-    }
-}
+export const Message = data_models$0.Message;
+export type Message = data_models$0.Message;
 
 export class MessageList {
-    "messages": schema$0.Message[];
+    "messages": Message[];
     "total": number;
 
     /** Creates a new MessageList instance. */
@@ -223,49 +102,12 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
         }
         return new MessageList($$parsedSource as Partial<MessageList>);
-    }
-}
-
-export class MessagePkg {
-    "chatUuid": string;
-    "model": string;
-    "content": string;
-    "files": File[];
-
-    /** Creates a new MessagePkg instance. */
-    constructor($$source: Partial<MessagePkg> = {}) {
-        if (!("chatUuid" in $$source)) {
-            this["chatUuid"] = "";
-        }
-        if (!("model" in $$source)) {
-            this["model"] = "";
-        }
-        if (!("content" in $$source)) {
-            this["content"] = "";
-        }
-        if (!("files" in $$source)) {
-            this["files"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new MessagePkg instance from a string or object.
-     */
-    static createFrom($$source: any = {}): MessagePkg {
-        const $$createField3_0 = $$createType7;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("files" in $$parsedSource) {
-            $$parsedSource["files"] = $$createField3_0($$parsedSource["files"]);
-        }
-        return new MessagePkg($$parsedSource as Partial<MessagePkg>);
     }
 }
 
@@ -410,7 +252,7 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType9;
+        const $$createField10_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -461,13 +303,9 @@ export class SupportProvider {
 }
 
 // Private type creation functions
-const $$createType0 = MatchMessage.createFrom;
+const $$createType0 = data_models$0.Chat.createFrom;
 const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = Chat.createFrom;
+const $$createType2 = data_models$0.Message.createFrom;
 const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = schema$0.Message.createFrom;
+const $$createType4 = Model.createFrom;
 const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = File.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = Model.createFrom;
-const $$createType9 = $Create.Array($$createType8);

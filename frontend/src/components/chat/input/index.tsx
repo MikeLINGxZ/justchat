@@ -1,50 +1,74 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import styles from "./index.module.scss";
-import type {ModelOption} from '@/hooks/useModels';
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
-import {File} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import {FileInfo, Model} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatInputProps {
-    // 类名
-    className?: string;
     // 所选模型
-    selectedModel: string;
+    selectedModelId: number;
     // 可用模型
-    availableModels: ModelOption[];
+    availableModels: Model[];
     // 是否正在生成消息
-    isGenerating?: boolean;
-    // 点击发送按钮事件（现在会传递输入的文本）
-    onSendMessage: (message: string,file: File[]) => void;
-    // 点击停止生成按钮事件
-    onStopGeneration?: () => void;
+    isGenerating: boolean;
     // 模型变更事件
-    onModelChange: (model: string) => void;
+    onSelectModelChange: (modelId: number, modelName: string) => void;
+    // 输入内容变更事件
+    onMessageChange: (message: string) => void;
+    // 文件变更事件
+    onSelectFileChange: (paths: FileInfo[]) => void;
+    // 发送按钮点击事件
+    onSendButtonClick: () => void;
+    // 点击停止生成按钮事件
+    onStopGeneration: () => void;
     // 消息列表滚动到底部按钮点击事件
     onMessageListScrollToBottom?: () => void;
-    // 清空输入框的回调
-    onClearInput?: () => void;
-    // 模型选择框点击事件（用于刷新模型数据）
+    // 模型选择框点击事件
     onModelSelectorClick?: () => void;
 }
 
+const DEFAULT_MODEL_KEY = 'chat_default_model';
+
+interface DefaultModelConfig {
+    modelId: number;
+    modelName: string;
+}
+
+function getDefaultModelConfig(): DefaultModelConfig | null {
+    try {
+        const raw = localStorage.getItem(DEFAULT_MODEL_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw) as DefaultModelConfig;
+    } catch {
+        return null;
+    }
+}
+
+function setDefaultModelConfig(config: DefaultModelConfig) {
+    localStorage.setItem(DEFAULT_MODEL_KEY, JSON.stringify(config));
+}
+
 const ChatInput: React.FC<ChatInputProps> = ({
-    selectedModel,
+    selectedModelId,
     availableModels,
     isGenerating = false,
-    onSendMessage,
+    onMessageChange,
+    onSendButtonClick,
+    onSelectFileChange,
     onStopGeneration,
-    onModelChange,
+    onSelectModelChange,
     onMessageListScrollToBottom,
     onModelSelectorClick,
-    className
 }) => {
 
     const [showAddMenu, setShowAddMenu] = useState(false);
     const [showModelMenu, setShowModelMenu] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isComposing, setIsComposing] = useState(false);
-    const [modelSearchValue, setModelSearchValue] = useState(''); // 新增：模型搜索值
+    const [modelSearchValue, setModelSearchValue] = useState('');
+    const [defaultModelId, setDefaultModelId] = useState<number | null>(() => {
+        return getDefaultModelConfig()?.modelId ?? null;
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const addMenuRef = useRef<HTMLDivElement>(null);
@@ -52,7 +76,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastHeightRef = useRef<number>(0);
     const isMobile =  useIsMobile();
-    const [files, setFiles] = useState<File[]>([]);
+    const [selectFiles, setSelectFiles] = useState<FileInfo[]>([]);
 
     // 优化的高度调整函数
     const adjustTextareaHeight = useCallback(() => {
@@ -86,7 +110,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 清空输入框
     const clearInput = useCallback(() => {
         setInputValue('');
-        setFiles([]); // 清空文件列表
+        setSelectFiles([]); // 清空文件列表
+        onSelectFileChange(selectFiles);
+        onMessageChange(inputValue);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = '40px';
@@ -121,53 +147,55 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [showModelMenu, onModelSelectorClick]);
 
-    // 图像上传事件
-    const handleImageUpload = useCallback(() => {
-        imageInputRef.current?.click();
-        Service.SelectFiles().then((data: File[]) => {
-            if (data && data.length > 0) {
-                setFiles(prevFiles => {
-                    const existingPaths = new Set(prevFiles.map(f => f.file_path));
-                    const newFiles = data.filter(f => !existingPaths.has(f.file_path));
-                    return [...prevFiles, ...newFiles];
-                });
-            }
-        }).catch((err) => {
-
-        }).finally(() => {
-            setShowAddMenu(false);
-        })
-    }, []);
-
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
         fileInputRef.current?.click();
-        Service.SelectFiles().then((data: File[]) => {
-            if (data && data.length > 0) {
-                setFiles(prevFiles => {
-                    const existingPaths = new Set(prevFiles.map(f => f.file_path));
-                    const newFiles = data.filter(f => !existingPaths.has(f.file_path));
-                    return [...prevFiles, ...newFiles];
-                });
-            }
-        }).catch((err) => {
-
+        Service.SelectFiles().then(async (files: FileInfo[]) => {
+            if (files.length === 0) return;
+            const newPaths = [...selectFiles, ...files];
+            setSelectFiles(newPaths);
+            onSelectFileChange(newPaths);
+        }).catch(() => {
         }).finally(() => {
             setShowAddMenu(false);
         })
-    }, []);
+    }, [selectFiles, onSelectFileChange]);
 
     // 删除文件
     const handleRemoveFile = useCallback((filePath: string) => {
-        setFiles(prevFiles => prevFiles.filter(f => f.file_path !== filePath));
+        setSelectFiles(prevFiles => prevFiles.filter(f => f.path !== filePath));
+        setSelectFiles(prevState => prevState.filter(f => f.path !== filePath))
     }, []);
 
+    // 初始化时自动选中默认模型
+    useEffect(() => {
+        if (selectedModelId > 0 || availableModels.length === 0) return;
+        const config = getDefaultModelConfig();
+        if (!config) return;
+        const exists = availableModels.some(m => m.id === config.modelId);
+        if (exists) {
+            onSelectModelChange(config.modelId, config.modelName);
+        }
+    }, [availableModels]);
+
     // 模型选择事件
-    const handleModelSelect = useCallback((model: string) => {
-        onModelChange(model);
+    const handleModelSelect = useCallback((modelId: number, modelName: string) => {
+        onSelectModelChange(modelId,modelName);
         setShowModelMenu(false);
-        setModelSearchValue(''); // 选择后清空搜索值
-    }, [onModelChange]);
+        setModelSearchValue('');
+    }, [onSelectModelChange]);
+
+    // 设为/取消默认模型
+    const handleSetDefaultModel = useCallback((e: React.MouseEvent, modelId: number, modelName: string) => {
+        e.stopPropagation();
+        if (defaultModelId === modelId) {
+            localStorage.removeItem(DEFAULT_MODEL_KEY);
+            setDefaultModelId(null);
+        } else {
+            setDefaultModelConfig({ modelId, modelName });
+            setDefaultModelId(modelId);
+        }
+    }, [defaultModelId]);
 
     // 处理模型搜索
     const handleModelSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,8 +208,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
             return availableModels;
         }
         return availableModels.filter(model => 
-            model.name.toLowerCase().includes(modelSearchValue.toLowerCase()) ||
-            model.id.toLowerCase().includes(modelSearchValue.toLowerCase())
+            model.model.toLowerCase().includes(modelSearchValue.toLowerCase()) ||
+            model.alias?.toLowerCase().includes(modelSearchValue.toLowerCase())
         );
     }, [availableModels, modelSearchValue]);
 
@@ -192,10 +220,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
         const trimmedValue = inputValue.trim();
         if (trimmedValue) {
-            onSendMessage(trimmedValue, files);
+            onSendButtonClick();
             clearInput(); // 清空输入框和文件列表
         }
-    }, [inputValue, files, onSendMessage, onMessageListScrollToBottom, clearInput]);
+    }, [inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
 
     //
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -203,7 +231,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
         if (isComposing) {
             return;
         }
-        
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -214,7 +241,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInputValue(value);
-        
+        onMessageChange(value);
         // 使用 requestAnimationFrame 优化性能
         requestAnimationFrame(() => {
             adjustTextareaHeight();
@@ -248,17 +275,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }, [showAddMenu, showModelMenu]);
 
     return (
-        <div className={`${styles.chatInput} ${className || ''}`}>
+        <div className={`${styles.chatInput}`}>
             <div className={styles.inputContainer}>
-                {/* 文件列表显示区域 */}
-                {files.length > 0 && (
+                 {/* 文件列表显示区域 */}
+                {selectFiles.length > 0 && (
                     <div className={styles.filesContainer}>
-                        {files.map((file) => (
-                            <div key={file.file_path} className={styles.fileItem}>
+                        {selectFiles.map((file) => (
+                            <div key={file.path} className={styles.fileItem}>
                                 <div className={styles.filePreview}>
                                     {file.preview ? (
-                                        <img 
-                                            src={file.preview} 
+                                        <img
+                                            src={file.preview}
                                             alt={file.name}
                                             className={styles.fileImage}
                                         />
@@ -271,7 +298,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                     )}
                                     <button
                                         className={styles.fileRemove}
-                                        onClick={() => handleRemoveFile(file.file_path)}
+                                        onClick={() => handleRemoveFile(file.path)}
                                         type="button"
                                         title="删除文件"
                                     >
@@ -322,23 +349,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 <div className={`${styles.addMenu} ${isMobile ? styles.mobileMenu : ''}`}>
                                     <button 
                                         className={styles.menuItem}
-                                        onClick={handleImageUpload}
-                                        type="button"
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                        </svg>
-                                        添加图片
-                                    </button>
-                                    <button 
-                                        className={styles.menuItem}
                                         onClick={handleFileUpload}
                                         type="button"
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
                                         </svg>
-                                        上传文本
+                                        上传文件
                                     </button>
                                 </div>
                             )}
@@ -352,7 +369,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 onClick={handleModelClick}
                                 type="button"
                             >
-                                {availableModels.find(model => model.id === selectedModel)?.name || selectedModel || '选择模型'}
+                                {availableModels.find(model => model.id === selectedModelId)?.model  || '选择模型'}
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M7 10l5 5 5-5z"/>
                                 </svg>
@@ -365,14 +382,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         {filteredModels().map((model) => (
                                             <button
                                                 key={model.id}
-                                                className={`${styles.menuItem} ${model.id === selectedModel ? styles.selected : ''}`}
-                                                onClick={() => handleModelSelect(model.id)}
+                                                className={`${styles.menuItem} ${model.id === selectedModelId ? styles.selected : ''}`}
+                                                onClick={() => handleModelSelect(model.id,model.model)}
                                                 type="button"
                                             >
-                                                <span className={styles.modelName}>{model.name}</span>
-                                                {model.name !== model.id && (
-                                                    <span className={styles.modelId}>{model.id}</span>
-                                                )}
+                                                <span className={styles.modelName}>
+                                                    {model.model}
+                                                    {model.id === defaultModelId && (
+                                                        <span className={styles.defaultBadge}>默认</span>
+                                                    )}
+                                                </span>
+                                                <span className={styles.modelItemRight}>
+                                                    {model.alias != null && (
+                                                        <span className={styles.modelId}>{model.alias}</span>
+                                                    )}
+                                                    <span
+                                                        className={styles.setDefaultBtn}
+                                                        onClick={(e) => handleSetDefaultModel(e, model.id, model.model)}
+                                                    >
+                                                        {model.id === defaultModelId ? '取消默认' : '设为默认'}
+                                                    </span>
+                                                </span>
                                             </button>
                                         ))}
                                         {/* 无结果提示 */}

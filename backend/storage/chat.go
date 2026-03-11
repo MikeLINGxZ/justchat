@@ -2,11 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gorm.io/gorm"
 )
 
 // GetChats 获取对话
@@ -30,9 +32,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 			return nil, 0, err
 		}
 		for _, item := range res {
-			chats = append(chats, view_models.Chat{
-				Chat: item,
-			})
+			chats = append(chats, item)
 		}
 		return chats, int(count), nil
 	}
@@ -48,12 +48,21 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 		return nil, 0, err
 	}
 	for _, item := range res {
-		chats = append(chats, view_models.Chat{
-			Chat: item,
-		})
+		chats = append(chats, item)
 	}
 
 	return chats, int(count), nil
+}
+func (s *Storage) GetChat(ctx context.Context, chatUuid string) (*view_models.Chat, error) {
+	var chat data_models.Chat
+	err := s.sqliteDB.Model(&data_models.Chat{}).Where("uuid = ?", chatUuid).First(&chat).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &chat, nil
 }
 
 // CreateChat 创建对话

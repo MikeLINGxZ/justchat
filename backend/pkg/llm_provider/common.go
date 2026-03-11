@@ -2,88 +2,188 @@ package llm_provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
+	"github.com/cloudwego/eino-ext/components/model/deepseek"
+	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino-ext/components/model/qwen"
+	"github.com/cloudwego/eino/adk"
+	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/agents"
 )
 
-type IProvider interface {
-	Completions(ctx context.Context, messages []schema.Message) (*schema.StreamReader[*schema.Message], error)
-	BuildUserMessage(ctx context.Context, message view_models.MessagePkg) (*schema.Message, error)
+type Provider struct {
+	chatModel model.BaseChatModel
+	mainAgent adk.Agent
+	tools     []tool.BaseTool
 }
 
-func NewLlmProvider(providerModel wrapper_models.ProviderModel) IProvider {
-	var iProvider IProvider
+// NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
+func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, tools []tool.BaseTool) (*Provider, error) {
+	var chatModel model.ToolCallingChatModel
+	var err error
 	switch providerModel.ProviderType {
 	case data_models.ProviderTypeDeepseek:
-		iProvider = NewDeepseek(providerModel)
+		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
+			BaseURL: providerModel.BaseUrl,
+			Model:   providerModel.Model,
+			APIKey:  providerModel.ApiKey,
+		})
+		if err != nil {
+			return nil, err
+		}
 	case data_models.ProviderTypeAliyuns:
-		iProvider = NewAliyun(providerModel)
+		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
+			BaseURL: providerModel.BaseUrl,
+			Model:   providerModel.Model,
+			APIKey:  providerModel.ApiKey,
+		})
+		if err != nil {
+			return nil, err
+		}
 	case data_models.ProviderTypeOpenrouter:
-		iProvider = NewOpenrouter(providerModel)
+		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
+			BaseURL: providerModel.BaseUrl,
+			Model:   providerModel.Model,
+			APIKey:  providerModel.ApiKey,
+		})
+		if err != nil {
+			return nil, err
+		}
 	default:
-		iProvider = NewOpenai(providerModel)
+		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
+			BaseURL: providerModel.BaseUrl,
+			Model:   providerModel.Model,
+			APIKey:  providerModel.ApiKey,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
-	return iProvider
-}
 
-// ModelData represents the structure for model information
-type ModelData struct {
-	ID      string `json:"id"`
-	Created int64  `json:"created"`
-	OwnedBy string `json:"owned_by"`
-	Object  string `json:"object"`
-}
-
-// ModelsResponse represents the response structure from the models API
-type ModelsResponse struct {
-	Object string      `json:"object"`
-	Data   []ModelData `json:"data"`
-}
-
-// GetModels retrieves available models from the LLM provider
-func GetModels(baseURL, apiKey string) ([]ModelData, error) {
-	client := &http.Client{}
-	url := fmt.Sprintf("%s/models", baseURL)
-
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	mainAgent, err := agents.NewMainAgent(ctx, chatModel, nil, tools)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var modelsResp ModelsResponse
-	if err := json.Unmarshal(body, &modelsResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return modelsResp.Data, nil
+	return &Provider{chatModel: chatModel, tools: tools, mainAgent: mainAgent}, nil
 }
+
+func (p *Provider) Completions(ctx context.Context, messages []schema.Message) (*schema.StreamReader[*schema.Message], error) {
+	messagesPoint := make([]*schema.Message, len(messages))
+	for i := range messages {
+		messagesPoint[i] = &messages[i]
+	}
+
+	streamResult, err := p.chatModel.Stream(ctx, messagesPoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return streamResult, nil
+}
+
+func (p *Provider) AgentCompletions(ctx context.Context, messages []schema.Message) (*adk.AsyncIterator[*adk.AgentEvent], error) {
+	messagesPoint := make([]*schema.Message, len(messages))
+	for i := range messages {
+		messagesPoint[i] = &messages[i]
+	}
+
+	runner := adk.NewRunner(ctx, adk.RunnerConfig{
+		Agent:           p.mainAgent,
+		EnableStreaming: true,
+	})
+
+	iter := runner.Run(ctx, messagesPoint)
+	return iter, nil
+}
+
+//
+//func (p *Provider) BuildUserMessage(ctx context.Context, message view_models.Message) (*schema.Message, error) {
+//	var paths []string
+//	path2base64data := make(map[string]string)
+//	for _, file := range message.Files {
+//		paths = append(paths, file.Path)
+//	}
+//
+//	for _, path := range paths {
+//		data, err := utils.ReadFile2Base64Data(path)
+//		if err != nil {
+//			return nil, err
+//		}
+//		path2base64data[path] = data
+//	}
+//
+//	var userInputMultiContent []schema.MessageInputPart
+//	if message.Content != "" {
+//		userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
+//			Type: schema.ChatMessagePartTypeText,
+//			Text: message.Content,
+//		})
+//	}
+//
+//	for _, item := range message.Files {
+//		var text string
+//		var img *schema.MessageInputImage
+//		var audio *schema.MessageInputAudio
+//		var video *schema.MessageInputVideo
+//		var file *schema.MessageInputFile
+//		base64Data := path2base64data[item.Path]
+//		messagePartCommon := schema.MessagePartCommon{
+//			Base64Data: &base64Data,
+//			MIMEType:   item.MineType,
+//			Extra: map[string]interface{}{
+//				"name":                   item.Name,
+//				"path":                   item.Path,
+//				"mime_type":              item.MineType,
+//				"chat_message_part_type": item.ChatMessagePartType,
+//				"size":                   item.Size,
+//			},
+//		}
+//		switch item.ChatMessagePartType {
+//		case schema.ChatMessagePartTypeText, schema.ChatMessagePartTypeFileURL:
+//			continue
+//		case schema.ChatMessagePartTypeImageURL:
+//			img = &schema.MessageInputImage{
+//				MessagePartCommon: messagePartCommon,
+//				Detail:            schema.ImageURLDetailHigh,
+//			}
+//		case schema.ChatMessagePartTypeAudioURL:
+//			audio = &schema.MessageInputAudio{
+//				MessagePartCommon: messagePartCommon,
+//			}
+//		case schema.ChatMessagePartTypeVideoURL:
+//			video = &schema.MessageInputVideo{
+//				MessagePartCommon: messagePartCommon,
+//			}
+//		}
+//		if img == nil && audio == nil && video == nil {
+//			continue
+//		}
+//		userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
+//			Type:  item.ChatMessagePartType,
+//			Text:  text,
+//			Image: img,
+//			Audio: audio,
+//			Video: video,
+//			File:  file,
+//		})
+//	}
+//
+//	return &schema.Message{
+//		Role:                  schema.User,
+//		Content:               "",
+//		UserInputMultiContent: userInputMultiContent,
+//	}, nil
+//}
 
 // GenChatTitle 生成一个聊天的标题
-func GenChatTitle(provider IProvider, messages []schema.Message) (string, error) {
+func (p *Provider) GenChatTitle(ctx context.Context, messages []schema.Message) (string, error) {
 	genTitle := ""
 	contextMessages := []schema.Message{
 		{
@@ -102,7 +202,8 @@ func GenChatTitle(provider IProvider, messages []schema.Message) (string, error)
 		},
 	}
 	contextMessages = append(contextMessages, messages...)
-	resp, err := provider.Completions(context.Background(), contextMessages)
+
+	resp, err := p.Completions(context.Background(), contextMessages)
 	if err == nil {
 		for {
 			recv, err := resp.Recv()

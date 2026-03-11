@@ -9,55 +9,27 @@ import (
 )
 
 // CreateMessage 创建消息
-func (s *Storage) CreateMessage(ctx context.Context, chatUuid string, message data_models.Message) error {
-	return s.sqliteDB.Create(&message).Error
+func (s *Storage) CreateMessage(ctx context.Context, chatUuid string, message data_models.Message) (uint, error) {
+	err := s.sqliteDB.Create(&message).Error
+	return message.ID, err
 }
 
-// SaveOrUpdateDeltaMessage 创建或更新消息
-func (s *Storage) SaveOrUpdateDeltaMessage(ctx context.Context, deltaMessage data_models.Message) error {
-	// 如果消息ID为0，说明是新消息，直接创建
-	if deltaMessage.Uuid == "" {
-		return s.sqliteDB.Create(&deltaMessage).Error
-	}
-
+func (s *Storage) SaveOrUpdateMessage(ctx context.Context, message data_models.Message) error {
 	// 先查询现有记录
 	var existingMessage data_models.Message
-	err := s.sqliteDB.Where("uuid = ?", deltaMessage.Uuid).First(&existingMessage).Error
+	err := s.sqliteDB.Where("message_uuid = ?", message.MessageUuid).First(&existingMessage).Error
 	if err != nil {
 		// 如果记录不存在，创建新消息
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return s.sqliteDB.Create(&deltaMessage).Error
+			return s.sqliteDB.Create(&message).Error
 		}
 		// 其他错误直接返回
 		return err
 	}
-
-	// 检查现有消息的Message字段
-	schemaMsg := existingMessage.Message
-	if schemaMsg == nil {
-		return errors.New("existing message schema is not defined")
-	}
-
-	// 增量更新内容
-	if deltaMessage.Message != nil {
-		if deltaMessage.Message.Content != "" {
-			schemaMsg.Content += deltaMessage.Message.Content
-		}
-		if deltaMessage.Message.ReasoningContent != "" {
-			schemaMsg.ReasoningContent += deltaMessage.Message.ReasoningContent
-		}
-		if deltaMessage.Message.ResponseMeta != nil {
-			schemaMsg.ResponseMeta = deltaMessage.Message.ResponseMeta
-		}
-	}
-
-	// 更新现有消息的Message字段
-	existingMessage.Message = schemaMsg
-
-	// 保存更新后的消息
-	return s.sqliteDB.Where("uuid = ?", deltaMessage.Uuid).Updates(&existingMessage).Error
+	return s.sqliteDB.Where("message_uuid = ?", message.MessageUuid).Updates(&message).Error
 }
 
+// GetMessage 获取 chat 消息
 func (s *Storage) GetMessage(ctx context.Context, chatUuid string, offset, limit int) ([]data_models.Message, int, error) {
 	var messages []data_models.Message
 	err := s.sqliteDB.Model(&data_models.Message{}).Where("chat_uuid = ?", chatUuid).Offset(offset).Limit(limit).Find(&messages).Error

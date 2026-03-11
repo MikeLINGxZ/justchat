@@ -5,7 +5,7 @@ import {persist} from "zustand/middleware";
 
 // 定义模型选项接口
 export interface ModelOption {
-    id: string;
+    id: number;
     name: string;
     ownedBy?: string;
     enabled?: boolean;
@@ -14,8 +14,8 @@ export interface ModelOption {
 // 将后端模型数据转换为前端使用的格式
 const convertBackendModel = (backendModel: Model): ModelOption => {
     return {
-        id: backendModel.model,
-        name: backendModel.alias || backendModel.model,
+        id: backendModel.id,
+        name: backendModel.model ,
         ownedBy: backendModel.owned_by,
         enabled: backendModel.enable,
     };

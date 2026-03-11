@@ -73,8 +73,20 @@ func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Mode
 	return &models, nil
 }
 
-func (s *Storage) GetProviderModel(ctx context.Context, model string) (*wrapper_models.ProviderModel, error) {
-	modelInfo, err := s.GetModel(ctx, model)
+func (s *Storage) GetModelByIdAndName(ctx context.Context, modelId uint, modelName string) (*data_models.Model, error) {
+	var models data_models.Model
+	err := s.sqliteDB.Model(&data_models.Model{}).Joins("join providers p on p.id = provider_id AND p.deleted_at IS NULL").Where("models.id = ? AND models.model = ?", modelId, modelName).First(&models).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &models, nil
+}
+
+func (s *Storage) GetProviderModel(ctx context.Context, modelId uint, modelName string) (*wrapper_models.ProviderModel, error) {
+	modelInfo, err := s.GetModelByIdAndName(ctx, modelId, modelName)
 	if err != nil {
 		return nil, err
 	}

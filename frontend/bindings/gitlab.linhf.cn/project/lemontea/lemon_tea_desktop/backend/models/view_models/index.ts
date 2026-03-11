@@ -5,10 +5,9 @@ export {
     Chat,
     ChatList,
     Completions,
-    File,
-    MatchMessage,
+    FileInfo,
+    Message,
     MessageList,
-    MessagePkg,
     Model,
     Provider,
     SupportProvider

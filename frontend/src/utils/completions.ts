@@ -1,13 +1,15 @@
-import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts"
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
-import {Completions} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+import {
+    Completions,
+    type Message
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 import { Events } from '@wailsio/runtime';
 import {GenEventsKey} from "@/utils/events.ts";
 import * as view_models$0
     from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
 
 export async function CompletionsUtils(
-    messagePkg: view_models$0.MessagePkg,
+    messageInput: view_models$0.Message,
     onMessage: (message: Message) => void,
     onError: (error: string) => void,
     onComplete: (chatUuid: string) => void,
@@ -15,34 +17,23 @@ export async function CompletionsUtils(
 ): Promise<void> {
     let cancel: (() => void) | null = null;
     let isCompleted = false;
-    let hasReceivedFirstResponse = false;
-
+    let messageKey: string = "" ;
     try {
         // 设置取消监听器
         if (abortController) {
             abortController.signal.addEventListener('abort', () => {
-                if (cancel) {
-                    cancel();
-                    cancel = null;
-                }
-                if (!isCompleted) {
-                    onError('请求已被取消');
-                }
+                console.log("abort",messageKey)
+                Service.StopCompletions(messageKey)
             });
         }
 
         // 调用 Completions API
-        const resp: Completions | null = await Service.Completions(messagePkg);
-
+        const resp: Completions | null = await Service.Completions(messageInput);
+        messageKey = resp?.message_key ?? ""
         // 设置事件监听器
-        cancel = Events.On(GenEventsKey(resp?.message_uuid!), (event) => {
+        cancel = Events.On(resp?.message_key!, (event) => {
             const responseMessage: Message = event.data;
             try {
-                // 第一次接收到内容时标记
-                if (!hasReceivedFirstResponse && responseMessage) {
-                    hasReceivedFirstResponse = true;
-                }
-
                 // 处理接收到的消息
                 if (responseMessage) {
                     console.log("[CompletionsUtils] responseMessage:", responseMessage)
@@ -50,19 +41,15 @@ export async function CompletionsUtils(
                 }
 
                 // 检查是否完成
-                if (responseMessage?.response_meta?.finish_reason &&
-                    responseMessage.response_meta.finish_reason !== "") {
-                    isCompleted = true;
-                    console.log("[CompletionsUtils] 对话完成，清理资源");
-
+                if (responseMessage?.assistant_message_extra?.finish_reason != "") {
                     // 清理事件监听器
                     if (cancel) {
                         cancel();
                         cancel = null;
                     }
-                    Events.Off(resp?.message_uuid!);
-
+                    Events.Off(resp?.message_key!);
                     onComplete(resp?.chat_uuid!);
+                    isCompleted = true;
                 }
             } catch (error) {
                 console.error('处理响应消息时出错:', error);
@@ -87,16 +74,11 @@ export async function CompletionsUtils(
     } catch (error) {
         console.error('Completions API 调用失败:', error);
         onError(`API 调用失败: ${error instanceof Error ? error.message : String(error)}`);
-
-        // 清理资源
         if (cancel) {
             cancel();
             cancel = null;
         }
-
-        // 标记为已完成，避免后续处理
         isCompleted = true;
-
         throw error;
     }
 }

@@ -7,13 +7,11 @@ import React, {
     useLayoutEffect,
     useState,
 } from "react";
-import {Message} from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import styles from "./index.module.scss";
 import ChatMessage from "@/components/chat/message";
+import type {Message} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface MessageListProps {
-    // 类名
-    className?: string;
     // 消息列表
     messages?: Message[];
     // 是否正在生成消息
@@ -32,7 +30,6 @@ export interface MessageListRef {
 }
 
 const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListProps> = ({
-    className,
     messages = [],
     isGenerating = false,
     useInstantScrollOnFirstLoad = false,
@@ -448,7 +445,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
 
     return (
         <>
-            <div ref={containerRef} className={`${className} ${styles.MessageList}`}>
+            <div ref={containerRef} className={`${styles.MessageList}`}>
                 {/* 消息 */}
                 <div ref={contentRef} className={styles.content}>
                     {

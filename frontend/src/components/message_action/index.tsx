@@ -1,6 +1,6 @@
 import React from "react";
-import { Message } from "@bindings/github.com/cloudwego/eino/schema/index.ts";
 import styles from "./index.module.scss";
+import type {Message} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface MessageActionProps {
     // 消息对象

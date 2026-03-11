@@ -22,7 +22,7 @@ import AppsPage from '@/pages/apps/index.tsx';
 interface SidebarProps {
     className?: string;
     currentChatUuid: string | null;
-    onChatSelect: (chatUuid: string, chatTitle?: string) => void;
+    onChatSelect: (chatUuid: string) => void;
     isSidebarCollapsed: boolean;
     onToggleSidebar: () => void;
     onNewChat?: () => void;
@@ -146,8 +146,8 @@ const Index: React.FC<SidebarProps> = ({
         onNewChat?.();
     };
 
-    const handleChatSelect = (chatUuid: string, chatTitle?: string) => {
-        onChatSelect(chatUuid, chatTitle);
+    const handleChatSelect = (chatUuid: string) => {
+        onChatSelect(chatUuid);
     };
 
     const handleUserMenuToggle = () => {

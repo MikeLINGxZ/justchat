@@ -66,13 +66,13 @@ function App() {
           path="/"
           element={<Chat />}
         />
-        <Route
-          path="/home"
-          element={<Chat />}
-        />
         {/* 带chatUuid参数的聊天页面路由 */}
         <Route
-          path="/home/:chatUuid"
+            path="/home/:chatUuid"
+            element={<Chat/>}
+        />
+        <Route
+          path="/home"
           element={<Chat />}
         />
         <Route

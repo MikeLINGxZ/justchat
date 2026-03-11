@@ -7,6 +7,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as data_models$0 from "../models/data_models/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as view_models$0 from "../models/view_models/models.js";
 
 /**
@@ -17,11 +20,20 @@ export function AddProvider(provider: view_models$0.Provider): $CancellablePromi
 }
 
 /**
+ * ChatInfo 对话信息
+ */
+export function ChatInfo(chatUuid: string): $CancellablePromise<view_models$0.Chat | null> {
+    return $Call.ByID(1668598080, chatUuid).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
  * ChatList 聊天列表
  */
 export function ChatList(offset: number, limit: number, keyword: string | null, isCollection: boolean): $CancellablePromise<view_models$0.ChatList | null> {
     return $Call.ByID(1229500932, offset, limit, keyword, isCollection).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType3($result);
     });
 }
 
@@ -30,7 +42,7 @@ export function ChatList(offset: number, limit: number, keyword: string | null, 
  */
 export function ChatMessages(chatUuid: string, offset: number, limit: number): $CancellablePromise<view_models$0.MessageList | null> {
     return $Call.ByID(4205977752, chatUuid, offset, limit).then(($result: any) => {
-        return $$createType3($result);
+        return $$createType5($result);
     });
 }
 
@@ -44,9 +56,9 @@ export function CollectionChat(chatUuid: string, isCollection: boolean): $Cancel
 /**
  * Completions 聊天
  */
-export function Completions(message: view_models$0.MessagePkg): $CancellablePromise<view_models$0.Completions | null> {
-    return $Call.ByID(2526998161, message).then(($result: any) => {
-        return $$createType5($result);
+export function Completions(inputMessage: view_models$0.Message): $CancellablePromise<view_models$0.Completions | null> {
+    return $Call.ByID(2526998161, inputMessage).then(($result: any) => {
+        return $$createType7($result);
     });
 }
 
@@ -67,8 +79,8 @@ export function DeleteProvider(providerId: number): $CancellablePromise<void> {
 /**
  * GenChatTitle 创建聊天标题
  */
-export function GenChatTitle(chatUuid: string, model: string, update: boolean): $CancellablePromise<string> {
-    return $Call.ByID(726618912, chatUuid, model, update);
+export function GenChatTitle(chatUuid: string, modelId: number, modelName: string, update: boolean): $CancellablePromise<string> {
+    return $Call.ByID(726618912, chatUuid, modelId, modelName, update);
 }
 
 /**
@@ -76,7 +88,7 @@ export function GenChatTitle(chatUuid: string, model: string, update: boolean): 
  */
 export function GetModels(enableProvider: boolean | null, enableModel: boolean | null): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(2435611672, enableProvider, enableModel).then(($result: any) => {
-        return $$createType7($result);
+        return $$createType9($result);
     });
 }
 
@@ -85,7 +97,7 @@ export function GetModels(enableProvider: boolean | null, enableModel: boolean |
  */
 export function GetProviderModels(provider: view_models$0.Provider): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(1264152129, provider).then(($result: any) => {
-        return $$createType7($result);
+        return $$createType9($result);
     });
 }
 
@@ -94,7 +106,7 @@ export function GetProviderModels(provider: view_models$0.Provider): $Cancellabl
  */
 export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     return $Call.ByID(3921712104).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType11($result);
     });
 }
 
@@ -103,7 +115,7 @@ export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
  */
 export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
     return $Call.ByID(4035154853).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType13($result);
     });
 }
 
@@ -122,14 +134,14 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
     return $Call.ByID(2654224378, chatUuid, title);
 }
 
-export function SelectFiles(): $CancellablePromise<view_models$0.File[]> {
+export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType15($result);
     });
 }
 
-export function StopCompletions(chatUuid: string): $CancellablePromise<void> {
-    return $Call.ByID(115959129, chatUuid);
+export function StopCompletions(messageKey: string): $CancellablePromise<void> {
+    return $Call.ByID(115959129, messageKey);
 }
 
 /**
@@ -147,17 +159,19 @@ export function UpdateProviderModels(providerId: number): $CancellablePromise<vo
 }
 
 // Private type creation functions
-const $$createType0 = view_models$0.ChatList.createFrom;
+const $$createType0 = data_models$0.Chat.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = view_models$0.MessageList.createFrom;
+const $$createType2 = view_models$0.ChatList.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = view_models$0.Completions.createFrom;
+const $$createType4 = view_models$0.MessageList.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = view_models$0.Model.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = view_models$0.Provider.createFrom;
+const $$createType6 = view_models$0.Completions.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = view_models$0.Model.createFrom;
 const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = view_models$0.SupportProvider.createFrom;
+const $$createType10 = view_models$0.Provider.createFrom;
 const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = view_models$0.File.createFrom;
+const $$createType12 = view_models$0.SupportProvider.createFrom;
 const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = data_models$0.File.createFrom;
+const $$createType15 = $Create.Array($$createType14);

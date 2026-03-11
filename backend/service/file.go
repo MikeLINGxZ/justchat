@@ -2,14 +2,16 @@ package service
 
 import (
 	"mime"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
 
-func (s *Service) SelectFiles() ([]view_models.File, error) {
+func (s *Service) SelectFiles() ([]view_models.FileInfo, error) {
 
 	// 调用系统接口选择文件
 	pattern := "*.txt;*.log;*.text;*.json;*.html;*.css;*.scss;*.jpg;*.png;*.jpeg;*.bmp"
@@ -18,41 +20,46 @@ func (s *Service) SelectFiles() ([]view_models.File, error) {
 		return nil, ierror.NewError(err)
 	}
 	if len(paths) == 0 {
-		return []view_models.File{}, nil
+		return []view_models.FileInfo{}, nil
 	}
 
-	files := make([]view_models.File, 0, len(paths))
-	for _, path := range paths {
-		// 获取文件MIMEType
-		ext := filepath.Ext(path)
-		mimeType := mime.TypeByExtension(ext)
-		if mimeType == "" {
-			mimeType = "application/octet-stream"
-		}
-
-		// 通过mineType获取消息类型
-		chatMessagePartType, err := utils.MimeType2ChatMessagePartType(mimeType)
-		if err != nil {
-			return nil, ierror.NewError(err)
-		}
-
-		// todo 如果为图像，则设置预览base64 200x200
-		var previewImg *string
-
-		file := view_models.File{
-			ChatMessagePartType: chatMessagePartType,
-			PreviewImg:          previewImg,
-			Name:                filepath.Base(path),
-			FilePath:            path,
-			MineType:            mimeType,
-		}
-
-		files = append(files, file)
-	}
-
-	return files, nil
+	return s.fileInfo(paths)
 }
 
 func (s *Service) OpenFile(path string) error {
 	return s.app.Browser.OpenFile(path)
+}
+
+func (s *Service) fileInfo(paths []string) ([]view_models.FileInfo, error) {
+	result := make([]view_models.FileInfo, 0, len(paths))
+
+	for _, p := range paths {
+		stat, err := os.Stat(p)
+		if err != nil {
+			return nil, ierror.NewError(err)
+		}
+
+		mimeType := mime.TypeByExtension(filepath.Ext(p))
+		if mimeType == "" {
+			mimeType = "application/octet-stream"
+		}
+
+		info := view_models.FileInfo{
+			Name:     stat.Name(),
+			Path:     p,
+			MineType: mimeType,
+			Size:     stat.Size(),
+		}
+
+		if strings.HasPrefix(mimeType, "image/") {
+			preview, err := utils.GenerateImagePreview(p)
+			if err == nil {
+				info.Preview = &preview
+			}
+		}
+
+		result = append(result, info)
+	}
+
+	return result, nil
 }

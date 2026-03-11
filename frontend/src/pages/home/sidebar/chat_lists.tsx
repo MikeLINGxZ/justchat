@@ -31,7 +31,7 @@ interface GroupedChats {
 
 interface SidebarChatsProps {
     currentChatUuid: string | null;
-    onChatSelect?: (chatUuid: string, chatTitle?: string) => void;
+    onChatSelect?: (chatUuid: string) => void;
     onRegisterRefreshCallback?: (callback: () => void) => void;
     onRegisterUpdateTitleCallback?: (
         callback: (chatUuid: string, newTitle: string) => void
@@ -357,8 +357,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     }, [onRegisterUpdateTitleCallback, updateChatTitle]);
 
     // 处理聊天选择
-    const handleChatSelect = (chatUuid: string, chatTitle?: string) => {
-        onChatSelect?.(chatUuid, chatTitle);
+    const handleChatSelect = (chatUuid: string) => {
+        onChatSelect?.(chatUuid);
     };
 
     // 处理收藏聊天
@@ -573,7 +573,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                 key={chat.uuid}
                 style={{padding: 0}}
                 className={`${styles.chatItem}`}
-                onClick={() => !isEditing && handleChatSelect(chat.uuid!, chat.title)}
+                onClick={() => !isEditing && handleChatSelect(chat.uuid!)}
             >
                 <div
                     className={`${styles.chatContent} ${currentChatUuid === chat.uuid ? styles.active : ''} ${isEditing ? styles.editing : ''}`}
@@ -654,10 +654,11 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     const renderGroup = (title: string, chats: Chat[]) => {
         if (chats.length === 0) return null;
 
+
         return (
             <div key={title} className={styles.chatGroup}>
                 <div className={styles.groupTitleGroup}>
-                    <Divider orientation="left" className={styles.groupTitle}>
+                    <Divider orientation="horizontal" className={styles.groupTitle}>
                         <Text type="secondary">{title}</Text>
                     </Divider>
                 </div>

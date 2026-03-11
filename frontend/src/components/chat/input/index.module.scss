@@ -433,6 +433,14 @@
   white-space: nowrap;
 }
 
+// 模型项右侧容器
+.modelItemRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
 // 模型ID（如果与名称不同）
 .modelId {
   flex-shrink: 0;
@@ -443,6 +451,46 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// 默认模型标记
+.defaultBadge {
+  display: inline-block;
+  margin-left: var(--spacing-xs);
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--primary-color);
+  background: var(--primary-color-light);
+  border-radius: 3px;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+// 设为默认按钮
+.setDefaultBtn {
+  display: none;
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--primary-color);
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--primary-color-light);
+  }
+}
+
+.menuItem:hover .setDefaultBtn {
+  display: inline-block;
+}
+
+// hover 时隐藏 alias 以腾出空间
+.menuItem:hover .modelId {
+  display: none;
 }
 
 // 无结果提示

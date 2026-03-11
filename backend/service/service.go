@@ -15,7 +15,7 @@ const (
 type Service struct {
 	storage           *storage.Storage
 	app               *application.App
-	completionsStopCh map[string]chan struct{}
+	completionsStopCh map[string]chan struct{} // 用于用户手动结束的ch
 }
 
 func NewService() *Service {

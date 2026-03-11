@@ -1,5 +1,4 @@
 import React, {forwardRef} from "react";
-import {Message} from "@bindings/github.com/cloudwego/eino/schema";
 import styles from "./index.module.scss";
 import ReasoningContent from "@/components/chat/reasoning_message";
 import ReactMarkdown from "react-markdown";
@@ -7,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
 import {tomorrow} from "react-syntax-highlighter/dist/esm/styles/prism";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
+import type {Message} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatMessageProps {
     // 消息
@@ -25,7 +25,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }
 
     // 如果是AI消息且内容和思考过程都为空，则不渲染
-    if (!isUser && !message.content.trim() && !message.reasoning_content?.trim()) {
+    if (
+        !isUser &&
+        !message.content?.trim() &&                 // ✅ 安全：content 为 null/undefined → undefined?.trim() → undefined → 转为 false
+        !message.reasoning_content?.trim()          // ✅ 已有，保持
+    ) {
         return null;
     }
 
@@ -34,54 +38,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         if (message.content.trim()) {
             return message.content;
         }
-        if (message.user_input_multi_content && message.user_input_multi_content.length > 0) {
-            return message.user_input_multi_content[0].text || '';
-        }
         return '';
     };
-
-    // 获取文件列表：从 user_input_multi_content 的第2个元素开始（索引1）
-    // 支持所有类型：image、audio、video、file
-    const getFileList = () => {
-        if (!message.user_input_multi_content || message.user_input_multi_content.length <= 1) {
-            return [];
-        }
-        return message.user_input_multi_content.slice(1)
-            .map(part => {
-                // 根据类型获取对应的 extra 信息
-                let extra: any = null;
-                let type = 'file';
-                
-                if (part.image?.extra) {
-                    extra = part.image.extra;
-                    type = 'image';
-                } else if (part.audio?.extra) {
-                    extra = part.audio.extra;
-                    type = 'audio';
-                } else if (part.video?.extra) {
-                    extra = part.video.extra;
-                    type = 'video';
-                } else if (part.file?.extra) {
-                    extra = part.file.extra;
-                    type = 'file';
-                }
-                
-                // 如果没有 extra，跳过
-                if (!extra) {
-                    return null;
-                }
-                
-                return {
-                    name: extra.name || '未知文件',
-                    path: extra.path || '',
-                    mime_type: extra.mime_type || '',
-                    type: type
-                };
-            })
-            .filter((item): item is NonNullable<typeof item> => item !== null);
-    };
-
-    const fileList = getFileList();
 
     // 处理文件点击事件
     const handleFileClick = (filePath: string) => {
@@ -92,9 +50,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         }
     };
 
-    // todo
-    //  wrapperClass = styles.errorMessageWrapper;
-
     return (
         <div className={styles.ChatMessage}>
             <div className={`${styles.message} ${wrapperClass}`}>
@@ -104,24 +59,25 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                             <div className={styles.messageContent}>
                                 {getDisplayContent()}
                             </div>
-                            {fileList.length > 0 && (
+                            {(message.user_message_extra?.files?.length ?? 0) > 0 && (
                                 <div className={styles.fileList}>
-                                    {fileList.map((file, index) => (
-                                        <div 
-                                            key={index} 
+                                    {message.user_message_extra!.files!.map((file, index) => (
+                                        <div
+                                            key={index}
                                             className={styles.fileItem}
                                             onClick={() => handleFileClick(file.path)}
                                             title={`点击打开: ${file.name}`}
                                         >
-                                            <span className={styles.fileType}>{file.type}</span>
+                                            <span className={styles.fileType}>{file.mine_type}</span>
                                             <span className={styles.fileName}>{file.name}</span>
-                                            {file.mime_type && (
-                                                <span className={styles.fileMimeType}>{file.mime_type}</span>
+                                            {file.mine_type && (
+                                                <span className={styles.fileMimeType}>{file.mine_type}</span>
                                             )}
                                         </div>
                                     ))}
                                 </div>
                             )}
+
                         </>
                     ):(
                         <div>
@@ -200,8 +156,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                             </div>
                         </div>
                     )}
+                    {message.assistant_message_extra?.finish_reason === 'error' && (
+                        <div className={styles.finishReasonError}>⚠ 因错误终止</div>
+                    )}
+                    {message.assistant_message_extra?.finish_reason === 'user stop' && (
+                        <div className={styles.finishReasonUserStop}>⚠ 用户终止生成</div>
+                    )}
                 </div>
+                
             </div>
+
         </div>
     )
 }
