@@ -4,6 +4,8 @@
 
 基于 Wails3 构建的跨平台桌面 AI 聊天客户端，支持多种大语言模型提供商，提供流畅的对话体验。
 
+<p align="center"><img src="docs/app_home.png" alt="WhoDB Interface" width="80%" height="auto" /></p>
+
 ## 功能特性
 
 - **多轮对话**：支持流式输出、停止生成、自动生成对话标题。
