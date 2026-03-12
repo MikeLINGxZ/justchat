@@ -11,8 +11,7 @@ import (
 )
 
 // GetProviders 获取所有供应商
-func (s *Service) GetProviders() ([]view_models.Provider, error) {
-	ctx := context.Background()
+func (s *Service) GetProviders(ctx context.Context) ([]view_models.Provider, error) {
 	providers, err := s.storage.GetProviders(ctx)
 	if err != nil {
 		return nil, ierror.NewError(err)
@@ -34,12 +33,13 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 		var modelsVD []view_models.Model
 		for _, model := range models {
 			modelsVD = append(modelsVD, view_models.Model{
-				ID:      model.ID,
-				Enable:  model.Enable,
-				Alias:   model.Alias,
-				Model:   model.Model,
-				OwnedBy: model.OwnedBy,
-				Object:  model.Object,
+				ID:       model.ID,
+				Enable:   model.Enable,
+				Alias:    model.Alias,
+				Model:    model.Model,
+				OwnedBy:  model.OwnedBy,
+				Object:   model.Object,
+				IsCustom: model.IsCustom,
 			})
 		}
 		providerIds2ModelsVD[providerId] = modelsVD
@@ -73,7 +73,7 @@ func (s *Service) GetProviders() ([]view_models.Provider, error) {
 }
 
 // AddProvider 添加供应商
-func (s *Service) AddProvider(provider view_models.Provider) error {
+func (s *Service) AddProvider(ctx context.Context, provider view_models.Provider) error {
 	providerId, err := s.storage.AddProvider(context.Background(), data_models.Provider{
 		ProviderName:      provider.ProviderName,
 		ProviderType:      provider.ProviderType,
@@ -87,7 +87,7 @@ func (s *Service) AddProvider(provider view_models.Provider) error {
 	}
 
 	// 更新模型信息
-	err = s.updateProviderModel(providerId)
+	err = s.updateProviderModel(ctx, providerId)
 	if err != nil {
 		// todo
 	}
@@ -96,13 +96,12 @@ func (s *Service) AddProvider(provider view_models.Provider) error {
 }
 
 // UpdateProvider 更新供应商
-func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error {
+func (s *Service) UpdateProvider(ctx context.Context, id uint, provider *view_models.Provider) error {
 	// provider为空，代表更新模型信息
 	if provider == nil {
 		return nil
 	}
 
-	ctx := context.Background()
 	provider.ID = id
 	err := s.storage.NewFnTransaction(ctx, func(ctx context.Context, tx *storage.Storage) error {
 		err := tx.UpdateProvider(ctx, data_models.Provider{
@@ -137,8 +136,8 @@ func (s *Service) UpdateProvider(id uint, provider *view_models.Provider) error 
 }
 
 // UpdateProviderModels 更新供应商
-func (s *Service) UpdateProviderModels(providerId uint) error {
-	err := s.updateProviderModel(providerId)
+func (s *Service) UpdateProviderModels(ctx context.Context, providerId uint) error {
+	err := s.updateProviderModel(ctx, providerId)
 	if err != nil {
 		return ierror.NewError(err)
 	}
@@ -146,12 +145,12 @@ func (s *Service) UpdateProviderModels(providerId uint) error {
 }
 
 // DeleteProvider 删除供应商
-func (s *Service) DeleteProvider(providerId uint) error {
-	return s.storage.DeleteProvider(context.Background(), providerId)
+func (s *Service) DeleteProvider(ctx context.Context, providerId uint) error {
+	return s.storage.DeleteProvider(ctx, providerId)
 }
 
 // GetProviderModels 获取供应商模型信息
-func (s *Service) GetProviderModels(provider view_models.Provider) ([]view_models.Model, error) {
+func (s *Service) GetProviderModels(ctx context.Context, provider view_models.Provider) ([]view_models.Model, error) {
 	providerModels, err := llm_provider.GetModels(provider.BaseUrl, provider.ApiKey)
 	if err != nil {
 		return nil, ierror.NewError(err)
@@ -167,9 +166,60 @@ func (s *Service) GetProviderModels(provider view_models.Provider) ([]view_model
 	return res, nil
 }
 
+// AddProviderCustomModel 添加自定义模型
+func (s *Service) AddProviderCustomModel(ctx context.Context, providerId uint, modelName string) error {
+	providers, err := s.storage.GetProviders(ctx)
+	if err != nil {
+		return err
+	}
+	var provider *data_models.Provider
+	for _, item := range providers {
+		if item.ID == providerId {
+			provider = &item
+			break
+		}
+	}
+	if provider == nil {
+		return ierror.New(ierror.ErrCodeProviderNotFound)
+	}
+
+	return s.storage.AddProviderModel(ctx, data_models.Model{
+		ProviderId: provider.ID,
+		Model:      modelName,
+		OwnedBy:    provider.ProviderName,
+		Object:     "",
+		Enable:     true,
+		Alias:      nil,
+		IsCustom:   true,
+	})
+}
+
+func (s *Service) DeleteProviderCustomModel(ctx context.Context, providerId uint, modelName string) error {
+	providers, err := s.storage.GetProviders(ctx)
+	if err != nil {
+		return err
+	}
+	var provider *data_models.Provider
+	for _, item := range providers {
+		if item.ID == providerId {
+			provider = &item
+			break
+		}
+	}
+	if provider == nil {
+		return ierror.New(ierror.ErrCodeProviderNotFound)
+	}
+
+	err = s.storage.DeleteProviderModel(ctx, providerId, modelName)
+	if err != nil {
+		return ierror.NewError(err)
+	}
+
+	return nil
+}
+
 // updateProviderModel 更新供应商模型列表
-func (s *Service) updateProviderModel(providerId uint) error {
-	ctx := context.Background()
+func (s *Service) updateProviderModel(ctx context.Context, providerId uint) error {
 
 	// 获取供应商信息
 	provider, err := s.storage.GetProviderByID(ctx, providerId)
@@ -193,6 +243,7 @@ func (s *Service) updateProviderModel(providerId uint) error {
 			Model:      item.ID,
 			OwnedBy:    item.OwnedBy,
 			Object:     item.Object,
+			IsCustom:   false,
 		})
 	}
 

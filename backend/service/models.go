@@ -53,6 +53,7 @@ func (s *Service) GetModels(enableProvider, enableModel *bool) ([]view_models.Mo
 				Object:     model.Object,
 				Enable:     model.Enable,
 				Alias:      model.Alias,
+				IsCustom:   model.IsCustom,
 			})
 		}
 	}

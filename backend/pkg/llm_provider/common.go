@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/cloudwego/eino-ext/components/model/deepseek"
+	"github.com/cloudwego/eino-ext/components/model/ollama"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/adk"
@@ -24,7 +25,7 @@ type Provider struct {
 }
 
 // NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
-func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, tools []tool.BaseTool) (*Provider, error) {
+func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool) (*Provider, error) {
 	var chatModel model.ToolCallingChatModel
 	var err error
 	switch providerModel.ProviderType {
@@ -55,6 +56,14 @@ func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderMo
 		if err != nil {
 			return nil, err
 		}
+	case data_models.ProviderTypeOllama:
+		chatModel, err = ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
+			BaseURL: providerModel.BaseUrl,
+			Model:   providerModel.Model,
+		})
+		if err != nil {
+			return nil, err
+		}
 	default:
 		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
@@ -66,7 +75,7 @@ func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderMo
 		}
 	}
 
-	mainAgent, err := agents.NewMainAgent(ctx, chatModel, nil, tools)
+	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools)
 	if err != nil {
 		return nil, err
 	}
@@ -103,85 +112,6 @@ func (p *Provider) AgentCompletions(ctx context.Context, messages []schema.Messa
 	return iter, nil
 }
 
-//
-//func (p *Provider) BuildUserMessage(ctx context.Context, message view_models.Message) (*schema.Message, error) {
-//	var paths []string
-//	path2base64data := make(map[string]string)
-//	for _, file := range message.Files {
-//		paths = append(paths, file.Path)
-//	}
-//
-//	for _, path := range paths {
-//		data, err := utils.ReadFile2Base64Data(path)
-//		if err != nil {
-//			return nil, err
-//		}
-//		path2base64data[path] = data
-//	}
-//
-//	var userInputMultiContent []schema.MessageInputPart
-//	if message.Content != "" {
-//		userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
-//			Type: schema.ChatMessagePartTypeText,
-//			Text: message.Content,
-//		})
-//	}
-//
-//	for _, item := range message.Files {
-//		var text string
-//		var img *schema.MessageInputImage
-//		var audio *schema.MessageInputAudio
-//		var video *schema.MessageInputVideo
-//		var file *schema.MessageInputFile
-//		base64Data := path2base64data[item.Path]
-//		messagePartCommon := schema.MessagePartCommon{
-//			Base64Data: &base64Data,
-//			MIMEType:   item.MineType,
-//			Extra: map[string]interface{}{
-//				"name":                   item.Name,
-//				"path":                   item.Path,
-//				"mime_type":              item.MineType,
-//				"chat_message_part_type": item.ChatMessagePartType,
-//				"size":                   item.Size,
-//			},
-//		}
-//		switch item.ChatMessagePartType {
-//		case schema.ChatMessagePartTypeText, schema.ChatMessagePartTypeFileURL:
-//			continue
-//		case schema.ChatMessagePartTypeImageURL:
-//			img = &schema.MessageInputImage{
-//				MessagePartCommon: messagePartCommon,
-//				Detail:            schema.ImageURLDetailHigh,
-//			}
-//		case schema.ChatMessagePartTypeAudioURL:
-//			audio = &schema.MessageInputAudio{
-//				MessagePartCommon: messagePartCommon,
-//			}
-//		case schema.ChatMessagePartTypeVideoURL:
-//			video = &schema.MessageInputVideo{
-//				MessagePartCommon: messagePartCommon,
-//			}
-//		}
-//		if img == nil && audio == nil && video == nil {
-//			continue
-//		}
-//		userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
-//			Type:  item.ChatMessagePartType,
-//			Text:  text,
-//			Image: img,
-//			Audio: audio,
-//			Video: video,
-//			File:  file,
-//		})
-//	}
-//
-//	return &schema.Message{
-//		Role:                  schema.User,
-//		Content:               "",
-//		UserInputMultiContent: userInputMultiContent,
-//	}, nil
-//}
-
 // GenChatTitle 生成一个聊天的标题
 func (p *Provider) GenChatTitle(ctx context.Context, messages []schema.Message) (string, error) {
 	genTitle := ""
@@ -203,7 +133,7 @@ func (p *Provider) GenChatTitle(ctx context.Context, messages []schema.Message) 
 	}
 	contextMessages = append(contextMessages, messages...)
 
-	resp, err := p.Completions(context.Background(), contextMessages)
+	resp, err := p.Completions(ctx, contextMessages)
 	if err == nil {
 		for {
 			recv, err := resp.Recv()
@@ -215,6 +145,9 @@ func (p *Provider) GenChatTitle(ctx context.Context, messages []schema.Message) 
 			}
 			genTitle += recv.Content
 		}
+	}
+	if err != nil {
+		return "", err
 	}
 	if genTitle == "" {
 		return "", fmt.Errorf("failed to generate title")

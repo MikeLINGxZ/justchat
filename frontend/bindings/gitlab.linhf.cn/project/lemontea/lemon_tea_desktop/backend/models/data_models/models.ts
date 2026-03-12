@@ -207,6 +207,71 @@ export class Message {
     }
 }
 
+export class Model {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+
+    /**
+     * 提供方id
+     */
+    "provider_id": number;
+    "model": string;
+    "owned_by": string;
+    "object": string;
+    "enable": boolean;
+    "alias": string | null;
+    "is_custom": boolean;
+
+    /** Creates a new Model instance. */
+    constructor($$source: Partial<Model> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("provider_id" in $$source)) {
+            this["provider_id"] = 0;
+        }
+        if (!("model" in $$source)) {
+            this["model"] = "";
+        }
+        if (!("owned_by" in $$source)) {
+            this["owned_by"] = "";
+        }
+        if (!("object" in $$source)) {
+            this["object"] = "";
+        }
+        if (!("enable" in $$source)) {
+            this["enable"] = false;
+        }
+        if (!("alias" in $$source)) {
+            this["alias"] = null;
+        }
+        if (!("is_custom" in $$source)) {
+            this["is_custom"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Model instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Model {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Model($$parsedSource as Partial<Model>);
+    }
+}
+
 export enum ProviderType {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -216,6 +281,7 @@ export enum ProviderType {
     ProviderTypeDeepseek = "deepseek",
     ProviderTypeAliyuns = "aliyuns",
     ProviderTypeOpenrouter = "openrouter",
+    ProviderTypeOllama = "ollama",
     ProviderTypeOther = "other",
 };
 
@@ -240,6 +306,11 @@ export class UserMessageExtra {
      */
     "tools": string[];
 
+    /**
+     * agent id
+     */
+    "agents": string[];
+
     /** Creates a new UserMessageExtra instance. */
     constructor($$source: Partial<UserMessageExtra> = {}) {
         if (!("model_id" in $$source)) {
@@ -254,6 +325,9 @@ export class UserMessageExtra {
         if (!("tools" in $$source)) {
             this["tools"] = [];
         }
+        if (!("agents" in $$source)) {
+            this["agents"] = [];
+        }
 
         Object.assign(this, $$source);
     }
@@ -264,12 +338,16 @@ export class UserMessageExtra {
     static createFrom($$source: any = {}): UserMessageExtra {
         const $$createField2_0 = $$createType5;
         const $$createField3_0 = $$createType6;
+        const $$createField4_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
         }
         if ("tools" in $$parsedSource) {
             $$parsedSource["tools"] = $$createField3_0($$parsedSource["tools"]);
+        }
+        if ("agents" in $$parsedSource) {
+            $$parsedSource["agents"] = $$createField4_0($$parsedSource["agents"]);
         }
         return new UserMessageExtra($$parsedSource as Partial<UserMessageExtra>);
     }

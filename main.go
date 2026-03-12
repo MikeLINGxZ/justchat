@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service"
 )
 
@@ -14,6 +15,7 @@ import (
 var assets embed.FS
 
 func main() {
+	logger.NewStaticLogger("lemontea")
 	app := application.New(application.Options{
 		Name:        "lemon_tea_desktop",
 		Description: "A ai agent client",

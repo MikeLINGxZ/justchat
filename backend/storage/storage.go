@@ -2,11 +2,11 @@ package storage
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -61,23 +61,12 @@ func (s *Storage) NewFnTransaction(ctx context.Context, fn func(ctx context.Cont
 }
 
 func getDbPath() (string, error) {
-	return "test.db", nil
-	if os.Getenv("LEMONTEA_DB_PATH") != "" {
-		return os.Getenv("LEMONTEA_DB_PATH"), nil
-	}
-	// 获取用户 home 目录
-	homeDir, err := os.UserHomeDir()
+	dbName := "data.db"
+	dataPath, err := utils.GetDataPath()
 	if err != nil {
 		return "", err
 	}
-
 	// 构建数据库路径
-	dbPath := filepath.Join(homeDir, "lemontea", "data.db")
-
-	// 确保目录存在
-	dbDir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		return "", err
-	}
+	dbPath := filepath.Join(dataPath, dbName)
 	return dbPath, nil
 }

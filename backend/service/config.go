@@ -31,6 +31,13 @@ func (s *Service) GetSupportProviders() ([]view_models.SupportProvider, error) {
 			FileUploadBaseUrl: nil,
 			Description:       "模型集合供应商",
 		}, {
+			ProviderType:      data_models.ProviderTypeOllama,
+			Icon:              "/providers/ollama_icon.png",
+			Name:              "Ollama",
+			BaseUrl:           "http://localhost:11434",
+			FileUploadBaseUrl: nil,
+			Description:       "Ollama 是一种最简便的方式，能让您利用开放模型来实现工作的自动化，同时还能确保您的数据安全。",
+		}, {
 			ProviderType:      data_models.ProviderTypeOther,
 			Icon:              "/providers/openai_icon.png",
 			Name:              "Openai 标准接口",

@@ -20,6 +20,13 @@ export function AddProvider(provider: view_models$0.Provider): $CancellablePromi
 }
 
 /**
+ * AddProviderCustomModel 添加自定义模型
+ */
+export function AddProviderCustomModel(providerId: number, modelName: string): $CancellablePromise<void> {
+    return $Call.ByID(1808092888, providerId, modelName);
+}
+
+/**
  * ChatInfo 对话信息
  */
 export function ChatInfo(chatUuid: string): $CancellablePromise<view_models$0.Chat | null> {
@@ -74,6 +81,10 @@ export function DeleteChat(chatUuid: string): $CancellablePromise<void> {
  */
 export function DeleteProvider(providerId: number): $CancellablePromise<void> {
     return $Call.ByID(1837639636, providerId);
+}
+
+export function DeleteProviderCustomModel(providerId: number, modelName: string): $CancellablePromise<void> {
+    return $Call.ByID(2573490636, providerId, modelName);
 }
 
 /**

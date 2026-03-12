@@ -8,45 +8,48 @@
     h3 {
       margin-bottom: var(--spacing-sm);
       color: var(--text-color);
-      background: linear-gradient(135deg, var(--primary-color), #722ed1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      
-      .anticon {
-        margin-right: var(--spacing-sm);
-        color: var(--primary-color);
-        -webkit-text-fill-color: var(--primary-color);
-      }
+      font-weight: 600;
+      letter-spacing: -0.02em;
     }
   }
 }
 
 .providerList {
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border-color-light);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: none;
+  background: var(--background-color);
   overflow: hidden;
-  
-  .ant-card-head {
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    border-bottom: 1px solid var(--border-color-light);
-    padding: var(--spacing-md) var(--spacing-lg);
-    
-    .ant-card-head-title {
+  transition: all var(--transition-normal);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.ant-card-head) {
+    background: transparent;
+    border-bottom: none;
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+    min-height: auto;
+
+    :global(.ant-card-head-title) {
       font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-semibold);
+      font-weight: 600;
       color: var(--text-color);
+      letter-spacing: -0.02em;
     }
   }
-  
+
   .addBtn {
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
-    
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
     &:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+      box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
     }
   }
 }
@@ -55,17 +58,16 @@
   .providerItem {
     cursor: pointer;
     border-bottom: 1px solid var(--border-color-light);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    min-height: 56px; // 减小高度
-    justify-items: center;
+    min-height: 52px;
     align-items: center;
     display: flex;
 
-    .providerItemBox{
+    .providerItemBox {
       width: 100%;
       height: 100%;
-      padding: 0 10px;
+      padding: 0 var(--spacing-md);
     }
 
     &::before {
@@ -74,93 +76,88 @@
       left: 0;
       top: 0;
       bottom: 0;
-      width: 4px;
+      width: 3px;
       background: transparent;
-      transition: all 0.3s ease;
+      border-radius: 0 2px 2px 0;
+      transition: all 0.2s ease;
     }
-    
+
     &:hover {
-      background: linear-gradient(135deg, rgba(24, 144, 255, 0.02), rgba(114, 46, 209, 0.02));
-      transform: translateX(2px);
-      
+      background: var(--primary-color-light);
+
       &::before {
-        background: linear-gradient(135deg, var(--primary-color), #722ed1);
+        background: var(--primary-color);
       }
     }
-    
+
     &.selected {
-      background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05));
-      border-color: var(--primary-color);
-      transform: translateX(4px);
-      
+      background: var(--primary-color-light);
+
       &::before {
-        background: linear-gradient(135deg, var(--primary-color), #722ed1);
-        width: 6px;
+        background: var(--primary-color);
+        width: 3px;
       }
-      
+
       .providerName {
         color: var(--primary-color);
-        font-weight: var(--font-weight-semibold);
+        font-weight: 600;
       }
     }
-    
+
     &:last-child {
       border-bottom: none;
     }
   }
-  
+
   .providerContent {
     @include flex-between;
-    align-items: center; // 确保所有元素在同一水平线
+    align-items: center;
     height: 100%;
-    
+
     .providerLeft {
       display: flex;
-      align-items: center; // 水平对齐
-      gap: var(--spacing-md);
+      align-items: center;
+      gap: var(--spacing-sm);
       flex: 1;
-      
+
       .providerDetails {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        
+
         .providerName {
           font-size: var(--font-size);
           font-weight: var(--font-weight-medium);
           color: var(--text-color);
           line-height: 1.4;
-          margin: 0; // 移除默认margin
-          transition: all 0.3s ease;
+          margin: 0;
+          transition: color 0.2s ease;
         }
       }
     }
-    
+
     .providerActions {
       display: flex;
-      align-items: center; // 水平对齐
-      gap: var(--spacing-md);
-      
+      align-items: center;
+      gap: var(--spacing-sm);
+
       .enableSwitch {
-        &.ant-switch-checked {
-          background: linear-gradient(135deg, var(--primary-color), #722ed1);
-        }
+        // antd default style
       }
-      
+
       .deleteBtn {
-        color: var(--text-color-secondary);
-        border-radius: var(--border-radius);
-        transition: all 0.3s ease;
+        color: var(--text-color-disabled);
+        border-radius: 6px;
+        transition: all 0.2s ease;
         width: 28px;
         height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
-        
+
         &:hover {
           color: var(--error-color);
-          background: rgba(255, 77, 79, 0.1);
-          transform: scale(1.1);
+          background: rgba(255, 77, 79, 0.08);
         }
       }
     }
@@ -168,163 +165,348 @@
 }
 
 .configCard {
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border-color-light);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: none;
+  background: var(--background-color);
   overflow: hidden;
-  
-  .ant-card-head {
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    border-bottom: 1px solid var(--border-color-light);
-    padding: var(--spacing-md) var(--spacing-lg);
-    
-    .ant-card-head-title {
+  transition: all var(--transition-normal);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.ant-card-head) {
+    background: transparent;
+    border-bottom: none;
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md);
+    min-height: auto;
+
+    :global(.ant-card-head-title) {
       font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
+      font-weight: 600;
       color: var(--text-color);
+      letter-spacing: -0.01em;
     }
   }
-  
-  .ant-card-body {
-    padding: var(--spacing-xl);
+
+  :global(.ant-card-body) {
+    padding: 0 var(--spacing-xl) var(--spacing-xl);
   }
-  
+
   .securityAlert {
-    border-radius: var(--border-radius-lg);
-    border: 1px solid #e6f7ff;
-    background: linear-gradient(135deg, #f6ffed, #e6f7ff);
-    
-    .ant-alert-icon {
-      color: var(--info-color);
-    }
+    border-radius: 10px;
+    border: 1px solid var(--border-color-light);
+    background: var(--background-color-light);
+    margin-bottom: var(--spacing-lg);
   }
-  
-  .ant-form {
-    .ant-form-item {
+
+  :global(.ant-form) {
+    :global(.ant-form-item) {
       margin-bottom: var(--spacing-lg);
     }
-    
-    .ant-form-item-label {
-      padding-bottom: var(--spacing-sm);
-      
+
+    :global(.ant-form-item-label) {
+      padding-bottom: var(--spacing-xs);
+
       > label {
-        font-weight: var(--font-weight-semibold);
+        font-weight: 600;
         font-size: var(--font-size);
         color: var(--text-color);
-        
-        &::after {
-          content: ':';
-          margin-left: 2px;
-        }
       }
     }
-    
-    .ant-input,
-    .ant-input-password,
-    .ant-select-selector {
-      border-radius: var(--border-radius-lg);
-      border: 2px solid var(--border-color-light);
-      padding: var(--spacing-sm) var(--spacing-md);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      
+
+    :global(.ant-input),
+    :global(.ant-input-password),
+    :global(.ant-select-selector) {
+      border-radius: 10px;
+      border: 1.5px solid var(--border-color-light);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
       &:hover {
         border-color: var(--primary-color-hover);
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
       }
-      
+
       &:focus,
       &:focus-within {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.15);
+        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
         outline: none;
       }
     }
-    
-    .ant-switch {
-      &.ant-switch-checked {
-        background: linear-gradient(135deg, var(--primary-color), #722ed1);
+  }
+
+  .customModelSection {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--background-color-light);
+    border: 1px solid var(--border-color-light);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+
+    .customModelHeader {
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+
+      .customModelTitle {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-weight: 600;
+        font-size: var(--font-size);
+        color: var(--text-color);
+
+        .customModelIcon {
+          color: var(--primary-color);
+          font-size: 14px;
+        }
+      }
+
+      .customModelDesc {
+        font-size: var(--font-size-sm);
+      }
+    }
+
+    .customModelInput {
+      display: flex;
+      gap: var(--spacing-sm);
+
+      .customModelInputField {
+        flex: 1;
+      }
+
+      .customModelAddBtn {
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+        }
+      }
+    }
+
+    .customModelList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border-color-light);
+    }
+
+    .customModelItem {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px 4px 12px;
+      background: var(--background-color);
+      border: 1.5px solid var(--border-color-light);
+      border-radius: 16px;
+      font-size: var(--font-size-sm);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-color-light);
+
+        .customModelDeleteBtn {
+          opacity: 1;
+          color: var(--text-color-secondary);
+        }
+      }
+
+      .customModelName {
+        color: var(--text-color);
+        max-width: 200px;
+        @include text-ellipsis;
+        line-height: 1.5;
+      }
+
+      .customModelDeleteBtn {
+        color: var(--text-color-disabled);
+        opacity: 0.5;
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        font-size: 10px;
+        @include flex-center;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+
+        &:hover {
+          opacity: 1;
+          color: var(--error-color) !important;
+          background: rgba(255, 77, 79, 0.08);
+        }
       }
     }
   }
-  
+
   .formDivider {
-    margin: var(--spacing-xl) 0;
+    margin: var(--spacing-lg) 0;
     border-color: var(--border-color-light);
   }
-  
+
   .buttonGroup {
     margin-bottom: 0;
-    
+
     .actionButtons {
       width: 100%;
       justify-content: flex-start;
-      
-      .ant-btn {
-        border-radius: var(--border-radius-lg);
-        font-weight: var(--font-weight-medium);
+
+      :global(.ant-btn) {
+        border-radius: 10px;
+        font-weight: 500;
         height: 40px;
         padding: 0 var(--spacing-lg);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        
+        font-size: var(--font-size);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
         &:hover {
-          transform: translateY(-2px);
+          transform: translateY(-1px);
         }
       }
-      
+
       .primaryButton {
-        background: linear-gradient(135deg, var(--primary-color), #1765ad);
-        border-color: var(--primary-color);
-        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
-        
+        background: var(--primary-color);
+        border: none;
+        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+
         &:hover {
-          background: linear-gradient(135deg, var(--primary-color-hover), #1890ff);
-          box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+          background: var(--primary-color-hover);
+          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
         }
       }
-      
+
       .testButton {
-        border: 2px solid var(--border-color);
-        background: white;
-        
+        border: 1.5px solid var(--border-color);
+        background: var(--background-color);
+        color: var(--text-color);
+
         &:hover {
           border-color: var(--primary-color);
           color: var(--primary-color);
-          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+          background: var(--primary-color-light);
         }
       }
-      
+
       .dangerButton {
-        background: linear-gradient(135deg, #ff4d4f, #ff7875);
-        border-color: var(--error-color);
+        background: var(--error-color);
+        border: none;
         color: white;
-        
+        box-shadow: 0 2px 4px rgba(255, 77, 79, 0.2);
+
         &:hover {
           box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
         }
-        
+
         &:disabled {
           background: var(--background-color-dark);
           border-color: var(--border-color-light);
           color: var(--text-color-disabled);
-          
+          box-shadow: none;
+
           &:hover {
             transform: none;
-            box-shadow: none;
           }
         }
       }
     }
   }
-  
+
   .deleteConfirm {
     display: flex;
     align-items: center;
     font-size: var(--font-size);
-    
+
     strong {
       color: var(--error-color);
     }
   }
+}
+
+// Modal 内供应商列表
+.supportProviderList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.supportProviderItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  cursor: pointer;
+  padding: var(--spacing-md);
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color-light);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    background: var(--primary-color-light);
+    border-color: var(--primary-color);
+  }
+}
+
+.supportProviderInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.supportProviderName {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-color);
+  line-height: 1.4;
+}
+
+.supportProviderDesc {
+  margin-top: var(--spacing-xs);
+  color: var(--text-color-secondary);
+  font-size: var(--font-size);
+  line-height: 1.5;
+}
+
+.supportProviderUrl {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-color-disabled);
+}
+
+.supportProviderEmpty {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-color-disabled);
+  font-size: var(--font-size);
+}
+
+// Modal 表单样式
+.modalFormFooter {
+  margin-bottom: 0;
+}
+
+.modalFormActions {
+  width: 100%;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.modalAlert {
+  margin-bottom: var(--spacing-lg);
+  border-radius: 10px;
+  border: 1px solid var(--border-color-light);
+  background: var(--background-color-light);
 }
 
 // 响应式设计
@@ -341,45 +523,45 @@
     :global(.ant-row) {
       flex-direction: column;
     }
-    
+
     :global(.ant-col) {
       width: 100% !important;
       max-width: 100% !important;
     }
   }
-  
+
   .providerList {
     margin-bottom: var(--spacing-lg);
   }
-  
+
   .providerItems {
     .providerItem {
       padding: var(--spacing-sm) var(--spacing-md);
-      min-height: 48px; // 移动端进一步减小高度
-      
+      min-height: 48px;
+
       .providerContent {
         .providerLeft {
           gap: var(--spacing-sm);
         }
-        
+
         .providerActions {
           gap: var(--spacing-sm);
         }
       }
     }
   }
-  
+
   .configCard {
-    .ant-card-body {
-      padding: var(--spacing-lg);
+    :global(.ant-card-body) {
+      padding: 0 var(--spacing-lg) var(--spacing-lg);
     }
-    
+
     .buttonGroup {
       .actionButtons {
         flex-direction: column;
         width: 100%;
-        
-        .ant-btn {
+
+        :global(.ant-btn) {
           width: 100%;
         }
       }
@@ -391,53 +573,73 @@
   .providerSettings {
     .header {
       margin-bottom: var(--spacing-md);
-      
+
       h3 {
         font-size: var(--font-size-lg);
       }
     }
   }
-  
+
   .providerList,
   .configCard {
-    border-radius: var(--border-radius);
-    
-    .ant-card-head {
-      padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 12px;
+
+    :global(.ant-card-head) {
+      padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
     }
   }
-  
+
   .configCard {
-    .ant-card-body {
-      padding: var(--spacing-md);
+    :global(.ant-card-body) {
+      padding: 0 var(--spacing-md) var(--spacing-md);
     }
-    
-    .ant-form {
-      .ant-form-item {
+
+    :global(.ant-form) {
+      :global(.ant-form-item) {
         margin-bottom: var(--spacing-md);
       }
-      
-      .ant-input,
-      .ant-input-password,
-      .ant-select-selector {
-        border-radius: var(--border-radius);
+
+      :global(.ant-input),
+      :global(.ant-input-password),
+      :global(.ant-select-selector) {
+        border-radius: 8px;
+      }
+    }
+
+    .customModelSection {
+      padding: var(--spacing-md);
+      border-radius: 10px;
+
+      .customModelHeader {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .customModelItem {
+        .customModelName {
+          max-width: 150px;
+        }
+
+        .customModelDeleteBtn {
+          opacity: 1;
+        }
       }
     }
   }
-  
+
   .providerItems {
     .providerItem {
       padding: var(--spacing-xs) var(--spacing-sm);
-      min-height: 44px; // 小屏幕更紧凑
-      
+      min-height: 44px;
+
       .providerContent {
         .providerLeft {
           gap: var(--spacing-xs);
         }
-        
+
         .providerActions {
           gap: var(--spacing-xs);
-          
+
           .deleteBtn {
             width: 24px;
             height: 24px;
@@ -448,35 +650,35 @@
   }
 }
 
-// 在设置页面的移动端内容体中的特殊样式
+// 移动端内容体特殊样式
 :global(.mobileContentBody) {
   .providerSettings {
     .header {
-      display: none; // 隐藏重复的标题，因为移动端已经有返回按钮和标题
+      display: none;
     }
-    
+
     :global(.ant-row) {
       flex-direction: column;
       gap: var(--spacing-md);
     }
-    
+
     :global(.ant-col) {
       width: 100% !important;
       max-width: 100% !important;
     }
   }
-  
+
   .providerList {
     margin-bottom: var(--spacing-md);
   }
-  
+
   .configCard {
     .buttonGroup {
       .actionButtons {
         flex-direction: column;
         gap: var(--spacing-sm);
-        
-        .ant-btn {
+
+        :global(.ant-btn) {
           width: 100%;
         }
       }
@@ -484,38 +686,44 @@
   }
 }
 
-// 添加供应商对话框样式 - 确保在移动端正确显示
+// 添加供应商对话框样式
 :global {
   .addProviderModal {
     z-index: 2001 !important;
-    
+
     .ant-modal-mask {
       z-index: 2001 !important;
     }
-    
+
     .ant-modal {
       z-index: 2002 !important;
       position: fixed !important;
     }
-    
-    // 移动端特殊处理
+
+    .ant-modal-content {
+      border-radius: 16px;
+    }
+
     @media (max-width: 768px) {
       z-index: 2001 !important;
-      
+
       .ant-modal-mask {
         z-index: 2001 !important;
       }
-      
+
       .ant-modal {
         z-index: 2002 !important;
         position: fixed !important;
         max-width: calc(100vw - 32px) !important;
         max-height: calc(100vh - 32px) !important;
-        // 确保居中显示
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         margin: 0 !important;
+      }
+
+      .ant-modal-content {
+        border-radius: 12px;
       }
     }
   }

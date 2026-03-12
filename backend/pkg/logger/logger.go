@@ -3,8 +3,10 @@ package logger
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	rdebug "runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -24,6 +26,10 @@ type Logger struct {
 	logger      func(color *color.Color, level, debug, content string, any ...any)
 	esIndex     *string
 	enableDebug bool
+	logDir      string
+	currentDate string
+	logFile     *os.File
+	fileMutex   sync.Mutex
 }
 
 func NewLogger(name string, options ...Options) (*Logger, error) {
@@ -132,13 +138,15 @@ func (l *Logger) standerLog(color *color.Color, level, debug, content string, an
 		}
 	}
 
-	// Print stack trace when level is ERROR or PANIC
+	l.writeToFile(level, logStr)
+
 	if level == "ERROR" || level == "PANIC" {
 		stack := rdebug.Stack()
 		_, err := color.Println(string(stack))
 		if err != nil {
 			fmt.Println(err)
 		}
+		l.writeToFile(level, string(stack))
 	}
 
 	if !l.enableDebug {
@@ -150,6 +158,48 @@ func (l *Logger) standerLog(color *color.Color, level, debug, content string, an
 	_, err := l.debugLogger.Println(fmt.Sprintf(debugFormat, l.loggerName, debug))
 	if err != nil {
 		fmt.Println(err)
+	}
+}
+
+func (l *Logger) writeToFile(level, logStr string) {
+	if l.logDir == "" {
+		return
+	}
+
+	l.fileMutex.Lock()
+	defer l.fileMutex.Unlock()
+
+	today := time.Now().Format(time.DateOnly)
+	if l.currentDate != today {
+		if l.logFile != nil {
+			l.logFile.Close()
+			l.logFile = nil
+		}
+
+		logFilePath := filepath.Join(l.logDir, today+".log")
+		file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Printf("Failed to open log file: %v\n", err)
+			return
+		}
+		l.logFile = file
+		l.currentDate = today
+	}
+
+	if l.logFile == nil {
+		return
+	}
+
+	var logLine string
+	if l.loggerName != "" {
+		logLine = fmt.Sprintf(formatWithName, time.Now().Format(time.DateTime), level, l.loggerName, logStr)
+	} else {
+		logLine = fmt.Sprintf(format, time.Now().Format(time.DateTime), level, logStr)
+	}
+
+	_, err := l.logFile.WriteString(logLine + "\n")
+	if err != nil {
+		fmt.Printf("Failed to write to log file: %v\n", err)
 	}
 }
 

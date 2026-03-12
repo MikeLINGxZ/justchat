@@ -29,9 +29,9 @@ export async function CompletionsUtils(
 
         // 调用 Completions API
         const resp: Completions | null = await Service.Completions(messageInput);
-        messageKey = resp?.message_key ?? ""
+        messageKey = resp?.event_key ?? ""
         // 设置事件监听器
-        cancel = Events.On(resp?.message_key!, (event) => {
+        cancel = Events.On(resp?.event_key!, (event) => {
             const responseMessage: Message = event.data;
             try {
                 // 处理接收到的消息
@@ -47,7 +47,7 @@ export async function CompletionsUtils(
                         cancel();
                         cancel = null;
                     }
-                    Events.Off(resp?.message_key!);
+                    Events.Off(resp?.event_key!);
                     onComplete(resp?.chat_uuid!);
                     isCompleted = true;
                 }

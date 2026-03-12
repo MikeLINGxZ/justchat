@@ -451,7 +451,10 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                     {
                         messages.map((message: Message, index: number) => (
                             <div key={index}>
-                                <ChatMessage message={message}/>
+                                <ChatMessage
+                                    message={message}
+                                    isLoading={isGenerating && index === messages.length - 1 && message.role !== 'user'}
+                                />
                             </div>
                         ))
                     }

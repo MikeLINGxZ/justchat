@@ -22,6 +22,7 @@ const (
 	ProviderTypeDeepseek   ProviderType = "deepseek"
 	ProviderTypeAliyuns    ProviderType = "aliyuns"
 	ProviderTypeOpenrouter ProviderType = "openrouter"
+	ProviderTypeOllama     ProviderType = "ollama"
 	ProviderTypeOther      ProviderType = "other"
 )
 

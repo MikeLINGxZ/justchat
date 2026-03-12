@@ -1,7 +1,10 @@
 package logger
 
 import (
+	"path/filepath"
+
 	"github.com/fatih/color"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 )
 
 var staticLog *Logger
@@ -32,6 +35,14 @@ func NewStaticLogger(name string, options ...Options) error {
 		panicLogger: panicLogger,
 	}
 	logger.logger = logger.standerLog
+
+	dataPath, err := utils.GetDataPath()
+	if err != nil {
+		return err
+	}
+	logDir := filepath.Join(dataPath, "logs")
+	options = append(options, WithFileLogging(logDir))
+
 	for _, option := range options {
 		err := option(logger)
 		if err != nil {

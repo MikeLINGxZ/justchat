@@ -50,7 +50,7 @@ export class ChatList {
 export class Completions {
     "chat_uuid": string;
     "message_uuid": string;
-    "message_key": string;
+    "event_key": string;
 
     /** Creates a new Completions instance. */
     constructor($$source: Partial<Completions> = {}) {
@@ -60,8 +60,8 @@ export class Completions {
         if (!("message_uuid" in $$source)) {
             this["message_uuid"] = "";
         }
-        if (!("message_key" in $$source)) {
-            this["message_key"] = "";
+        if (!("event_key" in $$source)) {
+            this["event_key"] = "";
         }
 
         Object.assign(this, $$source);
@@ -126,6 +126,7 @@ export class Model {
     "object": string;
     "enable": boolean;
     "alias": string | null;
+    "is_custom": boolean;
 
     /** Creates a new Model instance. */
     constructor($$source: Partial<Model> = {}) {
@@ -158,6 +159,9 @@ export class Model {
         }
         if (!("alias" in $$source)) {
             this["alias"] = null;
+        }
+        if (!("is_custom" in $$source)) {
+            this["is_custom"] = false;
         }
 
         Object.assign(this, $$source);
@@ -204,6 +208,7 @@ export class Provider {
     "enable": boolean;
     "default_model_id": number | null;
     "models": Model[];
+    "custom_models": data_models$0.Model[];
     "provider_type": data_models$0.ProviderType;
 
     /** Creates a new Provider instance. */
@@ -241,6 +246,9 @@ export class Provider {
         if (!("models" in $$source)) {
             this["models"] = [];
         }
+        if (!("custom_models" in $$source)) {
+            this["custom_models"] = [];
+        }
         if (!("provider_type" in $$source)) {
             this["provider_type"] = data_models$0.ProviderType.$zero;
         }
@@ -253,9 +261,13 @@ export class Provider {
      */
     static createFrom($$source: any = {}): Provider {
         const $$createField10_0 = $$createType5;
+        const $$createField11_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
+        }
+        if ("custom_models" in $$parsedSource) {
+            $$parsedSource["custom_models"] = $$createField11_0($$parsedSource["custom_models"]);
         }
         return new Provider($$parsedSource as Partial<Provider>);
     }
@@ -309,3 +321,5 @@ const $$createType2 = data_models$0.Message.createFrom;
 const $$createType3 = $Create.Array($$createType2);
 const $$createType4 = Model.createFrom;
 const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = data_models$0.Model.createFrom;
+const $$createType7 = $Create.Array($$createType6);

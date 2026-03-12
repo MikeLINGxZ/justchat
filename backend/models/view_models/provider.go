@@ -28,5 +28,6 @@ type Provider struct {
 	Enable            bool                     `json:"enable"`               // 启用
 	DefaultModelId    *uint                    `json:"default_model_id"`
 	Models            []Model                  `json:"models"`
+	CustomModels      []data_models.Model      `json:"custom_models"`
 	ProviderType      data_models.ProviderType `json:"provider_type"`
 }

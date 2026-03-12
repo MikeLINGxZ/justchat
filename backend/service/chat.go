@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -11,10 +12,11 @@ import (
 	"github.com/google/uuid"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
-	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/event"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
 
@@ -60,12 +62,14 @@ func (s *Service) ChatMessages(ctx context.Context, chatUuid string, offset, lim
 
 // Completions 聊天
 func (s *Service) Completions(ctx context.Context, inputMessage view_models.Message) (*view_models.Completions, error) {
-
+	if inputMessage.UserMessageExtra == nil {
+		return nil, ierror.New(ierror.ErrCodeCompletionsParams)
+	}
 	selectModelId := inputMessage.UserMessageExtra.ModelId
 	selectModelName := inputMessage.UserMessageExtra.ModelName
 	userMessageUuid := uuid.New().String()
 	assistantMessageUuid := uuid.New().String()
-	messageKey := utils.GenEventsKey(assistantMessageUuid)
+	messageKey := event.GenEventsKey(event.EventTypeMsg, assistantMessageUuid)
 	chatUuid := inputMessage.ChatUuid
 	isNewChat := inputMessage.ChatUuid == ""
 	if isNewChat {
@@ -83,8 +87,20 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
+	// todo 获取工具集
+	agentTools := []tool.BaseTool{tools.GetCurrentDateTool(), tools.GetCurrentTimeTool()}
+	for _, toolId := range inputMessage.UserMessageExtra.Tools {
+		fmt.Println(toolId)
+	}
+
+	// todo 获取子agent
+	var subAgents []adk.Agent
+	for _, agentId := range inputMessage.UserMessageExtra.Agents {
+		fmt.Println(agentId)
+	}
+
 	// 新建供应商（传入工具以支持 tool calling）
-	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, []tool.BaseTool{tools.GetCurrentDateTool(), tools.GetCurrentTimeTool()})
+	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, agentTools)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -155,10 +171,12 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				logger.Error("save or update assistant message error", err)
 			}
 			if isNewChat {
-				_, err = s.GenChatTitle(ctx, chatUuid, selectModelId, selectModelName, true)
-				if err != nil {
-					logger.Error("save or update assistant message error", err)
-				}
+				go func() {
+					_, err = s.genChatTitle(ctx, chatUuid, *providerModel, true)
+					if err != nil {
+						logger.Error("save or update assistant message error", err)
+					}
+				}()
 			}
 			if mo != nil {
 				mo.MessageStream.Close()
@@ -190,6 +208,10 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				}
 				mo = event.Output.MessageOutput
 				if mo.Role != schema.Assistant {
+					if mo.Message != nil {
+						marshal, _ := json.Marshal(mo)
+						logger.Info(string(marshal))
+					}
 					continue
 				}
 				if !mo.IsStreaming || mo.MessageStream == nil {
@@ -208,8 +230,11 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 						s.app.Event.Emit(messageKey, assistantMessage)
 						return
 					}
+					if msg != nil {
+						marshal, _ := json.Marshal(msg)
+						logger.Info(string(marshal))
+					}
 					if msg != nil && (msg.Content != "" || msg.ReasoningContent != "") {
-						fmt.Println("msg:", msg.Content, msg.ReasoningContent)
 						assistantMessage.Content = assistantMessage.Content + msg.Content
 						assistantMessage.ReasoningContent = assistantMessage.ReasoningContent + msg.ReasoningContent
 						err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
@@ -230,7 +255,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	return &view_models.Completions{
 		ChatUuid:    chatUuid,
 		MessageUuid: assistantMessageUuid,
-		MessageKey:  messageKey,
+		EventKey:    messageKey,
 	}, nil
 }
 
@@ -285,34 +310,43 @@ func (s *Service) GenChatTitle(ctx context.Context, chatUuid string, modelId uin
 		return "", ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
-	// 新建供应商
-	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, nil)
+	title, err := s.genChatTitle(ctx, chatUuid, *providerModel, update)
 	if err != nil {
 		return "", ierror.NewError(err)
 	}
 
+	return title, nil
+}
+
+func (s *Service) genChatTitle(ctx context.Context, chatUuid string, providerModel wrapper_models.ProviderModel, update bool) (string, error) {
+	// 新建供应商
+	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{})
+	if err != nil {
+		return "", err
+	}
+
 	historyMessages, _, err := s.storage.GetMessage(context.Background(), chatUuid, 0, 2)
 	if err != nil {
-		return "", ierror.NewError(err)
+		return "", err
 	}
 	var messages []schema.Message
 	for _, item := range historyMessages {
 		schemaMessage, err := item.ToSchemaMessage()
 		if err != nil {
-			return "", ierror.NewError(err)
+			return "", err
 		}
 		messages = append(messages, *schemaMessage)
 	}
 
 	title, err := provider.GenChatTitle(ctx, messages)
 	if err != nil {
-		return "", ierror.NewError(err)
+		return "", err
 	}
 
 	if update {
 		err := s.storage.RenameChat(context.Background(), chatUuid, title)
 		if err != nil {
-			return "", ierror.NewError(err)
+			return "", err
 		}
 	}
 

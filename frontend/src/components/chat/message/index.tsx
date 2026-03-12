@@ -11,10 +11,13 @@ import type {Message} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea
 interface ChatMessageProps {
     // 消息
     message: Message
+    // 是否正在等待AI响应（用于显示loading状态）
+    isLoading?: boolean
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({
     message,
+    isLoading = false,
 }: ChatMessageProps) => {
 
     // 根据不同的角色选择不同的样式
@@ -24,12 +27,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         wrapperClass = styles.userMessageWrapper;
     }
 
-    // 如果是AI消息且内容和思考过程都为空，则不渲染
-    if (
-        !isUser &&
-        !message.content?.trim() &&                 // ✅ 安全：content 为 null/undefined → undefined?.trim() → undefined → 转为 false
-        !message.reasoning_content?.trim()          // ✅ 已有，保持
-    ) {
+    const isEmptyAssistant = !isUser &&
+        !message.content?.trim() &&
+        !message.reasoning_content?.trim() &&
+        (message.assistant_message_extra?.finish_error == "");
+
+    // 如果是AI消息且内容和思考过程都为空，且不在loading状态，则不渲染
+    if (isEmptyAssistant && !isLoading) {
         return null;
     }
 
@@ -37,6 +41,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     const getDisplayContent = () => {
         if (message.content.trim()) {
             return message.content;
+        }
+        if (message.content=="" && message.assistant_message_extra?.finish_error != "") {
+            return message.assistant_message_extra?.finish_error
         }
         return '';
     };
@@ -81,11 +88,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         </>
                     ):(
                         <div>
+                            {/* 等待AI响应时显示loading动画 */}
+                            {isLoading && isEmptyAssistant && (
+                                <div className={styles.loadingIndicator}>
+                                    <span className={styles.loadingDot} />
+                                    <span className={styles.loadingDot} />
+                                    <span className={styles.loadingDot} />
+                                </div>
+                            )}
+
                             {/* 渲染思考过程（如果存在） */}
                             {message.reasoning_content && (
                                 <ReasoningContent
                                     content={message.reasoning_content}
-                                    isStreaming={(message as any).isStreaming || false} // message 类没有 isStreaming 属性
+                                    isStreaming={message.content == ""}
                                 />
                             )}
 

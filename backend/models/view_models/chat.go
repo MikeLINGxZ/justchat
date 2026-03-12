@@ -17,5 +17,5 @@ type MatchMessage struct {
 type Completions struct {
 	ChatUuid    string `json:"chat_uuid"`
 	MessageUuid string `json:"message_uuid"`
-	MessageKey  string `json:"message_key"`
+	EventKey    string `json:"event_key"`
 }

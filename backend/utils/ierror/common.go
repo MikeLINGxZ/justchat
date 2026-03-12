@@ -15,6 +15,6 @@ func New(errCode ErrorCode) error {
 }
 
 func NewError(err error) error {
-	logger.Error(err)
+	logger.Error("internal error:", err)
 	return IError{errCode: ErrCodeInternalError}
 }

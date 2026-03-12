@@ -107,6 +107,7 @@ type UserMessageExtra struct {
 	ModelName string   `json:"model_name"` // 模型名称
 	Files     []File   `json:"files"`      // 文件路径
 	Tools     []string `json:"tools"`      // 工具id
+	Agents    []string `json:"agents"`     // agent id
 }
 
 type AssistantMessageExtra struct {

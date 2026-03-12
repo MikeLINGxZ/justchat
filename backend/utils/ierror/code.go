@@ -27,4 +27,8 @@ const (
 	ErrCodeChatNotFound = "ErrCodeChatNotFound"
 	// ErrCodeUnsupportedFileType 不支持的文件类型
 	ErrCodeUnsupportedFileType = "ErrCodeUnsupportedFileType"
+	// ErrCodeProviderNotFound 供应商不存在
+	ErrCodeProviderNotFound = "ErrCodeProviderNotFound"
+	// ErrCodeCompletionsParams 对话参数错误
+	ErrCodeCompletionsParams = "ErrCodeCompletionsParams"
 )

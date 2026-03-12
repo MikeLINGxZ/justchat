@@ -6,6 +6,7 @@ export {
     Chat,
     File,
     Message,
+    Model,
     ProviderType,
     UserMessageExtra
 } from "./models.js";

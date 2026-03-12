@@ -18,7 +18,6 @@ import {
   Avatar,
   Tooltip,
   Modal,
-  List,
 } from 'antd';
 import {
   ApiOutlined,
@@ -28,20 +27,21 @@ import {
   EyeTwoTone,
   PlusOutlined,
   DeleteOutlined,
-  CheckCircleOutlined,
   ExclamationCircleOutlined,
   SettingOutlined,
   ArrowLeftOutlined,
   QuestionCircleOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
+import { ProviderType } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models';
 import styles from './index.module.scss';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface ProviderSettingPageProps {
@@ -49,15 +49,15 @@ interface ProviderSettingPageProps {
 }
 
 interface ProviderConfig {
-  id: number; // 改为number类型，与后端一致
-  provider_name: string; // 使用后端字段名
-  api_key: string; // 使用后端字段名
-  base_url: string; // 使用后端字段名
-  file_upload_base_url?: string | null; // 文件上传URL
-  enable: boolean; // 使用后端字段名
-  default_model_id: number | null; // 默认模型ID，允许null
-  models: any[]; // 供应商模型列表
-  // 前端额外字段
+  id: number;
+  provider_name: string;
+  provider_type?: ProviderType;
+  api_key: string;
+  base_url: string;
+  file_upload_base_url?: string | null;
+  enable: boolean;
+  default_model_id: number | null;
+  models: any[];
   icon?: string;
   description?: string;
   status?: 'connected' | 'disconnected' | 'testing';
@@ -76,6 +76,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [loadingSupportProviders, setLoadingSupportProviders] = useState(false); // 加载支持的供应商状态
   const [selectedSupportProvider, setSelectedSupportProvider] = useState<SupportProvider | null>(null); // 选中的支持供应商
   const [addProviderForm] = Form.useForm(); // 添加供应商表单
+  const [customModelName, setCustomModelName] = useState(''); // 自定义模型名称输入
+  const [addingCustomModel, setAddingCustomModel] = useState(false); // 添加自定义模型loading
 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
   const { refetch: refetchModels } = useModelStore();
@@ -193,16 +195,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 构造后端需要的Provider对象
       const defaultModelId = values.defaultModel || 0; // 如果没有选择默认模型，传递0
       const providerData = new Provider({
-        provider_name: values.providerName || currentProvider.provider_name, // 使用用户输入的名称
-        provider_type: values.provider_type,
+        provider_name: values.providerName || currentProvider.provider_name,
+        provider_type: currentProvider.provider_type,
         base_url: values.baseUrl,
         file_upload_base_url: values.fileUploadBaseUrl || null,
-        api_key: values.apiKey,
+        api_key: values.apiKey || '',
         enable: values.enabled,
         default_model_id: defaultModelId,
       });
       
-      // 调用后端更新接口
       await Service.UpdateProvider(selectedProvider, providerData);
       
       // 更新本地状态
@@ -332,15 +333,14 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 构造新供应商数据
       const newProviderData = new Provider({
         provider_name: values.providerName || selectedSupportProvider.name,
-        provider_type: values.provider_type,
+        provider_type: selectedSupportProvider.provider_type,
         base_url: values.baseUrl || selectedSupportProvider.base_url,
         file_upload_base_url: values.fileUploadBaseUrl || null,
-        api_key: values.apiKey,
+        api_key: values.apiKey || '',
         enable: values.enabled,
         default_model_id: values.defaultModel || 0,
       });
       
-      // 调用后端创建接口
       await Service.AddProvider(newProviderData);
       
       // 重新加载供应商列表
@@ -406,6 +406,36 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       setLoading(false);
     }
   };
+  const handleAddCustomModel = async () => {
+    if (selectedProvider === null || !customModelName.trim()) return;
+    
+    setAddingCustomModel(true);
+    try {
+      await Service.AddProviderCustomModel(selectedProvider, customModelName.trim());
+      setCustomModelName('');
+      await loadProviderConfigs();
+      message.success('自定义模型添加成功');
+    } catch (error) {
+      console.error('添加自定义模型失败:', error);
+      message.error('添加自定义模型失败');
+    } finally {
+      setAddingCustomModel(false);
+    }
+  };
+
+  const handleDeleteCustomModel = async (modelName: string) => {
+    if (selectedProvider === null) return;
+    
+    try {
+      await Service.DeleteProviderCustomModel(selectedProvider, modelName);
+      await loadProviderConfigs();
+      message.success('自定义模型删除成功');
+    } catch (error) {
+      console.error('删除自定义模型失败:', error);
+      message.error('删除自定义模型失败');
+    }
+  };
+
   const handleCancelCreate = () => {
     if (newProviderTempId !== null) {
       // 从列表中移除占位符
@@ -485,49 +515,40 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     return extras[key] || { icon: '🔧', description: '第三方AI模型提供商' };
   };
 
-  const getProviderIcon = (provider: ProviderConfig) => {
-    if (provider.icon) {
-      // 判断是否是图片路径（以 / 开头或者是 http/https 开头）
-      const isImagePath = provider.icon.startsWith('/') || 
-                         provider.icon.startsWith('http://') || 
-                         provider.icon.startsWith('https://') ||
-                         provider.icon.startsWith('data:');
-      
-      if (isImagePath) {
+  const isIconImagePath = (icon: string) =>
+    icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:');
+
+  const renderProviderAvatar = (icon?: string, size: number = 28, enabled: boolean = true) => {
+    if (icon) {
+      if (isIconImagePath(icon)) {
         return (
-          <Avatar 
-            size={28} 
-            src={provider.icon}
-            style={{ 
-              backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
-            }}
+          <Avatar
+            size={size}
+            src={icon}
+            style={{ backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)' }}
           />
         );
-      } else {
-        // 否则作为 emoji 或文本显示
-        return (
-          <Avatar 
-            size={28} 
-            style={{ 
-              backgroundColor: provider.enable ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
-              fontSize: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {provider.icon}
-          </Avatar>
-        );
       }
+      return (
+        <Avatar
+          size={size}
+          style={{
+            backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
+            fontSize: `${Math.round(size * 0.57)}px`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {icon}
+        </Avatar>
+      );
     }
     return (
-      <Avatar 
-        size={28} 
-        icon={<ApiOutlined />} 
-        style={{ 
-          backgroundColor: provider.enable ? 'var(--primary-color)' : 'var(--text-color-disabled)' 
-        }} 
+      <Avatar
+        size={size}
+        icon={<ApiOutlined />}
+        style={{ backgroundColor: enabled ? 'var(--primary-color)' : 'var(--text-color-disabled)' }}
       />
     );
   };
@@ -563,7 +584,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 </Button>
               </Tooltip>
             }
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <div className={styles.providerItems}>
               {providers.map(provider => (
@@ -577,7 +598,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                  <div className={`${styles.providerItemBox}`}>
                      <div className={styles.providerContent}>
                          <div className={styles.providerLeft}>
-                             {getProviderIcon(provider)}
+                             {renderProviderAvatar(provider.icon, 28, provider.enable)}
                              <div className={styles.providerDetails}>
                                  <div className={styles.providerName}>{provider.provider_name}</div>
                              </div>
@@ -647,32 +668,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           <Card 
             title={
               <Space>
-                {currentProvider?.icon ? (
-                  (() => {
-                    const isImagePath = currentProvider.icon.startsWith('/') || 
-                                       currentProvider.icon.startsWith('http://') || 
-                                       currentProvider.icon.startsWith('https://') ||
-                                       currentProvider.icon.startsWith('data:');
-                    return (
-                      <Avatar 
-                        size={24} 
-                        src={isImagePath ? currentProvider.icon : undefined}
-                        style={{ 
-                          backgroundColor: isImagePath ? 'transparent' : 'var(--primary-color)',
-                          fontSize: '14px',
-                        }}
-                      >
-                        {!isImagePath && currentProvider.icon}
-                      </Avatar>
-                    );
-                  })()
-                ) : (
-                  <Avatar 
-                    size={24} 
-                    icon={<ApiOutlined />}
-                    style={{ backgroundColor: 'var(--primary-color)' }}
-                  />
-                )}
+                {renderProviderAvatar(currentProvider?.icon, 24, currentProvider?.enable)}
                 <span>配置 {currentProvider?.provider_name}</span>
                 {currentProvider?.status === 'connected' && (
                   <Badge status="success" />
@@ -691,7 +687,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   message="API密钥将加密保存在本地，不会上传到任何服务器。"
                   type="info"
                   showIcon
-                  style={{ marginBottom: 16 }}
                   className={styles.securityAlert}
                 />
 
@@ -720,7 +715,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   label="API 密钥"
                   name="apiKey"
                   rules={[
-                    { required: true, message: '请输入API密钥' },
+                    { required: false, message: '请输入API密钥' },
                   ]}
                 >
                   <Input.Password
@@ -793,7 +788,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                  modelIdStr.includes(searchValue);
                         }}
                       >
-                        {availableModelsForProvider.map(model => (
+                        {availableModelsForProvider.filter(m => !m.is_custom).map(model => (
                           <Option key={model.id} value={model.id}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span>{model.alias || model.model}</span>
@@ -816,6 +811,69 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     </Tooltip>
                   </Input.Group>
                 </Form.Item>
+
+                {!isCreatingNew && currentProvider && (
+                  <div className={styles.customModelSection}>
+                    <div className={styles.customModelHeader}>
+                      <div className={styles.customModelTitle}>
+                        <SettingOutlined className={styles.customModelIcon} />
+                        <span>自定义模型</span>
+                      </div>
+                      <Text type="secondary" className={styles.customModelDesc}>
+                        手动添加供应商未列出的模型
+                      </Text>
+                    </div>
+                    <div className={styles.customModelInput}>
+                      <Input
+                        placeholder="输入模型名称，如 gpt-4o-mini"
+                        value={customModelName}
+                        onChange={(e) => setCustomModelName(e.target.value)}
+                        onPressEnter={handleAddCustomModel}
+                        className={styles.customModelInputField}
+                      />
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={handleAddCustomModel}
+                        loading={addingCustomModel}
+                        disabled={!customModelName.trim()}
+                        className={styles.customModelAddBtn}
+                      >
+                        添加
+                      </Button>
+                    </div>
+                    {availableModelsForProvider.filter(m => m.is_custom).length > 0 && (
+                      <div className={styles.customModelList}>
+                        {availableModelsForProvider
+                          .filter(m => m.is_custom)
+                          .map(model => (
+                            <div key={model.id} className={styles.customModelItem}>
+                              <span className={styles.customModelName}>
+                                {model.alias || model.model}
+                              </span>
+                              <Tooltip title="删除此自定义模型">
+                                <Popconfirm
+                                  title="删除自定义模型"
+                                  description={`确定要删除模型 "${model.model}" 吗？`}
+                                  onConfirm={() => handleDeleteCustomModel(model.model)}
+                                  okText="确定"
+                                  cancelText="取消"
+                                  okButtonProps={{ danger: true }}
+                                >
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<CloseOutlined />}
+                                    className={styles.customModelDeleteBtn}
+                                  />
+                                </Popconfirm>
+                              </Tooltip>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <Divider className={styles.formDivider} />
 
@@ -901,12 +959,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         title={
           selectedSupportProvider ? (
             <Space>
-              <Button 
-                type="text" 
-                icon={<ArrowLeftOutlined />} 
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
                 onClick={handleCancelSelectProvider}
                 style={{ padding: 0 }}
-                title="返回选择列表"
               />
               <span>添加供应商 - {selectedSupportProvider.name}</span>
             </Space>
@@ -925,85 +982,52 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         centered
         getContainer={() => document.body}
         zIndex={2002}
-        maskStyle={{ zIndex: 2001 }}
         wrapClassName={styles.addProviderModal}
-        bodyStyle={isMobile ? { maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' } : undefined}
       >
         {!selectedSupportProvider ? (
-          // 供应商列表
-          <List
-            loading={loadingSupportProviders}
-            dataSource={supportProviders}
-            renderItem={(item) => {
+          <div className={styles.supportProviderList}>
+            {supportProviders.map((item) => {
               const extras = getProviderExtras(item.name);
+              const iconSrc = item.icon
+                ? (isIconImagePath(item.icon) ? item.icon : `data:image/png;base64,${item.icon}`)
+                : undefined;
               return (
-                <List.Item
-                  style={{
-                    cursor: 'pointer',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    marginBottom: '8px',
-                    border: '1px solid var(--border-color)',
-                    transition: 'all 0.3s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--background-color-light)';
-                    e.currentTarget.style.borderColor = 'var(--primary-color)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                  }}
+                <div
+                  key={item.provider_type || item.name}
+                  className={styles.supportProviderItem}
                   onClick={() => handleSelectSupportProvider(item)}
                 >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar 
-                        size={40} 
-                        src={
-                          item.icon 
-                            ? (item.icon.startsWith('data:') || 
-                                item.icon.startsWith('http://') || 
-                                item.icon.startsWith('https://') ||
-                                item.icon.startsWith('/')
-                                ? item.icon 
-                                : `data:image/png;base64,${item.icon}`)
-                            : undefined
-                        }
-                        style={{ 
-                          backgroundColor: item.icon ? 'transparent' : 'var(--primary-color-light)',
-                          fontSize: '20px',
-                        }}
-                      >
-                        {!item.icon && extras.icon}
-                      </Avatar>
-                    }
-                    title={
-                      <Space>
-                        <span style={{ fontSize: '16px', fontWeight: 500 }}>{item.name}</span>
-                      </Space>
-                    }
-                    description={
-                      <div>
-                        <div style={{ marginTop: '4px', color: 'var(--text-color-secondary)' }}>
-                          {item.description || extras.description}
-                        </div>
-                        {item.base_url && (
-                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-color-disabled)' }}>
-                            <ApiOutlined style={{ marginRight: '4px' }} />
-                            {item.base_url}
-                          </div>
-                        )}
+                  <Avatar
+                    size={40}
+                    src={iconSrc}
+                    style={{
+                      backgroundColor: item.icon ? 'transparent' : 'var(--primary-color-light)',
+                      fontSize: '20px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {!item.icon && extras.icon}
+                  </Avatar>
+                  <div className={styles.supportProviderInfo}>
+                    <span className={styles.supportProviderName}>{item.name}</span>
+                    <div className={styles.supportProviderDesc}>
+                      {item.description || extras.description}
+                    </div>
+                    {item.base_url && (
+                      <div className={styles.supportProviderUrl}>
+                        <ApiOutlined style={{ marginRight: 4 }} />
+                        {item.base_url}
                       </div>
-                    }
-                  />
-                </List.Item>
+                    )}
+                  </div>
+                </div>
               );
-            }}
-            locale={{ emptyText: '暂无可用的供应商' }}
-          />
+            })}
+            {supportProviders.length === 0 && !loadingSupportProviders && (
+              <div className={styles.supportProviderEmpty}>暂无可用的供应商</div>
+            )}
+          </div>
         ) : (
-          // 供应商配置表单
           <Form
             form={addProviderForm}
             layout="vertical"
@@ -1013,7 +1037,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               message="API密钥将加密保存在本地，不会上传到任何服务器。"
               type="info"
               showIcon
-              style={{ marginBottom: 16 }}
+              className={styles.modalAlert}
             />
 
             <Form.Item
@@ -1032,16 +1056,14 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 { max: 50, message: '供应商名称不能超过50个字符' },
               ]}
             >
-              <Input 
-                placeholder="为供应商设置一个名称" 
-              />
+              <Input placeholder="为供应商设置一个名称" />
             </Form.Item>
 
             <Form.Item
               label="API 密钥"
               name="apiKey"
               rules={[
-                { required: true, message: '请输入API密钥' },
+                { required: false, message: '请输入API密钥' },
               ]}
             >
               <Input.Password
@@ -1084,7 +1106,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               name="defaultModel"
               help="保存供应商后可以刷新模型列表"
             >
-              <Select 
+              <Select
                 placeholder="保存供应商后可选择默认模型"
                 allowClear
                 showSearch
@@ -1097,9 +1119,9 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
 
             <Divider />
 
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-                <Button 
+            <Form.Item className={styles.modalFormFooter}>
+              <Space className={styles.modalFormActions}>
+                <Button
                   onClick={() => {
                     setAddProviderModalVisible(false);
                     setSelectedSupportProvider(null);
@@ -1108,9 +1130,9 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 >
                   取消
                 </Button>
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
+                <Button
+                  type="primary"
+                  htmlType="submit"
                   icon={<PlusOutlined />}
                   loading={loading}
                 >

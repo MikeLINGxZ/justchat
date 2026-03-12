@@ -19,4 +19,5 @@ type Model struct {
 	Object     string         `gorm:"type:varchar(255)" json:"object"`
 	Enable     bool           `gorm:"index;type:bool;default:1" json:"enable"`
 	Alias      *string        `gorm:"index;type:varchar(255)" json:"alias"`
+	IsCustom   bool           `gorm:"index;type:bool;default:0" json:"is_custom"`
 }

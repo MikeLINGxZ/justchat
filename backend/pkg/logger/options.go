@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"os"
+
 	"github.com/fatih/color"
 )
 
@@ -19,6 +21,16 @@ func WithColor(errorLogger, warmLogger, debugLogger, infoLogger *color.Color) Op
 func WithDebug() Options {
 	return func(logger *Logger) error {
 		logger.enableDebug = true
+		return nil
+	}
+}
+
+func WithFileLogging(logDir string) Options {
+	return func(logger *Logger) error {
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			return err
+		}
+		logger.logDir = logDir
 		return nil
 	}
 }
