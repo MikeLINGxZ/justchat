@@ -130,6 +130,12 @@ export function GetSupportProviders(): $CancellablePromise<view_models$0.Support
     });
 }
 
+export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
+    return $Call.ByID(432097153).then(($result: any) => {
+        return $$createType15($result);
+    });
+}
+
 export function OpenFile(path: string): $CancellablePromise<void> {
     return $Call.ByID(639918028, path);
 }
@@ -147,7 +153,7 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
 
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType17($result);
     });
 }
 
@@ -184,5 +190,7 @@ const $$createType10 = view_models$0.Provider.createFrom;
 const $$createType11 = $Create.Array($$createType10);
 const $$createType12 = view_models$0.SupportProvider.createFrom;
 const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = data_models$0.File.createFrom;
+const $$createType14 = view_models$0.Tool.createFrom;
 const $$createType15 = $Create.Array($$createType14);
+const $$createType16 = data_models$0.File.createFrom;
+const $$createType17 = $Create.Array($$createType16);

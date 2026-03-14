@@ -2,13 +2,19 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import styles from "./index.module.scss";
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
-import {FileInfo, Model} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import {FileInfo, Model, Tool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
 interface ChatInputProps {
     // 所选模型
     selectedModelId: number;
     // 可用模型
     availableModels: Model[];
+    // 可用工具
+    availableTools: Tool[];
+    // 已选中的工具 id 列表
+    selectedToolIds: string[];
+    // 工具选择变更事件
+    onSelectedToolsChange: (toolIds: string[]) => void;
     // 是否正在生成消息
     isGenerating: boolean;
     // 模型变更事件
@@ -51,6 +57,9 @@ function setDefaultModelConfig(config: DefaultModelConfig) {
 const ChatInput: React.FC<ChatInputProps> = ({
     selectedModelId,
     availableModels,
+    availableTools,
+    selectedToolIds,
+    onSelectedToolsChange,
     isGenerating = false,
     onMessageChange,
     onSendButtonClick,
@@ -63,6 +72,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     const [showAddMenu, setShowAddMenu] = useState(false);
     const [showModelMenu, setShowModelMenu] = useState(false);
+    const [showToolMenu, setShowToolMenu] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isComposing, setIsComposing] = useState(false);
     const [modelSearchValue, setModelSearchValue] = useState('');
@@ -73,6 +83,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const imageInputRef = useRef<HTMLInputElement>(null);
     const addMenuRef = useRef<HTMLDivElement>(null);
     const modelMenuRef = useRef<HTMLDivElement>(null);
+    const toolMenuRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastHeightRef = useRef<number>(0);
     const isMobile =  useIsMobile();
@@ -146,6 +157,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onModelSelectorClick?.();
         }
     }, [showModelMenu, onModelSelectorClick]);
+
+    // Tool 选择框点击事件
+    const handleToolClick = useCallback(() => {
+        setShowToolMenu(!showToolMenu);
+    }, [showToolMenu]);
+
+    // Tool 开关切换
+    const handleToolToggle = useCallback((toolId: string, enabled: boolean) => {
+        if (enabled) {
+            onSelectedToolsChange([...selectedToolIds, toolId]);
+        } else {
+            onSelectedToolsChange(selectedToolIds.filter(id => id !== toolId));
+        }
+    }, [selectedToolIds, onSelectedToolsChange]);
 
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
@@ -263,16 +288,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 setShowModelMenu(false);
                 setModelSearchValue(''); // 关闭菜单时清空搜索值
             }
+            if (toolMenuRef.current && !toolMenuRef.current.contains(event.target as Node)) {
+                setShowToolMenu(false);
+            }
         };
 
-        if (showAddMenu || showModelMenu) {
+        if (showAddMenu || showModelMenu || showToolMenu) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showAddMenu, showModelMenu]);
+    }, [showAddMenu, showModelMenu, showToolMenu]);
 
     return (
         <div className={`${styles.chatInput}`}>
@@ -357,6 +385,61 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         </svg>
                                         上传文件
                                     </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={styles.toolSelector} ref={toolMenuRef}>
+                            <button
+                                className={styles.toolButton}
+                                onClick={handleToolClick}
+                                type="button"
+                                title="选择工具"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
+                                </svg>
+                                <span className={styles.toolButtonText}>Tool</span>
+                                {selectedToolIds.length > 0 && (
+                                    <span className={styles.toolBadge}>{selectedToolIds.length}</span>
+                                )}
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7 10l5 5 5-5z"/>
+                                </svg>
+                            </button>
+
+                            {showToolMenu && (
+                                <div className={`${styles.toolMenu} ${isMobile ? styles.mobileMenu : ''}`}>
+                                    <div className={styles.toolList}>
+                                        {availableTools.length === 0 ? (
+                                            <div className={styles.noResults}>暂无可用工具</div>
+                                        ) : (
+                                            availableTools.map((tool) => {
+                                                const isEnabled = selectedToolIds.includes(tool.id);
+                                                return (
+                                                    <div
+                                                        key={tool.id}
+                                                        className={styles.toolItem}
+                                                    >
+                                                        <div className={styles.toolItemInfo}>
+                                                            <span className={styles.toolItemName}>{tool.name}</span>
+                                                            {tool.description && (
+                                                                <span className={styles.toolItemDesc}>{tool.description}</span>
+                                                            )}
+                                                        </div>
+                                                        <label className={styles.toggleSwitch}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isEnabled}
+                                                                onChange={(e) => handleToolToggle(tool.id, e.target.checked)}
+                                                            />
+                                                            <span className={styles.toggleSlider} />
+                                                        </label>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>

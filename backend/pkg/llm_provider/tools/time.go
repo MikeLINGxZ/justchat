@@ -9,10 +9,22 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
-type emptyParams struct{}
+type CurrentDate struct {
+}
 
-// GetCurrentDateTool 获取当前日期（YYYY-MM-DD 及星期几）
-func GetCurrentDateTool() tool.BaseTool {
+func (c *CurrentDate) Id() string {
+	return "get_current_date"
+}
+
+func (c *CurrentDate) Name() string {
+	return "获取日期时间"
+}
+
+func (c *CurrentDate) Description() string {
+	return "获取时间YYYY-MM-DD 以及星期几"
+}
+
+func (c *CurrentDate) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
 			Name:        "get_current_date",
@@ -28,8 +40,22 @@ func GetCurrentDateTool() tool.BaseTool {
 	return t
 }
 
-// GetCurrentTimeTool 获取当前时间（HH:MM:SS）
-func GetCurrentTimeTool() tool.BaseTool {
+type CurrentTime struct {
+}
+
+func (c *CurrentTime) Id() string {
+	return "get_current_time"
+}
+
+func (c *CurrentTime) Name() string {
+	return "获取当前时间"
+}
+
+func (c *CurrentTime) Description() string {
+	return "获取当前时间，返回格式为 HH:MM:SS"
+}
+
+func (c *CurrentTime) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
 			Name:        "get_current_time",

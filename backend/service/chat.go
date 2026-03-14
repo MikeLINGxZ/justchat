@@ -87,10 +87,10 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		return nil, ierror.New(ierror.ErrCodeModelNotFound)
 	}
 
-	// todo 获取工具集
-	agentTools := []tool.BaseTool{tools.GetCurrentDateTool(), tools.GetCurrentTimeTool()}
-	for _, toolId := range inputMessage.UserMessageExtra.Tools {
-		fmt.Println(toolId)
+	// 获取工具集
+	agentTools, err := tools.ToolRouter.GetToolsByIds(inputMessage.UserMessageExtra.Tools)
+	if err != nil {
+		return nil, ierror.NewError(err)
 	}
 
 	// todo 获取子agent
@@ -141,11 +141,13 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 
 	// 创建ai消息
 	assistantMessage := data_models.Message{
-		OrmModel:              data_models.OrmModel{},
-		ChatUuid:              chatUuid,
-		MessageUuid:           assistantMessageUuid,
-		Role:                  schema.Assistant,
-		AssistantMessageExtra: &data_models.AssistantMessageExtra{},
+		OrmModel:    data_models.OrmModel{},
+		ChatUuid:    chatUuid,
+		MessageUuid: assistantMessageUuid,
+		Role:        schema.Assistant,
+		AssistantMessageExtra: &data_models.AssistantMessageExtra{
+			ToolUses: []data_models.ToolUse{},
+		},
 	}
 	assistantMessageId, err := s.storage.CreateMessage(ctx, chatUuid, assistantMessage)
 	if err != nil {
@@ -172,9 +174,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			}
 			if isNewChat {
 				go func() {
-					_, err = s.genChatTitle(ctx, chatUuid, *providerModel, true)
+					_, err = s.genChatTitle(context.Background(), chatUuid, *providerModel, true)
 					if err != nil {
-						logger.Error("save or update assistant message error", err)
+						logger.Error("gen chat title error", err)
 					}
 				}()
 			}
@@ -207,10 +209,16 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 					continue
 				}
 				mo = event.Output.MessageOutput
-				if mo.Role != schema.Assistant {
-					if mo.Message != nil {
-						marshal, _ := json.Marshal(mo)
-						logger.Info(string(marshal))
+				if mo.Role == schema.Tool && !mo.IsStreaming {
+					assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
+						ToolName:   mo.Message.ToolName,
+						ToolResult: mo.Message.Content,
+					})
+					err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
+					if err != nil {
+						assistantMessage.AssistantMessageExtra.FinishReason = "error"
+						assistantMessage.AssistantMessageExtra.FinishError = err.Error()
+						return
 					}
 					continue
 				}

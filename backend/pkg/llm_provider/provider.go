@@ -2,8 +2,6 @@ package llm_provider
 
 import (
 	"context"
-	"fmt"
-	"io"
 
 	"github.com/cloudwego/eino-ext/components/model/deepseek"
 	"github.com/cloudwego/eino-ext/components/model/ollama"
@@ -126,31 +124,22 @@ func (p *Provider) GenChatTitle(ctx context.Context, messages []schema.Message) 
 					✅ 适配通用场景：标题应便于归档、检索或快速理解，不依赖上下文即可读懂；
 					✅ 直接输出标题，不需要其他内容；
 					❌ 不要解释、不要复述对话、不要添加额外信息、不要输出任何说明文字——只输出标题本身，且仅一行。
-					
 					请严格遵循以上规则。现在，我的聊天记录如下：
 					`,
 		},
 	}
 	contextMessages = append(contextMessages, messages...)
 
-	resp, err := p.Completions(ctx, contextMessages)
-	if err == nil {
-		for {
-			recv, err := resp.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return "", err
-			}
-			genTitle += recv.Content
-		}
+	var messagePoint []*schema.Message
+	for _, item := range contextMessages {
+		messagePoint = append(messagePoint, &item)
 	}
+
+	generateMsg, err := p.chatModel.Generate(ctx, messagePoint)
 	if err != nil {
 		return "", err
 	}
-	if genTitle == "" {
-		return "", fmt.Errorf("failed to generate title")
-	}
+	genTitle += generateMsg.Content
+
 	return genTitle, nil
 }

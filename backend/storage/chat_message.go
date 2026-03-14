@@ -32,12 +32,12 @@ func (s *Storage) SaveOrUpdateMessage(ctx context.Context, message data_models.M
 // GetMessage 获取 chat 消息
 func (s *Storage) GetMessage(ctx context.Context, chatUuid string, offset, limit int) ([]data_models.Message, int, error) {
 	var messages []data_models.Message
-	err := s.sqliteDB.Model(&data_models.Message{}).Where("chat_uuid = ?", chatUuid).Offset(offset).Limit(limit).Find(&messages).Error
+	err := s.sqliteDB.Model(&data_models.Message{}).Where("chat_uuid = ?", chatUuid).Order("created_at asc").Offset(offset).Limit(limit).Find(&messages).Error
 	if err != nil {
 		return nil, 0, err
 	}
 	var total int64
-	err = s.sqliteDB.Model(&data_models.Message{}).Where("chat_uuid = ?", chatUuid).Count(&total).Error
+	err = s.sqliteDB.Model(&data_models.Message{}).Where("chat_uuid = ?", chatUuid).Order("created_at asc").Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}

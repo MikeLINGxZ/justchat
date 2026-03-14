@@ -111,8 +111,14 @@ type UserMessageExtra struct {
 }
 
 type AssistantMessageExtra struct {
-	FinishReason string `json:"finish_reason"`
-	FinishError  string `json:"finish_error"`
+	ToolUses     []ToolUse `json:"tool_uses"`
+	FinishReason string    `json:"finish_reason"`
+	FinishError  string    `json:"finish_error"`
+}
+
+type ToolUse struct {
+	ToolName   string `json:"tool_name"`
+	ToolResult string `json:"tool_result"`
 }
 
 type File struct {

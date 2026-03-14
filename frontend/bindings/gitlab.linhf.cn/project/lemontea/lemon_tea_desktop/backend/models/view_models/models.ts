@@ -314,6 +314,35 @@ export class SupportProvider {
     }
 }
 
+export class Tool {
+    "id": string;
+    "name": string;
+    "description": string;
+
+    /** Creates a new Tool instance. */
+    constructor($$source: Partial<Tool> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Tool instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Tool {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Tool($$parsedSource as Partial<Tool>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = data_models$0.Chat.createFrom;
 const $$createType1 = $Create.Array($$createType0);

@@ -20,18 +20,18 @@
   }
 }
 
-// 聊天加载容器
+// 聊天加载蒙层（覆盖在主内容之上）
 .chatLoadingContainer {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  position: relative;
-  
-  // 移除旧的 Ant Design Spin 样式
+  background: rgba(255, 255, 255, 1);
 }
 
 // 自定义加载动画容器
@@ -220,6 +220,6 @@
   }
   
   .chatLoadingContainer {
-    color: var(--text-color, #ffffff);
+    background: rgba(31, 31, 31, 1);
   }
 }

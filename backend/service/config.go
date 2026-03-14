@@ -3,6 +3,7 @@ package service
 import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 )
 
@@ -46,4 +47,17 @@ func (s *Service) GetSupportProviders() ([]view_models.SupportProvider, error) {
 			Description:       "",
 		},
 	}, nil
+}
+
+func (s *Service) GetTools() []view_models.Tool {
+	var res []view_models.Tool
+	toolsInfo := tools.ToolRouter.GetToolsInfo()
+	for _, item := range toolsInfo {
+		res = append(res, view_models.Tool{
+			Id:          item.Id(),
+			Name:        item.Name(),
+			Description: item.Description(),
+		})
+	}
+	return res
 }

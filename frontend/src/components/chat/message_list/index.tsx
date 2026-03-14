@@ -419,16 +419,14 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                                  currentMessageCount > 0;
 
         if (shouldAutoScroll) {
-            // 使用防抖机制，避免短时间内多次滚动导致闪烁
+            // 生成过程中使用即时滚动，否则流式内容增长时 smooth 动画无法跟上最新底部
             const now = Date.now();
             const timeSinceLastScroll = now - lastScrollTimeRef.current;
-            // 使用 16ms 的帧间隔，确保流畅的滚动体验
             const scrollDelay = timeSinceLastScroll < 16 ? 16 - timeSinceLastScroll : 0;
-            
+
             scrollTimeoutRef.current = setTimeout(() => {
-                // 再次检查状态，确保在延迟期间状态没有改变
                 if (autoScrollRef.current && isGenerating && !isUserScrollingRef.current) {
-                    scrollToBottomSmooth();
+                    scrollToBottomInstant();
                     lastScrollTimeRef.current = Date.now();
                 }
             }, scrollDelay);
@@ -441,7 +439,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                 scrollTimeoutRef.current = null;
             }
         };
-    }, [messages, autoScroll, isGenerating, scrollToBottomSmooth]);
+    }, [messages, autoScroll, isGenerating, scrollToBottomInstant]);
 
     return (
         <>
@@ -466,7 +464,8 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                     ref={buttonRef}
                     className={styles.scrollToBottomButton} 
                     onClick={() => {
-                        scrollToBottomSmooth();
+                        // 生成中用即时滚动，否则 smooth 动画期间新内容会让我们无法跟到底部
+                        (isGenerating ? scrollToBottomInstant : scrollToBottomSmooth)();
                         // 点击按钮后恢复自动滚动
                         autoScrollRef.current = true;
                         setAutoScroll(true);

@@ -16,11 +16,15 @@ import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 import * as time$0 from "../../../../../../../time/models.js";
 
 export class AssistantMessageExtra {
+    "tool_uses": ToolUse[];
     "finish_reason": string;
     "finish_error": string;
 
     /** Creates a new AssistantMessageExtra instance. */
     constructor($$source: Partial<AssistantMessageExtra> = {}) {
+        if (!("tool_uses" in $$source)) {
+            this["tool_uses"] = [];
+        }
         if (!("finish_reason" in $$source)) {
             this["finish_reason"] = "";
         }
@@ -35,7 +39,11 @@ export class AssistantMessageExtra {
      * Creates a new AssistantMessageExtra instance from a string or object.
      */
     static createFrom($$source: any = {}): AssistantMessageExtra {
+        const $$createField0_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tool_uses" in $$parsedSource) {
+            $$parsedSource["tool_uses"] = $$createField0_0($$parsedSource["tool_uses"]);
+        }
         return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
     }
 }
@@ -194,8 +202,8 @@ export class Message {
      * Creates a new Message instance from a string or object.
      */
     static createFrom($$source: any = {}): Message {
-        const $$createField11_0 = $$createType1;
-        const $$createField12_0 = $$createType3;
+        const $$createField11_0 = $$createType3;
+        const $$createField12_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("user_message_extra" in $$parsedSource) {
             $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
@@ -285,6 +293,31 @@ export enum ProviderType {
     ProviderTypeOther = "other",
 };
 
+export class ToolUse {
+    "tool_name": string;
+    "tool_result": string;
+
+    /** Creates a new ToolUse instance. */
+    constructor($$source: Partial<ToolUse> = {}) {
+        if (!("tool_name" in $$source)) {
+            this["tool_name"] = "";
+        }
+        if (!("tool_result" in $$source)) {
+            this["tool_result"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ToolUse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ToolUse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ToolUse($$parsedSource as Partial<ToolUse>);
+    }
+}
+
 export class UserMessageExtra {
     /**
      * 模型id
@@ -336,9 +369,9 @@ export class UserMessageExtra {
      * Creates a new UserMessageExtra instance from a string or object.
      */
     static createFrom($$source: any = {}): UserMessageExtra {
-        const $$createField2_0 = $$createType5;
-        const $$createField3_0 = $$createType6;
-        const $$createField4_0 = $$createType6;
+        const $$createField2_0 = $$createType7;
+        const $$createField3_0 = $$createType8;
+        const $$createField4_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
@@ -354,10 +387,12 @@ export class UserMessageExtra {
 }
 
 // Private type creation functions
-const $$createType0 = UserMessageExtra.createFrom;
-const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = AssistantMessageExtra.createFrom;
+const $$createType0 = ToolUse.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = UserMessageExtra.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = File.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = $Create.Array($Create.Any);
+const $$createType4 = AssistantMessageExtra.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = File.createFrom;
+const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = $Create.Array($Create.Any);

@@ -10,7 +10,7 @@ func GetDataPath() (string, error) {
 		if err := os.MkdirAll(os.Getenv("LEMONTEA_DATA_PATH"), 0755); err != nil {
 			return "", err
 		}
-		return os.Getenv("LEMONTEA_DB_PATH"), nil
+		return os.Getenv("LEMONTEA_DATA_PATH"), nil
 	}
 
 	homeDir, err := os.UserHomeDir()

@@ -6,7 +6,8 @@ import ChatInput from "@/components/chat/input";
 import {
     type Chat as ChatType, FileInfo,
     type Message,
-    Model
+    Model,
+    Tool
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import {RoleType} from "@bindings/github.com/cloudwego/eino/schema";
@@ -46,6 +47,19 @@ const Chat: React.FC<ChatProps> = ({
     const [selectModelName,setSelectModelName] = useState<string>("");
     // 可用模型
     const [availableModels,setAvailableModels] = useState<Model[]>([]);
+    // 可用工具
+    const [availableTools,setAvailableTools] = useState<Tool[]>([]);
+    // 用户选中的工具 id 列表（持久化到 localStorage）
+    const [selectedToolIds, setSelectedToolIds] = useState<string[]>(() => {
+        try {
+            const raw = localStorage.getItem('chat_selected_tools');
+            if (!raw) return [];
+            const parsed = JSON.parse(raw) as string[];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    });
     // 是否在生成
     const [isGenerating,setIsGenerating] = useState<boolean>(false);
     // 输入框文字内容
@@ -62,16 +76,49 @@ const Chat: React.FC<ChatProps> = ({
     const [inputResetKey, setInputResetKey] = useState<number>(0);
     // 用于中止生成请求
     const abortControllerRef = useRef<AbortController | null>(null);
+    // 正在生成的聊天 uuid，用于切换时忽略过期的流式消息
+    const generatingForChatUuidRef = useRef<string | null>(null);
 
     useEffect(() => {
         Service.GetModels(true,true)
             .then((models: Model[])=>{
                 setAvailableModels(models);
             })
+        Service.GetTools()
+            .then((tools: Tool[])=> {
+                setAvailableTools(tools);
+            })
     }, []);
+
+    // 当可用工具加载后，过滤掉已不存在的工具 ID
+    useEffect(() => {
+        if (availableTools.length === 0) return;
+        const validIds = new Set(availableTools.map(t => t.id));
+        setSelectedToolIds(prev => {
+            const filtered = prev.filter(id => validIds.has(id));
+            return filtered.length === prev.length ? prev : filtered;
+        });
+    }, [availableTools]);
+
+    // 持久化用户选择的 tools
+    useEffect(() => {
+        if (selectedToolIds.length === 0) {
+            localStorage.removeItem('chat_selected_tools');
+        } else {
+            localStorage.setItem('chat_selected_tools', JSON.stringify(selectedToolIds));
+        }
+    }, [selectedToolIds]);
 
     useEffect(() => {
         const propUuid = chatUuid ?? "";
+
+        // 切换聊天时：中止进行中的生成，并忽略其后续的流式消息
+        generatingForChatUuidRef.current = null;
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            setIsGenerating(false);
+        }
 
         // 如果这次 chatUuid 变化是由内部 navigate 引起的（新对话获得 UUID），跳过重新加载
         if (skipNextFetchRef.current && skipNextFetchRef.current === propUuid) {
@@ -112,7 +159,9 @@ const Chat: React.FC<ChatProps> = ({
                     setMessages([]);
                 }),
         ]).finally(() => {
-            setLoading(false);
+            setTimeout(() => {
+                setLoading(false);
+            }, 300);
         });
     }, [chatUuid]);
 
@@ -143,6 +192,7 @@ const Chat: React.FC<ChatProps> = ({
     // onSendButtonClick 发送按钮点击
     const onSendButtonClick = async () => {
         try {
+            generatingForChatUuidRef.current = currentChatUuid;
             setIsGenerating(true);
             let userMessage:Message = {
                 id: 0,
@@ -158,7 +208,8 @@ const Chat: React.FC<ChatProps> = ({
                     model_id: selectModel,
                     model_name: selectModelName,
                     files: inputFiles,
-                    tools: []
+                    tools: selectedToolIds,
+                    agents: [],
                 },
                 user_message_extra_content: "",
                 assistant_message_extra: null,
@@ -178,7 +229,8 @@ const Chat: React.FC<ChatProps> = ({
                 user_message_extra_content: "",
                 assistant_message_extra: {
                     finish_reason: "",
-                    finish_error: ""
+                    finish_error: "",
+                    tool_uses: [],
                 },
                 assistant_message_extra_content: "",
             }
@@ -190,6 +242,8 @@ const Chat: React.FC<ChatProps> = ({
             abortControllerRef.current = controller;
 
             await CompletionsUtils(userMessage,(message:Message)=>{
+                // 若已切换到其他聊天，忽略此流式消息，避免污染当前聊天
+                if (generatingForChatUuidRef.current === null) return;
                 setMessages(prev => {
                     const updatedMessages = [...prev];
                     updatedMessages[updatedMessages.length - 1] = message;
@@ -198,6 +252,7 @@ const Chat: React.FC<ChatProps> = ({
             },(error:string)=>{
 
             },(newChatUuid:string)=>{
+                generatingForChatUuidRef.current = null;
                 abortControllerRef.current = null;
                 setIsGenerating(false);
                 if (currentChatUuid != "" && currentChatUuid == newChatUuid) {
@@ -215,6 +270,7 @@ const Chat: React.FC<ChatProps> = ({
                 }
             }, controller)
         }catch (e) {
+            generatingForChatUuidRef.current = null;
             abortControllerRef.current = null;
             setIsGenerating(false);
         }
@@ -228,38 +284,42 @@ const Chat: React.FC<ChatProps> = ({
 
     return (
         <div className={`${styles.chatPage}`}>
-            {loading ? (
+            {/* 主内容始终渲染 */}
+            <ChatTitle title={chatUuid == "" ? "新建对话" : (chatInfo?.title ?? "新建对话")} isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={onToggleSidebar}/>
+            <div className={`${styles.chatMessagesContent}`}>
+                <MessageList
+                    key={currentChatUuid || 'new'}
+                    ref={messageListRef}
+                    messages={messages}
+                    isGenerating={isGenerating}
+                    useInstantScrollOnFirstLoad
+                />
+            </div>
+            <div className={`${styles.chatInput}`}>
+                <ChatInput
+                    key={inputResetKey}
+                    selectedModelId={selectModel}
+                    availableModels={availableModels}
+                    availableTools={availableTools}
+                    selectedToolIds={selectedToolIds}
+                    onSelectedToolsChange={setSelectedToolIds}
+                    isGenerating={isGenerating}
+                    onMessageChange={onMessageChange}
+                    onSendButtonClick={onSendButtonClick}
+                    onSelectModelChange={onSelectModelChange}
+                    onSelectFileChange={onSelectFileChange}
+                    onStopGeneration={onStopGeneration}
+                    onModelSelectorClick={onModelSelectorClick}
+                    onMessageListScrollToBottom={() => {
+                        messageListRef.current?.scrollToBottom();
+                    }}
+                />
+            </div>
+            {/* loading 蒙层覆盖在主内容之上 */}
+            {loading && (
                 <div className={styles.chatLoadingContainer}>
                     <div className={styles.loadingSpinner} />
                 </div>
-            ) : (
-                <>
-                    <ChatTitle title={chatUuid == "" ? "新建对话" : (chatInfo?.title ?? "新建对话")} isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={onToggleSidebar}/>
-                    <div className={`${styles.chatMessagesContent}`}>
-                        <MessageList
-                            ref={messageListRef}
-                            messages={messages}
-                            isGenerating={isGenerating}
-                        />
-                    </div>
-                    <div className={`${styles.chatInput}`}>
-                        <ChatInput
-                            key={inputResetKey}
-                            selectedModelId={selectModel}
-                            availableModels={availableModels}
-                            isGenerating={isGenerating}
-                            onMessageChange={onMessageChange}
-                            onSendButtonClick={onSendButtonClick}
-                            onSelectModelChange={onSelectModelChange}
-                            onSelectFileChange={onSelectFileChange}
-                            onStopGeneration={onStopGeneration}
-                            onModelSelectorClick={onModelSelectorClick}
-                            onMessageListScrollToBottom={() => {
-                                messageListRef.current?.scrollToBottom();
-                            }}
-                        />
-                    </div>
-                </>
             )}
         </div>
     );

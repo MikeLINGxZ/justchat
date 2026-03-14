@@ -19,11 +19,17 @@ export async function CompletionsUtils(
     let isCompleted = false;
     let messageKey: string = "" ;
     try {
-        // 设置取消监听器
+        // 设置取消监听器：中止时停止后端并移除事件监听，避免切换聊天后仍收到流式消息
         if (abortController) {
             abortController.signal.addEventListener('abort', () => {
-                console.log("abort",messageKey)
-                Service.StopCompletions(messageKey)
+                if (messageKey) {
+                    Service.StopCompletions(messageKey);
+                    if (cancel) {
+                        cancel();
+                        cancel = null;
+                    }
+                    Events.Off(messageKey);
+                }
             });
         }
 

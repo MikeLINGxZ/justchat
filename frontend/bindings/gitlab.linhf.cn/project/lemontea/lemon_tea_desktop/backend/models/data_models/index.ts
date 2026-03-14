@@ -8,5 +8,6 @@ export {
     Message,
     Model,
     ProviderType,
+    ToolUse,
     UserMessageExtra
 } from "./models.js";
