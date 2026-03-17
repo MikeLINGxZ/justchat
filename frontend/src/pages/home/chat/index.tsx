@@ -112,19 +112,19 @@ const Chat: React.FC<ChatProps> = ({
     useEffect(() => {
         const propUuid = chatUuid ?? "";
 
-        // 切换聊天时：中止进行中的生成，并忽略其后续的流式消息
+        // 如果这次 chatUuid 变化是由内部 navigate 引起的（新对话获得 UUID），只同步 currentChatUuid，不置空 ref、不中止请求，避免流式消息未渲染完就被丢弃
+        if (skipNextFetchRef.current && skipNextFetchRef.current === propUuid) {
+            skipNextFetchRef.current = null;
+            setCurrentChatUuid(propUuid);
+            return;
+        }
+
+        // 用户主动切换聊天时：中止进行中的生成，并忽略其后续的流式消息
         generatingForChatUuidRef.current = null;
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
             setIsGenerating(false);
-        }
-
-        // 如果这次 chatUuid 变化是由内部 navigate 引起的（新对话获得 UUID），跳过重新加载
-        if (skipNextFetchRef.current && skipNextFetchRef.current === propUuid) {
-            skipNextFetchRef.current = null;
-            setCurrentChatUuid(propUuid);
-            return;
         }
 
         setCurrentChatUuid(propUuid);
@@ -252,7 +252,7 @@ const Chat: React.FC<ChatProps> = ({
             },(error:string)=>{
 
             },(newChatUuid:string)=>{
-                generatingForChatUuidRef.current = null;
+                // 不在此处置空 generatingForChatUuidRef，避免后端先发 finish_reason 再发最后内容时，后续流式消息被 246 行拦截导致未渲染完成就中断
                 abortControllerRef.current = null;
                 setIsGenerating(false);
                 if (currentChatUuid != "" && currentChatUuid == newChatUuid) {
