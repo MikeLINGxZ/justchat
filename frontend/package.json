@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
+    "@ant-design/x": "^2.4.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@wailsio/runtime": "^3.0.0-alpha.79",
     "antd": "^6.1.1",

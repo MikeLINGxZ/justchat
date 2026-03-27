@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import Index from './sidebar';
@@ -24,6 +24,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
         null
     );
+    const [generatingChatUuids, setGeneratingChatUuids] = useState<string[]>([]);
+    const stopGenerationForChatRef = useRef<(uuid: string) => void>(() => {});
     // 历史聊天首次加载完成（用于立即滚动到底部，无动画）
     const [isFirstHistoricalLoad, setIsFirstHistoricalLoad] = useState(false);
     // 使用视口高度检测 Hook
@@ -128,6 +130,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         setRefreshChatList(() => refreshFn);
     }, []);
 
+    const handleRegisterStopGenerationForChat = useCallback(
+        (fn: (chatUuid: string) => void) => {
+            stopGenerationForChatRef.current = fn;
+        },
+        [],
+    );
+
     return (
         <Layout className={`${className || ''} ${styles.chatLayout}`}>
             <Sider
@@ -148,6 +157,10 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     currentChatUuid={currentChatUuid}
                     isSidebarCollapsed={isSidebarCollapsed}
                     onToggleSidebar={handleToggleSidebar}
+                    generatingChatUuids={generatingChatUuids}
+                    onStopGenerationForChat={(uuid) =>
+                        stopGenerationForChatRef.current(uuid)
+                    }
                 />
             </Sider>
             <Layout className={styles.mainLayout}>
@@ -161,6 +174,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                             console.log("setCurrentChatUuid",chatUuid)
                             setCurrentChatUuid(chatUuid)
                         }}
+                        onGeneratingUuidsChange={setGeneratingChatUuids}
+                        onRegisterStopGenerationForChat={handleRegisterStopGenerationForChat}
                     />
                 </Content>
             </Layout>

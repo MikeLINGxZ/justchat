@@ -13,15 +13,12 @@ const (
 )
 
 type Service struct {
-	storage           *storage.Storage
-	app               *application.App
-	completionsStopCh map[string]chan struct{} // 用于用户手动结束的ch
+	storage *storage.Storage
+	app     *application.App
 }
 
 func NewService() *Service {
-	return &Service{
-		completionsStopCh: make(map[string]chan struct{}),
-	}
+	return &Service{}
 }
 
 func (s *Service) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {

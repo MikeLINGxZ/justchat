@@ -16,6 +16,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tasker"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/event"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
@@ -161,9 +162,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	}
 
 	// 获取过程数据
-	go func() {
-		userStop := make(chan struct{})
-		s.completionsStopCh[messageKey] = userStop
+	tasker.Manager.Start(messageKey, func(userStop <-chan struct{}) {
 		var mo *adk.MessageVariant
 
 		defer func() {
@@ -180,57 +179,91 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 					}
 				}()
 			}
-			if mo != nil {
+			if mo != nil && mo.MessageStream != nil {
 				mo.MessageStream.Close()
 			}
-			delete(s.completionsStopCh, messageKey)
-			close(userStop)
 		}()
 
 		for {
+			nextCh := make(chan struct {
+				ev *adk.AgentEvent
+				ok bool
+			}, 1)
+			go func() {
+				ev, ok := agentIter.Next()
+				nextCh <- struct {
+					ev *adk.AgentEvent
+					ok bool
+				}{ev, ok}
+			}()
+			var event *adk.AgentEvent
+			var ok bool
 			select {
 			case <-userStop:
 				assistantMessage.AssistantMessageExtra.FinishReason = "user stop"
 				assistantMessage.AssistantMessageExtra.FinishError = ""
 				return
-			default:
-				event, ok := agentIter.Next()
-				if !ok {
-					assistantMessage.AssistantMessageExtra.FinishReason = "done"
+			case nr := <-nextCh:
+				event, ok = nr.ev, nr.ok
+			}
+			if !ok {
+				assistantMessage.AssistantMessageExtra.FinishReason = "done"
+				assistantMessage.AssistantMessageExtra.FinishError = ""
+				return
+			}
+			if event.Err != nil {
+				assistantMessage.AssistantMessageExtra.FinishReason = "error"
+				assistantMessage.AssistantMessageExtra.FinishError = event.Err.Error()
+				return
+			}
+			if event.Output == nil || event.Output.MessageOutput == nil {
+				continue
+			}
+			mo = event.Output.MessageOutput
+			if mo.Role == schema.Tool && !mo.IsStreaming {
+				assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
+					ToolName:   mo.Message.ToolName,
+					ToolResult: mo.Message.Content,
+				})
+				err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
+				if err != nil {
+					assistantMessage.AssistantMessageExtra.FinishReason = "error"
+					assistantMessage.AssistantMessageExtra.FinishError = err.Error()
+					return
+				}
+				continue
+			}
+			if !mo.IsStreaming || mo.MessageStream == nil {
+				assistantMessage.AssistantMessageExtra.FinishReason = "error"
+				assistantMessage.AssistantMessageExtra.FinishError = "streaming fail"
+				return
+			}
+		streamLoop:
+			for {
+				recvCh := make(chan struct {
+					msg adk.Message
+					err error
+				}, 1)
+				go func() {
+					m, e := mo.MessageStream.Recv()
+					recvCh <- struct {
+						msg adk.Message
+						err error
+					}{m, e}
+				}()
+				select {
+				case <-userStop:
+					assistantMessage.AssistantMessageExtra.FinishReason = "user stop"
 					assistantMessage.AssistantMessageExtra.FinishError = ""
-					return
-				}
-				if event.Err != nil {
-					assistantMessage.AssistantMessageExtra.FinishReason = "error"
-					assistantMessage.AssistantMessageExtra.FinishError = event.Err.Error()
-					return
-				}
-				if event.Output == nil || event.Output.MessageOutput == nil {
-					continue
-				}
-				mo = event.Output.MessageOutput
-				if mo.Role == schema.Tool && !mo.IsStreaming {
-					assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
-						ToolName:   mo.Message.ToolName,
-						ToolResult: mo.Message.Content,
-					})
-					err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
-					if err != nil {
-						assistantMessage.AssistantMessageExtra.FinishReason = "error"
-						assistantMessage.AssistantMessageExtra.FinishError = err.Error()
-						return
+					if mo.MessageStream != nil {
+						mo.MessageStream.Close()
+						mo.MessageStream = nil
 					}
-					continue
-				}
-				if !mo.IsStreaming || mo.MessageStream == nil {
-					assistantMessage.AssistantMessageExtra.FinishReason = "error"
-					assistantMessage.AssistantMessageExtra.FinishError = "streaming fail"
 					return
-				}
-				for {
-					msg, err := mo.MessageStream.Recv()
+				case rr := <-recvCh:
+					msg, err := rr.msg, rr.err
 					if err == io.EOF {
-						break
+						break streamLoop
 					}
 					if err != nil {
 						assistantMessage.AssistantMessageExtra.FinishReason = "error"
@@ -254,11 +287,11 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 						s.app.Event.Emit(messageKey, assistantMessage)
 					}
 				}
-				assistantMessage.AssistantMessageExtra.FinishReason = "done"
-				assistantMessage.AssistantMessageExtra.FinishError = ""
 			}
+			assistantMessage.AssistantMessageExtra.FinishReason = "done"
+			assistantMessage.AssistantMessageExtra.FinishError = ""
 		}
-	}()
+	})
 
 	return &view_models.Completions{
 		ChatUuid:    chatUuid,
@@ -268,13 +301,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 }
 
 func (s *Service) StopCompletions(messageKey string) error {
-	stopCh, ok := s.completionsStopCh[messageKey]
-	if !ok {
-		return nil
-	}
-	if stopCh != nil {
-		stopCh <- struct{}{}
-	}
+	tasker.Manager.Stop(messageKey)
 	return nil
 }
 

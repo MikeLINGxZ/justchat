@@ -125,13 +125,77 @@
   width: 100%; // 确保占满父容器宽度
 }
 
+.chatTitleRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+
+.generatingStopBtn {
+  flex-shrink: 0;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  border-radius: 50%;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+
+  .generatingSpinner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: sidebarGenSpin 0.65s linear infinite;
+    box-sizing: border-box;
+  }
+
+  .generatingPauseIcon {
+    display: none;
+    font-size: 14px;
+    color: var(--text-color-secondary);
+  }
+
+  &:hover {
+    background-color: var(--background-color-hover);
+
+    .generatingSpinner {
+      display: none;
+    }
+
+    .generatingPauseIcon {
+      display: block;
+    }
+  }
+}
+
+@keyframes sidebarGenSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .chatTitle {
   flex: 1;
+  min-width: 0; // 确保ellipsis生效
   font-size: var(--font-size);
   font-weight: var(--font-weight-medium);
   color: var(--text-color);
   line-height: 1.4;
-  min-width: 0; // 确保ellipsis生效
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -438,5 +502,11 @@
   .deleteBtn,
   .loadMoreBtn {
     transition: none !important;
+  }
+
+  .generatingStopBtn .generatingSpinner {
+    animation: none;
+    border-color: var(--primary-color);
+    opacity: 0.85;
   }
 }

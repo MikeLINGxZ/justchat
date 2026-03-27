@@ -4,7 +4,6 @@ import {
     type Message
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 import { Events } from '@wailsio/runtime';
-import {GenEventsKey} from "@/utils/events.ts";
 import * as view_models$0
     from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
 
@@ -13,22 +12,20 @@ export async function CompletionsUtils(
     onMessage: (message: Message) => void,
     onError: (error: string) => void,
     onComplete: (chatUuid: string) => void,
-    abortController?: AbortController
+    abortController?: AbortController,
+    onStreamStarted?: (resp: Completions | null) => void,
+    onAborted?: (chatUuid: string) => void,
 ): Promise<void> {
     let cancel: (() => void) | null = null;
     let isCompleted = false;
     let messageKey: string = "" ;
+    let streamChatUuid = "";
     try {
-        // 设置取消监听器：中止时停止后端并移除事件监听，避免切换聊天后仍收到流式消息
+        // 中止时仅通知后端停止；保留监听直至收到带 finish_reason 的最终 Emit（见后端 chat defer）
         if (abortController) {
             abortController.signal.addEventListener('abort', () => {
                 if (messageKey) {
                     Service.StopCompletions(messageKey);
-                    if (cancel) {
-                        cancel();
-                        cancel = null;
-                    }
-                    Events.Off(messageKey);
                 }
             });
         }
@@ -36,8 +33,19 @@ export async function CompletionsUtils(
         // 调用 Completions API
         const resp: Completions | null = await Service.Completions(messageInput);
         messageKey = resp?.event_key ?? ""
+        streamChatUuid = resp?.chat_uuid ?? ""
+
+        if (!messageKey) {
+            onStreamStarted?.(resp);
+            if (abortController?.signal.aborted && streamChatUuid) {
+                onAborted?.(streamChatUuid);
+            }
+            return;
+        }
+
+        onStreamStarted?.(resp)
         // 设置事件监听器
-        cancel = Events.On(resp?.event_key!, (event) => {
+        cancel = Events.On(messageKey, (event) => {
             const responseMessage: Message = event.data;
             try {
                 // 处理接收到的消息
@@ -53,8 +61,8 @@ export async function CompletionsUtils(
                         cancel();
                         cancel = null;
                     }
-                    Events.Off(resp?.event_key!);
-                    onComplete(resp?.chat_uuid!);
+                    Events.Off(messageKey);
+                    onComplete(streamChatUuid);
                     isCompleted = true;
                 }
             } catch (error) {
@@ -63,13 +71,15 @@ export async function CompletionsUtils(
             }
         });
 
-        // 等待完成或取消
-        return new Promise<void>((resolve, reject) => {
+        if (abortController?.signal.aborted) {
+            Service.StopCompletions(messageKey);
+        }
+
+        // 等待完成（用户停止后也需等到最终带 finish_reason 的事件）
+        return new Promise<void>((resolve) => {
             const checkCompletion = () => {
                 if (isCompleted) {
                     resolve();
-                } else if (abortController?.signal.aborted) {
-                    reject(new Error('请求已被取消'));
                 } else {
                     setTimeout(checkCompletion, 100);
                 }

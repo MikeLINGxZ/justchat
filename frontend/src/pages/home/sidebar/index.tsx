@@ -31,6 +31,8 @@ interface SidebarProps {
         callback: (chatUuid: string, newTitle: string) => void
     ) => void;
     onDeleteChat?: (chatUuid: string) => void;
+    generatingChatUuids?: string[];
+    onStopGenerationForChat?: (chatUuid: string) => void;
 }
 
 const Index: React.FC<SidebarProps> = ({
@@ -43,6 +45,8 @@ const Index: React.FC<SidebarProps> = ({
                                            onRegisterRefreshCallback,
                                            onRegisterUpdateTitleCallback,
                                            onDeleteChat,
+                                           generatingChatUuids,
+                                           onStopGenerationForChat,
                                        }) => {
     // @ts-ignore
     const {user, logout} = useAuthStore();
@@ -328,6 +332,8 @@ const Index: React.FC<SidebarProps> = ({
                         onRegisterUpdateTitleCallback={onRegisterUpdateTitleCallback}
                         onDeleteChat={onDeleteChat}
                         activeTab={activeTab} // 传递tab状态
+                        generatingChatUuids={generatingChatUuids}
+                        onStopGenerationForChat={onStopGenerationForChat}
                     />
                 </div>
             )}

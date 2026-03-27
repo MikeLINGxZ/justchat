@@ -8,6 +8,7 @@ import {
     EditOutlined,
     ExclamationCircleOutlined,
     MoreOutlined,
+    PauseOutlined,
     SearchOutlined,
     StarFilled,
     StarOutlined,
@@ -38,6 +39,8 @@ interface SidebarChatsProps {
     ) => void;
     onDeleteChat?: (chatUuid: string) => void;
     activeTab?: 'history' | 'favorites'; // 添加activeTab属性
+    generatingChatUuids?: string[];
+    onStopGenerationForChat?: (chatUuid: string) => void;
 }
 
 const SidebarChats: React.FC<SidebarChatsProps> = ({
@@ -47,6 +50,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        onRegisterUpdateTitleCallback,
                                                        onDeleteChat,
                                                        activeTab = 'history', // 默认为历史对话
+                                                       generatingChatUuids = [],
+                                                       onStopGenerationForChat,
                                                    }) => {
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(false);
@@ -564,9 +569,16 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         }
     };
 
+    const generatingSet = useMemo(
+        () => new Set(generatingChatUuids.filter(Boolean)),
+        [generatingChatUuids],
+    );
+
     // 渲染聊天项
     const renderChatItem = (chat: Chat) => {
         const isEditing = editingChatUuid === chat.uuid;
+        const chatUuid = chat.uuid ?? '';
+        const isGenerating = Boolean(chatUuid && generatingSet.has(chatUuid));
 
         return (
             <List.Item
@@ -619,8 +631,32 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                         ) : (
                             // 正常状态
                             <>
-                                <div className={styles.chatTitle} title={chat.title || '新对话'}>
-                                    {chat.title || '新对话'}
+                                <div className={styles.chatTitleRow}>
+                                    {isGenerating && (
+                                        <button
+                                            type="button"
+                                            className={styles.generatingStopBtn}
+                                            title="停止生成"
+                                            aria-label="停止生成"
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                onStopGenerationForChat?.(chatUuid);
+                                            }}
+                                        >
+                                            <span className={styles.generatingSpinner} aria-hidden />
+                                            <PauseOutlined
+                                                className={styles.generatingPauseIcon}
+                                                aria-hidden
+                                            />
+                                        </button>
+                                    )}
+                                    <div
+                                        className={styles.chatTitle}
+                                        title={chat.title || '新对话'}
+                                    >
+                                        {chat.title || '新对话'}
+                                    </div>
                                 </div>
                                 <div className={styles.chatActions}>
                                     <Text className={styles.chatTime} hidden={true}>
