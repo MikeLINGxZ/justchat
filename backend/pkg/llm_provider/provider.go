@@ -10,6 +10,7 @@ import (
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
@@ -23,7 +24,7 @@ type Provider struct {
 }
 
 // NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
-func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool) (*Provider, error) {
+func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware) (*Provider, error) {
 	var chatModel model.ToolCallingChatModel
 	var err error
 	switch providerModel.ProviderType {
@@ -73,7 +74,7 @@ func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderMo
 		}
 	}
 
-	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools)
+	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools, toolMiddleware)
 	if err != nil {
 		return nil, err
 	}

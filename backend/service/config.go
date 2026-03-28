@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"os"
+
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
@@ -51,13 +54,27 @@ func (s *Service) GetSupportProviders() ([]view_models.SupportProvider, error) {
 
 func (s *Service) GetTools() []view_models.Tool {
 	var res []view_models.Tool
-	toolsInfo := tools.ToolRouter.GetToolsInfo()
+	toolsInfo := tools.ToolRouter.GetBuiltinToolsInfo()
 	for _, item := range toolsInfo {
 		res = append(res, view_models.Tool{
 			Id:          item.Id(),
 			Name:        item.Name(),
 			Description: item.Description(),
+			SourceType:  toolSourceBuiltin,
+			Enabled:     true,
+			IsDeletable: false,
 		})
+	}
+
+	customServers, err := s.storage.ListCustomMCPServers(context.Background())
+	if err != nil {
+		return res
+	}
+	for _, server := range customServers {
+		if _, statErr := os.Stat(server.ConfigPath); statErr != nil {
+			continue
+		}
+		res = append(res, s.customServerToViewTool(server))
 	}
 	return res
 }

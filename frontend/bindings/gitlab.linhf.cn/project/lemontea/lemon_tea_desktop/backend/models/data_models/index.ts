@@ -8,6 +8,9 @@ export {
     Message,
     Model,
     ProviderType,
+    Task,
+    TaskStatus,
     ToolUse,
+    ToolUseStatus,
     UserMessageExtra
 } from "./models.js";

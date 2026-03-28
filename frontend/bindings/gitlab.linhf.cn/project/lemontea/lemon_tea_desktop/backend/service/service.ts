@@ -12,6 +12,12 @@ import * as data_models$0 from "../models/data_models/models.js";
 // @ts-ignore: Unused imports
 import * as view_models$0 from "../models/view_models/models.js";
 
+export function AddMCPToolFromFolder(path: string): $CancellablePromise<view_models$0.Tool | null> {
+    return $Call.ByID(2335892937, path).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
 /**
  * AddProvider 添加供应商
  */
@@ -31,7 +37,7 @@ export function AddProviderCustomModel(providerId: number, modelName: string): $
  */
 export function ChatInfo(chatUuid: string): $CancellablePromise<view_models$0.Chat | null> {
     return $Call.ByID(1668598080, chatUuid).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType3($result);
     });
 }
 
@@ -40,7 +46,7 @@ export function ChatInfo(chatUuid: string): $CancellablePromise<view_models$0.Ch
  */
 export function ChatList(offset: number, limit: number, keyword: string | null, isCollection: boolean): $CancellablePromise<view_models$0.ChatList | null> {
     return $Call.ByID(1229500932, offset, limit, keyword, isCollection).then(($result: any) => {
-        return $$createType3($result);
+        return $$createType5($result);
     });
 }
 
@@ -49,7 +55,7 @@ export function ChatList(offset: number, limit: number, keyword: string | null, 
  */
 export function ChatMessages(chatUuid: string, offset: number, limit: number): $CancellablePromise<view_models$0.MessageList | null> {
     return $Call.ByID(4205977752, chatUuid, offset, limit).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType7($result);
     });
 }
 
@@ -65,7 +71,7 @@ export function CollectionChat(chatUuid: string, isCollection: boolean): $Cancel
  */
 export function Completions(inputMessage: view_models$0.Message): $CancellablePromise<view_models$0.Completions | null> {
     return $Call.ByID(2526998161, inputMessage).then(($result: any) => {
-        return $$createType7($result);
+        return $$createType9($result);
     });
 }
 
@@ -74,6 +80,10 @@ export function Completions(inputMessage: view_models$0.Message): $CancellablePr
  */
 export function DeleteChat(chatUuid: string): $CancellablePromise<void> {
     return $Call.ByID(2431139091, chatUuid);
+}
+
+export function DeleteMCPTool(toolID: string): $CancellablePromise<void> {
+    return $Call.ByID(2048187701, toolID);
 }
 
 /**
@@ -94,12 +104,18 @@ export function GenChatTitle(chatUuid: string, modelId: number, modelName: strin
     return $Call.ByID(726618912, chatUuid, modelId, modelName, update);
 }
 
+export function GetChatActiveTask(chatUuid: string): $CancellablePromise<view_models$0.Task | null> {
+    return $Call.ByID(230063095, chatUuid).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 /**
  * GetModels 获取所有模型
  */
 export function GetModels(enableProvider: boolean | null, enableModel: boolean | null): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(2435611672, enableProvider, enableModel).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType13($result);
     });
 }
 
@@ -108,7 +124,7 @@ export function GetModels(enableProvider: boolean | null, enableModel: boolean |
  */
 export function GetProviderModels(provider: view_models$0.Provider): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(1264152129, provider).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType13($result);
     });
 }
 
@@ -117,7 +133,13 @@ export function GetProviderModels(provider: view_models$0.Provider): $Cancellabl
  */
 export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     return $Call.ByID(3921712104).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType15($result);
+    });
+}
+
+export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | null> {
+    return $Call.ByID(2644190933).then(($result: any) => {
+        return $$createType17($result);
     });
 }
 
@@ -126,13 +148,19 @@ export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
  */
 export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
     return $Call.ByID(4035154853).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType19($result);
+    });
+}
+
+export function GetTask(taskUuid: string): $CancellablePromise<view_models$0.Task | null> {
+    return $Call.ByID(167956275, taskUuid).then(($result: any) => {
+        return $$createType11($result);
     });
 }
 
 export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     return $Call.ByID(432097153).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType20($result);
     });
 }
 
@@ -153,12 +181,24 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
 
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType22($result);
     });
+}
+
+export function SelectMCPFolder(): $CancellablePromise<string> {
+    return $Call.ByID(2243094534);
 }
 
 export function StopCompletions(messageKey: string): $CancellablePromise<void> {
     return $Call.ByID(115959129, messageKey);
+}
+
+export function StopTask(taskUuid: string): $CancellablePromise<void> {
+    return $Call.ByID(2829427223, taskUuid);
+}
+
+export function UpdateMCPToolEnabled(toolID: string, enabled: boolean): $CancellablePromise<void> {
+    return $Call.ByID(2043009872, toolID, enabled);
 }
 
 /**
@@ -176,21 +216,26 @@ export function UpdateProviderModels(providerId: number): $CancellablePromise<vo
 }
 
 // Private type creation functions
-const $$createType0 = data_models$0.Chat.createFrom;
+const $$createType0 = view_models$0.Tool.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = view_models$0.ChatList.createFrom;
+const $$createType2 = data_models$0.Chat.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = view_models$0.MessageList.createFrom;
+const $$createType4 = view_models$0.ChatList.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = view_models$0.Completions.createFrom;
+const $$createType6 = view_models$0.MessageList.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = view_models$0.Model.createFrom;
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = view_models$0.Provider.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = view_models$0.SupportProvider.createFrom;
+const $$createType8 = view_models$0.Completions.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = data_models$0.Task.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = view_models$0.Model.createFrom;
 const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = view_models$0.Tool.createFrom;
+const $$createType14 = view_models$0.Provider.createFrom;
 const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = data_models$0.File.createFrom;
-const $$createType17 = $Create.Array($$createType16);
+const $$createType16 = view_models$0.TaskList.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);
+const $$createType18 = view_models$0.SupportProvider.createFrom;
+const $$createType19 = $Create.Array($$createType18);
+const $$createType20 = $Create.Array($$createType0);
+const $$createType21 = data_models$0.File.createFrom;
+const $$createType22 = $Create.Array($$createType21);

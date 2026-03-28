@@ -10,7 +10,7 @@ import (
 )
 
 // NewMainAgent 创建主 Chat Agent，将 DateTime 和 Fruit 子 Agent 作为 AgentTool
-func NewMainAgent(ctx context.Context, chatModel model.ToolCallingChatModel, subAgents []adk.Agent, tools []tool.BaseTool) (adk.Agent, error) {
+func NewMainAgent(ctx context.Context, chatModel model.ToolCallingChatModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware) (adk.Agent, error) {
 	for _, agent := range subAgents {
 		tools = append(tools, adk.NewAgentTool(ctx, agent))
 	}
@@ -23,6 +23,11 @@ func NewMainAgent(ctx context.Context, chatModel model.ToolCallingChatModel, sub
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
 				Tools: tools,
+			},
+		},
+		Middlewares: []adk.AgentMiddleware{
+			{
+				WrapToolCall: toolMiddleware,
 			},
 		},
 	})

@@ -5,7 +5,8 @@ import "fmt"
 type EventType string
 
 const (
-	EventTypeMsg EventType = "msg"
+	EventTypeMsg  EventType = "msg"
+	EventTypeTask EventType = "task"
 )
 
 func GenEventsKey(eventType EventType, info string) string {

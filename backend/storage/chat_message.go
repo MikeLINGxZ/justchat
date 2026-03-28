@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gorm.io/gorm"
@@ -11,7 +12,10 @@ import (
 // CreateMessage 创建消息
 func (s *Storage) CreateMessage(ctx context.Context, chatUuid string, message data_models.Message) (uint, error) {
 	err := s.sqliteDB.Create(&message).Error
-	return message.ID, err
+	if err != nil {
+		return message.ID, err
+	}
+	return message.ID, s.touchChat(chatUuid)
 }
 
 func (s *Storage) SaveOrUpdateMessage(ctx context.Context, message data_models.Message) error {
@@ -21,12 +25,18 @@ func (s *Storage) SaveOrUpdateMessage(ctx context.Context, message data_models.M
 	if err != nil {
 		// 如果记录不存在，创建新消息
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return s.sqliteDB.Create(&message).Error
+			if err = s.sqliteDB.Create(&message).Error; err != nil {
+				return err
+			}
+			return s.touchChat(message.ChatUuid)
 		}
 		// 其他错误直接返回
 		return err
 	}
-	return s.sqliteDB.Where("message_uuid = ?", message.MessageUuid).Updates(&message).Error
+	if err = s.sqliteDB.Where("message_uuid = ?", message.MessageUuid).Updates(&message).Error; err != nil {
+		return err
+	}
+	return s.touchChat(message.ChatUuid)
 }
 
 // GetMessage 获取 chat 消息
@@ -42,4 +52,14 @@ func (s *Storage) GetMessage(ctx context.Context, chatUuid string, offset, limit
 		return nil, 0, err
 	}
 	return messages, int(total), nil
+}
+
+func (s *Storage) touchChat(chatUuid string) error {
+	if chatUuid == "" {
+		return nil
+	}
+	return s.sqliteDB.Model(&data_models.Chat{}).
+		Where("uuid = ?", chatUuid).
+		Update("updated_at", time.Now()).
+		Error
 }

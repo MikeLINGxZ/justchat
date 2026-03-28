@@ -1,100 +1,71 @@
-import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
+import { Events } from '@wailsio/runtime';
+import { Service } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
 import {
     Completions,
-    type Message
-} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
-import { Events } from '@wailsio/runtime';
-import * as view_models$0
-    from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
+    Task,
+    type Message,
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import * as view_models$0 from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
+
+export interface TaskStreamEvent {
+    task_uuid: string;
+    chat_uuid: string;
+    event_key: string;
+    status: string;
+    finish_reason: string;
+    finish_error: string;
+    assistant_message: Message;
+}
+
+function isTaskFinished(event: TaskStreamEvent): boolean {
+    return event.status !== "pending" && event.status !== "running";
+}
+
+export function SubscribeTaskStream(
+    task: Task,
+    onEvent: (event: TaskStreamEvent) => void,
+    onError?: (error: string) => void,
+    onComplete?: (event: TaskStreamEvent) => void,
+): (() => void) | null {
+    if (!task?.event_key || !task?.task_uuid) {
+        return null;
+    }
+
+    let cancel: (() => void) | null = null;
+    cancel = Events.On(task.event_key, (event) => {
+        try {
+            const payload = event.data as TaskStreamEvent;
+            onEvent(payload);
+            if (isTaskFinished(payload)) {
+                onComplete?.(payload);
+                cancel?.();
+                cancel = null;
+                Events.Off(task.event_key);
+            }
+        } catch (error) {
+            onError?.(`处理任务流事件时出错: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    });
+
+    return () => {
+        cancel?.();
+        cancel = null;
+        Events.Off(task.event_key);
+    };
+}
 
 export async function CompletionsUtils(
     messageInput: view_models$0.Message,
-    onMessage: (message: Message) => void,
-    onError: (error: string) => void,
-    onComplete: (chatUuid: string) => void,
-    abortController?: AbortController,
-    onStreamStarted?: (resp: Completions | null) => void,
-    onAborted?: (chatUuid: string) => void,
-): Promise<void> {
-    let cancel: (() => void) | null = null;
-    let isCompleted = false;
-    let messageKey: string = "" ;
-    let streamChatUuid = "";
-    try {
-        // 中止时仅通知后端停止；保留监听直至收到带 finish_reason 的最终 Emit（见后端 chat defer）
-        if (abortController) {
-            abortController.signal.addEventListener('abort', () => {
-                if (messageKey) {
-                    Service.StopCompletions(messageKey);
-                }
-            });
-        }
+): Promise<Completions | null> {
+    return await Service.Completions(messageInput);
+}
 
-        // 调用 Completions API
-        const resp: Completions | null = await Service.Completions(messageInput);
-        messageKey = resp?.event_key ?? ""
-        streamChatUuid = resp?.chat_uuid ?? ""
-
-        if (!messageKey) {
-            onStreamStarted?.(resp);
-            if (abortController?.signal.aborted && streamChatUuid) {
-                onAborted?.(streamChatUuid);
-            }
-            return;
-        }
-
-        onStreamStarted?.(resp)
-        // 设置事件监听器
-        cancel = Events.On(messageKey, (event) => {
-            const responseMessage: Message = event.data;
-            try {
-                // 处理接收到的消息
-                if (responseMessage) {
-                    console.log("[CompletionsUtils] responseMessage:", responseMessage)
-                    onMessage(responseMessage);
-                }
-
-                // 检查是否完成
-                if (responseMessage?.assistant_message_extra?.finish_reason != "") {
-                    // 清理事件监听器
-                    if (cancel) {
-                        cancel();
-                        cancel = null;
-                    }
-                    Events.Off(messageKey);
-                    onComplete(streamChatUuid);
-                    isCompleted = true;
-                }
-            } catch (error) {
-                console.error('处理响应消息时出错:', error);
-                onError(`处理响应消息时出错: ${error instanceof Error ? error.message : String(error)}`);
-            }
-        });
-
-        if (abortController?.signal.aborted) {
-            Service.StopCompletions(messageKey);
-        }
-
-        // 等待完成（用户停止后也需等到最终带 finish_reason 的事件）
-        return new Promise<void>((resolve) => {
-            const checkCompletion = () => {
-                if (isCompleted) {
-                    resolve();
-                } else {
-                    setTimeout(checkCompletion, 100);
-                }
-            };
-            checkCompletion();
-        });
-
-    } catch (error) {
-        console.error('Completions API 调用失败:', error);
-        onError(`API 调用失败: ${error instanceof Error ? error.message : String(error)}`);
-        if (cancel) {
-            cancel();
-            cancel = null;
-        }
-        isCompleted = true;
-        throw error;
-    }
+export function BuildTaskFromCompletions(resp: Completions, assistantMessage: Message): Task {
+    return new Task({
+        task_uuid: resp.task_uuid,
+        chat_uuid: resp.chat_uuid,
+        assistant_message_uuid: assistantMessage.message_uuid || resp.message_uuid,
+        event_key: resp.event_key,
+        status: "pending",
+    });
 }

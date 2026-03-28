@@ -31,5 +31,9 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 	s.storage = istorage
 	s.app = application.Get()
 
+	if err := s.syncCustomMCPTools(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }

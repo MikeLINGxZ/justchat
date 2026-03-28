@@ -49,6 +49,7 @@ export class ChatList {
 
 export class Completions {
     "chat_uuid": string;
+    "task_uuid": string;
     "message_uuid": string;
     "event_key": string;
 
@@ -56,6 +57,9 @@ export class Completions {
     constructor($$source: Partial<Completions> = {}) {
         if (!("chat_uuid" in $$source)) {
             this["chat_uuid"] = "";
+        }
+        if (!("task_uuid" in $$source)) {
+            this["task_uuid"] = "";
         }
         if (!("message_uuid" in $$source)) {
             this["message_uuid"] = "";
@@ -314,10 +318,41 @@ export class SupportProvider {
     }
 }
 
+export const Task = data_models$0.Task;
+export type Task = data_models$0.Task;
+
+export class TaskList {
+    "tasks": Task[];
+
+    /** Creates a new TaskList instance. */
+    constructor($$source: Partial<TaskList> = {}) {
+        if (!("tasks" in $$source)) {
+            this["tasks"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TaskList instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TaskList {
+        const $$createField0_0 = $$createType9;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tasks" in $$parsedSource) {
+            $$parsedSource["tasks"] = $$createField0_0($$parsedSource["tasks"]);
+        }
+        return new TaskList($$parsedSource as Partial<TaskList>);
+    }
+}
+
 export class Tool {
     "id": string;
     "name": string;
     "description": string;
+    "source_type": string;
+    "enabled": boolean;
+    "is_deletable": boolean;
 
     /** Creates a new Tool instance. */
     constructor($$source: Partial<Tool> = {}) {
@@ -329,6 +364,15 @@ export class Tool {
         }
         if (!("description" in $$source)) {
             this["description"] = "";
+        }
+        if (!("source_type" in $$source)) {
+            this["source_type"] = "";
+        }
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+        if (!("is_deletable" in $$source)) {
+            this["is_deletable"] = false;
         }
 
         Object.assign(this, $$source);
@@ -352,3 +396,5 @@ const $$createType4 = Model.createFrom;
 const $$createType5 = $Create.Array($$createType4);
 const $$createType6 = data_models$0.Model.createFrom;
 const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = data_models$0.Task.createFrom;
+const $$createType9 = $Create.Array($$createType8);

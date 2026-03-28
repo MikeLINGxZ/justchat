@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
@@ -70,7 +74,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	selectModelName := inputMessage.UserMessageExtra.ModelName
 	userMessageUuid := uuid.New().String()
 	assistantMessageUuid := uuid.New().String()
-	messageKey := event.GenEventsKey(event.EventTypeMsg, assistantMessageUuid)
+	taskUuid := uuid.New().String()
+	eventKey := event.GenEventsKey(event.EventTypeTask, taskUuid)
 	chatUuid := inputMessage.ChatUuid
 	isNewChat := inputMessage.ChatUuid == ""
 	if isNewChat {
@@ -89,7 +94,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	}
 
 	// 获取工具集
-	agentTools, err := tools.ToolRouter.GetToolsByIds(inputMessage.UserMessageExtra.Tools)
+	agentTools, toolMetaByID, cleanupTools, err := s.resolveSelectedTools(ctx, inputMessage.UserMessageExtra.Tools)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -98,12 +103,6 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	var subAgents []adk.Agent
 	for _, agentId := range inputMessage.UserMessageExtra.Agents {
 		fmt.Println(agentId)
-	}
-
-	// 新建供应商（传入工具以支持 tool calling）
-	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, agentTools)
-	if err != nil {
-		return nil, ierror.NewError(err)
 	}
 
 	// 如果聊天的uuid为空，则新建一个聊天
@@ -155,6 +154,230 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		return nil, ierror.NewError(err)
 	}
 	assistantMessage.ID = assistantMessageId
+
+	task := data_models.Task{
+		TaskUuid:             taskUuid,
+		ChatUuid:             chatUuid,
+		AssistantMessageUuid: assistantMessageUuid,
+		Status:               data_models.TaskStatusPending,
+		EventKey:             eventKey,
+	}
+	if err = s.storage.CreateTask(ctx, task); err != nil {
+		return nil, ierror.NewError(err)
+	}
+
+	var assistantMu sync.Mutex
+
+	cloneAssistantMessage := func(src data_models.Message) data_models.Message {
+		clone := src
+		if src.UserMessageExtra != nil {
+			userExtra := *src.UserMessageExtra
+			if len(src.UserMessageExtra.Files) > 0 {
+				userExtra.Files = append([]data_models.File(nil), src.UserMessageExtra.Files...)
+			}
+			if len(src.UserMessageExtra.Tools) > 0 {
+				userExtra.Tools = append([]string(nil), src.UserMessageExtra.Tools...)
+			}
+			if len(src.UserMessageExtra.Agents) > 0 {
+				userExtra.Agents = append([]string(nil), src.UserMessageExtra.Agents...)
+			}
+			clone.UserMessageExtra = &userExtra
+		}
+		if src.AssistantMessageExtra != nil {
+			assistantExtra := *src.AssistantMessageExtra
+			if len(src.AssistantMessageExtra.ToolUses) > 0 {
+				assistantExtra.ToolUses = append([]data_models.ToolUse(nil), src.AssistantMessageExtra.ToolUses...)
+			}
+			clone.AssistantMessageExtra = &assistantExtra
+		}
+		return clone
+	}
+
+	persistAssistantSnapshotLocked := func(updateTask bool) error {
+		if err := s.storage.SaveOrUpdateMessage(context.Background(), assistantMessage); err != nil {
+			return err
+		}
+		if updateTask {
+			if err := s.storage.SaveTask(context.Background(), task); err != nil {
+				return err
+			}
+		}
+		s.emitTaskEvent(task, cloneAssistantMessage(assistantMessage))
+		return nil
+	}
+
+	findToolUseIndexLocked := func(callID string) int {
+		if assistantMessage.AssistantMessageExtra == nil {
+			return -1
+		}
+		for idx := range assistantMessage.AssistantMessageExtra.ToolUses {
+			if assistantMessage.AssistantMessageExtra.ToolUses[idx].CallID == callID {
+				return idx
+			}
+		}
+		return -1
+	}
+
+	startToolUseLocked := func(callID, toolName string) error {
+		if assistantMessage.AssistantMessageExtra == nil {
+			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+		}
+		now := time.Now()
+		contentPos := len([]rune(strings.TrimRight(assistantMessage.Content, "\n")))
+		toolID := toolName
+		displayName := toolName
+		description := ""
+		if meta, ok := toolMetaByID[toolName]; ok {
+			toolID = meta.ID
+			displayName = meta.Name
+			description = meta.Description
+		} else if registeredTool, ok := tools.ToolRouter.GetToolByID(toolName); ok {
+			toolID = registeredTool.Id()
+			displayName = registeredTool.Name()
+			description = registeredTool.Description()
+		}
+		idx := findToolUseIndexLocked(callID)
+		if idx == -1 {
+			assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
+				Index:           len(assistantMessage.AssistantMessageExtra.ToolUses) + 1,
+				CallID:          callID,
+				ContentPos:      contentPos,
+				ToolID:          toolID,
+				ToolName:        displayName,
+				ToolDescription: description,
+				Status:          data_models.ToolUseStatusRunning,
+				StartedAt:       &now,
+			})
+		} else {
+			toolUse := &assistantMessage.AssistantMessageExtra.ToolUses[idx]
+			toolUse.ToolID = toolID
+			toolUse.ToolName = displayName
+			toolUse.ToolDescription = description
+			toolUse.Status = data_models.ToolUseStatusRunning
+			if toolUse.Index == 0 {
+				toolUse.Index = idx + 1
+			}
+			if toolUse.StartedAt == nil {
+				toolUse.StartedAt = &now
+			}
+			if toolUse.ContentPos == 0 {
+				toolUse.ContentPos = contentPos
+			}
+			toolUse.FinishedAt = nil
+		}
+		task.LastOutputAt = &now
+		return persistAssistantSnapshotLocked(true)
+	}
+
+	finishToolUseLocked := func(callID, toolName, toolResult string, runErr error) error {
+		if assistantMessage.AssistantMessageExtra == nil {
+			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+		}
+		now := time.Now()
+		idx := findToolUseIndexLocked(callID)
+		if idx == -1 {
+			assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
+				Index:      len(assistantMessage.AssistantMessageExtra.ToolUses) + 1,
+				CallID:     callID,
+				ContentPos: len([]rune(strings.TrimRight(assistantMessage.Content, "\n"))),
+			})
+			idx = len(assistantMessage.AssistantMessageExtra.ToolUses) - 1
+		}
+		toolUse := &assistantMessage.AssistantMessageExtra.ToolUses[idx]
+		if toolUse.Index == 0 {
+			toolUse.Index = idx + 1
+		}
+		toolUse.CallID = callID
+		if toolName != "" {
+			if meta, ok := toolMetaByID[toolName]; ok {
+				toolUse.ToolID = meta.ID
+				toolUse.ToolName = meta.Name
+				toolUse.ToolDescription = meta.Description
+			} else if registeredTool, ok := tools.ToolRouter.GetToolByID(toolName); ok {
+				toolUse.ToolID = registeredTool.Id()
+				toolUse.ToolName = registeredTool.Name()
+				toolUse.ToolDescription = registeredTool.Description()
+			} else {
+				if toolUse.ToolID == "" {
+					toolUse.ToolID = toolName
+				}
+				if toolUse.ToolName == "" {
+					toolUse.ToolName = toolName
+				}
+			}
+		}
+		if toolUse.StartedAt == nil {
+			toolUse.StartedAt = &now
+		}
+		toolUse.FinishedAt = &now
+		toolUse.ToolResult = toolResult
+		toolUse.ElapsedMs = now.Sub(*toolUse.StartedAt).Milliseconds()
+		if runErr != nil {
+			toolUse.Status = data_models.ToolUseStatusError
+			if toolUse.ToolResult == "" {
+				toolUse.ToolResult = runErr.Error()
+			}
+		} else {
+			toolUse.Status = data_models.ToolUseStatusDone
+		}
+		task.LastOutputAt = &now
+		return persistAssistantSnapshotLocked(true)
+	}
+
+	finalizeRunningToolUsesLocked := func() {
+		if assistantMessage.AssistantMessageExtra == nil {
+			return
+		}
+		now := time.Now()
+		for idx := range assistantMessage.AssistantMessageExtra.ToolUses {
+			toolUse := &assistantMessage.AssistantMessageExtra.ToolUses[idx]
+			if toolUse.Status != data_models.ToolUseStatusRunning && toolUse.Status != data_models.ToolUseStatusPending {
+				continue
+			}
+			if toolUse.StartedAt == nil {
+				toolUse.StartedAt = &now
+			}
+			toolUse.FinishedAt = &now
+			toolUse.ElapsedMs = now.Sub(*toolUse.StartedAt).Milliseconds()
+			toolUse.Status = data_models.ToolUseStatusError
+		}
+	}
+
+	toolMiddleware := compose.ToolMiddleware{
+		Invokable: func(next compose.InvokableToolEndpoint) compose.InvokableToolEndpoint {
+			return func(toolCtx context.Context, input *compose.ToolInput) (*compose.ToolOutput, error) {
+				assistantMu.Lock()
+				err := startToolUseLocked(input.CallID, input.Name)
+				assistantMu.Unlock()
+				if err != nil {
+					return nil, err
+				}
+
+				output, runErr := next(toolCtx, input)
+				result := ""
+				if output != nil {
+					result = output.Result
+				}
+
+				assistantMu.Lock()
+				err = finishToolUseLocked(input.CallID, input.Name, result, runErr)
+				assistantMu.Unlock()
+				if err != nil {
+					return nil, err
+				}
+				if runErr != nil {
+					return nil, runErr
+				}
+				return output, nil
+			}
+		},
+	}
+
+	// 新建供应商（传入工具以支持 tool calling）
+	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, agentTools, toolMiddleware)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
 	// 生成
 	agentIter, err := provider.AgentCompletions(context.Background(), schemaMessages)
 	if err != nil {
@@ -162,20 +385,51 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	}
 
 	// 获取过程数据
-	tasker.Manager.Start(messageKey, func(userStop <-chan struct{}) {
+	tasker.Manager.StartTask(tasker.Runtime{
+		TaskUUID:             taskUuid,
+		ChatUUID:             chatUuid,
+		AssistantMessageUUID: assistantMessageUuid,
+		EventKey:             eventKey,
+	}, func(userStop <-chan struct{}) {
 		var mo *adk.MessageVariant
+		now := time.Now()
+		assistantMu.Lock()
+		task.Status = data_models.TaskStatusRunning
+		task.StartedAt = &now
+		saveErr := s.storage.SaveTask(context.Background(), task)
+		assistantMu.Unlock()
+		if saveErr != nil {
+			logger.Error("save task running status error", saveErr)
+		}
 
 		defer func() {
-			s.app.Event.Emit(messageKey, assistantMessage)
-			err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
-			if err != nil {
-				logger.Error("save or update assistant message error", err)
+			if cleanupTools != nil {
+				cleanupTools()
+			}
+			assistantMu.Lock()
+			finalizeRunningToolUsesLocked()
+			finishedAt := time.Now()
+			task.FinishReason = assistantMessage.AssistantMessageExtra.FinishReason
+			task.FinishError = assistantMessage.AssistantMessageExtra.FinishError
+			task.FinishedAt = &finishedAt
+			switch assistantMessage.AssistantMessageExtra.FinishReason {
+			case "done":
+				task.Status = data_models.TaskStatusCompleted
+			case "user stop":
+				task.Status = data_models.TaskStatusStopped
+			default:
+				task.Status = data_models.TaskStatusFailed
+			}
+			saveErr := persistAssistantSnapshotLocked(true)
+			assistantMu.Unlock()
+			if saveErr != nil {
+				logger.Error("save task finished status error", saveErr)
 			}
 			if isNewChat {
 				go func() {
-					_, err = s.genChatTitle(context.Background(), chatUuid, *providerModel, true)
-					if err != nil {
-						logger.Error("gen chat title error", err)
+					_, titleErr := s.genChatTitle(context.Background(), chatUuid, *providerModel, true)
+					if titleErr != nil {
+						logger.Error("gen chat title error", titleErr)
 					}
 				}()
 			}
@@ -200,20 +454,26 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			var ok bool
 			select {
 			case <-userStop:
+				assistantMu.Lock()
 				assistantMessage.AssistantMessageExtra.FinishReason = "user stop"
 				assistantMessage.AssistantMessageExtra.FinishError = ""
+				assistantMu.Unlock()
 				return
 			case nr := <-nextCh:
 				event, ok = nr.ev, nr.ok
 			}
 			if !ok {
+				assistantMu.Lock()
 				assistantMessage.AssistantMessageExtra.FinishReason = "done"
 				assistantMessage.AssistantMessageExtra.FinishError = ""
+				assistantMu.Unlock()
 				return
 			}
 			if event.Err != nil {
+				assistantMu.Lock()
 				assistantMessage.AssistantMessageExtra.FinishReason = "error"
 				assistantMessage.AssistantMessageExtra.FinishError = event.Err.Error()
+				assistantMu.Unlock()
 				return
 			}
 			if event.Output == nil || event.Output.MessageOutput == nil {
@@ -221,21 +481,22 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			}
 			mo = event.Output.MessageOutput
 			if mo.Role == schema.Tool && !mo.IsStreaming {
-				assistantMessage.AssistantMessageExtra.ToolUses = append(assistantMessage.AssistantMessageExtra.ToolUses, data_models.ToolUse{
-					ToolName:   mo.Message.ToolName,
-					ToolResult: mo.Message.Content,
-				})
-				err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
-				if err != nil {
+				assistantMu.Lock()
+				saveErr := finishToolUseLocked(mo.Message.ToolCallID, mo.Message.ToolName, mo.Message.Content, nil)
+				if saveErr != nil {
 					assistantMessage.AssistantMessageExtra.FinishReason = "error"
-					assistantMessage.AssistantMessageExtra.FinishError = err.Error()
+					assistantMessage.AssistantMessageExtra.FinishError = saveErr.Error()
+					assistantMu.Unlock()
 					return
 				}
+				assistantMu.Unlock()
 				continue
 			}
 			if !mo.IsStreaming || mo.MessageStream == nil {
+				assistantMu.Lock()
 				assistantMessage.AssistantMessageExtra.FinishReason = "error"
 				assistantMessage.AssistantMessageExtra.FinishError = "streaming fail"
+				assistantMu.Unlock()
 				return
 			}
 		streamLoop:
@@ -253,8 +514,10 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				}()
 				select {
 				case <-userStop:
+					assistantMu.Lock()
 					assistantMessage.AssistantMessageExtra.FinishReason = "user stop"
 					assistantMessage.AssistantMessageExtra.FinishError = ""
+					assistantMu.Unlock()
 					if mo.MessageStream != nil {
 						mo.MessageStream.Close()
 						mo.MessageStream = nil
@@ -266,9 +529,10 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 						break streamLoop
 					}
 					if err != nil {
+						assistantMu.Lock()
 						assistantMessage.AssistantMessageExtra.FinishReason = "error"
 						assistantMessage.AssistantMessageExtra.FinishError = err.Error()
-						s.app.Event.Emit(messageKey, assistantMessage)
+						assistantMu.Unlock()
 						return
 					}
 					if msg != nil {
@@ -276,33 +540,93 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 						logger.Info(string(marshal))
 					}
 					if msg != nil && (msg.Content != "" || msg.ReasoningContent != "") {
+						assistantMu.Lock()
 						assistantMessage.Content = assistantMessage.Content + msg.Content
 						assistantMessage.ReasoningContent = assistantMessage.ReasoningContent + msg.ReasoningContent
-						err := s.storage.SaveOrUpdateMessage(ctx, assistantMessage)
-						if err != nil {
+						lastOutputAt := time.Now()
+						task.LastOutputAt = &lastOutputAt
+						saveErr := persistAssistantSnapshotLocked(true)
+						if saveErr != nil {
 							assistantMessage.AssistantMessageExtra.FinishReason = "error"
-							assistantMessage.AssistantMessageExtra.FinishError = err.Error()
+							assistantMessage.AssistantMessageExtra.FinishError = saveErr.Error()
+							assistantMu.Unlock()
 							return
 						}
-						s.app.Event.Emit(messageKey, assistantMessage)
+						assistantMu.Unlock()
 					}
 				}
 			}
+			assistantMu.Lock()
 			assistantMessage.AssistantMessageExtra.FinishReason = "done"
 			assistantMessage.AssistantMessageExtra.FinishError = ""
+			assistantMu.Unlock()
 		}
 	})
 
 	return &view_models.Completions{
 		ChatUuid:    chatUuid,
+		TaskUuid:    taskUuid,
 		MessageUuid: assistantMessageUuid,
-		EventKey:    messageKey,
+		EventKey:    eventKey,
 	}, nil
 }
 
 func (s *Service) StopCompletions(messageKey string) error {
-	tasker.Manager.Stop(messageKey)
+	tasker.Manager.StopByEventKey(messageKey)
 	return nil
+}
+
+func (s *Service) StopTask(taskUuid string) error {
+	tasker.Manager.StopTask(taskUuid)
+	return nil
+}
+
+func (s *Service) GetTask(ctx context.Context, taskUuid string) (*view_models.Task, error) {
+	task, err := s.storage.GetTask(ctx, taskUuid)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	if task == nil {
+		return nil, nil
+	}
+	viewTask := view_models.Task(*task)
+	return &viewTask, nil
+}
+
+func (s *Service) GetChatActiveTask(ctx context.Context, chatUuid string) (*view_models.Task, error) {
+	task, err := s.storage.GetChatActiveTask(ctx, chatUuid)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	if task == nil {
+		return nil, nil
+	}
+	viewTask := view_models.Task(*task)
+	return &viewTask, nil
+}
+
+func (s *Service) GetRunningTasks(ctx context.Context) (*view_models.TaskList, error) {
+	tasks, err := s.storage.GetRunningTasks(ctx)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	viewTasks := make([]view_models.Task, 0, len(tasks))
+	for _, task := range tasks {
+		viewTasks = append(viewTasks, view_models.Task(task))
+	}
+	return &view_models.TaskList{Tasks: viewTasks}, nil
+}
+
+func (s *Service) emitTaskEvent(task data_models.Task, assistantMessage data_models.Message) {
+	s.app.Event.Emit(task.EventKey, view_models.TaskStreamEvent{
+		TaskUuid:         task.TaskUuid,
+		ChatUuid:         task.ChatUuid,
+		EventKey:         task.EventKey,
+		Status:           task.Status,
+		FinishReason:     task.FinishReason,
+		FinishError:      task.FinishError,
+		AssistantMessage: assistantMessage,
+	})
 }
 
 // DeleteChat 删除聊天
@@ -355,7 +679,7 @@ func (s *Service) GenChatTitle(ctx context.Context, chatUuid string, modelId uin
 
 func (s *Service) genChatTitle(ctx context.Context, chatUuid string, providerModel wrapper_models.ProviderModel, update bool) (string, error) {
 	// 新建供应商
-	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{})
+	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{}, compose.ToolMiddleware{})
 	if err != nil {
 		return "", err
 	}

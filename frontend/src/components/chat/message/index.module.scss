@@ -143,6 +143,71 @@
   margin-left: 10px;
 }
 
+.inlineToolMarkerWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  cursor: help;
+
+  &:hover .inlineToolTooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -6px);
+  }
+}
+
+.inlineToolMarker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+  vertical-align: super;
+  color: #fff;
+  letter-spacing: -0.01em;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  user-select: none;
+  transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: translateY(-1px);
+  }
+}
+
+.inlineToolTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  z-index: 20;
+  min-width: 180px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.28);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+}
+
 // 工具调用区域
 .toolUsesSection {
   margin-top: var(--spacing-md);
@@ -159,30 +224,13 @@
   color: rgba(255, 255, 255, 0.9);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  cursor: pointer;
   padding: 2px 0;
-  border-radius: 4px;
-  transition: background var(--transition-fast);
-  user-select: none;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  &:has(+ .toolUsesList) {
-    margin-bottom: 8px;
-  }
+  margin-bottom: 8px;
 }
 
 .toolUsesCount {
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
-}
-
-.toolUsesChevron {
-  margin-left: auto;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .toolUsesIcon {
@@ -198,14 +246,21 @@
 }
 
 .toolUseItem {
+  position: relative;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.15);
   transition: background var(--transition-fast);
   
   &:hover {
     background: rgba(255, 255, 255, 0.16);
+  }
+
+  &:hover .toolUseTooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -6px);
   }
 }
 
@@ -213,12 +268,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 6px 10px;
   cursor: default;
 
   &.toolUseHeaderClickable {
     cursor: pointer;
   }
+}
+
+.toolUseMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .toolUseBadge {
@@ -229,6 +292,38 @@
   border-radius: 6px;
   color: #fff;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.toolUseName {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.96);
+  word-break: break-word;
+}
+
+.toolUseMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toolUseStatus {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.toolUseStatusRunning {
+  color: #fde68a;
+}
+
+.toolUseStatusDone {
+  color: #bbf7d0;
+}
+
+.toolUseStatusError {
+  color: #fecaca;
 }
 
 .toolUseToggle {
@@ -258,6 +353,31 @@
   background: rgba(0, 0, 0, 0.08);
   max-height: 200px;
   overflow-y: auto;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.toolUseTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  min-width: 220px;
+  max-width: 300px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.28);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
 }
 
 // 用户消息包装器 - 靠右
@@ -322,4 +442,3 @@
     }
   }
 }
-

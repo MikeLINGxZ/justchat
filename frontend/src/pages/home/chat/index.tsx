@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
@@ -7,11 +7,12 @@ import {
     type Chat as ChatType, FileInfo,
     type Message,
     Model,
+    Task,
     Tool
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import {RoleType} from "@bindings/github.com/cloudwego/eino/schema";
-import {CompletionsUtils} from "@/utils/completions.ts";
+import {BuildTaskFromCompletions, CompletionsUtils, SubscribeTaskStream, type TaskStreamEvent} from "@/utils/completions.ts";
 import {useNavigate} from "react-router-dom";
 
 interface ChatProps {
@@ -35,14 +36,12 @@ interface ChatProps {
 function mergeStreamingAssistant(propUuid: string, list: Message[], cache: Record<string, Message>): Message[] {
     const cached = cache[propUuid];
     if (!cached || list.length === 0) return list;
-    const last = list[list.length - 1];
-    if (last.role !== RoleType.Assistant || last.message_uuid !== cached.message_uuid) return list;
+    const index = list.findIndex(message => message.message_uuid === cached.message_uuid);
+    if (index === -1) return [...list, cached];
     const next = [...list];
-    next[next.length - 1] = cached;
+    next[index] = cached;
     return next;
 }
-
-const PENDING_NEW_CHAT_ABORT_KEY = "__NEW__";
 
 function assistantHasSubstantiveOutput(message: Message): boolean {
     if (message.role !== RoleType.Assistant) return false;
@@ -86,12 +85,10 @@ const Chat: React.FC<ChatProps> = ({
     });
     // 后端已开始流式推送的会话 uuid（支持多会话后台生成）
     const [generatingUuids, setGeneratingUuids] = useState<string[]>([]);
-    // 从「新建对话」路由发起生成时，后端返回的真实 chat uuid（在 navigate 完成前用于匹配事件）
-    const [pendingNewChatStreamUuid, setPendingNewChatStreamUuid] = useState<string | null>(null);
-    const pendingNewChatStreamUuidRef = useRef<string | null>(null);
-    // 已发起 Completions、尚未收到 onStreamStarted 的会话（多任务并发时不能用单个 boolean）
-    const [chatsAwaitingStreamStart, setChatsAwaitingStreamStart] = useState<string[]>([]);
-    const [newChatsAwaitingStreamCount, setNewChatsAwaitingStreamCount] = useState(0);
+    const [activeTasksByChat, setActiveTasksByChat] = useState<Record<string, Task>>({});
+    const activeTasksByChatRef = useRef<Record<string, Task>>({});
+    const [pendingExistingChatUuids, setPendingExistingChatUuids] = useState<string[]>([]);
+    const [pendingNewChatCount, setPendingNewChatCount] = useState(0);
     // 输入框文字内容
     const [inputMessage,setInputMessage] = useState<string>("");
     // 输入框选择文件
@@ -108,67 +105,36 @@ const Chat: React.FC<ChatProps> = ({
     const visibleChatUuidRef = useRef<string>("");
     // 非当前可见会话的进行中 assistant 快照（切回时与 DB 合并）
     const streamingAssistantByChatRef = useRef<Record<string, Message>>({});
-    // 每个会话对应的 AbortController（仅用户点击停止时使用）
-    const activeCompletionsRef = useRef<Map<string, AbortController>>(new Map());
-    // 流式尚未开始时，按会话（或 __NEW__）挂起的 AbortController，支持多会话并发
-    const pendingAbortStacksRef = useRef<Record<string, AbortController[]>>({});
+    // 活跃任务订阅
+    const taskSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
     // 切换会话时的拉取序号，避免快速切换或 Strict Mode 下二次 setState 造成「闪两次 loading」
     const chatFetchSeqRef = useRef(0);
-    // 新建对话：是否已在「首次 AI 实质输出」或 onComplete 兜底时刷新过侧边栏列表
-    const newChatListRefreshDoneRef = useRef(false);
 
-    const registerPendingAbort = (chatKey: string, controller: AbortController) => {
-        const m = pendingAbortStacksRef.current;
-        if (!m[chatKey]) m[chatKey] = [];
-        m[chatKey].push(controller);
-    };
-
-    const unregisterPendingAbort = (chatKey: string, controller: AbortController) => {
-        const arr = pendingAbortStacksRef.current[chatKey];
-        if (!arr) return;
-        const i = arr.indexOf(controller);
-        if (i >= 0) arr.splice(i, 1);
-        if (arr.length === 0) delete pendingAbortStacksRef.current[chatKey];
-    };
-
-    const tryAbortLatestPendingForKey = (chatKey: string): boolean => {
-        const arr = pendingAbortStacksRef.current[chatKey];
-        if (!arr?.length) return false;
-        const c = arr.pop()!;
-        if (arr.length === 0) delete pendingAbortStacksRef.current[chatKey];
-        c.abort();
-        return true;
-    };
+    const refreshAvailableTools = useCallback(async () => {
+        const tools = await Service.GetTools();
+        setAvailableTools(tools);
+        return tools;
+    }, []);
 
     const propUuid = chatUuid ?? "";
 
     const isGenerating = useMemo(() => {
         if (propUuid !== "") {
             if (generatingUuids.includes(propUuid)) return true;
-            if (chatsAwaitingStreamStart.includes(propUuid)) return true;
+            if (pendingExistingChatUuids.includes(propUuid)) return true;
             return false;
         }
-        if (newChatsAwaitingStreamCount > 0) return true;
-        return (
-            pendingNewChatStreamUuid !== null &&
-            generatingUuids.includes(pendingNewChatStreamUuid)
-        );
-    }, [
-        propUuid,
-        generatingUuids,
-        pendingNewChatStreamUuid,
-        chatsAwaitingStreamStart,
-        newChatsAwaitingStreamCount,
-    ]);
+        return pendingNewChatCount > 0;
+    }, [propUuid, generatingUuids, pendingExistingChatUuids, pendingNewChatCount]);
 
     // 侧边栏：已开始流式 + 已发请求但尚未 onStreamStarted 的已有会话
     const sidebarGeneratingUuids = useMemo(() => {
         const set = new Set(generatingUuids);
-        chatsAwaitingStreamStart.forEach(u => {
+        pendingExistingChatUuids.forEach(u => {
             if (u) set.add(u);
         });
         return [...set];
-    }, [generatingUuids, chatsAwaitingStreamStart]);
+    }, [generatingUuids, pendingExistingChatUuids]);
 
     useEffect(() => {
         onGeneratingUuidsChange?.(sidebarGeneratingUuids);
@@ -177,33 +143,44 @@ const Chat: React.FC<ChatProps> = ({
     useEffect(() => {
         if (!onRegisterStopGenerationForChat) return;
         onRegisterStopGenerationForChat((targetUuid: string) => {
-            const mapped = activeCompletionsRef.current.get(targetUuid);
-            if (mapped) {
-                mapped.abort();
+            const task = activeTasksByChatRef.current[targetUuid];
+            if (!task?.task_uuid) {
                 return;
             }
-            if (tryAbortLatestPendingForKey(targetUuid)) return;
+            Service.StopTask(task.task_uuid);
         });
     }, [onRegisterStopGenerationForChat]);
+
+    useEffect(() => {
+        activeTasksByChatRef.current = activeTasksByChat;
+    }, [activeTasksByChat]);
 
     useEffect(() => {
         Service.GetModels(true,true)
             .then((models: Model[])=>{
                 setAvailableModels(models);
             })
-        Service.GetTools()
-            .then((tools: Tool[])=> {
-                setAvailableTools(tools);
-            })
-    }, []);
+        refreshAvailableTools().catch(() => {
+        });
+    }, [refreshAvailableTools]);
 
-    // 当可用工具加载后，过滤掉已不存在的工具 ID
+    // 当可用工具加载后，过滤掉无效内置工具，并自动纳入启用中的自定义 MCP 工具
     useEffect(() => {
         if (availableTools.length === 0) return;
-        const validIds = new Set(availableTools.map(t => t.id));
+        const validBuiltinIds = new Set(
+            availableTools
+                .filter((tool) => tool.source_type === 'builtin')
+                .map((tool) => tool.id)
+        );
+        const enabledCustomIds = availableTools
+            .filter((tool) => tool.source_type === 'mcp_custom' && tool.enabled)
+            .map((tool) => tool.id);
         setSelectedToolIds(prev => {
-            const filtered = prev.filter(id => validIds.has(id));
-            return filtered.length === prev.length ? prev : filtered;
+            const next = [...new Set([
+                ...prev.filter(id => validBuiltinIds.has(id)),
+                ...enabledCustomIds,
+            ])];
+            return next.length === prev.length && next.every((id, index) => id === prev[index]) ? prev : next;
         });
     }, [availableTools]);
 
@@ -216,13 +193,113 @@ const Chat: React.FC<ChatProps> = ({
         }
     }, [selectedToolIds]);
 
+    const upsertMessage = (list: Message[], incoming: Message): Message[] => {
+        const index = list.findIndex(item => item.message_uuid === incoming.message_uuid);
+        if (index === -1) {
+            return [...list, incoming];
+        }
+        const next = [...list];
+        next[index] = incoming;
+        return next;
+    };
+
+    const finishTaskTracking = (event: TaskStreamEvent) => {
+        const cancel = taskSubscriptionsRef.current.get(event.task_uuid);
+        cancel?.();
+        taskSubscriptionsRef.current.delete(event.task_uuid);
+        setGeneratingUuids(prev => prev.filter(x => x !== event.chat_uuid));
+        setActiveTasksByChat(prev => {
+            const next = {...prev};
+            delete next[event.chat_uuid];
+            return next;
+        });
+        delete streamingAssistantByChatRef.current[event.chat_uuid];
+        refreshChatList?.();
+    };
+
+    const handleTaskEvent = (event: TaskStreamEvent) => {
+        const assistantMessage = event.assistant_message;
+        if (assistantMessage?.message_uuid) {
+            streamingAssistantByChatRef.current[event.chat_uuid] = assistantMessage;
+        }
+
+        setActiveTasksByChat(prev => ({
+            ...prev,
+            [event.chat_uuid]: new Task({
+                ...(prev[event.chat_uuid] || {}),
+                task_uuid: event.task_uuid,
+                chat_uuid: event.chat_uuid,
+                assistant_message_uuid: assistantMessage?.message_uuid ?? prev[event.chat_uuid]?.assistant_message_uuid ?? "",
+                event_key: event.event_key,
+                status: event.status,
+                finish_reason: event.finish_reason,
+                finish_error: event.finish_error,
+            }),
+        }));
+
+        if (event.status === "pending" || event.status === "running") {
+            setGeneratingUuids(prev => prev.includes(event.chat_uuid) ? prev : [...prev, event.chat_uuid]);
+        } else {
+            setMessages(prev => {
+                if (visibleChatUuidRef.current !== event.chat_uuid) {
+                    return prev;
+                }
+                return upsertMessage(prev, assistantMessage);
+            });
+            return;
+        }
+
+        if (visibleChatUuidRef.current !== event.chat_uuid) {
+            return;
+        }
+        setMessages(prev => upsertMessage(prev, assistantMessage));
+    };
+
+    const ensureTaskSubscription = (task: Task | null | undefined) => {
+        if (!task?.task_uuid || !task?.event_key) {
+            return;
+        }
+        setActiveTasksByChat(prev => ({...prev, [task.chat_uuid]: task}));
+        if (task.status === "pending" || task.status === "running") {
+            setGeneratingUuids(prev => prev.includes(task.chat_uuid) ? prev : [...prev, task.chat_uuid]);
+        }
+        if (taskSubscriptionsRef.current.has(task.task_uuid)) {
+            return;
+        }
+        const cancel = SubscribeTaskStream(
+            task,
+            handleTaskEvent,
+            (error) => {
+                console.error(error);
+            },
+            (event) => {
+                finishTaskTracking(event);
+            },
+        );
+        if (cancel) {
+            taskSubscriptionsRef.current.set(task.task_uuid, cancel);
+        }
+    };
+
+    useEffect(() => {
+        Service.GetRunningTasks()
+            .then((taskList) => {
+                taskList?.tasks?.forEach(task => ensureTaskSubscription(task));
+            })
+            .catch((err) => {
+                console.error("Failed to restore running tasks:", err);
+            });
+
+        return () => {
+            taskSubscriptionsRef.current.forEach(cancel => cancel());
+            taskSubscriptionsRef.current.clear();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     useEffect(() => {
         const v = chatUuid ?? "";
         visibleChatUuidRef.current = v;
-        if (v !== "" && pendingNewChatStreamUuidRef.current !== null && v !== pendingNewChatStreamUuidRef.current) {
-            setPendingNewChatStreamUuid(null);
-            pendingNewChatStreamUuidRef.current = null;
-        }
 
         // 如果这次 chatUuid 变化是由内部 navigate 引起的（新对话获得 UUID），只同步 currentChatUuid，不重新拉取，避免打断流式
         if (skipNextFetchRef.current && skipNextFetchRef.current === v) {
@@ -234,9 +311,6 @@ const Chat: React.FC<ChatProps> = ({
         setCurrentChatUuid(v);
 
         if (!v) {
-            // 空白「新建对话」页与后台正在写的会话解绑，否则 pendingNewChatStreamUuid 仍指向旧 uuid 时会误显示停止按钮
-            setPendingNewChatStreamUuid(null);
-            pendingNewChatStreamUuidRef.current = null;
             setChatInfo(null);
             setLoading(false);
             setMessages([]);
@@ -271,6 +345,14 @@ const Chat: React.FC<ChatProps> = ({
                     if (fetchSeq !== chatFetchSeqRef.current) return;
                     setMessages([]);
                 }),
+            Service.GetChatActiveTask(v)
+                .then((task) => {
+                    if (fetchSeq !== chatFetchSeqRef.current || !task) return;
+                    ensureTaskSubscription(task);
+                })
+                .catch((err) => {
+                    console.error("Failed to fetch active task:", err);
+                }),
         ]).finally(() => {
             setTimeout(() => {
                 if (fetchSeq !== chatFetchSeqRef.current) return;
@@ -278,10 +360,6 @@ const Chat: React.FC<ChatProps> = ({
             }, 300);
         });
     }, [chatUuid]);
-
-    useEffect(() => {
-        pendingNewChatStreamUuidRef.current = pendingNewChatStreamUuid;
-    }, [pendingNewChatStreamUuid]);
 
     // onModelSelectorClick 模型选择框点击事件
     const onModelSelectorClick = () => {
@@ -307,34 +385,16 @@ const Chat: React.FC<ChatProps> = ({
         setInputFiles(paths);
     }
 
-    const finishCompletionForChat = (streamChatUuid: string) => {
-        activeCompletionsRef.current.delete(streamChatUuid);
-        setGeneratingUuids(prev => prev.filter(x => x !== streamChatUuid));
-        delete streamingAssistantByChatRef.current[streamChatUuid];
-        if (pendingNewChatStreamUuidRef.current === streamChatUuid) {
-            setPendingNewChatStreamUuid(null);
-            pendingNewChatStreamUuidRef.current = null;
-        }
-    };
-
     // onSendButtonClick 发送按钮点击
     const onSendButtonClick = async () => {
-        let streamStartedForThisRequest = false;
-        let pendingAbortKey = "";
-        let controller: AbortController | null = null;
         let fromEmptyChat = false;
-        let sourceChatUuidForAwaiting = "";
+        const prevMessages = messages;
         try {
             fromEmptyChat = currentChatUuid === "";
-            sourceChatUuidForAwaiting = currentChatUuid;
-            pendingAbortKey = fromEmptyChat ? PENDING_NEW_CHAT_ABORT_KEY : currentChatUuid;
             if (fromEmptyChat) {
-                newChatListRefreshDoneRef.current = false;
-            }
-            if (fromEmptyChat) {
-                setNewChatsAwaitingStreamCount(n => n + 1);
+                setPendingNewChatCount(n => n + 1);
             } else if (currentChatUuid) {
-                setChatsAwaitingStreamStart(prev => [...prev, currentChatUuid]);
+                setPendingExistingChatUuids(prev => [...prev, currentChatUuid]);
             }
             let userMessage:Message = {
                 id: 0,
@@ -377,123 +437,45 @@ const Chat: React.FC<ChatProps> = ({
                 assistant_message_extra_content: "",
             }
 
-            const newMessages = [...messages, userMessage, assistantMessage];
-            setMessages(newMessages);
+            setMessages(prev => [...prev, userMessage, assistantMessage]);
 
-            controller = new AbortController();
-            const abortCtl = controller;
-            registerPendingAbort(pendingAbortKey, abortCtl);
-
-            await CompletionsUtils(userMessage,(message:Message)=>{
-                const uid = message.chat_uuid;
-                streamingAssistantByChatRef.current[uid] = message;
-                const visible = visibleChatUuidRef.current;
-                const matchesVisible =
-                    uid === visible ||
-                    (visible === "" && uid === pendingNewChatStreamUuidRef.current);
-                if (
-                    fromEmptyChat &&
-                    !newChatListRefreshDoneRef.current &&
-                    matchesVisible &&
-                    assistantHasSubstantiveOutput(message)
-                ) {
-                    newChatListRefreshDoneRef.current = true;
-                    refreshChatList?.();
-                }
-                if (!matchesVisible) return;
-                setMessages(prev => {
-                    const updatedMessages = [...prev];
-                    updatedMessages[updatedMessages.length - 1] = message;
-                    return updatedMessages;
-                });
-            },(_error:string)=>{
-
-            },(newChatUuid:string)=>{
-                finishCompletionForChat(newChatUuid);
-                // 已有会话：完成时不要改路由/消息树，否则用户切到别页会被强制跳回生成中的会话
-                if (!fromEmptyChat) {
-                    return;
-                }
-                const visible = visibleChatUuidRef.current;
-                if (visible !== "" && visible !== newChatUuid) {
-                    return;
-                }
-                if (visible === newChatUuid) {
-                    return;
-                }
-                setCurrentChatUuid(newChatUuid);
-                setMessages(prev => prev.map(msg => ({...msg, chat_uuid: newChatUuid})));
-                skipNextFetchRef.current = newChatUuid;
-                navigate(`/home/${newChatUuid}`, {replace: true});
-                if (!newChatListRefreshDoneRef.current) {
-                    newChatListRefreshDoneRef.current = true;
-                    refreshChatList?.();
-                }
-            }, abortCtl, (resp) => {
-                streamStartedForThisRequest = true;
-                if (!resp?.chat_uuid) {
-                    if (fromEmptyChat) {
-                        setNewChatsAwaitingStreamCount(n => Math.max(0, n - 1));
-                    } else if (sourceChatUuidForAwaiting) {
-                        setChatsAwaitingStreamStart(prev => {
-                            const i = prev.indexOf(sourceChatUuidForAwaiting);
-                            if (i === -1) return prev;
-                            const next = [...prev];
-                            next.splice(i, 1);
-                            return next;
-                        });
-                    }
-                    unregisterPendingAbort(pendingAbortKey, abortCtl);
-                    return;
-                }
-                const streamChatUuid = resp.chat_uuid;
+            const resp = await CompletionsUtils(userMessage);
+            if (!resp?.chat_uuid || !resp?.task_uuid) {
+                setMessages(prevMessages);
                 if (fromEmptyChat) {
-                    setNewChatsAwaitingStreamCount(n => Math.max(0, n - 1));
-                } else {
-                    setChatsAwaitingStreamStart(prev => {
-                        const i = prev.indexOf(streamChatUuid);
-                        if (i === -1) return prev;
-                        const next = [...prev];
-                        next.splice(i, 1);
-                        return next;
-                    });
+                    setPendingNewChatCount(n => Math.max(0, n - 1));
+                } else if (currentChatUuid) {
+                    setPendingExistingChatUuids(prev => prev.filter(uuid => uuid !== currentChatUuid));
                 }
-                unregisterPendingAbort(pendingAbortKey, abortCtl);
-                if (fromEmptyChat) {
-                    // 尽早同步 URL 与父级 currentChatUuid，侧边栏能选中当前会话；skipNextFetch 避免打断流式去全量拉消息
-                    skipNextFetchRef.current = streamChatUuid;
-                    setPendingNewChatStreamUuid(streamChatUuid);
-                    pendingNewChatStreamUuidRef.current = streamChatUuid;
-                    setMessages(prev =>
-                        prev.map(m => ({...m, chat_uuid: streamChatUuid})),
-                    );
-                    navigate(`/home/${streamChatUuid}`, {replace: true});
-                }
-                activeCompletionsRef.current.set(streamChatUuid, abortCtl);
-                setGeneratingUuids(prev =>
-                    prev.includes(streamChatUuid) ? prev : [...prev, streamChatUuid],
-                );
-            }, (abortedChatUuid) => {
-                if (abortedChatUuid) {
-                    finishCompletionForChat(abortedChatUuid);
-                }
-            })
+                return;
+            }
+
+            const streamChatUuid = resp.chat_uuid;
+            assistantMessage.chat_uuid = streamChatUuid;
+            assistantMessage.message_uuid = resp.message_uuid;
+
+            if (fromEmptyChat) {
+                setPendingNewChatCount(n => Math.max(0, n - 1));
+                skipNextFetchRef.current = streamChatUuid;
+                setCurrentChatUuid(streamChatUuid);
+                setMessages(prev => prev.map(m => ({...m, chat_uuid: streamChatUuid})));
+                navigate(`/home/${streamChatUuid}`, {replace: true});
+            } else {
+                setPendingExistingChatUuids(prev => prev.filter(uuid => uuid !== streamChatUuid));
+            }
+
+            setGeneratingUuids(prev =>
+                prev.includes(streamChatUuid) ? prev : [...prev, streamChatUuid],
+            );
+            const task = BuildTaskFromCompletions(resp, assistantMessage);
+            ensureTaskSubscription(task);
+            refreshChatList?.();
         }catch (e) {
-            if (!streamStartedForThisRequest) {
-                if (fromEmptyChat) {
-                    setNewChatsAwaitingStreamCount(n => Math.max(0, n - 1));
-                } else if (sourceChatUuidForAwaiting) {
-                    setChatsAwaitingStreamStart(prev => {
-                        const i = prev.indexOf(sourceChatUuidForAwaiting);
-                        if (i === -1) return prev;
-                        const next = [...prev];
-                        next.splice(i, 1);
-                        return next;
-                    });
-                }
-                if (controller && pendingAbortKey) {
-                    unregisterPendingAbort(pendingAbortKey, controller);
-                }
+            setMessages(prevMessages);
+            if (fromEmptyChat) {
+                setPendingNewChatCount(n => Math.max(0, n - 1));
+            } else if (currentChatUuid) {
+                setPendingExistingChatUuids(prev => prev.filter(uuid => uuid !== currentChatUuid));
             }
         }
     }
@@ -501,18 +483,14 @@ const Chat: React.FC<ChatProps> = ({
     // onStopGeneration 停止生成点击
     const onStopGeneration = () => {
         const v = chatUuid ?? "";
-        const targetUuid =
-            v !== "" ? v : pendingNewChatStreamUuidRef.current ?? pendingNewChatStreamUuid;
-        if (targetUuid) {
-            const mapped = activeCompletionsRef.current.get(targetUuid);
-            if (mapped) {
-                mapped.abort();
-                return;
-            }
-            if (tryAbortLatestPendingForKey(targetUuid)) return;
+        if (!v) {
             return;
         }
-        tryAbortLatestPendingForKey(PENDING_NEW_CHAT_ABORT_KEY);
+        const task = activeTasksByChatRef.current[v];
+        if (!task?.task_uuid) {
+            return;
+        }
+        Service.StopTask(task.task_uuid);
     }
 
     return (
@@ -536,6 +514,7 @@ const Chat: React.FC<ChatProps> = ({
                     availableTools={availableTools}
                     selectedToolIds={selectedToolIds}
                     onSelectedToolsChange={setSelectedToolIds}
+                    onRefreshTools={refreshAvailableTools}
                     isGenerating={isGenerating}
                     onMessageChange={onMessageChange}
                     onSendButtonClick={onSendButtonClick}

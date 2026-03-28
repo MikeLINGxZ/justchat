@@ -11,5 +11,7 @@ export {
     Model,
     Provider,
     SupportProvider,
+    Task,
+    TaskList,
     Tool
 } from "./models.js";

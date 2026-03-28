@@ -508,10 +508,30 @@
   gap: 2px;
 }
 
+.toolItemHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
 .toolItemName {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-color);
+}
+
+.toolSourceTag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(24, 144, 255, 0.12);
+  color: var(--primary-color);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
 }
 
 .toolItemDesc {
@@ -520,6 +540,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.toolItemActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
 }
 
 // 开关样式
@@ -568,6 +595,86 @@
 
 .toggleSwitch input:checked + .toggleSlider:before {
   transform: translateX(18px);
+}
+
+.deleteToolButton {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.38);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
+
+  &:hover {
+    color: #ff4d4f;
+    background: rgba(255, 77, 79, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.toolMenuFooter {
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--border-color-light);
+  background: var(--background-color);
+}
+
+.addMcpButton {
+  width: 100%;
+  height: 34px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--background-color-light);
+  color: var(--text-color-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: rgba(24, 144, 255, 0.06);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: var(--text-color-secondary);
+    border-color: var(--border-color);
+    background: var(--background-color-light);
+    opacity: 0.9;
+  }
+}
+
+.buttonSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(24, 144, 255, 0.18);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: buttonSpin 0.8s linear infinite;
+}
+
+@keyframes buttonSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .menuItem {

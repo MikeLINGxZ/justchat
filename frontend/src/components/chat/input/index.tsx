@@ -3,6 +3,7 @@ import styles from "./index.module.scss";
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import {FileInfo, Model, Tool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import {notify} from "@/utils/notification.ts";
 
 interface ChatInputProps {
     // 所选模型
@@ -15,6 +16,8 @@ interface ChatInputProps {
     selectedToolIds: string[];
     // 工具选择变更事件
     onSelectedToolsChange: (toolIds: string[]) => void;
+    // 刷新工具列表
+    onRefreshTools: () => Promise<Tool[]>;
     // 是否正在生成消息
     isGenerating: boolean;
     // 模型变更事件
@@ -60,6 +63,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     availableTools,
     selectedToolIds,
     onSelectedToolsChange,
+    onRefreshTools,
     isGenerating = false,
     onMessageChange,
     onSendButtonClick,
@@ -76,11 +80,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [isComposing, setIsComposing] = useState(false);
     const [modelSearchValue, setModelSearchValue] = useState('');
+    const [isAddingMCPTool, setIsAddingMCPTool] = useState(false);
     const [defaultModelId, setDefaultModelId] = useState<number | null>(() => {
         return getDefaultModelConfig()?.modelId ?? null;
     });
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const imageInputRef = useRef<HTMLInputElement>(null);
     const addMenuRef = useRef<HTMLDivElement>(null);
     const modelMenuRef = useRef<HTMLDivElement>(null);
     const toolMenuRef = useRef<HTMLDivElement>(null);
@@ -121,14 +124,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 清空输入框
     const clearInput = useCallback(() => {
         setInputValue('');
-        setSelectFiles([]); // 清空文件列表
-        onSelectFileChange(selectFiles);
-        onMessageChange(inputValue);
+        setSelectFiles([]);
+        onSelectFileChange([]);
+        onMessageChange('');
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = '40px';
         }
-    }, []);
+    }, [onMessageChange, onSelectFileChange]);
 
     // 处理中文输入开始
     const handleCompositionStart = useCallback(() => {
@@ -172,25 +175,83 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [selectedToolIds, onSelectedToolsChange]);
 
+    const handleCustomToolToggle = useCallback(async (tool: Tool, enabled: boolean) => {
+        try {
+            await Service.UpdateMCPToolEnabled(tool.id, enabled);
+            await onRefreshTools();
+            if (enabled) {
+                onSelectedToolsChange([...new Set([...selectedToolIds, tool.id])]);
+            } else {
+                onSelectedToolsChange(selectedToolIds.filter(id => id !== tool.id));
+            }
+        } catch (error) {
+            notify.error("更新失败", `无法${enabled ? '启用' : '禁用'} ${tool.name}`);
+        }
+    }, [onRefreshTools, onSelectedToolsChange, selectedToolIds]);
+
+    const handleAddMCPTool = useCallback(async () => {
+        if (isAddingMCPTool) {
+            return;
+        }
+        setIsAddingMCPTool(true);
+        try {
+            const folderPath = await Service.SelectMCPFolder();
+            if (!folderPath) {
+                return;
+            }
+            const createdTool = await Service.AddMCPToolFromFolder(folderPath);
+            if (!createdTool) {
+                return;
+            }
+            await onRefreshTools();
+            onSelectedToolsChange([...new Set([...selectedToolIds, createdTool.id])]);
+            notify.success("添加成功", `${createdTool.name} 已加入工具列表`);
+        } catch (error: any) {
+            notify.error("添加失败", error?.message || "所选目录不是有效的 MCP 服务目录");
+        } finally {
+            setIsAddingMCPTool(false);
+        }
+    }, [isAddingMCPTool, onRefreshTools, onSelectedToolsChange, selectedToolIds]);
+
+    const handleDeleteMCPTool = useCallback(async (tool: Tool) => {
+        try {
+            await Service.DeleteMCPTool(tool.id);
+            await onRefreshTools();
+            onSelectedToolsChange(selectedToolIds.filter(id => id !== tool.id));
+            notify.success("删除成功", `${tool.name} 已从工具列表移除`);
+        } catch (error) {
+            notify.error("删除失败", `无法删除 ${tool.name}`);
+        }
+    }, [onRefreshTools, onSelectedToolsChange, selectedToolIds]);
+
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
-        fileInputRef.current?.click();
+        textareaRef.current?.blur();
+        setShowAddMenu(false);
         Service.SelectFiles().then(async (files: FileInfo[]) => {
             if (files.length === 0) return;
-            const newPaths = [...selectFiles, ...files];
-            setSelectFiles(newPaths);
-            onSelectFileChange(newPaths);
+            setSelectFiles(prevFiles => {
+                const mergedFiles = [...prevFiles];
+                files.forEach(file => {
+                    if (!mergedFiles.some(item => item.path === file.path)) {
+                        mergedFiles.push(file);
+                    }
+                });
+                onSelectFileChange(mergedFiles);
+                return mergedFiles;
+            });
         }).catch(() => {
-        }).finally(() => {
-            setShowAddMenu(false);
         })
-    }, [selectFiles, onSelectFileChange]);
+    }, [onSelectFileChange]);
 
     // 删除文件
     const handleRemoveFile = useCallback((filePath: string) => {
-        setSelectFiles(prevFiles => prevFiles.filter(f => f.path !== filePath));
-        setSelectFiles(prevState => prevState.filter(f => f.path !== filePath))
-    }, []);
+        setSelectFiles(prevFiles => {
+            const nextFiles = prevFiles.filter(f => f.path !== filePath);
+            onSelectFileChange(nextFiles);
+            return nextFiles;
+        });
+    }, [onSelectFileChange]);
 
     // 初始化时自动选中默认模型
     useEffect(() => {
@@ -244,7 +305,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onMessageListScrollToBottom();
         }
         const trimmedValue = inputValue.trim();
-        if (trimmedValue) {
+        if (trimmedValue || selectFiles.length > 0) {
             onSendButtonClick();
             clearInput(); // 清空输入框和文件列表
         }
@@ -415,30 +476,87 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                             <div className={styles.noResults}>暂无可用工具</div>
                                         ) : (
                                             availableTools.map((tool) => {
-                                                const isEnabled = selectedToolIds.includes(tool.id);
+                                                const isCustomMCP = tool.source_type === 'mcp_custom';
+                                                const isEnabled = isCustomMCP ? tool.enabled : selectedToolIds.includes(tool.id);
                                                 return (
                                                     <div
                                                         key={tool.id}
                                                         className={styles.toolItem}
                                                     >
                                                         <div className={styles.toolItemInfo}>
-                                                            <span className={styles.toolItemName}>{tool.name}</span>
+                                                            <div className={styles.toolItemHeader}>
+                                                                <span className={styles.toolItemName}>{tool.name}</span>
+                                                                {isCustomMCP && (
+                                                                    <span className={styles.toolSourceTag}>MCP</span>
+                                                                )}
+                                                            </div>
                                                             {tool.description && (
-                                                                <span className={styles.toolItemDesc}>{tool.description}</span>
+                                                                <span
+                                                                    className={styles.toolItemDesc}
+                                                                    title={tool.description}
+                                                                >
+                                                                    {tool.description}
+                                                                </span>
                                                             )}
                                                         </div>
-                                                        <label className={styles.toggleSwitch}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isEnabled}
-                                                                onChange={(e) => handleToolToggle(tool.id, e.target.checked)}
-                                                            />
-                                                            <span className={styles.toggleSlider} />
-                                                        </label>
+                                                        <div className={styles.toolItemActions}>
+                                                            {tool.is_deletable && (
+                                                                <button
+                                                                    className={styles.deleteToolButton}
+                                                                    type="button"
+                                                                    title={`删除 ${tool.name}`}
+                                                                    onClick={() => {
+                                                                        void handleDeleteMCPTool(tool);
+                                                                    }}
+                                                                >
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                                        <path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2h4v2H4V6h4l1-2z"/>
+                                                                    </svg>
+                                                                </button>
+                                                            )}
+                                                            <label className={styles.toggleSwitch}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isEnabled}
+                                                                    onChange={(e) => {
+                                                                        if (isCustomMCP) {
+                                                                            void handleCustomToolToggle(tool, e.target.checked);
+                                                                            return;
+                                                                        }
+                                                                        handleToolToggle(tool.id, e.target.checked);
+                                                                    }}
+                                                                />
+                                                                <span className={styles.toggleSlider} />
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 );
                                             })
                                         )}
+                                    </div>
+                                    <div className={styles.toolMenuFooter}>
+                                        <button
+                                            className={styles.addMcpButton}
+                                            onClick={() => {
+                                                void handleAddMCPTool();
+                                            }}
+                                            type="button"
+                                            disabled={isAddingMCPTool}
+                                        >
+                                            {isAddingMCPTool ? (
+                                                <>
+                                                    <span className={styles.buttonSpinner} />
+                                                    添加中...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                                    </svg>
+                                                    添加 MCP 服务
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -523,9 +641,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             </button>
                         ) : (
                             <button 
-                                className={`${styles.sendButton} ${!inputValue.trim() ? styles.disabled : ''}`}
+                                className={`${styles.sendButton} ${(!inputValue.trim() && selectFiles.length === 0) ? styles.disabled : ''}`}
                                 onClick={handleSend}
-                                disabled={!inputValue.trim()}
+                                disabled={!inputValue.trim() && selectFiles.length === 0}
                                 type="button"
                                 title="发送消息"
                             >

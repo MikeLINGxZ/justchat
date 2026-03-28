@@ -2,6 +2,7 @@ package data_models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
@@ -116,9 +117,27 @@ type AssistantMessageExtra struct {
 	FinishError  string    `json:"finish_error"`
 }
 
+type ToolUseStatus string
+
+const (
+	ToolUseStatusPending ToolUseStatus = "pending"
+	ToolUseStatusRunning ToolUseStatus = "running"
+	ToolUseStatusDone    ToolUseStatus = "done"
+	ToolUseStatusError   ToolUseStatus = "error"
+)
+
 type ToolUse struct {
-	ToolName   string `json:"tool_name"`
-	ToolResult string `json:"tool_result"`
+	Index           int           `json:"index"`
+	CallID          string        `json:"call_id"`
+	ContentPos      int           `json:"content_pos"`
+	ToolID          string        `json:"tool_id"`
+	ToolName        string        `json:"tool_name"`
+	ToolDescription string        `json:"tool_description"`
+	ToolResult      string        `json:"tool_result"`
+	Status          ToolUseStatus `json:"status"`
+	StartedAt       *time.Time    `json:"started_at"`
+	FinishedAt      *time.Time    `json:"finished_at"`
+	ElapsedMs       int64         `json:"elapsed_ms"`
 }
 
 type File struct {

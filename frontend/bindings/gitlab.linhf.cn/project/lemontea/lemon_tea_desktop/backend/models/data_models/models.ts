@@ -293,17 +293,139 @@ export enum ProviderType {
     ProviderTypeOther = "other",
 };
 
+export class Task {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "task_uuid": string;
+    "chat_uuid": string;
+    "assistant_message_uuid": string;
+    "status": TaskStatus;
+    "event_key": string;
+    "finish_reason": string;
+    "finish_error": string;
+    "started_at": time$0.Time | null;
+    "finished_at": time$0.Time | null;
+    "last_output_at": time$0.Time | null;
+
+    /** Creates a new Task instance. */
+    constructor($$source: Partial<Task> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("task_uuid" in $$source)) {
+            this["task_uuid"] = "";
+        }
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("assistant_message_uuid" in $$source)) {
+            this["assistant_message_uuid"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = TaskStatus.$zero;
+        }
+        if (!("event_key" in $$source)) {
+            this["event_key"] = "";
+        }
+        if (!("finish_reason" in $$source)) {
+            this["finish_reason"] = "";
+        }
+        if (!("finish_error" in $$source)) {
+            this["finish_error"] = "";
+        }
+        if (!("started_at" in $$source)) {
+            this["started_at"] = null;
+        }
+        if (!("finished_at" in $$source)) {
+            this["finished_at"] = null;
+        }
+        if (!("last_output_at" in $$source)) {
+            this["last_output_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Task instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Task {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Task($$parsedSource as Partial<Task>);
+    }
+}
+
+export enum TaskStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    TaskStatusPending = "pending",
+    TaskStatusRunning = "running",
+    TaskStatusCompleted = "completed",
+    TaskStatusFailed = "failed",
+    TaskStatusStopped = "stopped",
+};
+
 export class ToolUse {
+    "index": number;
+    "call_id": string;
+    "content_pos": number;
+    "tool_id": string;
     "tool_name": string;
+    "tool_description": string;
     "tool_result": string;
+    "status": ToolUseStatus;
+    "started_at": time$0.Time | null;
+    "finished_at": time$0.Time | null;
+    "elapsed_ms": number;
 
     /** Creates a new ToolUse instance. */
     constructor($$source: Partial<ToolUse> = {}) {
+        if (!("index" in $$source)) {
+            this["index"] = 0;
+        }
+        if (!("call_id" in $$source)) {
+            this["call_id"] = "";
+        }
+        if (!("content_pos" in $$source)) {
+            this["content_pos"] = 0;
+        }
+        if (!("tool_id" in $$source)) {
+            this["tool_id"] = "";
+        }
         if (!("tool_name" in $$source)) {
             this["tool_name"] = "";
         }
+        if (!("tool_description" in $$source)) {
+            this["tool_description"] = "";
+        }
         if (!("tool_result" in $$source)) {
             this["tool_result"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = ToolUseStatus.$zero;
+        }
+        if (!("started_at" in $$source)) {
+            this["started_at"] = null;
+        }
+        if (!("finished_at" in $$source)) {
+            this["finished_at"] = null;
+        }
+        if (!("elapsed_ms" in $$source)) {
+            this["elapsed_ms"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -317,6 +439,18 @@ export class ToolUse {
         return new ToolUse($$parsedSource as Partial<ToolUse>);
     }
 }
+
+export enum ToolUseStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ToolUseStatusPending = "pending",
+    ToolUseStatusRunning = "running",
+    ToolUseStatusDone = "done",
+    ToolUseStatusError = "error",
+};
 
 export class UserMessageExtra {
     /**

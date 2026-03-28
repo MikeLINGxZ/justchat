@@ -16,6 +16,7 @@ type MatchMessage struct {
 
 type Completions struct {
 	ChatUuid    string `json:"chat_uuid"`
+	TaskUuid    string `json:"task_uuid"`
 	MessageUuid string `json:"message_uuid"`
 	EventKey    string `json:"event_key"`
 }
@@ -24,4 +25,7 @@ type Tool struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	SourceType  string `json:"source_type"`
+	Enabled     bool   `json:"enabled"`
+	IsDeletable bool   `json:"is_deletable"`
 }
