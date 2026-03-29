@@ -39,7 +39,7 @@ func main() {
 			TitleBar:                application.MacTitleBarDefault,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/home",
+		URL:              "/",
 		Width:            1300,
 		Height:           860,
 		MinWidth:         350,

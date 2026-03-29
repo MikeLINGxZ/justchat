@@ -17,7 +17,7 @@ tasks:
       - node_modules
     preconditions:
       - sh: cnpm version
-        msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
+        msg: "Looks like npm isn't installed. Cnpm is part of the Node installer: https://nodejs.org/en/download/"
     cmds:
       - cnpm install
 

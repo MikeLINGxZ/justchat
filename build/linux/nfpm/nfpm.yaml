@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "myapp"
+name: "lemontea-desktop"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A myapp application"
+description: "A lemontea-desktop application"
 vendor: "My Company"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/myapp"
-    dst: "/usr/local/bin/myapp"
+  - src: "./bin/lemontea-desktop"
+    dst: "/usr/local/bin/lemontea-desktop"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/myapp.png"
-  - src: "./build/linux/myapp.desktop"
-    dst: "/usr/share/applications/myapp.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/lemontea-desktop.png"
+  - src: "./build/linux/lemontea-desktop.desktop"
+    dst: "/usr/share/applications/lemontea-desktop.desktop"
 
 # Default dependencies for Debian 12/Ubuntu 22.04+ with WebKit 4.1
 depends:

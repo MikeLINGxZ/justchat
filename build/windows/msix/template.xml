@@ -8,7 +8,7 @@
         AllowPromptForPassword="false">
     </Settings>
     <Installer
-        Path="myapp"
+        Path="lemontea-desktop"
         Arguments=""
         InstallLocation="C:\Program Files\My Company\My Product">
     </Installer>
@@ -18,17 +18,17 @@
         PublisherName="CN=My Company"
         PublisherDisplayName="My Company"
         Version="0.1.0.0"
-        PackageDescription="A myapp application">
+        PackageDescription="A lemontea-desktop application">
         <Capabilities>
             <Capability Name="runFullTrust" />
             
         </Capabilities>
         <Applications>
             <Application
-                Id="com.example.myapp"
-                Description="A myapp application"
+                Id="com.example.rxintelligencecli"
+                Description="A lemontea-desktop application"
                 DisplayName="My Product"
-                ExecutableName="myapp"
+                ExecutableName="lemontea-desktop"
                 EntryPoint="Windows.FullTrustApplication">
                 
             </Application>
@@ -43,11 +43,11 @@
             <Framework>false</Framework>
             <DisplayName>My Product</DisplayName>
             <PublisherDisplayName>My Company</PublisherDisplayName>
-            <Description>A myapp application</Description>
+            <Description>A lemontea-desktop application</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>
     </PackageInformation>
-    <SaveLocation PackagePath="myapp.msix" />
+    <SaveLocation PackagePath="lemontea-desktop.msix" />
     <PackageIntegrity>
         <CertificatePath></CertificatePath>
     </PackageIntegrity>

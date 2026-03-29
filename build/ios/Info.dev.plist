@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>myapp</string>
+    <string>lemontea-desktop</string>
     <key>CFBundleIdentifier</key>
-    <string>com.example.myapp.dev</string>
+    <string>com.example.rxintelligencecli.dev</string>
     <key>CFBundleName</key>
     <string>My Product (Dev)</string>
     <key>CFBundleDisplayName</key>

@@ -19,7 +19,7 @@ func (s *Service) OpenSettingsWindow() {
 			TitleBar:                application.MacTitleBarDefault,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/settings",
+		URL:              "/?entry=settings",
 		Width:            1200,
 		Height:           800,
 		MinWidth:         350,

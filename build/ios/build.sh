@@ -2,8 +2,8 @@
 set -e
 
 # Build configuration
-APP_NAME="myapp"
-BUNDLE_ID="com.example.myapp"
+APP_NAME="lemontea-desktop"
+BUNDLE_ID="com.example.rxintelligencecli"
 VERSION="0.1.0"
 BUILD_NUMBER="0.1.0"
 BUILD_DIR="build/ios"

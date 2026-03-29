@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout';
 import { initializeStores } from '@/stores';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
@@ -8,10 +8,25 @@ const Chat = React.lazy(() => import('@/pages/home'));
 const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
 const Settings = React.lazy(()=>import('@/pages/settings'));
 
+function EntryRedirect() {
+  const [searchParams] = useSearchParams();
+  const entry = searchParams.get('entry');
+
+  switch (entry) {
+    case 'settings':
+      return <Navigate to="/settings" replace />;
+    case 'home':
+    case null:
+      return <Navigate to="/home" replace />;
+    default:
+      return <Navigate to="/home" replace />;
+  }
+}
+
 function App() {
   // 初始化视口高度检测
   useViewportHeight();
-  
+
   // 初始化所有stores
   useEffect(() => {
     initializeStores();
@@ -61,28 +76,26 @@ function App() {
       }
     >
       <Routes>
-        {/* 聊天页面 - 主页面 */}
+        {/* 应用入口页 - 根据窗口入口参数分发到对应页面 */}
         <Route
           path="/"
-          element={<Chat />}
+          element={<EntryRedirect />}
         />
-        {/* 带chatUuid参数的聊天页面路由 */}
-        <Route
-            path="/home/:chatUuid"
-            element={<Chat/>}
-        />
+
+        {/* 聊天页面 */}
         <Route
           path="/home"
           element={<Chat />}
         />
         <Route
-          path="/:chatUuid"
+          path="/home/:chatUuid"
           element={<Chat />}
         />
-          <Route
-              path="/settings"
-              element={<Settings />}
-          />
+
+        <Route
+          path="/settings"
+          element={<Settings />}
+        />
 
         {/* 其他路由 - 使用Layout */}
         <Route
@@ -90,6 +103,12 @@ function App() {
           element={<Layout />}
         >
         </Route>
+
+        {/* 兼容旧链接 */}
+        <Route
+          path="/:chatUuid"
+          element={<Chat />}
+        />
 
         {/* 404页面 */}
         <Route path="*" element={<NotFound />} />
