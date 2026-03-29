@@ -17,9 +17,10 @@ tasks:
       - node_modules
     preconditions:
       - sh: cnpm version
-        msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
+        msg: "Looks like cnpm isn't installed. Install it first: npm install -g cnpm --registry=https://registry.npmmirror.com"
     cmds:
-      - cnpm install
+      - |
+        cnpm install
 
   build:frontend:
     label: build:frontend (DEV={{.DEV}})

@@ -5,11 +5,11 @@
 	"info": {
 		"0000": {
 			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A myapp application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"CompanyName": "Lemon Tea Contributors",
+			"FileDescription": "Lemon Tea Desktop",
+			"LegalCopyright": "© 2026, Lemon Tea Contributors",
+			"ProductName": "Lemon Tea Desktop",
+			"Comments": "Cross-platform AI desktop client"
 		}
 	}
 }
