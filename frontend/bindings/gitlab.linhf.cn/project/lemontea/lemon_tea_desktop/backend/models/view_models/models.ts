@@ -180,6 +180,84 @@ export class Model {
     }
 }
 
+export class PromptFileDetail {
+    "name": string;
+    "title": string;
+    "description": string;
+    "is_system": boolean;
+    "content": string;
+    "updated_at": time$0.Time | null;
+
+    /** Creates a new PromptFileDetail instance. */
+    constructor($$source: Partial<PromptFileDetail> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("is_system" in $$source)) {
+            this["is_system"] = false;
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PromptFileDetail instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PromptFileDetail {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PromptFileDetail($$parsedSource as Partial<PromptFileDetail>);
+    }
+}
+
+export class PromptFileSummary {
+    "name": string;
+    "title": string;
+    "description": string;
+    "is_system": boolean;
+    "updated_at": time$0.Time | null;
+
+    /** Creates a new PromptFileSummary instance. */
+    constructor($$source: Partial<PromptFileSummary> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("is_system" in $$source)) {
+            this["is_system"] = false;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PromptFileSummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PromptFileSummary {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PromptFileSummary($$parsedSource as Partial<PromptFileSummary>);
+    }
+}
+
 export class Provider {
     "id": number;
     "created_at": time$0.Time;

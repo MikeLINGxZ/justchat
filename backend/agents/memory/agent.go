@@ -2,7 +2,6 @@ package agents
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"log/slog"
 
@@ -17,12 +16,14 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/tools"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 )
 
-//go:embed agent.prompt.v0.md
-var memoryAgentPrompt string
-
 func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
+	promptSet, err := prompts.LoadPromptSet()
+	if err != nil {
+		slog.Warn(fmt.Sprintf("load prompt set fallback: %v", err))
+	}
 
 	arkModel, err := ark.NewChatModel(ctx, &ark.ChatModelConfig{
 		BaseURL: baseURL,
@@ -71,7 +72,7 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 			var agentMessages []*schema.Message
 			agentMessages = append(agentMessages, &schema.Message{
 				Role:    schema.System,
-				Content: memoryAgentPrompt,
+				Content: promptSet.MemorySystem,
 			})
 			agentMessages = append(agentMessages, input...)
 			return ragent.Stream(ctx, agentMessages, opts...)
@@ -80,10 +81,14 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 }
 
 func NewMemory(ctx context.Context, baseURL, apiKey, model string, storage *storage.Storage) (*host.Specialist, error) {
+	promptSet, err := prompts.LoadPromptSet()
+	if err != nil {
+		slog.Warn(fmt.Sprintf("load prompt set fallback: %v", err))
+	}
 
 	// 1. 创建对话模板
 	chatTpl := prompt.FromMessages(schema.FString,
-		schema.SystemMessage(memoryAgentPrompt),
+		schema.SystemMessage(promptSet.MemorySystem),
 		schema.MessagesPlaceholder("message_histories", true),
 		schema.UserMessage("{user_query}"),
 	)

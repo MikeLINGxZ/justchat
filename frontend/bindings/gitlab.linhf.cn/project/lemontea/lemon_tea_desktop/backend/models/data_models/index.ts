@@ -4,13 +4,20 @@
 export {
     AssistantMessageExtra,
     Chat,
+    ExecutionTrace,
     File,
     Message,
     Model,
     ProviderType,
+    RouteType,
     Task,
     TaskStatus,
     ToolUse,
     ToolUseStatus,
+    TraceDetailBlock,
+    TraceDetailFormat,
+    TraceStep,
+    TraceStepStatus,
+    TraceStepType,
     UserMessageExtra
 } from "./models.js";

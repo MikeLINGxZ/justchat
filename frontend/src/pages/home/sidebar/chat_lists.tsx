@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState,} from 'react';
+import { Events } from '@wailsio/runtime';
 import type {MenuProps} from 'antd';
 import {Button, Divider, Dropdown, Empty, Input, List, message, Modal, Spin, Typography,} from 'antd';
 import {
@@ -34,9 +35,6 @@ interface SidebarChatsProps {
     currentChatUuid: string | null;
     onChatSelect?: (chatUuid: string) => void;
     onRegisterRefreshCallback?: (callback: () => void) => void;
-    onRegisterUpdateTitleCallback?: (
-        callback: (chatUuid: string, newTitle: string) => void
-    ) => void;
     onDeleteChat?: (chatUuid: string) => void;
     activeTab?: 'history' | 'favorites'; // 添加activeTab属性
     generatingChatUuids?: string[];
@@ -47,7 +45,6 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        currentChatUuid,
                                                        onChatSelect,
                                                        onRegisterRefreshCallback,
-                                                       onRegisterUpdateTitleCallback,
                                                        onDeleteChat,
                                                        activeTab = 'history', // 默认为历史对话
                                                        generatingChatUuids = [],
@@ -72,6 +69,11 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     const chatsCountRef = useRef<number>(0);
     const hasMoreRef = useRef<boolean>(true);
     const searchInputRef = useRef<any>(null);
+
+    interface ChatTitleEvent {
+        chat_uuid: string;
+        title: string;
+    }
 
     // 同步hasMore状态到ref
     useEffect(() => {
@@ -354,12 +356,21 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
         );
     }, []);
 
-    // 注册更新标题回调函数
     useEffect(() => {
-        if (onRegisterUpdateTitleCallback) {
-            onRegisterUpdateTitleCallback(updateChatTitle);
-        }
-    }, [onRegisterUpdateTitleCallback, updateChatTitle]);
+        const eventKey = 'event:chat_title:all';
+        const cancel = Events.On(eventKey, (event) => {
+            const payload = event.data as ChatTitleEvent;
+            if (!payload?.chat_uuid || !payload?.title) {
+                return;
+            }
+            updateChatTitle(payload.chat_uuid, payload.title);
+        });
+
+        return () => {
+            cancel?.();
+            Events.Off(eventKey);
+        };
+    }, [updateChatTitle]);
 
     // 处理聊天选择
     const handleChatSelect = (chatUuid: string) => {
@@ -412,17 +423,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             // 调用 RenameChat API 保存标题
             await Service.RenameChat(editingChatUuid, editingTitle.trim());
 
-            // 更新本地状态
-            setChats(prev =>
-                prev.map(chat =>
-                    chat.uuid === editingChatUuid
-                        ? new Chat({...chat, title: editingTitle.trim()})
-                        : chat
-                )
-            );
-
-            // 调用外部更新回调
-            updateChatTitle(editingChatUuid, editingTitle.trim());
+            const nextTitle = editingTitle.trim();
+            updateChatTitle(editingChatUuid, nextTitle);
 
             message.success('重命名成功');
             setEditingChatUuid(null);

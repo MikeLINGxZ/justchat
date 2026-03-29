@@ -69,8 +69,13 @@ func (m *Message) ToSchemaMessage() (*schema.Message, error) {
 				},
 			}
 			switch chatMessagePartType {
-			case schema.ChatMessagePartTypeText, schema.ChatMessagePartTypeFileURL:
+			case schema.ChatMessagePartTypeText:
 				continue
+			case schema.ChatMessagePartTypeFileURL:
+				file = &schema.MessageInputFile{
+					MessagePartCommon: messagePartCommon,
+					Name:              item.Name,
+				}
 			case schema.ChatMessagePartTypeImageURL:
 				img = &schema.MessageInputImage{
 					MessagePartCommon: messagePartCommon,
@@ -85,7 +90,7 @@ func (m *Message) ToSchemaMessage() (*schema.Message, error) {
 					MessagePartCommon: messagePartCommon,
 				}
 			}
-			if img == nil && audio == nil && video == nil {
+			if img == nil && audio == nil && video == nil && file == nil {
 				continue
 			}
 			userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
@@ -112,9 +117,14 @@ type UserMessageExtra struct {
 }
 
 type AssistantMessageExtra struct {
-	ToolUses     []ToolUse `json:"tool_uses"`
-	FinishReason string    `json:"finish_reason"`
-	FinishError  string    `json:"finish_error"`
+	ToolUses       []ToolUse      `json:"tool_uses"`
+	ExecutionTrace ExecutionTrace `json:"execution_trace"`
+	RouteType      RouteType      `json:"route_type"`
+	RetryCount     int            `json:"retry_count"`
+	CurrentStage   string         `json:"current_stage"`
+	CurrentAgent   string         `json:"current_agent"`
+	FinishReason   string         `json:"finish_reason"`
+	FinishError    string         `json:"finish_error"`
 }
 
 type ToolUseStatus string

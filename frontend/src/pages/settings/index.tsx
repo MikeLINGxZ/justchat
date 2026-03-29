@@ -8,10 +8,12 @@ import {
   BellOutlined,
   InfoCircleOutlined,
   ArrowLeftOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import ProviderSettingPage from './provider';
 import AboutPage from './about';
 import GeneralSettingsPage from './general';
+import PromptSettingsPage from './prompt';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { initializeFontSize } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
@@ -57,6 +59,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       label: '模型供应商',
     },
     {
+      key: 'prompt',
+      icon: <FileTextOutlined />,
+      label: '提示词',
+    },
+    {
       key: 'about',
       icon: <InfoCircleOutlined />,
       label: '关于',
@@ -85,6 +92,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           return <ProviderSettingPage />;
         case 'general':
           return <GeneralSettingsPage />;
+        case 'prompt':
+          return <PromptSettingsPage />;
         case 'account':
           return <div className={styles.placeholder}>账户设置功能开发中...</div>;
         case 'security':
@@ -169,7 +178,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             />
           </Sider>
           <Layout className={styles.settingsContent}>
-            <Content className={styles.contentArea}>
+            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider') ? styles.contentAreaLocked : ''}`}>
               {renderContent()}
             </Content>
           </Layout>

@@ -5,6 +5,7 @@ import {
     Task,
     type Message,
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
+import type { ExecutionTrace, TraceStep } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
 import * as view_models$0 from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
 
 export interface TaskStreamEvent {
@@ -14,6 +15,11 @@ export interface TaskStreamEvent {
     status: string;
     finish_reason: string;
     finish_error: string;
+    execution_trace?: ExecutionTrace;
+    trace_delta?: TraceStep[];
+    current_stage?: string;
+    current_agent?: string;
+    retry_count?: number;
     assistant_message: Message;
 }
 

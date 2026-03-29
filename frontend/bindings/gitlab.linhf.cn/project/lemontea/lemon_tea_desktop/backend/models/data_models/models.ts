@@ -17,6 +17,11 @@ import * as time$0 from "../../../../../../../time/models.js";
 
 export class AssistantMessageExtra {
     "tool_uses": ToolUse[];
+    "execution_trace": ExecutionTrace;
+    "route_type": RouteType;
+    "retry_count": number;
+    "current_stage": string;
+    "current_agent": string;
     "finish_reason": string;
     "finish_error": string;
 
@@ -24,6 +29,21 @@ export class AssistantMessageExtra {
     constructor($$source: Partial<AssistantMessageExtra> = {}) {
         if (!("tool_uses" in $$source)) {
             this["tool_uses"] = [];
+        }
+        if (!("execution_trace" in $$source)) {
+            this["execution_trace"] = (new ExecutionTrace());
+        }
+        if (!("route_type" in $$source)) {
+            this["route_type"] = RouteType.$zero;
+        }
+        if (!("retry_count" in $$source)) {
+            this["retry_count"] = 0;
+        }
+        if (!("current_stage" in $$source)) {
+            this["current_stage"] = "";
+        }
+        if (!("current_agent" in $$source)) {
+            this["current_agent"] = "";
         }
         if (!("finish_reason" in $$source)) {
             this["finish_reason"] = "";
@@ -40,9 +60,13 @@ export class AssistantMessageExtra {
      */
     static createFrom($$source: any = {}): AssistantMessageExtra {
         const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tool_uses" in $$parsedSource) {
             $$parsedSource["tool_uses"] = $$createField0_0($$parsedSource["tool_uses"]);
+        }
+        if ("execution_trace" in $$parsedSource) {
+            $$parsedSource["execution_trace"] = $$createField1_0($$parsedSource["execution_trace"]);
         }
         return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
     }
@@ -94,6 +118,31 @@ export class Chat {
     static createFrom($$source: any = {}): Chat {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new Chat($$parsedSource as Partial<Chat>);
+    }
+}
+
+export class ExecutionTrace {
+    "steps": TraceStep[];
+
+    /** Creates a new ExecutionTrace instance. */
+    constructor($$source: Partial<ExecutionTrace> = {}) {
+        if (!("steps" in $$source)) {
+            this["steps"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ExecutionTrace instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ExecutionTrace {
+        const $$createField0_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("steps" in $$parsedSource) {
+            $$parsedSource["steps"] = $$createField0_0($$parsedSource["steps"]);
+        }
+        return new ExecutionTrace($$parsedSource as Partial<ExecutionTrace>);
     }
 }
 
@@ -202,8 +251,8 @@ export class Message {
      * Creates a new Message instance from a string or object.
      */
     static createFrom($$source: any = {}): Message {
-        const $$createField11_0 = $$createType3;
-        const $$createField12_0 = $$createType5;
+        const $$createField11_0 = $$createType6;
+        const $$createField12_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("user_message_extra" in $$parsedSource) {
             $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
@@ -291,6 +340,17 @@ export enum ProviderType {
     ProviderTypeOpenrouter = "openrouter",
     ProviderTypeOllama = "ollama",
     ProviderTypeOther = "other",
+};
+
+export enum RouteType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    RouteTypeDirectAnswer = "direct_answer",
+    RouteTypeWorkflow = "workflow",
+    RouteTypeClarify = "clarify",
 };
 
 export class Task {
@@ -452,6 +512,165 @@ export enum ToolUseStatus {
     ToolUseStatusError = "error",
 };
 
+export class TraceDetailBlock {
+    "kind": string;
+    "title": string;
+    "content": string;
+    "format": TraceDetailFormat;
+
+    /** Creates a new TraceDetailBlock instance. */
+    constructor($$source: Partial<TraceDetailBlock> = {}) {
+        if (!("kind" in $$source)) {
+            this["kind"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("format" in $$source)) {
+            this["format"] = TraceDetailFormat.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TraceDetailBlock instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TraceDetailBlock {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new TraceDetailBlock($$parsedSource as Partial<TraceDetailBlock>);
+    }
+}
+
+export enum TraceDetailFormat {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    TraceDetailFormatText = "text",
+    TraceDetailFormatMarkdown = "markdown",
+    TraceDetailFormatJSON = "json",
+};
+
+export class TraceStep {
+    "step_id": string;
+    "parent_step_id": string;
+    "type": TraceStepType;
+    "title": string;
+    "summary": string;
+    "status": TraceStepStatus;
+    "agent_name": string;
+    "tool_name": string;
+    "input_preview": string;
+    "output_preview": string;
+    "started_at": time$0.Time | null;
+    "finished_at": time$0.Time | null;
+    "elapsed_ms": number;
+    "detail_blocks": TraceDetailBlock[];
+    "metadata": { [_ in string]?: any };
+
+    /** Creates a new TraceStep instance. */
+    constructor($$source: Partial<TraceStep> = {}) {
+        if (!("step_id" in $$source)) {
+            this["step_id"] = "";
+        }
+        if (!("parent_step_id" in $$source)) {
+            this["parent_step_id"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = TraceStepType.$zero;
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("summary" in $$source)) {
+            this["summary"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = TraceStepStatus.$zero;
+        }
+        if (!("agent_name" in $$source)) {
+            this["agent_name"] = "";
+        }
+        if (!("tool_name" in $$source)) {
+            this["tool_name"] = "";
+        }
+        if (!("input_preview" in $$source)) {
+            this["input_preview"] = "";
+        }
+        if (!("output_preview" in $$source)) {
+            this["output_preview"] = "";
+        }
+        if (!("started_at" in $$source)) {
+            this["started_at"] = null;
+        }
+        if (!("finished_at" in $$source)) {
+            this["finished_at"] = null;
+        }
+        if (!("elapsed_ms" in $$source)) {
+            this["elapsed_ms"] = 0;
+        }
+        if (!("detail_blocks" in $$source)) {
+            this["detail_blocks"] = [];
+        }
+        if (!("metadata" in $$source)) {
+            this["metadata"] = {};
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TraceStep instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TraceStep {
+        const $$createField13_0 = $$createType10;
+        const $$createField14_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("detail_blocks" in $$parsedSource) {
+            $$parsedSource["detail_blocks"] = $$createField13_0($$parsedSource["detail_blocks"]);
+        }
+        if ("metadata" in $$parsedSource) {
+            $$parsedSource["metadata"] = $$createField14_0($$parsedSource["metadata"]);
+        }
+        return new TraceStep($$parsedSource as Partial<TraceStep>);
+    }
+}
+
+export enum TraceStepStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    TraceStepStatusPending = "pending",
+    TraceStepStatusRunning = "running",
+    TraceStepStatusDone = "done",
+    TraceStepStatusError = "error",
+    TraceStepStatusSkipped = "skipped",
+};
+
+export enum TraceStepType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    TraceStepTypeClassify = "classify",
+    TraceStepTypePlan = "plan",
+    TraceStepTypeDispatch = "dispatch",
+    TraceStepTypeAgentRun = "agent_run",
+    TraceStepTypeToolCall = "tool_call",
+    TraceStepTypeSynthesize = "synthesize",
+    TraceStepTypeReview = "review",
+    TraceStepTypeRetry = "retry",
+    TraceStepTypeFinalize = "finalize",
+};
+
 export class UserMessageExtra {
     /**
      * 模型id
@@ -503,9 +722,9 @@ export class UserMessageExtra {
      * Creates a new UserMessageExtra instance from a string or object.
      */
     static createFrom($$source: any = {}): UserMessageExtra {
-        const $$createField2_0 = $$createType7;
-        const $$createField3_0 = $$createType8;
-        const $$createField4_0 = $$createType8;
+        const $$createField2_0 = $$createType13;
+        const $$createField3_0 = $$createType14;
+        const $$createField4_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
@@ -523,10 +742,16 @@ export class UserMessageExtra {
 // Private type creation functions
 const $$createType0 = ToolUse.createFrom;
 const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = UserMessageExtra.createFrom;
-const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = AssistantMessageExtra.createFrom;
-const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = File.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = $Create.Array($Create.Any);
+const $$createType2 = ExecutionTrace.createFrom;
+const $$createType3 = TraceStep.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = UserMessageExtra.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = AssistantMessageExtra.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = TraceDetailBlock.createFrom;
+const $$createType10 = $Create.Array($$createType9);
+const $$createType11 = $Create.Map($Create.Any, $Create.Any);
+const $$createType12 = File.createFrom;
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = $Create.Array($Create.Any);

@@ -9,6 +9,8 @@ export {
     Message,
     MessageList,
     Model,
+    PromptFileDetail,
+    PromptFileSummary,
     Provider,
     SupportProvider,
     Task,

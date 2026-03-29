@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from "react";
 import styles from "./index.module.scss";
 import ReasoningContent from "@/components/chat/reasoning_message";
+import ExecutionTracePanel from "@/components/chat/execution_trace";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
@@ -287,7 +288,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     message,
     isLoading = false,
 }: ChatMessageProps) => {
-    const [nowMs, setNowMs] = useState(() => Date.now());
     const [toolDefinitions, setToolDefinitions] = useState<Map<string, ViewTool>>(new Map());
     const isUser = message.role === 'user';
     const wrapperClass = isUser ? styles.userMessageWrapper : styles.assistantMessageWrapper;
@@ -299,7 +299,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             return aIndex - bIndex;
         });
     }, [message.assistant_message_extra?.tool_uses]);
-    const hasRunningTool = toolUses.some(isToolUseRunning);
+    const traceSteps = message.assistant_message_extra?.execution_trace?.steps ?? [];
     const toolUsesByIndex = useMemo(() => {
         const map = new Map<number, { toolUse: ToolUse; fallbackIndex: number }>();
         toolUses.forEach((toolUse, idx) => {
@@ -321,27 +321,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         };
     }, []);
 
-    useEffect(() => {
-        if (!hasRunningTool) {
-            return;
-        }
-        setNowMs(Date.now());
-        const timer = window.setInterval(() => {
-            setNowMs(Date.now());
-        }, 1000);
-        return () => window.clearInterval(timer);
-    }, [hasRunningTool]);
-
     const messageContent = message.content?.trim() ?? "";
     const reasoningContent = message.reasoning_content?.trim() ?? "";
     const finishReason = message.assistant_message_extra?.finish_reason?.trim() ?? "";
+    const currentStage = message.assistant_message_extra?.current_stage?.trim() ?? "";
     const isReasoningStreaming = !isUser && isLoading && !finishReason && messageContent.length === 0;
-
     const isEmptyAssistant = !isUser &&
         !messageContent &&
         !reasoningContent &&
+        traceSteps.length === 0 &&
         toolUses.length === 0 &&
         (message.assistant_message_extra?.finish_error == "");
+    const hasTrace = traceSteps.length > 0;
+    const hasVisibleProgress = hasTrace || currentStage.length > 0 || reasoningContent.length > 0;
+    const shouldShowHeadLoading = isLoading && isEmptyAssistant && !hasVisibleProgress;
+    const shouldShowTailLoading = !isUser && isLoading && !finishReason && hasVisibleProgress;
 
     const getDisplayContent = () => {
         if (messageContent) {
@@ -400,7 +394,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         </>
                     ) : (
                         <div>
-                            {isLoading && isEmptyAssistant && (
+                            {shouldShowHeadLoading && (
                                 <div className={styles.loadingIndicator}>
                                     <span className={styles.loadingDot} />
                                     <span className={styles.loadingDot} />
@@ -414,6 +408,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                     isStreaming={isReasoningStreaming}
                                 />
                             )}
+
+                            <ExecutionTracePanel
+                                trace={message.assistant_message_extra?.execution_trace}
+                                currentStage={message.assistant_message_extra?.current_stage}
+                                retryCount={message.assistant_message_extra?.retry_count}
+                                isStreaming={isLoading}
+                            />
 
                             <div className={`${styles.messageContent} ${styles.markdownContent}`}>
                                 <ReactMarkdown
@@ -500,8 +501,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 </ReactMarkdown>
                             </div>
 
-                            {toolUses.length > 0 && (
+                            {toolUses.length > 0 && traceSteps.length === 0 && (
                                 <ToolUsesSection toolUses={toolUses} toolDefinitions={toolDefinitions} />
+                            )}
+
+                            {shouldShowTailLoading && (
+                                <div className={`${styles.loadingIndicator} ${styles.tailLoadingIndicator}`}>
+                                    <span className={styles.loadingDot} />
+                                    <span className={styles.loadingDot} />
+                                    <span className={styles.loadingDot} />
+                                </div>
                             )}
                         </div>
                     )}

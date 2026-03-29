@@ -561,8 +561,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     <div className={`${styles.providerSettings} ${className || ''}`}>
 
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={8}>
+      <Row gutter={[24, 24]} className={styles.providerLayout}>
+        <Col xs={24} lg={8} className={styles.listCol}>
           <Card 
             title={
               <Space>
@@ -664,7 +664,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           </Card>
         </Col>
 
-        <Col xs={24} lg={16}>
+        <Col xs={24} lg={16} className={styles.configCol}>
           <Card 
             title={
               <Space>
@@ -682,273 +682,278 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 layout="vertical"
                 onFinish={isCreatingNew ? handleCreateProvider : handleSave} // 根据状态决定调用哪个函数
                 initialValues={currentProvider}
+                className={styles.formShell}
               >
-                <Alert
-                  message="API密钥将加密保存在本地，不会上传到任何服务器。"
-                  type="info"
-                  showIcon
-                  className={styles.securityAlert}
-                />
-
-                <Form.Item
-                  label="启用状态"
-                  name="enabled"
-                  valuePropName="checked"
-                >
-                  <Switch />
-                </Form.Item>
-
-                <Form.Item
-                  label="供应商名称"
-                  name="providerName"
-                  rules={[
-                    { required: true, message: '请输入供应商名称' },
-                    { max: 50, message: '供应商名称不能超过50个字符' },
-                  ]}
-                >
-                  <Input 
-                    placeholder="为供应商设置一个名称" 
+                <div className={styles.formScrollArea}>
+                  <Alert
+                    message="API密钥将加密保存在本地，不会上传到任何服务器。"
+                    type="info"
+                    showIcon
+                    className={styles.securityAlert}
                   />
-                </Form.Item>
 
-                <Form.Item
-                  label="API 密钥"
-                  name="apiKey"
-                  rules={[
-                    { required: false, message: '请输入API密钥' },
-                  ]}
-                >
-                  <Input.Password
-                    placeholder="请输入API密钥"
-                    iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-                  />
-                </Form.Item>
+                  <Form.Item
+                    label="启用状态"
+                    name="enabled"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
 
-                <Form.Item
-                  label="API 基础URL"
-                  name="baseUrl"
-                  rules={[
-                    { required: true, message: '请输入API基础URL' },
-                    { type: 'url', message: '请输入正确的URL格式' },
-                  ]}
-                >
-                  <Input placeholder="https://api.example.com/v1" />
-                </Form.Item>
+                  <Form.Item
+                    label="供应商名称"
+                    name="providerName"
+                    rules={[
+                      { required: true, message: '请输入供应商名称' },
+                      { max: 50, message: '供应商名称不能超过50个字符' },
+                    ]}
+                  >
+                    <Input 
+                      placeholder="为供应商设置一个名称" 
+                    />
+                  </Form.Item>
 
-                <Form.Item
-                  label={
-                    <Space>
-                      <span>文件上传URL</span>
-                      <Tooltip title="多模态模型文件上传地址">
-                        <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
-                      </Tooltip>
-                    </Space>
-                  }
-                  name="fileUploadBaseUrl"
-                  rules={[
-                    { type: 'url', message: '请输入正确的URL格式' },
-                  ]}
-                  style={{ display: 'none' }}
-                >
-                  <Input placeholder="https://api.example.com/v1/uploads" />
-                </Form.Item>
+                  <Form.Item
+                    label="API 密钥"
+                    name="apiKey"
+                    rules={[
+                      { required: false, message: '请输入API密钥' },
+                    ]}
+                  >
+                    <Input.Password
+                      placeholder="请输入API密钥"
+                      iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                    />
+                  </Form.Item>
 
-                <Form.Item
-                  label="默认模型"
-                  name="defaultModel"
-                  help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
-                >
-                  <Input.Group compact>
-                    <Form.Item 
-                      name="defaultModel" 
-                      noStyle
-                    >
-                      <Select 
-                        key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
-                        placeholder="选择默认模型"
-                        allowClear
-                        showSearch
-                        notFoundContent="没有可用模型"
-                        style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
-                        filterOption={(input, option) => {
-                          if (!input) return true;
-                          const searchValue = input.toLowerCase();
-                          // 从 option 中获取模型数据
-                          const modelId = option?.value;
-                          const model = availableModelsForProvider.find(m => m.id === modelId);
-                          if (!model) return false;
-                          
-                          // 搜索模型名称、别名和模型 ID
-                          const modelName = (model.model || '').toLowerCase();
-                          const modelAlias = (model.alias || '').toLowerCase();
-                          const modelIdStr = String(model.id || '').toLowerCase();
-                          
-                          return modelName.includes(searchValue) || 
-                                 modelAlias.includes(searchValue) || 
-                                 modelIdStr.includes(searchValue);
-                        }}
+                  <Form.Item
+                    label="API 基础URL"
+                    name="baseUrl"
+                    rules={[
+                      { required: true, message: '请输入API基础URL' },
+                      { type: 'url', message: '请输入正确的URL格式' },
+                    ]}
+                  >
+                    <Input placeholder="https://api.example.com/v1" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label={
+                      <Space>
+                        <span>文件上传URL</span>
+                        <Tooltip title="多模态模型文件上传地址">
+                          <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
+                        </Tooltip>
+                      </Space>
+                    }
+                    name="fileUploadBaseUrl"
+                    rules={[
+                      { type: 'url', message: '请输入正确的URL格式' },
+                    ]}
+                    style={{ display: 'none' }}
+                  >
+                    <Input placeholder="https://api.example.com/v1/uploads" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="默认模型"
+                    name="defaultModel"
+                    help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
+                  >
+                    <Input.Group compact>
+                      <Form.Item 
+                        name="defaultModel" 
+                        noStyle
                       >
-                        {availableModelsForProvider.filter(m => !m.is_custom).map(model => (
-                          <Option key={model.id} value={model.id}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>{model.alias || model.model}</span>
-                              <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
-                                {model.model}
-                              </span>
-                            </div>
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <Tooltip title="刷新模型列表">
-                      <Button 
-                        icon={<ReloadOutlined />}
-                        onClick={handleRefreshModels}
-                        loading={loading}
-                        disabled={isCreatingNew}
-                        style={{ width: '40px' }}
-                      />
-                    </Tooltip>
-                  </Input.Group>
-                </Form.Item>
-
-                {!isCreatingNew && currentProvider && (
-                  <div className={styles.customModelSection}>
-                    <div className={styles.customModelHeader}>
-                      <div className={styles.customModelTitle}>
-                        <SettingOutlined className={styles.customModelIcon} />
-                        <span>自定义模型</span>
-                      </div>
-                      <Text type="secondary" className={styles.customModelDesc}>
-                        手动添加供应商未列出的模型
-                      </Text>
-                    </div>
-                    <div className={styles.customModelInput}>
-                      <Input
-                        placeholder="输入模型名称，如 gpt-4o-mini"
-                        value={customModelName}
-                        onChange={(e) => setCustomModelName(e.target.value)}
-                        onPressEnter={handleAddCustomModel}
-                        className={styles.customModelInputField}
-                      />
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={handleAddCustomModel}
-                        loading={addingCustomModel}
-                        disabled={!customModelName.trim()}
-                        className={styles.customModelAddBtn}
-                      >
-                        添加
-                      </Button>
-                    </div>
-                    {availableModelsForProvider.filter(m => m.is_custom).length > 0 && (
-                      <div className={styles.customModelList}>
-                        {availableModelsForProvider
-                          .filter(m => m.is_custom)
-                          .map(model => (
-                            <div key={model.id} className={styles.customModelItem}>
-                              <span className={styles.customModelName}>
-                                {model.alias || model.model}
-                              </span>
-                              <Tooltip title="删除此自定义模型">
-                                <Popconfirm
-                                  title="删除自定义模型"
-                                  description={`确定要删除模型 "${model.model}" 吗？`}
-                                  onConfirm={() => handleDeleteCustomModel(model.model)}
-                                  okText="确定"
-                                  cancelText="取消"
-                                  okButtonProps={{ danger: true }}
-                                >
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    icon={<CloseOutlined />}
-                                    className={styles.customModelDeleteBtn}
-                                  />
-                                </Popconfirm>
-                              </Tooltip>
-                            </div>
+                        <Select 
+                          key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
+                          placeholder="选择默认模型"
+                          allowClear
+                          showSearch
+                          notFoundContent="没有可用模型"
+                          style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
+                          filterOption={(input, option) => {
+                            if (!input) return true;
+                            const searchValue = input.toLowerCase();
+                            // 从 option 中获取模型数据
+                            const modelId = option?.value;
+                            const model = availableModelsForProvider.find(m => m.id === modelId);
+                            if (!model) return false;
+                            
+                            // 搜索模型名称、别名和模型 ID
+                            const modelName = (model.model || '').toLowerCase();
+                            const modelAlias = (model.alias || '').toLowerCase();
+                            const modelIdStr = String(model.id || '').toLowerCase();
+                            
+                            return modelName.includes(searchValue) || 
+                                   modelAlias.includes(searchValue) || 
+                                   modelIdStr.includes(searchValue);
+                          }}
+                        >
+                          {availableModelsForProvider.filter(m => !m.is_custom).map(model => (
+                            <Option key={model.id} value={model.id}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{model.alias || model.model}</span>
+                                <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
+                                  {model.model}
+                                </span>
+                              </div>
+                            </Option>
                           ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <Divider className={styles.formDivider} />
-
-                <Form.Item className={styles.buttonGroup}>
-                  <Space size="middle" className={styles.actionButtons}>
-                    {isCreatingNew ? (
-                      // 新建供应商时的按钮
-                      <>
-                        <Button 
-                          type="primary" 
-                          htmlType="submit" 
-                          icon={<PlusOutlined />}
-                          loading={loading}
-                          size="middle"
-                          className={styles.primaryButton}
-                        >
-                          新建
-                        </Button>
-                        <Button 
-                          icon={<DeleteOutlined />}
-                          onClick={handleCancelCreate}
-                          size="middle"
-                          className={styles.testButton}
-                        >
-                          取消
-                        </Button>
-                      </>
-                    ) : (
-                      // 编辑供应商时的按钮
-                      <>
-                        <Button 
-                          type="primary" 
-                          htmlType="submit" 
-                          icon={<SaveOutlined />}
-                          loading={loading}
-                          size="middle"
-                          className={styles.primaryButton}
-                        >
-                          保存配置
-                        </Button>
+                        </Select>
+                      </Form.Item>
+                      <Tooltip title="刷新模型列表">
                         <Button 
                           icon={<ReloadOutlined />}
-                          onClick={handleTestConnection}
-                          loading={testingConnection}
-                          size="middle"
-                          className={styles.testButton}
+                          onClick={handleRefreshModels}
+                          loading={loading}
+                          disabled={isCreatingNew}
+                          style={{ width: '40px' }}
+                        />
+                      </Tooltip>
+                    </Input.Group>
+                  </Form.Item>
+
+                  {!isCreatingNew && currentProvider && (
+                    <div className={styles.customModelSection}>
+                      <div className={styles.customModelHeader}>
+                        <div className={styles.customModelTitle}>
+                          <SettingOutlined className={styles.customModelIcon} />
+                          <span>自定义模型</span>
+                        </div>
+                        <Text type="secondary" className={styles.customModelDesc}>
+                          手动添加供应商未列出的模型
+                        </Text>
+                      </div>
+                      <div className={styles.customModelInput}>
+                        <Input
+                          placeholder="输入模型名称，如 gpt-4o-mini"
+                          value={customModelName}
+                          onChange={(e) => setCustomModelName(e.target.value)}
+                          onPressEnter={handleAddCustomModel}
+                          className={styles.customModelInputField}
+                        />
+                        <Button
+                          type="primary"
+                          icon={<PlusOutlined />}
+                          onClick={handleAddCustomModel}
+                          loading={addingCustomModel}
+                          disabled={!customModelName.trim()}
+                          className={styles.customModelAddBtn}
                         >
-                          测试连接
+                          添加
                         </Button>
-                        <Popconfirm
-                          title="删除供应商"
-                          description={
-                            <div className={styles.deleteConfirm}>
-                              <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                              确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
-                            </div>
-                          }
-                          onConfirm={handleDeleteCurrentProvider}
-                          okText="确定删除"
-                          cancelText="取消"
-                          okButtonProps={{ danger: true }}
-                        >
+                      </div>
+                      {availableModelsForProvider.filter(m => m.is_custom).length > 0 && (
+                        <div className={styles.customModelList}>
+                          {availableModelsForProvider
+                            .filter(m => m.is_custom)
+                            .map(model => (
+                              <div key={model.id} className={styles.customModelItem}>
+                                <span className={styles.customModelName}>
+                                  {model.alias || model.model}
+                                </span>
+                                <Tooltip title="删除此自定义模型">
+                                  <Popconfirm
+                                    title="删除自定义模型"
+                                    description={`确定要删除模型 "${model.model}" 吗？`}
+                                    onConfirm={() => handleDeleteCustomModel(model.model)}
+                                    okText="确定"
+                                    cancelText="取消"
+                                    okButtonProps={{ danger: true }}
+                                  >
+                                    <Button
+                                      type="text"
+                                      size="small"
+                                      icon={<CloseOutlined />}
+                                      className={styles.customModelDeleteBtn}
+                                    />
+                                  </Popconfirm>
+                                </Tooltip>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Divider className={styles.formDivider} />
+                </div>
+
+                <div className={styles.formFooter}>
+                  <Form.Item className={styles.buttonGroup}>
+                    <Space size="middle" className={styles.actionButtons}>
+                      {isCreatingNew ? (
+                        // 新建供应商时的按钮
+                        <>
                           <Button 
-                            danger
-                            icon={<DeleteOutlined />}
+                            type="primary" 
+                            htmlType="submit" 
+                            icon={<PlusOutlined />}
+                            loading={loading}
                             size="middle"
-                            className={styles.dangerButton}
+                            className={styles.primaryButton}
                           >
-                            删除供应商
+                            新建
                           </Button>
-                        </Popconfirm>
-                      </>
-                    )}
-                  </Space>
-                </Form.Item>
+                          <Button 
+                            icon={<DeleteOutlined />}
+                            onClick={handleCancelCreate}
+                            size="middle"
+                            className={styles.testButton}
+                          >
+                            取消
+                          </Button>
+                        </>
+                      ) : (
+                        // 编辑供应商时的按钮
+                        <>
+                          <Button 
+                            type="primary" 
+                            htmlType="submit" 
+                            icon={<SaveOutlined />}
+                            loading={loading}
+                            size="middle"
+                            className={styles.primaryButton}
+                          >
+                            保存配置
+                          </Button>
+                          <Button 
+                            icon={<ReloadOutlined />}
+                            onClick={handleTestConnection}
+                            loading={testingConnection}
+                            size="middle"
+                            className={styles.testButton}
+                          >
+                            测试连接
+                          </Button>
+                          <Popconfirm
+                            title="删除供应商"
+                            description={
+                              <div className={styles.deleteConfirm}>
+                                <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
+                                确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
+                              </div>
+                            }
+                            onConfirm={handleDeleteCurrentProvider}
+                            okText="确定删除"
+                            cancelText="取消"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <Button 
+                              danger
+                              icon={<DeleteOutlined />}
+                              size="middle"
+                              className={styles.dangerButton}
+                            >
+                              删除供应商
+                            </Button>
+                          </Popconfirm>
+                        </>
+                      )}
+                    </Space>
+                  </Form.Item>
+                </div>
               </Form>
             </Card>
         </Col>

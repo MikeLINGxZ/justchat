@@ -9,7 +9,7 @@ interface ChatTitleProps {
   // 聊天UUID（用于API调用）
   uuid?: string;
   // 聊天标题变更事件
-  onTitleChange?: (newTitle: string) => void;
+  onTitleChange?: (newTitle: string) => void | Promise<void>;
   // 侧边栏是否收起
   isSidebarCollapsed?: boolean;
   // 切换侧边栏事件
@@ -67,8 +67,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
       if (uuid) {
         try {
           // 模拟保存延迟
-          await new Promise(resolve => setTimeout(resolve, 200));
-          onTitleChange!(trimmedValue);
+          await onTitleChange?.(trimmedValue);
           message.success('标题保存成功');
         } catch (error) {
           console.error('保存标题失败:', error);
@@ -115,6 +114,12 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(title || '');
+    }
+  }, [title, isEditing]);
 
   return (
     <div className={styles.chatTitlePage}>

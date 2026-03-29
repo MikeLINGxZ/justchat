@@ -52,9 +52,13 @@ func (s *Storage) GetChatActiveTask(ctx context.Context, chatUuid string) (*data
 }
 
 func (s *Storage) GetRunningTasks(ctx context.Context) ([]data_models.Task, error) {
+	return s.GetTasksByStatus(ctx, []data_models.TaskStatus{data_models.TaskStatusPending, data_models.TaskStatusRunning})
+}
+
+func (s *Storage) GetTasksByStatus(ctx context.Context, statuses []data_models.TaskStatus) ([]data_models.Task, error) {
 	var tasks []data_models.Task
 	err := s.sqliteDB.WithContext(ctx).
-		Where("status IN ?", []data_models.TaskStatus{data_models.TaskStatusPending, data_models.TaskStatusRunning}).
+		Where("status IN ?", statuses).
 		Order("created_at DESC").
 		Find(&tasks).Error
 	if err != nil {

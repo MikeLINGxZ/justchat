@@ -1,6 +1,12 @@
 @use '@/styles/variables.scss' as *;
 
 .providerSettings {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
   .header {
     margin-bottom: var(--spacing-lg);
     text-align: center;
@@ -14,10 +20,30 @@
   }
 }
 
+.providerLayout {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.listCol,
+.configCol {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .providerList {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  border: none;
+  border: 1px solid var(--border-color-light);
   background: var(--background-color);
   overflow: hidden;
   transition: all var(--transition-normal);
@@ -27,6 +53,7 @@
   }
 
   :global(.ant-card-head) {
+    flex-shrink: 0;
     background: transparent;
     border-bottom: none;
     padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
@@ -38,6 +65,14 @@
       color: var(--text-color);
       letter-spacing: -0.02em;
     }
+  }
+
+  :global(.ant-card-body) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .addBtn {
@@ -55,6 +90,10 @@
 }
 
 .providerItems {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
   .providerItem {
     cursor: pointer;
     border-bottom: 1px solid var(--border-color-light);
@@ -165,9 +204,13 @@
 }
 
 .configCard {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  border: none;
+  border: 1px solid var(--border-color-light);
   background: var(--background-color);
   overflow: hidden;
   transition: all var(--transition-normal);
@@ -177,6 +220,7 @@
   }
 
   :global(.ant-card-head) {
+    flex-shrink: 0;
     background: transparent;
     border-bottom: none;
     padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md);
@@ -191,7 +235,12 @@
   }
 
   :global(.ant-card-body) {
-    padding: 0 var(--spacing-xl) var(--spacing-xl);
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .securityAlert {
@@ -199,6 +248,31 @@
     border: 1px solid var(--border-color-light);
     background: var(--background-color-light);
     margin-bottom: var(--spacing-lg);
+  }
+
+  .formShell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .formScrollArea {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding: 0 var(--spacing-xl) var(--spacing-lg);
+    padding-bottom: calc(var(--spacing-md) + 46px);
+  }
+
+  .formFooter {
+    flex-shrink: 0;
+    padding: 8px var(--spacing-xl) 8px;
+    border-top: 1px solid var(--border-color-light);
+    background: var(--background-color);
+    box-shadow: 0 -1px 4px rgba(15, 23, 42, 0.03);
   }
 
   :global(.ant-form) {
@@ -362,12 +436,13 @@
     .actionButtons {
       width: 100%;
       justify-content: flex-start;
+      gap: 10px !important;
 
       :global(.ant-btn) {
         border-radius: 10px;
         font-weight: 500;
-        height: 40px;
-        padding: 0 var(--spacing-lg);
+        height: 34px;
+        padding: 0 12px;
         font-size: var(--font-size);
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -520,6 +595,9 @@
 
 @include respond-below(lg) {
   .providerSettings {
+    height: auto;
+    overflow: visible;
+
     :global(.ant-row) {
       flex-direction: column;
     }
@@ -530,11 +608,34 @@
     }
   }
 
+  .providerLayout {
+    height: auto;
+    overflow: visible;
+  }
+
+  .listCol,
+  .configCol {
+    height: auto;
+  }
+
   .providerList {
+    height: auto;
+    min-height: auto;
     margin-bottom: var(--spacing-lg);
+    overflow: visible;
+
+    :global(.ant-card-body) {
+      height: auto;
+      overflow: visible;
+      display: block;
+    }
   }
 
   .providerItems {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+
     .providerItem {
       padding: var(--spacing-sm) var(--spacing-md);
       min-height: 48px;
@@ -552,8 +653,33 @@
   }
 
   .configCard {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+
     :global(.ant-card-body) {
+      height: auto;
+      overflow: visible;
+      display: block;
+    }
+
+    .formShell,
+    .formScrollArea {
+      display: block;
+      min-height: auto;
+      overflow: visible;
+    }
+
+    .formScrollArea {
       padding: 0 var(--spacing-lg) var(--spacing-lg);
+      padding-bottom: var(--spacing-lg);
+    }
+
+    .formFooter {
+      padding: 0 var(--spacing-lg) var(--spacing-lg);
+      border-top: none;
+      box-shadow: none;
+      background: transparent;
     }
 
     .buttonGroup {
@@ -591,6 +717,16 @@
 
   .configCard {
     :global(.ant-card-body) {
+      height: auto;
+      overflow: visible;
+    }
+
+    .formScrollArea {
+      padding: 0 var(--spacing-md) var(--spacing-md);
+      padding-bottom: var(--spacing-md);
+    }
+
+    .formFooter {
       padding: 0 var(--spacing-md) var(--spacing-md);
     }
 

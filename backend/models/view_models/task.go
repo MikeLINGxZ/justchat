@@ -9,11 +9,16 @@ type TaskList struct {
 }
 
 type TaskStreamEvent struct {
-	TaskUuid         string                 `json:"task_uuid"`
-	ChatUuid         string                 `json:"chat_uuid"`
-	EventKey         string                 `json:"event_key"`
-	Status           data_models.TaskStatus `json:"status"`
-	FinishReason     string                 `json:"finish_reason"`
-	FinishError      string                 `json:"finish_error"`
-	AssistantMessage Message                `json:"assistant_message"`
+	TaskUuid         string                     `json:"task_uuid"`
+	ChatUuid         string                     `json:"chat_uuid"`
+	EventKey         string                     `json:"event_key"`
+	Status           data_models.TaskStatus     `json:"status"`
+	FinishReason     string                     `json:"finish_reason"`
+	FinishError      string                     `json:"finish_error"`
+	ExecutionTrace   data_models.ExecutionTrace `json:"execution_trace"`
+	TraceDelta       []data_models.TraceStep    `json:"trace_delta"`
+	CurrentStage     string                     `json:"current_stage"`
+	CurrentAgent     string                     `json:"current_agent"`
+	RetryCount       int                        `json:"retry_count"`
+	AssistantMessage Message                    `json:"assistant_message"`
 }

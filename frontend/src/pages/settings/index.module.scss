@@ -4,6 +4,8 @@
   height: 100%;
   background: var(--background-color);
   position: relative;
+  min-height: 0;
+  display: flex;
 }
 
 .settingsSider {
@@ -55,14 +57,28 @@
 
 .settingsContent {
   background: var(--background-color);
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  display: flex;
 }
 
 .contentArea {
   padding: var(--spacing-lg);
   margin: 0;
   background: var(--background-color);
-  min-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
   overflow-y: auto;
+}
+
+.contentAreaLocked {
+  overflow: hidden;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .placeholder {

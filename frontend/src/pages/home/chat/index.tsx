@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import { Events } from '@wailsio/runtime';
 import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
@@ -30,7 +31,6 @@ interface ChatProps {
     onGeneratingUuidsChange?: (uuids: string[]) => void;
     /** 注册按 chatUuid 停止生成（与输入框停止一致） */
     onRegisterStopGenerationForChat?: (fn: (chatUuid: string) => void) => void;
-
 }
 
 function mergeStreamingAssistant(propUuid: string, list: Message[], cache: Record<string, Message>): Message[] {
@@ -48,7 +48,8 @@ function assistantHasSubstantiveOutput(message: Message): boolean {
     const content = message.content?.trim() ?? "";
     const reasoning = message.reasoning_content?.trim() ?? "";
     const toolUses = message.assistant_message_extra?.tool_uses?.length ?? 0;
-    return content.length > 0 || reasoning.length > 0 || toolUses > 0;
+    const traceSteps = message.assistant_message_extra?.execution_trace?.steps?.length ?? 0;
+    return content.length > 0 || reasoning.length > 0 || toolUses > 0 || traceSteps > 0;
 }
 
 const Chat: React.FC<ChatProps> = ({
@@ -93,6 +94,7 @@ const Chat: React.FC<ChatProps> = ({
     const [inputMessage,setInputMessage] = useState<string>("");
     // 输入框选择文件
     const [inputFiles,setInputFiles] = useState<FileInfo[]>([]);
+    const [displayTitle, setDisplayTitle] = useState<string>("新建对话");
     // 当前聊天消息
     const [messages,setMessages] = useState<Message[]>([]);
     // 消息列表引用
@@ -117,6 +119,7 @@ const Chat: React.FC<ChatProps> = ({
     }, []);
 
     const propUuid = chatUuid ?? "";
+    const activeTitleChatUuid = currentChatUuid || propUuid;
 
     const isGenerating = useMemo(() => {
         if (propUuid !== "") {
@@ -199,7 +202,18 @@ const Chat: React.FC<ChatProps> = ({
             return [...list, incoming];
         }
         const next = [...list];
-        next[index] = incoming;
+        const current = next[index];
+        next[index] = {
+            ...current,
+            ...incoming,
+            assistant_message_extra: incoming.assistant_message_extra
+                ? {
+                    ...(current.assistant_message_extra || {}),
+                    ...incoming.assistant_message_extra,
+                    execution_trace: incoming.assistant_message_extra.execution_trace || current.assistant_message_extra?.execution_trace,
+                }
+                : current.assistant_message_extra,
+        };
         return next;
     };
 
@@ -312,6 +326,7 @@ const Chat: React.FC<ChatProps> = ({
 
         if (!v) {
             setChatInfo(null);
+            setDisplayTitle("新建对话");
             setLoading(false);
             setMessages([]);
             setInputMessage("");
@@ -327,11 +342,13 @@ const Chat: React.FC<ChatProps> = ({
                 .then((info: ChatType | null) => {
                     if (fetchSeq !== chatFetchSeqRef.current) return;
                     setChatInfo(info);
+                    setDisplayTitle(info?.title?.trim() || "新建对话");
                 })
                 .catch((err) => {
                     console.error("Failed to fetch chat info:", err);
                     if (fetchSeq !== chatFetchSeqRef.current) return;
                     setChatInfo(null);
+                    setDisplayTitle("新建对话");
                 }),
             Service.ChatMessages(v, 0, 200)
                 .then((messageList) => {
@@ -389,6 +406,7 @@ const Chat: React.FC<ChatProps> = ({
     const onSendButtonClick = async () => {
         let fromEmptyChat = false;
         const prevMessages = messages;
+        const pendingTitle = inputMessage.trim();
         try {
             fromEmptyChat = currentChatUuid === "";
             if (fromEmptyChat) {
@@ -430,6 +448,13 @@ const Chat: React.FC<ChatProps> = ({
                 user_message_extra: null,
                 user_message_extra_content: "",
                 assistant_message_extra: {
+                    execution_trace: {
+                        steps: [],
+                    },
+                    route_type: "",
+                    retry_count: 0,
+                    current_stage: "",
+                    current_agent: "",
                     finish_reason: "",
                     finish_error: "",
                     tool_uses: [],
@@ -458,6 +483,9 @@ const Chat: React.FC<ChatProps> = ({
                 setPendingNewChatCount(n => Math.max(0, n - 1));
                 skipNextFetchRef.current = streamChatUuid;
                 setCurrentChatUuid(streamChatUuid);
+                if (pendingTitle) {
+                    setDisplayTitle(pendingTitle);
+                }
                 setMessages(prev => prev.map(m => ({...m, chat_uuid: streamChatUuid})));
                 navigate(`/home/${streamChatUuid}`, {replace: true});
             } else {
@@ -493,10 +521,53 @@ const Chat: React.FC<ChatProps> = ({
         Service.StopTask(task.task_uuid);
     }
 
+    const handleTitleChange = useCallback(async (newTitle: string) => {
+        const activeChatUuid = currentChatUuid || propUuid;
+        if (!activeChatUuid) {
+            return;
+        }
+        await Service.RenameChat(activeChatUuid, newTitle);
+        setChatInfo(prev => (prev ? {...prev, title: newTitle} : prev));
+        setDisplayTitle(newTitle);
+    }, [currentChatUuid, propUuid]);
+
+    useEffect(() => {
+        if (!chatInfo?.title?.trim()) {
+            return;
+        }
+        setDisplayTitle(chatInfo.title);
+    }, [chatInfo?.title]);
+
+    useEffect(() => {
+        if (!activeTitleChatUuid) {
+            return;
+        }
+        const eventKey = `event:chat_title:${activeTitleChatUuid}`;
+        const cancel = Events.On(eventKey, (event) => {
+            const payload = event.data as { chat_uuid?: string; title?: string };
+            if (payload?.chat_uuid !== activeTitleChatUuid || !payload?.title) {
+                return;
+            }
+            setDisplayTitle(payload.title);
+            setChatInfo(prev => (prev ? {...prev, title: payload.title} : prev));
+        });
+
+        return () => {
+            cancel?.();
+            Events.Off(eventKey);
+        };
+    }, [activeTitleChatUuid]);
+
     return (
         <div className={`${styles.chatPage}`}>
             {/* 主内容始终渲染 */}
-            <ChatTitle title={chatUuid == "" ? "新建对话" : (chatInfo?.title ?? "新建对话")} isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={onToggleSidebar}/>
+            <ChatTitle
+                title={displayTitle}
+                uuid={propUuid}
+                onTitleChange={handleTitleChange}
+                isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={onToggleSidebar}
+            />
             <div className={`${styles.chatMessagesContent}`}>
                 <MessageList
                     key={currentChatUuid || 'new'}

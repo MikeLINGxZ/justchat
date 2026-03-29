@@ -119,6 +119,12 @@ export function GetModels(enableProvider: boolean | null, enableModel: boolean |
     });
 }
 
+export function GetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
+    return $Call.ByID(508910466, name).then(($result: any) => {
+        return $$createType15($result);
+    });
+}
+
 /**
  * GetProviderModels 获取供应商模型信息
  */
@@ -133,13 +139,13 @@ export function GetProviderModels(provider: view_models$0.Provider): $Cancellabl
  */
 export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     return $Call.ByID(3921712104).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType17($result);
     });
 }
 
 export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | null> {
     return $Call.ByID(2644190933).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType19($result);
     });
 }
 
@@ -148,7 +154,7 @@ export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | 
  */
 export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
     return $Call.ByID(4035154853).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType21($result);
     });
 }
 
@@ -160,7 +166,13 @@ export function GetTask(taskUuid: string): $CancellablePromise<view_models$0.Tas
 
 export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     return $Call.ByID(432097153).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType22($result);
+    });
+}
+
+export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileSummary[]> {
+    return $Call.ByID(3509338483).then(($result: any) => {
+        return $$createType24($result);
     });
 }
 
@@ -179,9 +191,15 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
     return $Call.ByID(2654224378, chatUuid, title);
 }
 
+export function ResetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
+    return $Call.ByID(2827988805, name).then(($result: any) => {
+        return $$createType15($result);
+    });
+}
+
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType22($result);
+        return $$createType26($result);
     });
 }
 
@@ -199,6 +217,12 @@ export function StopTask(taskUuid: string): $CancellablePromise<void> {
 
 export function UpdateMCPToolEnabled(toolID: string, enabled: boolean): $CancellablePromise<void> {
     return $Call.ByID(2043009872, toolID, enabled);
+}
+
+export function UpdatePromptFile(name: string, content: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
+    return $Call.ByID(487143775, name, content).then(($result: any) => {
+        return $$createType15($result);
+    });
 }
 
 /**
@@ -230,12 +254,16 @@ const $$createType10 = data_models$0.Task.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
 const $$createType12 = view_models$0.Model.createFrom;
 const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = view_models$0.Provider.createFrom;
-const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = view_models$0.TaskList.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = view_models$0.SupportProvider.createFrom;
-const $$createType19 = $Create.Array($$createType18);
-const $$createType20 = $Create.Array($$createType0);
-const $$createType21 = data_models$0.File.createFrom;
-const $$createType22 = $Create.Array($$createType21);
+const $$createType14 = view_models$0.PromptFileDetail.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = view_models$0.Provider.createFrom;
+const $$createType17 = $Create.Array($$createType16);
+const $$createType18 = view_models$0.TaskList.createFrom;
+const $$createType19 = $Create.Nullable($$createType18);
+const $$createType20 = view_models$0.SupportProvider.createFrom;
+const $$createType21 = $Create.Array($$createType20);
+const $$createType22 = $Create.Array($$createType0);
+const $$createType23 = view_models$0.PromptFileSummary.createFrom;
+const $$createType24 = $Create.Array($$createType23);
+const $$createType25 = data_models$0.File.createFrom;
+const $$createType26 = $Create.Array($$createType25);

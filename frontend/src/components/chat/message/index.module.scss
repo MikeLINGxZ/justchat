@@ -11,10 +11,15 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   color: var(--text-color);
+  max-width: 100%;
+  min-width: 0;
   .messageContainer {
+    max-width: 100%;
+    min-width: 0;
     padding: var(--spacing-md);
     border-radius: 12px;
     transition: all var(--transition-fast);
+    box-sizing: border-box;
 
     &:hover {
       transform: translateY(-1px);
@@ -26,8 +31,10 @@
 // AI 消息包装器 - 靠左
 .assistantMessageWrapper {
   align-self: flex-start;
+  width: 100%;
 
   .messageContainer {
+    width: 100%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 
     // 移除 AI 消息的 hover 跳动效果
@@ -37,6 +44,10 @@
 
     .messageContent {
       color: #ffffff;
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
 
       // 用户消息的 Markdown 样式
       &.markdownContent {
@@ -98,6 +109,11 @@
   align-items: center;
   gap: 6px;
   padding: 4px 0;
+}
+
+.tailLoadingIndicator {
+  margin-top: 10px;
+  justify-content: flex-start;
 }
 
 .loadingDot {
@@ -383,12 +399,17 @@
 // 用户消息包装器 - 靠右
 .userMessageWrapper {
   align-self: flex-end;
+  max-width: min(100%, 720px);
 
   .messageContainer {
     background: #f8f9fa;
+    max-width: 100%;
 
     .messageContent {
       color: #2c3e50;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .fileList {

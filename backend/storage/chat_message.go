@@ -39,6 +39,18 @@ func (s *Storage) SaveOrUpdateMessage(ctx context.Context, message data_models.M
 	return s.touchChat(message.ChatUuid)
 }
 
+func (s *Storage) GetMessageByUUID(ctx context.Context, messageUUID string) (*data_models.Message, error) {
+	var message data_models.Message
+	err := s.sqliteDB.WithContext(ctx).Where("message_uuid = ?", messageUUID).First(&message).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &message, nil
+}
+
 // GetMessage 获取 chat 消息
 func (s *Storage) GetMessage(ctx context.Context, chatUuid string, offset, limit int) ([]data_models.Message, int, error) {
 	var messages []data_models.Message

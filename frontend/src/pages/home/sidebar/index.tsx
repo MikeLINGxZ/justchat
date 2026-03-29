@@ -27,9 +27,6 @@ interface SidebarProps {
     onToggleSidebar: () => void;
     onNewChat?: () => void;
     onRegisterRefreshCallback?: (callback: () => void) => void;
-    onRegisterUpdateTitleCallback?: (
-        callback: (chatUuid: string, newTitle: string) => void
-    ) => void;
     onDeleteChat?: (chatUuid: string) => void;
     generatingChatUuids?: string[];
     onStopGenerationForChat?: (chatUuid: string) => void;
@@ -43,7 +40,6 @@ const Index: React.FC<SidebarProps> = ({
                                            onToggleSidebar,
                                            onNewChat,
                                            onRegisterRefreshCallback,
-                                           onRegisterUpdateTitleCallback,
                                            onDeleteChat,
                                            generatingChatUuids,
                                            onStopGenerationForChat,
@@ -329,7 +325,6 @@ const Index: React.FC<SidebarProps> = ({
                         currentChatUuid={currentChatUuid}
                         onChatSelect={handleChatSelect}
                         onRegisterRefreshCallback={onRegisterRefreshCallback}
-                        onRegisterUpdateTitleCallback={onRegisterUpdateTitleCallback}
                         onDeleteChat={onDeleteChat}
                         activeTab={activeTab} // 传递tab状态
                         generatingChatUuids={generatingChatUuids}
