@@ -5,6 +5,7 @@ import ExecutionTracePanel from "@/components/chat/execution_trace";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import type {Message, Tool as ViewTool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {ToolUseStatus, type ToolUse} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
+import {RoleType} from "@bindings/github.com/cloudwego/eino/schema/models";
 import MarkdownRenderer from "@/components/markdown_renderer";
 
 interface ChatMessageProps {
@@ -56,7 +57,7 @@ function parseTime(value: unknown): number | null {
 }
 
 function isToolUseRunning(toolUse: ToolUse): boolean {
-    return toolUse.status === ToolUseStatus.ToolUseStatusRunning || toolUse.status === "running";
+    return toolUse.status === ToolUseStatus.ToolUseStatusRunning;
 }
 
 function getToolUseElapsedMs(toolUse: ToolUse, nowMs: number): number {
@@ -84,13 +85,13 @@ function formatDuration(elapsedMs: number): string {
 }
 
 function getStatusLabel(toolUse: ToolUse): string {
-    if (toolUse.status === ToolUseStatus.ToolUseStatusDone || toolUse.status === "done") {
+    if (toolUse.status === ToolUseStatus.ToolUseStatusDone) {
         return "已完成";
     }
-    if (toolUse.status === ToolUseStatus.ToolUseStatusError || toolUse.status === "error") {
+    if (toolUse.status === ToolUseStatus.ToolUseStatusError) {
         return "失败";
     }
-    if (toolUse.status === ToolUseStatus.ToolUseStatusPending || toolUse.status === "pending") {
+    if (toolUse.status === ToolUseStatus.ToolUseStatusPending) {
         return "准备中";
     }
     return "执行中";
@@ -225,8 +226,8 @@ function withInlineToolMarkers(
         if (typeof child === 'string') {
             return renderTextWithToolMarkers(child, toolUsesByIndex, toolDefinitions);
         }
-        if (React.isValidElement(child) && child.props?.children) {
-            return React.cloneElement(child as React.ReactElement<any>, {
+        if (React.isValidElement<{ children?: React.ReactNode }>(child) && child.props.children) {
+            return React.cloneElement(child, {
                 ...child.props,
                 children: withInlineToolMarkers(child.props.children, toolUsesByIndex, toolDefinitions),
             });
@@ -246,7 +247,7 @@ const ToolUseItem: React.FC<{ toolUse: ToolUse; fallbackIndex: number; nowMs: nu
     const statusLabel = getStatusLabel(toolUse);
     const statusClassName = isToolUseRunning(toolUse)
         ? styles.toolUseStatusRunning
-        : (toolUse.status === ToolUseStatus.ToolUseStatusError || toolUse.status === "error")
+        : toolUse.status === ToolUseStatus.ToolUseStatusError
             ? styles.toolUseStatusError
             : styles.toolUseStatusDone;
     const tooltip = buildToolMetaTooltip(toolUse, fallbackIndex, toolDefinitions);
@@ -327,7 +328,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isLoading = false,
 }: ChatMessageProps) => {
     const [toolDefinitions, setToolDefinitions] = useState<Map<string, ViewTool>>(new Map());
-    const isUser = message.role === 'user';
+    const isUser = message.role === RoleType.User;
     const wrapperClass = isUser ? styles.userMessageWrapper : styles.assistantMessageWrapper;
     const toolUses = useMemo(() => {
         const currentToolUses = message.assistant_message_extra?.tool_uses ?? [];

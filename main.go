@@ -16,11 +16,12 @@ var assets embed.FS
 
 func main() {
 	logger.NewStaticLogger("lemontea")
+	serviceInstance := service.NewService()
 	app := application.New(application.Options{
 		Name:        "lemon_tea_desktop",
 		Description: "A ai agent client",
 		Services: []application.Service{
-			application.NewService(service.NewService()),
+			application.NewService(serviceInstance),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -30,21 +31,16 @@ func main() {
 		},
 	})
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:  service.WindowNameHome,
-		Title: "Home",
-		Mac: application.MacWindow{
-			InvisibleTitleBarHeight: 50,
-			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarDefault,
-		},
-		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/",
-		Width:            1300,
-		Height:           860,
-		MinWidth:         350,
-		MinHeight:        550,
-	})
+	initialized, err := service.IsAppInitialized()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if initialized {
+		service.NewHomeWindow(app)
+	} else {
+		service.NewOnboardingWindow(app)
+	}
 
 	go func() {
 		for {
@@ -54,7 +50,7 @@ func main() {
 		}
 	}()
 
-	err := app.Run()
+	err = app.Run()
 	if err != nil {
 		log.Fatal(err)
 	}

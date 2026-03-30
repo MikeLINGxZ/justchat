@@ -136,6 +136,29 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     }
   }, [selectedProvider, providers, form, isCreatingNew]);
 
+  const resolveIconSrc = (icon?: string) => {
+    if (!icon) {
+      return undefined;
+    }
+    if (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
+      return icon;
+    }
+    return `data:image/png;base64,${icon}`;
+  };
+
+  const findSupportProvider = (providerType?: ProviderType, providerName?: string) => {
+    if (providerType) {
+      const matchedByType = supportProviders.find(item => item.provider_type === providerType);
+      if (matchedByType) {
+        return matchedByType;
+      }
+    }
+    if (providerName) {
+      return supportProviders.find(item => item.name === providerName);
+    }
+    return undefined;
+  };
+
   const loadProviderConfigs = async () => {
     setLoading(true);
     try {
@@ -143,24 +166,9 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (providers && providers.length > 0) {
         // 转换后端数据格式，添加前端需要的字段
         const formattedProviders = providers.map(provider => {
-          // 根据 provider_type 从 supportProviders 中匹配对应的 icon
-          let icon: string | undefined;
-          if (provider.provider_type && supportProviders.length > 0) {
-            const matchedSupportProvider = supportProviders.find(
-              sp => sp.provider_type === provider.provider_type
-            );
-            if (matchedSupportProvider && matchedSupportProvider.icon) {
-              icon = matchedSupportProvider.icon;
-            }
-          }
-          
-          // 获取默认的 extras（用于 description 和 fallback icon）
-          const extras = getProviderExtras(provider.provider_name);
-          
-          // 如果没有匹配到 icon，使用默认的 getProviderExtras
-          if (!icon) {
-            icon = extras.icon;
-          }
+          const matchedSupportProvider = findSupportProvider(provider.provider_type, provider.provider_name);
+          const extras = getProviderExtras(provider.provider_name, provider.provider_type);
+          const icon = matchedSupportProvider?.icon || extras.icon;
           
           return {
             ...provider,
@@ -491,7 +499,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   // 获取供应商图标和描述的辅助函数
-  const getProviderExtras = (providerName: string) => {
+  const getProviderExtras = (providerName: string, providerType?: ProviderType) => {
+    const matchedSupportProvider = findSupportProvider(providerType, providerName);
+    if (matchedSupportProvider) {
+      return {
+        icon: matchedSupportProvider.icon || '🔧',
+        description: matchedSupportProvider.description || '第三方AI模型提供商',
+      };
+    }
+
     const extras: { [key: string]: { icon: string; description: string } } = {
       'openai': {
         icon: '🤖',
@@ -515,16 +531,14 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     return extras[key] || { icon: '🔧', description: '第三方AI模型提供商' };
   };
 
-  const isIconImagePath = (icon: string) =>
-    icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:');
-
   const renderProviderAvatar = (icon?: string, size: number = 28, enabled: boolean = true) => {
+    const iconSrc = resolveIconSrc(icon);
     if (icon) {
-      if (isIconImagePath(icon)) {
+      if (iconSrc) {
         return (
           <Avatar
             size={size}
-            src={icon}
+            src={iconSrc}
             style={{ backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)' }}
           />
         );
@@ -992,10 +1006,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         {!selectedSupportProvider ? (
           <div className={styles.supportProviderList}>
             {supportProviders.map((item) => {
-              const extras = getProviderExtras(item.name);
-              const iconSrc = item.icon
-                ? (isIconImagePath(item.icon) ? item.icon : `data:image/png;base64,${item.icon}`)
-                : undefined;
+              const extras = getProviderExtras(item.name, item.provider_type);
+              const iconSrc = resolveIconSrc(item.icon);
               return (
                 <div
                   key={item.provider_type || item.name}

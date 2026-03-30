@@ -9,6 +9,8 @@ import RichMarkdownEditor from "@/components/chat/input/rich_markdown_editor";
 interface ChatInputProps {
     // 所选模型
     selectedModelId: number;
+    // 是否已选择模型
+    hasSelectedModel: boolean;
     // 可用模型
     availableModels: Model[];
     // 可用工具
@@ -60,6 +62,7 @@ function setDefaultModelConfig(config: DefaultModelConfig) {
 
 const ChatInput: React.FC<ChatInputProps> = ({
     selectedModelId,
+    hasSelectedModel,
     availableModels,
     availableTools,
     selectedToolIds,
@@ -254,6 +257,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     // 消息发送事件
     const handleSend = useCallback(() => {
+        if (!hasSelectedModel) {
+            return;
+        }
         if (onMessageListScrollToBottom != null) {
             onMessageListScrollToBottom();
         }
@@ -262,7 +268,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onSendButtonClick();
             clearInput(); // 清空输入框和文件列表
         }
-    }, [inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
+    }, [hasSelectedModel, inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
 
     const handleInputChange = useCallback((value: string) => {
         setInputValue(value);
@@ -293,8 +299,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         };
     }, [showAddMenu, showModelMenu, showToolMenu]);
 
+    const isSendDisabled = !hasSelectedModel || (!inputValue.trim() && selectFiles.length === 0);
+
     return (
         <div className={`${styles.chatInput}`}>
+            {!hasSelectedModel && (
+                <div className={styles.modelWarning}>请先选择模型</div>
+            )}
             <div className={styles.inputContainer}>
                  {/* 文件列表显示区域 */}
                 {selectFiles.length > 0 && (
@@ -562,11 +573,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             </button>
                         ) : (
                             <button 
-                                className={`${styles.sendButton} ${(!inputValue.trim() && selectFiles.length === 0) ? styles.disabled : ''}`}
+                                className={`${styles.sendButton} ${isSendDisabled ? styles.disabled : ''}`}
                                 onClick={handleSend}
-                                disabled={!inputValue.trim() && selectFiles.length === 0}
+                                disabled={isSendDisabled}
                                 type="button"
-                                title="发送消息"
+                                title={hasSelectedModel ? "发送消息" : "请先选择模型"}
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	WindowNameHome     = "window_home"
-	WindowNameSettings = "window_settings"
+	WindowNameHome       = "window_home"
+	WindowNameOnboarding = "window_onboarding"
+	WindowNameSettings   = "window_settings"
 )
 
 type Service struct {

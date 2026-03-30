@@ -4,6 +4,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .message {
@@ -32,6 +33,8 @@
 .assistantMessageWrapper {
   align-self: flex-start;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 
   .messageContainer {
     width: 100%;
@@ -44,6 +47,7 @@
 
     .messageContent {
       color: #ffffff;
+      width: 100%;
       max-width: 100%;
       min-width: 0;
       overflow-wrap: anywhere;
@@ -413,14 +417,18 @@
 .userMessageWrapper {
   align-self: flex-end;
   max-width: min(100%, 720px);
+  min-width: 0;
 
   .messageContainer {
     background: #f8f9fa;
     max-width: 100%;
+    min-width: 0;
 
     .messageContent {
       color: #2c3e50;
+      width: 100%;
       max-width: 100%;
+      min-width: 0;
       overflow-wrap: anywhere;
       word-break: break-word;
     }

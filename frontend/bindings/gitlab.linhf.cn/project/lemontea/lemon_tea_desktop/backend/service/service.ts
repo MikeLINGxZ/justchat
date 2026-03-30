@@ -66,6 +66,10 @@ export function CollectionChat(chatUuid: string, isCollection: boolean): $Cancel
     return $Call.ByID(1162381388, chatUuid, isCollection);
 }
 
+export function CompleteOnboarding(provider: view_models$0.Provider): $CancellablePromise<void> {
+    return $Call.ByID(1964169468, provider);
+}
+
 /**
  * Completions 聊天
  */
@@ -95,6 +99,10 @@ export function DeleteProvider(providerId: number): $CancellablePromise<void> {
 
 export function DeleteProviderCustomModel(providerId: number, modelName: string): $CancellablePromise<void> {
     return $Call.ByID(2573490636, providerId, modelName);
+}
+
+export function ExitApp(): $CancellablePromise<void> {
+    return $Call.ByID(125618793);
 }
 
 /**
@@ -168,6 +176,10 @@ export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     return $Call.ByID(432097153).then(($result: any) => {
         return $$createType22($result);
     });
+}
+
+export function IsInitialized(): $CancellablePromise<boolean> {
+    return $Call.ByID(2734665048);
 }
 
 export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileSummary[]> {

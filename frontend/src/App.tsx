@@ -7,6 +7,7 @@ import { useViewportHeight } from '@/hooks/useViewportHeight';
 const Chat = React.lazy(() => import('@/pages/home'));
 const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
 const Settings = React.lazy(()=>import('@/pages/settings'));
+const Onboarding = React.lazy(() => import('@/pages/onboarding'));
 
 function EntryRedirect() {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,8 @@ function EntryRedirect() {
   switch (entry) {
     case 'settings':
       return <Navigate to="/settings" replace />;
+    case 'onboarding':
+      return <Navigate to="/onboarding" replace />;
     case 'home':
     case null:
       return <Navigate to="/home" replace />;
@@ -95,6 +98,10 @@ function App() {
         <Route
           path="/settings"
           element={<Settings />}
+        />
+        <Route
+          path="/onboarding"
+          element={<Onboarding />}
         />
 
         {/* 其他路由 - 使用Layout */}

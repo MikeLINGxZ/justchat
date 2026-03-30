@@ -406,6 +406,9 @@ const Chat: React.FC<ChatProps> = ({
 
     // onSendButtonClick 发送按钮点击
     const onSendButtonClick = async () => {
+        if (selectModel <= 0 || !selectModelName.trim()) {
+            return;
+        }
         let fromEmptyChat = false;
         const prevMessages = messages;
         const pendingTitle = inputMessage.trim();
@@ -585,6 +588,7 @@ const Chat: React.FC<ChatProps> = ({
                 <ChatInput
                     key={inputResetKey}
                     selectedModelId={selectModel}
+                    hasSelectedModel={selectModel > 0 && !!selectModelName.trim()}
                     availableModels={availableModels}
                     availableTools={availableTools}
                     selectedToolIds={selectedToolIds}

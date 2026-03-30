@@ -10,6 +10,14 @@
   }
 }
 
+.modelWarning {
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  color: #d9363e;
+  text-align: center;
+}
+
 .filesContainer {
   display: flex;
   flex-wrap: wrap;
