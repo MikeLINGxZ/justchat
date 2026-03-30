@@ -2,13 +2,16 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
 import '@/styles/index.scss';
 import App from '@/App.tsx';
 import { initializeFontSize } from '@/stores/fontSizeStore';
+import { hydrateLanguagePreferences, initializeLanguage } from '@/stores/languageStore';
+import { useAppLocale } from '@/hooks/useAppLocale';
+import '@/i18n';
 
 // 初始化字体大小设置
 initializeFontSize();
+initializeLanguage();
 
 // 全局禁用 input 和 textarea 的自动填充提示
 function disableAutocomplete() {
@@ -56,11 +59,13 @@ if (document.readyState === 'loading') {
   disableAutocomplete();
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+function AppProviders() {
+  const { antdLocale } = useAppLocale();
+
+  return (
     <BrowserRouter>
       <ConfigProvider
-        locale={zhCN}
+        locale={antdLocale}
         theme={{
           token: {
             colorPrimary: '#1890ff',
@@ -71,5 +76,17 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </ConfigProvider>
     </BrowserRouter>
-  </StrictMode>,
-);
+  );
+}
+
+async function bootstrap() {
+  await hydrateLanguagePreferences();
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <AppProviders />
+    </StrictMode>,
+  );
+}
+
+void bootstrap();

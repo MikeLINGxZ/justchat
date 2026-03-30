@@ -159,6 +159,18 @@
   margin-left: 10px;
 }
 
+.finishReasonErrorWrap {
+  display: inline-flex;
+  cursor: help;
+}
+
+.finishReasonTooltip {
+  max-width: min(420px, calc(100vw - 24px));
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .errorSummary {
   margin-top: 10px;
   padding: 10px 12px;

@@ -1,0 +1,156 @@
+@use '@/styles/variables.scss' as *;
+
+.languageRegionSettings {
+  padding: 0;
+  max-width: 800px;
+  margin: 0 auto;
+  background: transparent;
+
+  .pageHeader {
+    margin-bottom: var(--spacing-xl);
+
+    h3 {
+      margin-bottom: var(--spacing-xs);
+      color: var(--text-color);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    span {
+      color: var(--text-color-secondary);
+      font-size: var(--font-size);
+      line-height: 1.6;
+    }
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .settingCard {
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    border: none;
+    background: var(--background-color);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    :global(.ant-card-head) {
+      border-bottom: none;
+      background: transparent;
+      padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
+      min-height: auto;
+
+      :global(.ant-card-head-title) {
+        color: var(--text-color);
+        font-weight: 600;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+    }
+
+    :global(.ant-card-body) {
+      background: transparent;
+      padding: 0 var(--spacing-xl) var(--spacing-xl);
+    }
+  }
+
+  .settingItem {
+    margin-bottom: 0;
+  }
+
+  .settingLabel {
+    margin-bottom: var(--spacing-xl);
+
+    h5 {
+      margin-bottom: 0;
+      color: var(--text-color);
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    > span {
+      color: var(--text-color-secondary);
+      font-size: var(--font-size);
+      line-height: 1.6;
+    }
+  }
+
+  .iconTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .settingIcon {
+    font-size: 18px;
+    color: var(--primary-color);
+  }
+
+  .settingControl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+
+@include respond-below(md) {
+  .languageRegionSettings {
+    max-width: 100%;
+
+    .pageHeader {
+      margin-bottom: var(--spacing-lg);
+
+      h3 {
+        font-size: 24px;
+      }
+    }
+
+    .settingCard {
+      border-radius: 12px;
+
+      :global(.ant-card-head) {
+        padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+      }
+
+      :global(.ant-card-body) {
+        padding: 0 var(--spacing-lg) var(--spacing-lg);
+      }
+    }
+
+    .settingLabel {
+      margin-bottom: var(--spacing-lg);
+    }
+  }
+}
+
+@include respond-below(sm) {
+  .languageRegionSettings {
+    .pageHeader {
+      h3 {
+        font-size: 22px;
+      }
+    }
+
+    .settingCard {
+      border-radius: 12px;
+
+      :global(.ant-card-head) {
+        padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+      }
+
+      :global(.ant-card-body) {
+        padding: 0 var(--spacing-md) var(--spacing-md);
+      }
+    }
+  }
+}

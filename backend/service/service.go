@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
@@ -25,6 +27,14 @@ func NewService() *Service {
 	return &Service{}
 }
 
+func (s *Service) localizedPromptSet() prompts.PromptSet {
+	locale := i18n.CurrentLocale()
+	if locale == "" {
+		locale = string(data_models.AppLanguageZhCN)
+	}
+	return prompts.WithResponseLanguage(s.prompts, locale)
+}
+
 func (s *Service) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 
 	istorage, err := storage.NewStorage()
@@ -34,6 +44,9 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 
 	s.storage = istorage
 	s.app = application.Get()
+	if prefs, prefsErr := s.loadAppPreferences(ctx); prefsErr == nil {
+		i18n.SetCurrentLocale(string(prefs.Language))
+	}
 	if err := s.reloadPromptSet(); err != nil {
 		logger.Warm("load prompt set fallback:", err)
 	}

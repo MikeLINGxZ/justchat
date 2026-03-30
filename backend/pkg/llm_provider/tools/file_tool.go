@@ -11,6 +11,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tool_approval"
 )
 
@@ -27,18 +28,18 @@ func (f *FileTool) Id() string {
 }
 
 func (f *FileTool) Name() string {
-	return "文件工具"
+	return i18n.TCurrent("tool.file.name", nil)
 }
 
 func (f *FileTool) Description() string {
-	return "读取、写入或删除文件。所有操作都需要先获得用户确认。"
+	return i18n.TCurrent("tool.file.description", nil)
 }
 
 func (f *FileTool) Tool() tool.BaseTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
 			Name: "file_tool",
-			Desc: "读取、写入或删除文件。调用前系统会请求用户确认。",
+			Desc: i18n.TCurrent("tool.file.description", nil),
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 				"operation": {
 					Type:     schema.String,
@@ -122,36 +123,37 @@ func (f *FileTool) BuildApprovalPrompt(ctx context.Context, argumentsJSON string
 
 	operation := strings.ToLower(strings.TrimSpace(params.Operation))
 	scope := tool_approval.DescribeScope(targetPath)
-	title := fmt.Sprintf("文件工具请求%s文件", fileOperationLabel(operation))
-	message := fmt.Sprintf(
-		"工具想要%s文件 `%s`。\n\n范围：%s\n\n",
-		fileOperationLabel(operation),
-		targetPath,
-		scope,
-	)
+	label := fileOperationLabel(operation)
+	title := i18n.TCurrent("tool.file.approval.title", map[string]string{"operation": label})
+	message := i18n.TCurrent("tool.file.approval.message", map[string]string{
+		"operation": label,
+		"path":      targetPath,
+		"scope":     scope,
+	})
 	if operation == "write" && strings.TrimSpace(params.Content) != "" {
 		preview := params.Content
 		if len([]rune(preview)) > 240 {
 			preview = string([]rune(preview)[:240]) + "..."
 		}
-		message += fmt.Sprintf("\n\n写入预览：\n%s", preview)
+		message += i18n.TCurrent("tool.file.approval.preview", map[string]string{"content": preview})
 	}
+	message += "\n" + i18n.TCurrent("tool.approval.actions", nil)
 
 	return &tool_approval.ApprovalPrompt{
 		Title:   title,
 		Message: message,
-		Scope:   fmt.Sprintf("%s：%s", scope, filepath.Clean(targetPath)),
+		Scope:   fmt.Sprintf("%s: %s", scope, filepath.Clean(targetPath)),
 	}, nil
 }
 
 func fileOperationLabel(operation string) string {
 	switch operation {
 	case "read":
-		return "读取"
+		return i18n.TCurrent("tool.file.operation.read", nil)
 	case "write":
-		return "写入"
+		return i18n.TCurrent("tool.file.operation.write", nil)
 	case "delete":
-		return "删除"
+		return i18n.TCurrent("tool.file.operation.delete", nil)
 	default:
 		return operation
 	}

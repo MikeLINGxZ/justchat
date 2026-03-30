@@ -25,6 +25,43 @@ type PromptSet struct {
 	MemorySystem        string
 }
 
+func WithResponseLanguage(promptSet PromptSet, locale string) PromptSet {
+	instruction := responseLanguageInstruction(locale)
+	if instruction == "" {
+		return promptSet
+	}
+
+	withInstruction := func(content string) string {
+		content = strings.TrimSpace(content)
+		if content == "" {
+			return instruction
+		}
+		return content + "\n\n" + instruction
+	}
+
+	promptSet.MainAgentSystem = withInstruction(promptSet.MainAgentSystem)
+	promptSet.EntrySystem = withInstruction(promptSet.EntrySystem)
+	promptSet.PlannerSystem = withInstruction(promptSet.PlannerSystem)
+	promptSet.WorkerGeneralSystem = withInstruction(promptSet.WorkerGeneralSystem)
+	promptSet.WorkerToolSystem = withInstruction(promptSet.WorkerToolSystem)
+	promptSet.SynthesizerSystem = withInstruction(promptSet.SynthesizerSystem)
+	promptSet.ReviewerSystem = withInstruction(promptSet.ReviewerSystem)
+	promptSet.TitleSystem = withInstruction(promptSet.TitleSystem)
+	promptSet.MemorySystem = withInstruction(promptSet.MemorySystem)
+	return promptSet
+}
+
+func responseLanguageInstruction(locale string) string {
+	switch strings.TrimSpace(locale) {
+	case "en-US":
+		return "Language rule:\n- Always respond in English unless the user explicitly asks you to switch to another language.\n- Keep tool usage, analysis, final answer, summaries, and generated titles in English."
+	case "zh-CN", "":
+		return "语言规则：\n- 默认始终使用简体中文回复，除非用户明确要求切换到其他语言。\n- 工具说明、分析、最终答案、总结以及生成的标题都应保持为简体中文。"
+	default:
+		return "Language rule:\n- Always reply in the user's configured application language.\n- Keep tool usage, analysis, final answer, summaries, and generated titles in that language."
+	}
+}
+
 type PromptMetadata struct {
 	Name        string
 	Title       string

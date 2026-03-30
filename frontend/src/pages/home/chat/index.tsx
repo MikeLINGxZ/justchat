@@ -17,6 +17,7 @@ import {RoleType} from "@bindings/github.com/cloudwego/eino/schema";
 import {BuildTaskFromCompletions, CompletionsUtils, SubscribeTaskStream, type TaskStreamEvent} from "@/utils/completions.ts";
 import {useNavigate} from "react-router-dom";
 import {notify} from "@/utils/notification.ts";
+import { useTranslation } from 'react-i18next';
 
 interface ChatProps {
     // 对话uuid
@@ -71,6 +72,7 @@ const Chat: React.FC<ChatProps> = ({
     onGeneratingUuidsChange,
     onRegisterStopGenerationForChat,
 }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState<boolean>(!!chatUuid);
     const [chatInfo, setChatInfo] = useState<ChatType | null>(null);
@@ -104,7 +106,7 @@ const Chat: React.FC<ChatProps> = ({
     const [inputMessage,setInputMessage] = useState<string>("");
     // 输入框选择文件
     const [inputFiles,setInputFiles] = useState<FileInfo[]>([]);
-    const [displayTitle, setDisplayTitle] = useState<string>("新建对话");
+    const [displayTitle, setDisplayTitle] = useState<string>("");
     const [approvalInputContext, setApprovalInputContext] = useState<ApprovalInputContext | null>(null);
     // 当前聊天消息
     const [messages,setMessages] = useState<Message[]>([]);
@@ -337,7 +339,7 @@ const Chat: React.FC<ChatProps> = ({
 
         if (!v) {
             setChatInfo(null);
-            setDisplayTitle("新建对话");
+            setDisplayTitle("");
             setLoading(false);
             setMessages([]);
             setApprovalInputContext(null);
@@ -354,13 +356,13 @@ const Chat: React.FC<ChatProps> = ({
                 .then((info: ChatType | null) => {
                     if (fetchSeq !== chatFetchSeqRef.current) return;
                     setChatInfo(info);
-                    setDisplayTitle(info?.title?.trim() || "新建对话");
+                    setDisplayTitle(info?.title?.trim() || "");
                 })
                 .catch((err) => {
                     console.error("Failed to fetch chat info:", err);
                     if (fetchSeq !== chatFetchSeqRef.current) return;
                     setChatInfo(null);
-                    setDisplayTitle("新建对话");
+                    setDisplayTitle("");
                 }),
             Service.ChatMessages(v, 0, 200)
                 .then((messageList) => {
@@ -573,9 +575,9 @@ const Chat: React.FC<ChatProps> = ({
                 setApprovalInputContext(null);
             }
         } catch (error: any) {
-            notify.error("操作失败", error?.message || "无法提交审批结果");
+            notify.error(t('home.chat.approvalFailed'), error?.message || t('home.chat.approvalFailedDesc'));
         }
-    }, [approvalInputContext]);
+    }, [approvalInputContext, t]);
 
     const handleApprovalComment = useCallback((approvalId: string, title: string, message: string) => {
         setApprovalInputContext({ approvalId, title, message });
@@ -590,9 +592,9 @@ const Chat: React.FC<ChatProps> = ({
             }));
             setApprovalInputContext(null);
         } catch (error: any) {
-            notify.error("发送失败", error?.message || "无法提交审批意见");
+            notify.error(t('home.chat.approvalCommentFailed'), error?.message || t('home.chat.approvalCommentFailedDesc'));
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (!chatInfo?.title?.trim()) {

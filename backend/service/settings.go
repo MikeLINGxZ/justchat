@@ -1,6 +1,9 @@
 package service
 
-import "github.com/wailsapp/wails/v3/pkg/application"
+import (
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
+)
 
 func (s *Service) OpenSettingsWindow() {
 	settingsWindow, ok := s.app.Window.GetByName(WindowNameSettings)
@@ -12,7 +15,7 @@ func (s *Service) OpenSettingsWindow() {
 	}
 	settingsWindow = s.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  WindowNameSettings,
-		Title: "Settings",
+		Title: i18n.TCurrent("app.window.settings_title", nil),
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,

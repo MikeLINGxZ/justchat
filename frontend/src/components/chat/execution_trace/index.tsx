@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import styles from "./index.module.scss";
 import {
     TraceDetailFormat,
@@ -20,48 +21,59 @@ interface ExecutionTraceProps {
 }
 
 const stageLabelMap: Record<string, string> = {
-    "": "处理中",
-    "等待执行": "等待执行",
-    "准备执行": "准备执行",
-    "意图识别": "意图识别",
-    "直接回答": "直接回答",
-    "任务拆解": "任务拆解",
-    "子任务执行": "子任务执行",
-    "等待用户确认": "等待用户确认",
-    "结果汇总": "结果汇总",
-    "结果审核": "结果审核",
-    "重新生成": "重新生成",
-    "已完成": "已完成",
+    "": "chat.executionTrace.processing",
+    "chat.stage.pending": "chat.executionTrace.waiting",
+    "chat.stage.preparing": "chat.executionTrace.preparing",
+    "chat.stage.classify": "chat.executionTrace.classify",
+    "chat.stage.direct_answer": "chat.executionTrace.directAnswer",
+    "chat.stage.plan": "chat.executionTrace.plan",
+    "chat.stage.running_tasks": "chat.executionTrace.runningTasks",
+    "chat.stage.awaiting_approval": "chat.executionTrace.awaitingApproval",
+    "chat.stage.synthesize": "chat.executionTrace.synthesize",
+    "chat.stage.review": "chat.executionTrace.review",
+    "chat.stage.retry": "chat.executionTrace.retry",
+    "chat.stage.finished": "chat.executionTrace.finished",
+    "等待执行": "chat.executionTrace.waiting",
+    "准备执行": "chat.executionTrace.preparing",
+    "意图识别": "chat.executionTrace.classify",
+    "直接回答": "chat.executionTrace.directAnswer",
+    "任务拆解": "chat.executionTrace.plan",
+    "子任务执行": "chat.executionTrace.runningTasks",
+    "等待用户确认": "chat.executionTrace.awaitingApproval",
+    "结果汇总": "chat.executionTrace.synthesize",
+    "结果审核": "chat.executionTrace.review",
+    "重新生成": "chat.executionTrace.retry",
+    "已完成": "chat.executionTrace.finished",
 };
 
 const typeLabelMap: Record<string, string> = {
-    [TraceStepType.TraceStepTypeClassify]: "意图识别",
-    [TraceStepType.TraceStepTypePlan]: "任务拆解",
-    [TraceStepType.TraceStepTypeDispatch]: "分派任务",
-    [TraceStepType.TraceStepTypeAgentRun]: "子 Agent",
-    [TraceStepType.TraceStepTypeToolCall]: "工具调用",
-    [TraceStepType.TraceStepTypeSynthesize]: "结果汇总",
-    [TraceStepType.TraceStepTypeReview]: "结果审核",
-    [TraceStepType.TraceStepTypeRetry]: "重新生成",
-    [TraceStepType.TraceStepTypeFinalize]: "输出答案",
+    [TraceStepType.TraceStepTypeClassify]: "chat.executionTrace.classify",
+    [TraceStepType.TraceStepTypePlan]: "chat.executionTrace.plan",
+    [TraceStepType.TraceStepTypeDispatch]: "chat.executionTrace.dispatch",
+    [TraceStepType.TraceStepTypeAgentRun]: "chat.executionTrace.agentRun",
+    [TraceStepType.TraceStepTypeToolCall]: "chat.executionTrace.toolCall",
+    [TraceStepType.TraceStepTypeSynthesize]: "chat.executionTrace.synthesize",
+    [TraceStepType.TraceStepTypeReview]: "chat.executionTrace.review",
+    [TraceStepType.TraceStepTypeRetry]: "chat.executionTrace.retry",
+    [TraceStepType.TraceStepTypeFinalize]: "chat.executionTrace.finalize",
 };
 
-function getStatusLabel(status?: string): string {
+function getStatusLabel(status: string | undefined, t: (key: string) => string): string {
     switch (status) {
         case TraceStepStatus.TraceStepStatusDone:
-            return "已完成";
+            return t('chat.executionTrace.finished');
         case TraceStepStatus.TraceStepStatusError:
-            return "失败";
+            return t('chat.message.failed');
         case TraceStepStatus.TraceStepStatusSkipped:
-            return "跳过";
+            return t('chat.executionTrace.skipped');
         case TraceStepStatus.TraceStepStatusPending:
-            return "准备中";
+            return t('chat.message.pending');
         case TraceStepStatus.TraceStepStatusAwaitingApproval:
-            return "等待确认";
+            return t('chat.message.awaitingApproval');
         case TraceStepStatus.TraceStepStatusRejected:
-            return "已拒绝";
+            return t('chat.message.rejected');
         default:
-            return "执行中";
+            return t('chat.message.running');
     }
 }
 
@@ -143,21 +155,21 @@ function buildTree(steps: TraceStep[]): Map<string, TraceStep[]> {
     return tree;
 }
 
-function getDetailBlockDisplayTitle(step: TraceStep, block: TraceDetailBlock): string {
+function getDetailBlockDisplayTitle(step: TraceStep, block: TraceDetailBlock, t: (key: string) => string): string {
     if (step.type !== TraceStepType.TraceStepTypeAgentRun) {
         return block.title;
     }
     if (block.kind === "input") {
-        return "用户输入";
+        return t('chat.executionTrace.userInput');
     }
     if (block.kind === "output") {
-        return "最终回答";
+        return t('chat.executionTrace.finalAnswer');
     }
     return block.title;
 }
 
-function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: number) {
-    const displayTitle = getDetailBlockDisplayTitle(step, block);
+function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: number, t: (key: string) => string) {
+    const displayTitle = getDetailBlockDisplayTitle(step, block, t);
     if (!block.content?.trim()) {
         return null;
     }
@@ -193,7 +205,7 @@ function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; 
     if (!approvalId) {
         return null;
     }
-    const title = typeof metadata.approval_title === "string" ? metadata.approval_title : (step.title || "工具确认");
+    const title = typeof metadata.approval_title === "string" ? metadata.approval_title : (step.title || "");
     const message = typeof metadata.approval_message === "string" ? metadata.approval_message : (step.summary || "");
     return { approvalId, title, message };
 }
@@ -207,6 +219,7 @@ const TraceNode: React.FC<{
     onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
     onApprovalComment?: (approvalId: string, title: string, message: string) => void;
 }> = ({ step, tree, nowMs, depth = 0, autoExpand = false, onApprovalDecision, onApprovalComment }) => {
+    const { t } = useTranslation();
     const children = tree.get(step.step_id) ?? [];
     const inlineChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? children : [];
     const nestedChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? [] : children;
@@ -242,13 +255,13 @@ const TraceNode: React.FC<{
                 <div className={styles.nodeMain}>
                     <div className={styles.nodeTopRow}>
                         <div className={styles.nodeTitleRow}>
-                            <span className={styles.nodeType}>{typeLabelMap[step.type] || step.type || "步骤"}</span>
-                            <span className={styles.nodeTitle}>{step.title || "未命名步骤"}</span>
+                            <span className={styles.nodeType}>{t(typeLabelMap[step.type] || 'chat.executionTrace.step')}</span>
+                            <span className={styles.nodeTitle}>{step.title || t('chat.executionTrace.unnamedStep')}</span>
                         </div>
                         {(hasChildren || detailBlocks.length > 0) && (
                             <button className={styles.toggle} type="button" onClick={() => setExpanded(!expanded)}>
                                 <span className={styles.toggleIcon}>{expanded ? "▾" : "▸"}</span>
-                                <span className={styles.toggleText}>{expanded ? "折叠" : "展开"}</span>
+                                <span className={styles.toggleText}>{expanded ? t('chat.executionTrace.collapse') : t('chat.executionTrace.expand')}</span>
                             </button>
                         )}
                     </div>
@@ -268,12 +281,12 @@ const TraceNode: React.FC<{
                         <div className={styles.agentFlowSection}>
                             {leadingDetailBlocks.length > 0 && (
                                 <div className={styles.detailSection}>
-                                    {leadingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index))}
+                                    {leadingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
                                 </div>
                             )}
                             {(inlineChildren.length > 0 || isRunning) && (
                                 <div className={styles.inlineChildrenSection}>
-                                    <div className={styles.inlineChildrenTitle}>思考过程</div>
+                                    <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.reasoning')}</div>
                                     {inlineChildren.length > 0 ? (
                                         <div className={styles.inlineChildrenList}>
                                             {inlineChildren.map((child) => (
@@ -290,20 +303,20 @@ const TraceNode: React.FC<{
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className={styles.agentThinkingPlaceholder}>Agent 正在处理中...</div>
+                                        <div className={styles.agentThinkingPlaceholder}>{t('chat.executionTrace.agentThinking')}</div>
                                     )}
                                 </div>
                             )}
                             {trailingDetailBlocks.length > 0 && (
                                 <div className={styles.detailSection}>
-                                    {trailingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index))}
+                                    {trailingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
                                 </div>
                             )}
                         </div>
                     )}
                     {expanded && !isAgentStep && detailBlocks.length > 0 && (
                         <div className={styles.detailSection}>
-                            {detailBlocks.map((block, index) => renderDetailBlock(step, block, index))}
+                            {detailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
                         </div>
                     )}
                     {expanded && isAwaitingApproval && approvalMeta && (
@@ -316,28 +329,28 @@ const TraceNode: React.FC<{
                                     className={styles.approvalButton}
                                     onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'allow')}
                                 >
-                                    1. 允许
+                                    {t('chat.executionTrace.allow')}
                                 </button>
                                 <button
                                     type="button"
                                     className={styles.approvalButton}
                                     onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'reject')}
                                 >
-                                    2. 拒绝
+                                    {t('chat.executionTrace.reject')}
                                 </button>
                                 <button
                                     type="button"
                                     className={styles.approvalButton}
                                     onClick={() => onApprovalComment?.(approvalMeta.approvalId, approvalMeta.title, approvalMeta.message)}
                                 >
-                                    3. 告诉ai应该怎么做
+                                    {t('chat.executionTrace.guideAi')}
                                 </button>
                             </div>
                         </div>
                     )}
                     {expanded && !isAgentStep && inlineChildren.length > 0 && (
                         <div className={styles.inlineChildrenSection}>
-                            <div className={styles.inlineChildrenTitle}>工具调用</div>
+                            <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.tools')}</div>
                             <div className={styles.inlineChildrenList}>
                                 {inlineChildren.map((child) => (
                                     <TraceNode
@@ -356,7 +369,7 @@ const TraceNode: React.FC<{
                     )}
                 </div>
                 <div className={styles.nodeMeta}>
-                    <span className={`${styles.status} ${statusClassName}`}>{getStatusLabel(step.status)}</span>
+                    <span className={`${styles.status} ${statusClassName}`}>{getStatusLabel(step.status, t)}</span>
                     <span className={styles.elapsed}>{formatElapsedMs(getTraceStepElapsedMs(step, nowMs))}</span>
                 </div>
             </div>
@@ -388,6 +401,7 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
     onApprovalDecision,
     onApprovalComment,
 }) => {
+    const { t } = useTranslation();
     const steps = trace?.steps ?? [];
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expanded, setExpanded] = useState(false);
@@ -396,6 +410,19 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
     const hasRunningStep = useMemo(() => steps.some(isRunningStep), [steps]);
     const prevIsStreamingRef = React.useRef(isStreaming);
     const prevHasRunningStepRef = React.useRef(hasRunningStep);
+    const currentStageLabel = (() => {
+        const key = stageLabelMap[currentStage || ""];
+        if (key) {
+            return t(key);
+        }
+        if (currentStage?.includes('.')) {
+            return t(currentStage);
+        }
+        if (currentStage) {
+            return currentStage;
+        }
+        return t('chat.executionTrace.processing');
+    })();
 
     useEffect(() => {
         if (!hasRunningStep) {
@@ -428,11 +455,11 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
         <div className={styles.tracePanel}>
             <button type="button" className={styles.header} onClick={() => setExpanded(!expanded)}>
                 <div className={styles.headerMain}>
-                    <span className={styles.headerTitle}>执行轨迹</span>
-                    <span className={styles.stageBadge}>{stageLabelMap[currentStage || ""] || currentStage || "处理中"}</span>
-                    {retryCount > 0 && <span className={styles.retryBadge}>已重试 {retryCount} 次</span>}
+                    <span className={styles.headerTitle}>{t('chat.executionTrace.title')}</span>
+                    <span className={styles.stageBadge}>{currentStageLabel}</span>
+                    {retryCount > 0 && <span className={styles.retryBadge}>{t('chat.executionTrace.retryCount', { count: retryCount })}</span>}
                 </div>
-                <span className={styles.headerToggle}>{expanded ? "收起" : "展开"}</span>
+                <span className={styles.headerToggle}>{expanded ? t('chat.executionTrace.collapse') : t('chat.executionTrace.expand')}</span>
             </button>
             {expanded && (
                 <div className={styles.body}>

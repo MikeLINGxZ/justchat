@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import styles from '@/components/chat/title/index.module.scss';
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 
@@ -23,6 +24,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
   isSidebarCollapsed = false,
   onToggleSidebar,
 }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const [inputWidth, setInputWidth] = useState(120); // 默认宽度
@@ -36,7 +38,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
   // 计算输入框宽度
   const calculateInputWidth = (text: string) => {
     if (measureRef.current) {
-      measureRef.current.textContent = text || '新建对话';
+      measureRef.current.textContent = text || t('chat.title.newChat');
       const textWidth = measureRef.current.offsetWidth;
       const maxWidth = 50 * 16; // 假设每个字符约16px，20个字符的最大宽度
       const minWidth = 120; // 最小宽度
@@ -49,7 +51,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
   const handleStartEdit = () => {
     // 检查是否允许编辑
     if (!canEditTitle) {
-      message.info('请先保存对话后再编辑标题');
+      message.info(t('chat.title.editNeedSaved'));
       return;
     }
 
@@ -68,10 +70,10 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
         try {
           // 模拟保存延迟
           await onTitleChange?.(trimmedValue);
-          message.success('标题保存成功');
+          message.success(t('chat.title.saveSuccess'));
         } catch (error) {
           console.error('保存标题失败:', error);
-          message.error('保存标题失败，请重试');
+          message.error(t('chat.title.saveFailed'));
           return; // 保存失败时不关闭编辑状态
         }
       } else {
@@ -129,7 +131,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
           <button
             className={styles.mobileMenuButton}
             onClick={onToggleSidebar}
-            title="打开侧边栏"
+            title={t('chat.title.openSidebar')}
           >
             <svg
               width="20"
@@ -157,7 +159,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               className={styles.titleInput}
-              placeholder="新建对话"
+              placeholder={t('chat.title.newChat')}
               maxLength={50}
               style={{ width: `${inputWidth}px` }}
             />
@@ -165,7 +167,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
               <button
                 className={`${styles.actionButton} ${styles.confirmButton}`}
                 onClick={handleConfirm}
-                title="确认"
+                title={t('chat.title.confirm')}
               >
                 <svg
                   width="16"
@@ -183,7 +185,7 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
               <button
                 className={`${styles.actionButton} ${styles.cancelButton}`}
                 onClick={handleCancel}
-                title="取消"
+                title={t('chat.title.cancel')}
               >
                 <svg
                   width="16"
@@ -206,12 +208,12 @@ const ChatTitle: React.FC<ChatTitleProps> = ({
             <div
               className={`${styles.title} ${!title ? styles.defaultTitle : ''}`}
             >
-              {title || '新建对话'}
+              {title || t('chat.title.newChat')}
             </div>
             <button
               className={`${styles.editButton} ${!canEditTitle ? styles.editButtonDisabled : ''}`}
               onClick={handleStartEdit}
-              title={canEditTitle ? '编辑标题' : '请先保存对话后编辑标题'}
+              title={canEditTitle ? t('chat.title.edit') : t('chat.title.editDisabled')}
               disabled={!canEditTitle}
             >
               <svg

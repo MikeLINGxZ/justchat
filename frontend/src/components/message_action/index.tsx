@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import styles from "./index.module.scss";
 import type {Message} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 
@@ -34,6 +35,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
     isMobile = false,
     className
 }) => {
+    const { t } = useTranslation();
     const isUser = message.role === 'user';
 
     // 处理复制消息
@@ -43,7 +45,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
         
         // 如果有思考过程，先添加思考过程
         if (message.reasoning_content && message.reasoning_content.trim()) {
-            fullContent += `## 思考过程\n\n${message.reasoning_content}\n\n## 回答\n\n`;
+            fullContent += `## ${t('chat.messageAction.reasoningTitle')}\n\n${message.reasoning_content}\n\n## ${t('chat.messageAction.answerTitle')}\n\n`;
         }
         
         // 添加主要内容
@@ -83,7 +85,7 @@ const MessageAction: React.FC<MessageActionProps> = ({
             <button
                 className={styles.actionButton}
                 onClick={handleCopyMessage}
-                title="复制消息内容"
+                title={t('chat.messageAction.copy')}
             >
                 <svg 
                     width="14" 

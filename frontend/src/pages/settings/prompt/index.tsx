@@ -21,6 +21,7 @@ import {
   SaveOutlined,
 } from '@ant-design/icons';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
+import { useTranslation } from 'react-i18next';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { PromptFileDetail, PromptFileSummary } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import styles from './index.module.scss';
@@ -33,6 +34,7 @@ interface PromptSettingsPageProps {
 }
 
 const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<PromptFileSummary[]>([]);
   const [activeName, setActiveName] = useState<string>('');
   const [detail, setDetail] = useState<PromptFileDetail | null>(null);
@@ -74,7 +76,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
       return result;
     } catch (error) {
       console.error('加载提示词列表失败:', error);
-      setListError('加载提示词列表失败，请稍后重试。');
+      setListError(t('settings.prompt.listLoadFailedDesc'));
       return [];
     } finally {
       setLoadingList(false);
@@ -99,7 +101,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
       console.error('加载提示词失败:', error);
       setDetail(null);
       setDraft('');
-      setDetailError('读取提示词失败，请重试。');
+      setDetailError(t('settings.prompt.detailLoadFailedDesc'));
     } finally {
       setLoadingDetail(false);
     }
@@ -138,10 +140,10 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
     }
 
     Modal.confirm({
-      title: '放弃未保存的修改？',
-      content: '当前提示词还有未保存内容，切换后这些修改会丢失。',
-      okText: '放弃修改',
-      cancelText: '继续编辑',
+      title: t('settings.prompt.unsavedConfirmTitle'),
+      content: t('settings.prompt.unsavedConfirmContent'),
+      okText: t('settings.prompt.discardChanges'),
+      cancelText: t('settings.prompt.continueEditing'),
       okButtonProps: { danger: true },
       onOk: () => {
         onConfirm();
@@ -166,7 +168,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
       return;
     }
     setDraft(detail.content);
-    message.success('已放弃未保存修改');
+    message.success(t('settings.prompt.discardSuccess'));
   };
 
   const handleSave = async () => {
@@ -175,7 +177,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
     }
     const content = draft.trim();
     if (!content) {
-      message.error('提示词内容不能为空');
+      message.error(t('settings.prompt.contentRequired'));
       return;
     }
 
@@ -187,10 +189,10 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
       if (result) {
         syncItem(result);
       }
-      message.success('提示词已保存并应用');
+      message.success(t('settings.prompt.saveSuccess'));
     } catch (error) {
       console.error('保存提示词失败:', error);
-      message.error('保存失败，请稍后重试');
+      message.error(t('settings.prompt.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -208,17 +210,17 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
       if (result) {
         syncItem(result);
       }
-      message.success('已恢复默认提示词并立即应用');
+      message.success(t('settings.prompt.resetSuccess'));
     } catch (error) {
       console.error('恢复默认提示词失败:', error);
-      message.error('恢复默认失败，请稍后重试');
+      message.error(t('settings.prompt.resetFailed'));
     } finally {
       setResetting(false);
     }
   };
 
   const renderPromptList = () => (
-    <Card className={styles.listCard} title="提示词文件">
+    <Card className={styles.listCard} title={t('settings.prompt.listTitle')}>
       {loadingList ? (
         <div className={styles.listLoading}>
           <Skeleton active paragraph={{ rows: 6 }} />
@@ -227,11 +229,11 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
         <Alert
           type="error"
           showIcon
-          message="列表加载失败"
+          message={t('settings.prompt.listLoadFailed')}
           description={listError}
           action={
             <Button size="small" onClick={() => void refreshList(activeName || undefined)}>
-              重试
+              {t('common.retry')}
             </Button>
           }
         />
@@ -249,7 +251,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
                 <div className={styles.promptItemHeader}>
                   <span className={styles.promptItemTitle}>{item.title}</span>
                   <Tag color={item.is_system ? 'blue' : 'gold'} bordered={false}>
-                    {item.is_system ? 'SYSTEM' : 'USER'}
+                    {item.is_system ? t('settings.prompt.tags.system') : t('settings.prompt.tags.user')}
                   </Tag>
                 </div>
                 <div className={styles.promptItemFile}>{item.name}</div>
@@ -276,11 +278,11 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
         <Alert
           type="error"
           showIcon
-          message="读取提示词失败"
+          message={t('settings.prompt.detailLoadFailed')}
           description={detailError}
           action={
             <Button size="small" onClick={() => activeName && void loadDetail(activeName)}>
-              重试
+              {t('common.retry')}
             </Button>
           }
         />
@@ -290,7 +292,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
     if (!detail) {
       return (
         <div className={styles.emptyState}>
-          <Empty description="请选择一个提示词文件开始编辑" />
+          <Empty description={t('settings.prompt.empty')} />
         </div>
       );
     }
@@ -302,15 +304,15 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
             <div className={styles.editorTitleRow}>
               <Title level={4}>{detail.title}</Title>
               <Tag color={detail.is_system ? 'blue' : 'gold'} bordered={false}>
-                {detail.is_system ? 'SYSTEM' : 'USER'}
+                {detail.is_system ? t('settings.prompt.tags.system') : t('settings.prompt.tags.user')}
               </Tag>
               {isDirty ? (
                 <Tag color="orange" bordered={false}>
-                  未保存
+                  {t('settings.prompt.tags.unsaved')}
                 </Tag>
               ) : (
                 <Tag color="green" bordered={false}>
-                  已同步
+                  {t('settings.prompt.tags.synced')}
                 </Tag>
               )}
             </div>
@@ -321,7 +323,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
             type="info"
             showIcon
             className={styles.tipAlert}
-            message="保存后会立即刷新内存中的提示词缓存，仅影响之后新发起的请求。"
+            message={t('settings.prompt.tip')}
           />
         </div>
 
@@ -338,7 +340,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
         <div className={styles.editorActions}>
           <div className={styles.actionHint}>
             <FileTextOutlined />
-            <span>支持直接编辑 markdown / 模板变量文本。</span>
+            <span>{t('settings.prompt.editorHint')}</span>
           </div>
           <Space wrap>
             <Button
@@ -346,7 +348,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
               onClick={handleDiscard}
               disabled={!isDirty || saving || resetting}
             >
-              放弃修改
+              {t('settings.prompt.actions.discard')}
             </Button>
             <Button
               icon={<ReloadOutlined />}
@@ -354,7 +356,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
               loading={resetting}
               disabled={saving}
             >
-              恢复默认
+              {t('settings.prompt.actions.reset')}
             </Button>
             <Button
               type="primary"
@@ -363,7 +365,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
               loading={saving}
               disabled={!isDirty || resetting}
             >
-              保存并应用
+              {t('settings.prompt.actions.save')}
             </Button>
           </Space>
         </div>
@@ -386,11 +388,11 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
             <div className={styles.mobileEditor}>
               <Button
                 type="text"
-                className={styles.mobileBackButton}
-                onClick={() => setShowEditorOnMobile(false)}
-              >
-                返回提示词列表
-              </Button>
+              className={styles.mobileBackButton}
+              onClick={() => setShowEditorOnMobile(false)}
+            >
+              {t('settings.prompt.actions.backToList')}
+            </Button>
               {renderEditor()}
             </div>
           )}

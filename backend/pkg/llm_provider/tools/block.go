@@ -7,6 +7,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 )
 
 type Block struct {
@@ -17,14 +18,14 @@ func (b *Block) Id() string {
 }
 
 func (b *Block) Name() string {
-	return "阻塞器"
+	return i18n.TCurrent("tool.block.name", nil)
 }
 
 func (b *Block) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
 			Name: "block",
-			Desc: "获取当前日期，返回格式为 YYYY-MM-DD 以及星期几。在解析「明天」「后天」等相对日期时请先调用此工具",
+			Desc: i18n.TCurrent("tool.block.description", nil),
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 				"time": &schema.ParameterInfo{
 					Type:      "integer",
@@ -47,7 +48,7 @@ func (b *Block) Tool() tool.BaseTool {
 }
 
 func (b *Block) Description() string {
-	return "这个一个阻塞器，默认阻塞30s，可以传入所需的阻塞时间"
+	return i18n.TCurrent("tool.block.description", nil)
 }
 
 type blockParams struct {

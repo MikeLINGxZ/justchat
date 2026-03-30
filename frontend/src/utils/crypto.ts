@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import MD5 from 'crypto-js/md5';
 
 /**
@@ -19,11 +20,11 @@ export const validatePassword = (password: string): {
   message?: string;
 } => {
   if (password.length < 6) {
-    return { isValid: false, message: '密码至少6位字符' };
+    return { isValid: false, message: i18n.t('errors.badRequest') };
   }
   
   if (!/^(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
-    return { isValid: false, message: '密码必须包含字母和数字' };
+    return { isValid: false, message: i18n.t('errors.badRequest') };
   }
   
   return { isValid: true };

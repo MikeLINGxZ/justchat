@@ -7,6 +7,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 )
 
 type CurrentDate struct {
@@ -17,22 +18,26 @@ func (c *CurrentDate) Id() string {
 }
 
 func (c *CurrentDate) Name() string {
-	return "获取日期时间"
+	return i18n.TCurrent("tool.current_date.name", nil)
 }
 
 func (c *CurrentDate) Description() string {
-	return "获取时间YYYY-MM-DD 以及星期几"
+	return i18n.TCurrent("tool.current_date.description", nil)
 }
 
 func (c *CurrentDate) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
 			Name:        "get_current_date",
-			Desc:        "获取当前日期，返回格式为 YYYY-MM-DD 以及星期几。在解析「明天」「后天」等相对日期时请先调用此工具",
+			Desc:        i18n.TCurrent("tool.current_date.description", nil),
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{}),
 		},
 		func(ctx context.Context, _ emptyParams) (string, error) {
 			now := time.Now()
+			if i18n.CurrentLocale() == i18n.LocaleEnUS {
+				weekdays := []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+				return now.Format("2006-01-02") + " " + weekdays[now.Weekday()], nil
+			}
 			weekdays := []string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
 			return now.Format("2006-01-02") + " " + weekdays[now.Weekday()], nil
 		},
@@ -48,18 +53,18 @@ func (c *CurrentTime) Id() string {
 }
 
 func (c *CurrentTime) Name() string {
-	return "获取当前时间"
+	return i18n.TCurrent("tool.current_time.name", nil)
 }
 
 func (c *CurrentTime) Description() string {
-	return "获取当前时间，返回格式为 HH:MM:SS"
+	return i18n.TCurrent("tool.current_time.description", nil)
 }
 
 func (c *CurrentTime) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
 			Name:        "get_current_time",
-			Desc:        "获取当前时间，返回格式为 HH:MM:SS",
+			Desc:        i18n.TCurrent("tool.current_time.description", nil),
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{}),
 		},
 		func(ctx context.Context, _ emptyParams) (string, error) {

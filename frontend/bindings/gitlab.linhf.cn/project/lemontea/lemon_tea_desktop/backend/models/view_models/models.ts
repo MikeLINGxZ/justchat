@@ -15,6 +15,31 @@ import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../../time/models.js";
 
+export class AppPreferences {
+    "language": data_models$0.AppLanguage;
+    "region": data_models$0.AppRegion;
+
+    /** Creates a new AppPreferences instance. */
+    constructor($$source: Partial<AppPreferences> = {}) {
+        if (!("language" in $$source)) {
+            this["language"] = data_models$0.AppLanguage.$zero;
+        }
+        if (!("region" in $$source)) {
+            this["region"] = data_models$0.AppRegion.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AppPreferences instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AppPreferences {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AppPreferences($$parsedSource as Partial<AppPreferences>);
+    }
+}
+
 export const Chat = data_models$0.Chat;
 export type Chat = data_models$0.Chat;
 

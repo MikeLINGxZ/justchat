@@ -1,13 +1,16 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 
 interface AppsPageProps {
     className?: string;
 }
 
 const AppsPage: React.FC<AppsPageProps> = ({className}) => {
+    const { t } = useTranslation();
+
     return (
         <div>
-            this is apps page
+            {t('apps.placeholder')}
         </div>
     );
 }

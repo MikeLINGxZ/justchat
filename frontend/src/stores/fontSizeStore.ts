@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import i18n from '@/i18n';
 
 // 字体大小偏移值定义（相对于默认值的偏移）
 export const FONT_SIZE_OFFSETS = {
@@ -15,12 +16,12 @@ export type FontSizeOffset = typeof FONT_SIZE_OFFSETS[keyof typeof FONT_SIZE_OFF
 
 // 字体大小选项配置
 export const FONT_SIZE_OPTIONS = [
-  { value: FONT_SIZE_OFFSETS.VERY_SMALL, label: '极小', description: '10px' },
-  { value: FONT_SIZE_OFFSETS.SMALL, label: '小', description: '12px' },
-  { value: FONT_SIZE_OFFSETS.NORMAL, label: '标准', description: '14px' },
-  { value: FONT_SIZE_OFFSETS.LARGE, label: '大', description: '16px' },
-  { value: FONT_SIZE_OFFSETS.VERY_LARGE, label: '很大', description: '18px' },
-  { value: FONT_SIZE_OFFSETS.EXTRA_LARGE, label: '极大', description: '20px' },
+  { value: FONT_SIZE_OFFSETS.VERY_SMALL, labelKey: 'settings.general.fontSizes.-4', description: '10px' },
+  { value: FONT_SIZE_OFFSETS.SMALL, labelKey: 'settings.general.fontSizes.-2', description: '12px' },
+  { value: FONT_SIZE_OFFSETS.NORMAL, labelKey: 'settings.general.fontSizes.0', description: '14px' },
+  { value: FONT_SIZE_OFFSETS.LARGE, labelKey: 'settings.general.fontSizes.2', description: '16px' },
+  { value: FONT_SIZE_OFFSETS.VERY_LARGE, labelKey: 'settings.general.fontSizes.4', description: '18px' },
+  { value: FONT_SIZE_OFFSETS.EXTRA_LARGE, labelKey: 'settings.general.fontSizes.6', description: '20px' },
 ];
 
 interface FontSizeState {
@@ -135,7 +136,7 @@ export function initializeFontSize() {
 // 获取字体大小选项标签
 export function getFontSizeLabel(offset: FontSizeOffset): string {
   const option = FONT_SIZE_OPTIONS.find(opt => opt.value === offset);
-  return option ? option.label : '标准';
+  return option ? i18n.t(option.labelKey) : i18n.t('settings.general.fontSizes.0');
 }
 
 // 获取字体大小描述

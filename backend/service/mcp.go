@@ -19,6 +19,7 @@ import (
 	mcpproto "github.com/mark3labs/mcp-go/mcp"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	llmtools "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
@@ -50,7 +51,7 @@ func (s *Service) SelectMCPFolder() (string, error) {
 	path, err := s.app.Dialog.OpenFile().
 		CanChooseDirectories(true).
 		CanChooseFiles(false).
-		SetTitle("选择 MCP 服务目录").
+		SetTitle(i18n.TCurrent("app.dialog.select_mcp_folder", nil)).
 		PromptForSingleSelection()
 	if err != nil {
 		return "", ierror.NewError(err)
@@ -87,7 +88,7 @@ func (s *Service) AddMCPToolFromFolder(path string) (*view_models.Tool, error) {
 	server.SourcePath = resolvedPath
 	server.ConfigPath = configPath
 	server.ToolID = toolID
-	server.Description = fmt.Sprintf("MCP 服务：%s", serverName)
+	server.Description = i18n.TCurrent("mcp.service.prefix", map[string]string{"name": serverName})
 	server.Enabled = true
 
 	if err := s.storage.SaveCustomMCPServer(ctx, *server); err != nil {
@@ -183,7 +184,7 @@ func (s *Service) refreshMCPServerDescription(server data_models.CustomMCPServer
 func (s *Service) customServerToViewTool(server data_models.CustomMCPServer) view_models.Tool {
 	description := strings.TrimSpace(server.Description)
 	if description == "" {
-		description = fmt.Sprintf("MCP 服务：%s", server.Name)
+		description = i18n.TCurrent("mcp.service.prefix", map[string]string{"name": server.Name})
 	}
 	return view_models.Tool{
 		Id:          server.ToolID,
@@ -427,7 +428,7 @@ func buildMCPEnv(extra map[string]string) []string {
 
 func summarizeMCPServiceDescription(serverName string, meta map[string]toolMeta) string {
 	if len(meta) == 0 {
-		return fmt.Sprintf("MCP 服务：%s", serverName)
+		return i18n.TCurrent("mcp.service.prefix", map[string]string{"name": serverName})
 	}
 
 	parts := make([]string, 0, len(meta))
@@ -455,7 +456,7 @@ func summarizeMCPServiceDescription(serverName string, meta map[string]toolMeta)
 	}
 
 	if len(parts) == 0 {
-		return fmt.Sprintf("MCP 服务：%s", serverName)
+		return i18n.TCurrent("mcp.service.prefix", map[string]string{"name": serverName})
 	}
 
 	if len(parts) == 1 {
@@ -463,13 +464,21 @@ func summarizeMCPServiceDescription(serverName string, meta map[string]toolMeta)
 	}
 
 	if len(parts) > 3 {
-		return fmt.Sprintf("%s；等 %d 个工具", strings.Join(parts[:3], "；"), len(parts))
+		if i18n.CurrentLocale() == i18n.LocaleEnUS {
+			return i18n.Sprintf(i18n.CurrentLocale(), "mcp.service.summary.more_tools", strings.Join(parts[:3], "; "), len(parts))
+		}
+		return i18n.Sprintf(i18n.CurrentLocale(), "mcp.service.summary.more_tools", strings.Join(parts[:3], "；"), len(parts))
 	}
 
+	if i18n.CurrentLocale() == i18n.LocaleEnUS {
+		return strings.Join(parts, "; ")
+	}
 	return strings.Join(parts, "；")
 }
 
 func shouldRefreshMCPDescription(description string) bool {
 	trimmed := strings.TrimSpace(description)
-	return trimmed == "" || trimmed == "用户添加的 MCP 服务" || strings.HasPrefix(trimmed, "MCP 服务：")
+	return trimmed == "" ||
+		trimmed == i18n.TCurrent("mcp.service.default_description", nil) ||
+		strings.HasPrefix(trimmed, i18n.TCurrent("mcp.service.prefix", map[string]string{"name": ""}))
 }

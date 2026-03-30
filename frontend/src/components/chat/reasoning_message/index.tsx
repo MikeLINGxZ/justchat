@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './index.module.scss';
 import MarkdownRenderer from "@/components/markdown_renderer";
 
@@ -13,8 +14,9 @@ const ReasoningContent: React.FC<ReasoningContentProps> = ({
   content,
   className,
   isStreaming = false,
-  title = '思考过程',
+  title,
 }) => {
+  const { t } = useTranslation();
   // 初始状态：如果正在生成且有内容，则展开
   const [isExpanded, setIsExpanded] = useState(() => isStreaming && content.trim().length > 0);
   const prevIsStreamingRef = React.useRef(isStreaming);
@@ -64,7 +66,7 @@ const ReasoningContent: React.FC<ReasoningContentProps> = ({
       <div className={styles.reasoningHeader} onClick={toggleExpanded}>
         <div className={styles.reasoningTitle}>
           <span className={styles.reasoningIcon}>🧠</span>
-          <span>{title}</span>
+          <span>{title || t('chat.messageAction.reasoningTitle')}</span>
           {isStreaming && (
             <span className={styles.streamingIndicator}>
               <span className={styles.streamingDots}>

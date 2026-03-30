@@ -1,5 +1,6 @@
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from 'react-i18next';
 import styles from "./index.module.scss";
 import ReasoningContent from "@/components/chat/reasoning_message";
 import ExecutionTracePanel from "@/components/chat/execution_trace";
@@ -27,7 +28,11 @@ function loadAvailableTools(): Promise<ViewTool[]> {
     return cachedToolsPromise;
 }
 
-function resolveToolMeta(toolUse: ToolUse, toolDefinitions: Map<string, ViewTool>): { id: string; name: string; description: string } {
+function resolveToolMeta(
+    toolUse: ToolUse,
+    toolDefinitions: Map<string, ViewTool>,
+    t: (key: string, options?: Record<string, unknown>) => string,
+): { id: string; name: string; description: string } {
     let matchedTool: ViewTool | undefined;
 
     if (toolUse.tool_id) {
@@ -41,8 +46,8 @@ function resolveToolMeta(toolUse: ToolUse, toolDefinitions: Map<string, ViewTool
 
     return {
         id: matchedTool?.id || toolUse.tool_id || toolUse.tool_name || 'unknown',
-        name: matchedTool?.name || toolUse.tool_name || '未命名工具',
-        description: matchedTool?.description || toolUse.tool_description || '暂无描述',
+        name: matchedTool?.name || toolUse.tool_name || t('chat.message.unnamedTool'),
+        description: matchedTool?.description || toolUse.tool_description || t('chat.message.noDescription'),
     };
 }
 
@@ -87,33 +92,38 @@ function formatDuration(elapsedMs: number): string {
     return `${minutes}m ${remainSeconds}s`;
 }
 
-function getStatusLabel(toolUse: ToolUse): string {
+function getStatusLabel(toolUse: ToolUse, t: (key: string) => string): string {
     if (toolUse.status === ToolUseStatus.ToolUseStatusDone) {
-        return "已完成";
+        return t('chat.message.done');
     }
     if (toolUse.status === ToolUseStatus.ToolUseStatusAwaitingApproval) {
-        return "等待确认";
+        return t('chat.message.awaitingApproval');
     }
     if (toolUse.status === ToolUseStatus.ToolUseStatusRejected) {
-        return "已拒绝";
+        return t('chat.message.rejected');
     }
     if (toolUse.status === ToolUseStatus.ToolUseStatusError) {
-        return "失败";
+        return t('chat.message.failed');
     }
     if (toolUse.status === ToolUseStatus.ToolUseStatusPending) {
-        return "准备中";
+        return t('chat.message.pending');
     }
-    return "执行中";
+    return t('chat.message.running');
 }
 
-function buildToolMetaTooltip(toolUse: ToolUse, fallbackIndex: number, toolDefinitions: Map<string, ViewTool>): string {
+function buildToolMetaTooltip(
+    toolUse: ToolUse,
+    fallbackIndex: number,
+    toolDefinitions: Map<string, ViewTool>,
+    t: (key: string, options?: Record<string, unknown>) => string,
+): string {
     const displayIndex = getToolUseDisplayIndex(toolUse, fallbackIndex);
-    const toolMeta = resolveToolMeta(toolUse, toolDefinitions);
+    const toolMeta = resolveToolMeta(toolUse, toolDefinitions, t);
     const lines = [
-        `工具 #${displayIndex}`,
-        `ID: ${toolMeta.id}`,
-        `名称: ${toolMeta.name}`,
-        `描述: ${toolMeta.description}`,
+        t('chat.message.toolNumber', { index: displayIndex }),
+        t('chat.message.id', { value: toolMeta.id }),
+        t('chat.message.name', { value: toolMeta.name }),
+        t('chat.message.description', { value: toolMeta.description }),
     ];
 
     return lines.join("\n");
@@ -194,10 +204,12 @@ function buildFriendlyFinishError(rawError: string): string {
 const TOOLTIP_OFFSET = 8;
 const TOOLTIP_VIEWPORT_GAP = 12;
 
-const InlineToolMarker: React.FC<{
-    label: string;
-    tooltip: string;
-}> = ({ label, tooltip }) => {
+const HoverTooltip: React.FC<{
+    content: string;
+    children: React.ReactNode;
+    wrapperClassName?: string;
+    tooltipClassName?: string;
+}> = ({ content, children, wrapperClassName, tooltipClassName }) => {
     const triggerRef = useRef<HTMLSpanElement | null>(null);
     const tooltipRef = useRef<HTMLSpanElement | null>(null);
     const [visible, setVisible] = useState(false);
@@ -256,22 +268,20 @@ const InlineToolMarker: React.FC<{
         <>
             <span
                 ref={triggerRef}
-                className={styles.inlineToolMarkerWrap}
+                className={wrapperClassName}
                 onMouseEnter={() => setVisible(true)}
                 onMouseLeave={() => setVisible(false)}
             >
-                <sup className={styles.inlineToolMarker}>
-                    {label}
-                </sup>
+                {children}
             </span>
             {visible && typeof document !== "undefined" && createPortal(
                 <span
                     ref={tooltipRef}
-                    className={`${styles.inlineToolTooltip} ${styles.inlineToolTooltipPortal}`}
+                    className={`${styles.inlineToolTooltip} ${styles.inlineToolTooltipPortal} ${tooltipClassName ?? ""}`}
                     style={tooltipStyle}
                     role="tooltip"
                 >
-                    {tooltip}
+                    {content}
                 </span>,
                 document.body
             )}
@@ -279,10 +289,27 @@ const InlineToolMarker: React.FC<{
     );
 };
 
+const InlineToolMarker: React.FC<{
+    label: string;
+    tooltip: string;
+}> = ({ label, tooltip }) => {
+    return (
+        <HoverTooltip
+            content={tooltip}
+            wrapperClassName={styles.inlineToolMarkerWrap}
+        >
+            <sup className={styles.inlineToolMarker}>
+                {label}
+            </sup>
+        </HoverTooltip>
+    );
+};
+
 function renderTextWithToolMarkers(
     value: string,
     toolUsesByIndex: Map<number, { toolUse: ToolUse; fallbackIndex: number }>,
-    toolDefinitions: Map<string, ViewTool>
+    toolDefinitions: Map<string, ViewTool>,
+    t: (key: string, options?: Record<string, unknown>) => string,
 ): React.ReactNode[] {
     const parts = value.split(/(\[\d+\])/g);
 
@@ -302,7 +329,7 @@ function renderTextWithToolMarkers(
             <InlineToolMarker
                 key={`marker-${displayIndex}-${idx}`}
                 label={part}
-                tooltip={buildToolMetaTooltip(toolUseInfo.toolUse, toolUseInfo.fallbackIndex, toolDefinitions)}
+                tooltip={buildToolMetaTooltip(toolUseInfo.toolUse, toolUseInfo.fallbackIndex, toolDefinitions, t)}
             />
         );
     });
@@ -311,16 +338,17 @@ function renderTextWithToolMarkers(
 function withInlineToolMarkers(
     children: React.ReactNode,
     toolUsesByIndex: Map<number, { toolUse: ToolUse; fallbackIndex: number }>,
-    toolDefinitions: Map<string, ViewTool>
+    toolDefinitions: Map<string, ViewTool>,
+    t: (key: string, options?: Record<string, unknown>) => string,
 ): React.ReactNode {
     return React.Children.map(children, (child) => {
         if (typeof child === 'string') {
-            return renderTextWithToolMarkers(child, toolUsesByIndex, toolDefinitions);
+            return renderTextWithToolMarkers(child, toolUsesByIndex, toolDefinitions, t);
         }
         if (React.isValidElement<{ children?: React.ReactNode }>(child) && child.props.children) {
             return React.cloneElement(child, {
                 ...child.props,
-                children: withInlineToolMarkers(child.props.children, toolUsesByIndex, toolDefinitions),
+                children: withInlineToolMarkers(child.props.children, toolUsesByIndex, toolDefinitions, t),
             });
         }
         return child;
@@ -328,20 +356,21 @@ function withInlineToolMarkers(
 }
 
 const ToolUseItem: React.FC<{ toolUse: ToolUse; fallbackIndex: number; nowMs: number; toolDefinitions: Map<string, ViewTool> }> = ({ toolUse, fallbackIndex, nowMs, toolDefinitions }) => {
+    const { t } = useTranslation();
     const [expanded, setExpanded] = useState(false);
     const result = toolUse.tool_result?.trim() || '';
     const isLong = result.length > 120;
     const displayResult = isLong && !expanded ? result.slice(0, 120) + '…' : result;
     const elapsedLabel = formatDuration(getToolUseElapsedMs(toolUse, nowMs));
     const displayIndex = getToolUseDisplayIndex(toolUse, fallbackIndex);
-    const toolMeta = resolveToolMeta(toolUse, toolDefinitions);
-    const statusLabel = getStatusLabel(toolUse);
+    const toolMeta = resolveToolMeta(toolUse, toolDefinitions, t);
+    const statusLabel = getStatusLabel(toolUse, t);
     const statusClassName = isToolUseRunning(toolUse)
         ? styles.toolUseStatusRunning
         : toolUse.status === ToolUseStatus.ToolUseStatusError || toolUse.status === ToolUseStatus.ToolUseStatusRejected
             ? styles.toolUseStatusError
             : styles.toolUseStatusDone;
-    const tooltip = buildToolMetaTooltip(toolUse, fallbackIndex, toolDefinitions);
+    const tooltip = buildToolMetaTooltip(toolUse, fallbackIndex, toolDefinitions, t);
 
     return (
         <div className={styles.toolUseItem}>
@@ -360,7 +389,7 @@ const ToolUseItem: React.FC<{ toolUse: ToolUse; fallbackIndex: number; nowMs: nu
                     </span>
                     {isLong && (
                         <span className={styles.toolUseToggle}>
-                            {expanded ? '收起' : '展开'}
+                            {expanded ? t('chat.message.collapse') : t('chat.message.expand')}
                         </span>
                     )}
                 </div>
@@ -376,6 +405,7 @@ const ToolUseItem: React.FC<{ toolUse: ToolUse; fallbackIndex: number; nowMs: nu
 };
 
 const ToolUsesSection: React.FC<{ toolUses: ToolUse[]; toolDefinitions: Map<string, ViewTool> }> = ({ toolUses, toolDefinitions }) => {
+    const { t } = useTranslation();
     const [nowMs, setNowMs] = useState(() => Date.now());
     const hasRunningTool = toolUses.some(isToolUseRunning);
 
@@ -396,7 +426,7 @@ const ToolUsesSection: React.FC<{ toolUses: ToolUse[]; toolDefinitions: Map<stri
                 <svg className={styles.toolUsesIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                 </svg>
-                <span>工具调用</span>
+                <span>{t('chat.message.toolCalls')}</span>
                 <span className={styles.toolUsesCount}>({toolUses.length})</span>
             </div>
             <div className={styles.toolUsesList}>
@@ -420,6 +450,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     onApprovalDecision,
     onApprovalComment,
 }: ChatMessageProps) => {
+    const { t } = useTranslation();
     const [toolDefinitions, setToolDefinitions] = useState<Map<string, ViewTool>>(new Map());
     const isUser = message.role === RoleType.User;
     const wrapperClass = isUser ? styles.userMessageWrapper : styles.assistantMessageWrapper;
@@ -513,7 +544,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                             key={index}
                                             className={styles.fileItem}
                                             onClick={() => handleFileClick(file.path)}
-                                            title={`点击打开: ${file.name}`}
+                                            title={t('chat.message.openFile', { name: file.name })}
                                         >
                                             <span className={styles.fileType}>{file.mine_type}</span>
                                             <span className={styles.fileName}>{file.name}</span>
@@ -546,7 +577,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                     <MarkdownRenderer
                                         content={prefaceContent}
                                         variant="assistant"
-                                        decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}
+                                        decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
                                     />
                                 </div>
                             )}
@@ -572,7 +603,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                     content={getDisplayContent()}
                                     variant="assistant"
                                     transformContent={(content) => buildContentWithToolMarkers(content, toolUses)}
-                                    decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}
+                                    decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
                                 />
                             </div>
 
@@ -599,10 +630,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         </div>
                     )}
                     {message.assistant_message_extra?.finish_reason === 'error' && (
-                        <div className={styles.finishReasonError}>⚠ 因错误终止</div>
+                        finishError ? (
+                            <HoverTooltip
+                                content={finishError}
+                                wrapperClassName={styles.finishReasonErrorWrap}
+                                tooltipClassName={styles.finishReasonTooltip}
+                            >
+                                <div className={styles.finishReasonError}>{t('chat.message.stoppedByError')}</div>
+                            </HoverTooltip>
+                        ) : (
+                            <div className={styles.finishReasonError}>{t('chat.message.stoppedByError')}</div>
+                        )
                     )}
                     {message.assistant_message_extra?.finish_reason === 'user stop' && (
-                        <div className={styles.finishReasonUserStop}>⚠ 用户终止生成</div>
+                        <div className={styles.finishReasonUserStop}>{t('chat.message.stoppedByUser')}</div>
                     )}
                 </div>
             </div>

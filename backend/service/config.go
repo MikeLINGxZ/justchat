@@ -6,6 +6,7 @@ import (
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils"
 )
@@ -16,38 +17,38 @@ func (s *Service) GetSupportProviders() ([]view_models.SupportProvider, error) {
 		{
 			ProviderType:      data_models.ProviderTypeDeepseek,
 			Icon:              "/providers/deepseek_icon.png",
-			Name:              "深度求索",
+			Name:              i18n.TCurrent("provider.deepseek.name", nil),
 			BaseUrl:           "https://api.deepseek.com/v1",
 			FileUploadBaseUrl: nil,
-			Description:       "成立于2023年，专注于研究世界领先的通用人工智能底层模型与技术，挑战人工智能前沿性难题。",
+			Description:       i18n.TCurrent("provider.deepseek.description", nil),
 		}, {
 			ProviderType:      data_models.ProviderTypeAliyuns,
 			Icon:              "/providers/qwen_icon.png",
-			Name:              "阿里云百炼",
+			Name:              i18n.TCurrent("provider.aliyuns.name", nil),
 			BaseUrl:           "https://dashscope.aliyuncs.com/compatible-mode/v1",
 			FileUploadBaseUrl: utils.StringPointer("https://dashscope.aliyuncs.com/api/v1/uploads"),
-			Description:       "一键部署大模型 — 阿里云百炼-极强推理能力极高性价比.百炼支持多种模态的大模型调用服务。",
+			Description:       i18n.TCurrent("provider.aliyuns.description", nil),
 		}, {
 			ProviderType:      data_models.ProviderTypeOpenrouter,
 			Icon:              "/providers/openrouter_icon.png",
-			Name:              "OpenRouter",
+			Name:              i18n.TCurrent("provider.openrouter.name", nil),
 			BaseUrl:           "https://openrouter.ai/api/v1",
 			FileUploadBaseUrl: nil,
-			Description:       "模型集合供应商",
+			Description:       i18n.TCurrent("provider.openrouter.description", nil),
 		}, {
 			ProviderType:      data_models.ProviderTypeOllama,
 			Icon:              "/providers/ollama_icon.png",
-			Name:              "Ollama",
+			Name:              i18n.TCurrent("provider.ollama.name", nil),
 			BaseUrl:           "http://localhost:11434",
 			FileUploadBaseUrl: nil,
-			Description:       "Ollama 是一种最简便的方式，能让您利用开放模型来实现工作的自动化，同时还能确保您的数据安全。",
+			Description:       i18n.TCurrent("provider.ollama.description", nil),
 		}, {
 			ProviderType:      data_models.ProviderTypeOther,
 			Icon:              "/providers/openai_icon.png",
-			Name:              "Openai 标准接口",
+			Name:              i18n.TCurrent("provider.other.name", nil),
 			BaseUrl:           "",
 			FileUploadBaseUrl: utils.StringPointer(""),
-			Description:       "",
+			Description:       i18n.TCurrent("provider.other.description", nil),
 		},
 	}, nil
 }

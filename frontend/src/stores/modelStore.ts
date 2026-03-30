@@ -2,6 +2,7 @@ import {Model} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_deskto
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts';
 import { create } from 'zustand';
 import {persist} from "zustand/middleware";
+import { translateError } from '@/utils/errorHandler';
 
 // 定义模型选项接口
 export interface ModelOption {
@@ -51,14 +52,14 @@ export const useModelStore = create<UseModelsReturn>()(
                     
                     // 如果后端没有数据，使用默认模拟数据作为后备
                     if (convertedModels.length === 0) {
-                        console.warn('后端返回空模型列表，使用默认模拟数据');
+                        console.warn('No models returned from backend, using empty fallback');
                         set({ models: getDefaultModels(), isLoading: false });
                     } else {
                         set({ models: convertedModels, isLoading: false });
                     }
                 } catch (err: any) {
-                    const errorMessage = err?.message || '获取模型列表失败';
-                    console.error('从后端获取模型列表失败，使用默认模拟数据:', err);
+                    const errorMessage = translateError(err);
+                    console.error('Failed to load models from backend, using empty fallback:', err);
                     
                     // 出错时使用默认模拟数据作为后备
                     set({ 

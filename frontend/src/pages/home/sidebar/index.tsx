@@ -13,6 +13,7 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import {Modal} from 'antd';
+import { useTranslation } from 'react-i18next';
 import {useAuthStore} from '@/stores/authStore.ts';
 import SidebarChats from '@/pages/home/sidebar/chat_lists.tsx';
 import '@/pages/home/sidebar/index.scss';
@@ -42,8 +43,9 @@ const Index: React.FC<SidebarProps> = ({
                                            onRegisterRefreshCallback,
                                            onDeleteChat,
                                            generatingChatUuids,
-                                           onStopGenerationForChat,
-                                       }) => {
+                                       onStopGenerationForChat,
+                                   }) => {
+    const { t } = useTranslation();
     // @ts-ignore
     const {user, logout} = useAuthStore();
     const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -225,11 +227,11 @@ const Index: React.FC<SidebarProps> = ({
     const getThemeText = (theme: 'auto' | 'light' | 'dark') => {
         switch (theme) {
             case 'light':
-                return '浅色';
+                return t('home.sidebar.themes.light');
             case 'dark':
-                return '深色(beta)';
+                return t('home.sidebar.themes.dark');
             default:
-                return '自动(beta)';
+                return t('home.sidebar.themes.auto');
         }
     };
 
@@ -282,7 +284,7 @@ const Index: React.FC<SidebarProps> = ({
                     <button
                         className="collapse-btn"
                         onClick={handleManualToggle}
-                        title="折叠侧边栏"
+                        title={t('home.sidebar.collapse')}
                     >
                         <MenuFoldOutlined/>
                     </button>
@@ -291,9 +293,9 @@ const Index: React.FC<SidebarProps> = ({
 
             {/* 功能按钮区域 */}
             <div className="sidebar-actions">
-                <button className="action-btn" onClick={handleNewChat} title="新建对话">
+                <button className="action-btn" onClick={handleNewChat} title={t('home.sidebar.newChat')}>
                     <PlusOutlined className="action-icon"/>
-                    {!isSidebarCollapsed && <span className="action-text">新建对话</span>}
+                    {!isSidebarCollapsed && <span className="action-text">{t('home.sidebar.newChat')}</span>}
                 </button>
             </div>
 
@@ -305,13 +307,13 @@ const Index: React.FC<SidebarProps> = ({
                             className={`tab-option ${activeTab === 'history' ? 'active' : ''}`}
                             onClick={() => setActiveTab('history')}
                         >
-                            对话
+                            {t('home.sidebar.tabs.history')}
                         </div>
                         <div 
                             className={`tab-option ${activeTab === 'favorites' ? 'active' : ''}`}
                             onClick={() => setActiveTab('favorites')}
                         >
-                            收藏
+                            {t('home.sidebar.tabs.favorites')}
                         </div>
                         <div className="tab-slider" data-active={activeTab}></div>
                     </div>
@@ -348,7 +350,7 @@ const Index: React.FC<SidebarProps> = ({
                                 {user?.avatar ? (
                                     <img
                                         src={user.avatar}
-                                        alt="用户头像"
+                                        alt={t('home.sidebar.userAvatar')}
                                         className="avatar-img"
                                     />
                                 ) : (
@@ -357,7 +359,7 @@ const Index: React.FC<SidebarProps> = ({
                             </div>
                             <div className="user-info">
                                 <div className="user-name">
-                                    {user?.username || '未登录用户'}
+                                    {user?.username || t('home.sidebar.guestUser')}
                                 </div>
                                 {user?.email && <div className="user-email">{user.email}</div>}
                             </div>
@@ -377,7 +379,7 @@ const Index: React.FC<SidebarProps> = ({
                                 >
                                     <div className="menu-item-content">
                                         {getThemeIcon(currentTheme)}
-                                        <span>主题</span>
+                                        <span>{t('home.sidebar.theme')}</span>
                                     </div>
                                     <div className="menu-arrow">›</div>
 
@@ -413,7 +415,7 @@ const Index: React.FC<SidebarProps> = ({
                                 }}>
                                     <div className="menu-item-content">
                                         <AppstoreOutlined/>
-                                        <span>应用</span>
+                                        <span>{t('home.sidebar.apps')}</span>
                                     </div>
                                 </div>
 
@@ -423,7 +425,7 @@ const Index: React.FC<SidebarProps> = ({
                                 }}>
                                     <div className="menu-item-content">
                                         <SettingOutlined/>
-                                        <span>设置</span>
+                                        <span>{t('home.sidebar.settings')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -433,7 +435,7 @@ const Index: React.FC<SidebarProps> = ({
                 {isSidebarCollapsed && (
                     <div className="user-avatar collapsed" onClick={handleUserMenuToggle}>
                         {user?.avatar ? (
-                            <img src={user.avatar} alt="用户头像" className="avatar-img"/>
+                            <img src={user.avatar} alt={t('home.sidebar.userAvatar')} className="avatar-img"/>
                         ) : (
                             <UserOutlined className="avatar-icon"/>
                         )}
@@ -443,7 +445,7 @@ const Index: React.FC<SidebarProps> = ({
 
             {/* 应用对话框 */}
             <Modal
-                title="应用"
+                title={t('home.sidebar.appsTitle')}
                 open={isAppsModalOpen}
                 onCancel={() => setIsAppsModalOpen(false)}
                 footer={null}

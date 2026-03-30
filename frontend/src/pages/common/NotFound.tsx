@@ -2,9 +2,15 @@ import React from 'react';
 import { Result, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { HomeOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const NotFound: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    document.title = t('app.notFoundTitle');
+  }, [t]);
 
   const handleGoHome = () => {
     navigate('/home');
@@ -25,14 +31,14 @@ const NotFound: React.FC = () => {
       <Result
         status="404"
         title="404"
-        subTitle="抱歉，您访问的页面不存在。"
+        subTitle={t('notFound.subtitle')}
         extra={
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <Button type="primary" icon={<HomeOutlined />} onClick={handleGoHome}>
-              返回首页
+              {t('notFound.home')}
             </Button>
             <Button icon={<ArrowLeftOutlined />} onClick={handleGoBack}>
-              返回上页
+              {t('notFound.back')}
             </Button>
           </div>
         }

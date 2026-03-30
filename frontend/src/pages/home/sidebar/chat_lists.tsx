@@ -14,6 +14,7 @@ import {
     StarFilled,
     StarOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import styles from './chats_lists.module.scss';
 import {
     Chat,
@@ -50,6 +51,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                                        generatingChatUuids = [],
                                                        onStopGenerationForChat,
                                                    }) => {
+    const { t, i18n } = useTranslation();
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -225,13 +227,13 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
             } catch (error) {
                 console.error('Failed to load chats:', error);
-                message.error('加载聊天列表失败');
+                message.error(t('home.chatList.loadFailed'));
             } finally {
                 setLoading(false);
                 setLoadingMore(false);
                 loadingRef.current = false;
             }
-        }, [activeTab]
+        }, [activeTab, t]
     );
 
     // 加载更多聊天
@@ -378,7 +380,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     };
 
     // 处理收藏聊天
-    const handleFavoriteChat = async (chat: Chat, e: React.MouseEvent): Promise<void> => {
+    const handleFavoriteChat = useCallback(async (chat: Chat, e: React.MouseEvent): Promise<void> => {
         try {
             await Service.CollectionChat(chat.uuid, !chat.is_collection);
 
@@ -395,27 +397,27 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             loadChats();
         } catch (error) {
             console.error('Failed to favorite chat:', error);
-            message.error('收藏失败');
+            message.error(t('home.chatList.favoriteFailed'));
         }
-    };
+    }, [loadChats, t]);
 
     // 开始内联编辑
     const startInlineEdit = (chatUuid: string, chatTitle: string) => {
         // 根据项目规范，只有已保存的对话（有有效的 chatUuid）才允许重命名
         const canRename = chatUuid;
         if (!canRename && chatUuid == "") {
-            message.warning('请先保存对话后再重命名');
+            message.warning(t('home.chatList.renameNeedSaved'));
             return;
         }
 
         setEditingChatUuid(chatUuid);
-        setEditingTitle(chatTitle || '新对话');
+        setEditingTitle(chatTitle || t('home.chatList.defaultTitle'));
     };
 
     // 确认内联编辑 (模拟实现)
     const confirmInlineEdit = async () => {
         if (!editingChatUuid || !editingTitle.trim()) {
-            message.error('请输入有效的对话标题');
+            message.error(t('home.chatList.invalidTitle'));
             return;
         }
 
@@ -426,12 +428,12 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             const nextTitle = editingTitle.trim();
             updateChatTitle(editingChatUuid, nextTitle);
 
-            message.success('重命名成功');
+            message.success(t('home.chatList.renameSuccess'));
             setEditingChatUuid(null);
             setEditingTitle('');
         } catch (error) {
             console.error('Failed to rename chat:', error);
-            message.error('重命名失败');
+            message.error(t('home.chatList.renameFailed'));
         }
     };
 
@@ -454,7 +456,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
     // 显示删除确认对话框
     const showDeleteConfirm = (chatUuid: string, chatTitle: string) => {
         setDeletingChatUuid(chatUuid);
-        setDeletingChatTitle(chatTitle || '新对话');
+        setDeletingChatTitle(chatTitle || t('home.chatList.defaultTitle'));
         setDeleteModalVisible(true);
     };
 
@@ -477,14 +479,14 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     chatsCountRef.current = newChats.length;
                     return newChats;
                 });
-                message.success('删除成功');
+                message.success(t('home.chatList.deleteSuccess'));
             }
             setDeleteModalVisible(false);
             setDeletingChatUuid(null);
             setDeletingChatTitle('');
         } catch (error) {
             console.error('Failed to delete chat:', error);
-            message.error('删除失败');
+            message.error(t('home.chatList.deleteFailed'));
         }
     };
 
@@ -504,20 +506,20 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             {
                 key: 'favorite',
                 icon: chat.is_collection ? <StarFilled/> : <StarOutlined/>,
-                label: chat.is_collection ? '取消收藏' : '收藏',
+                label: chat.is_collection ? t('home.chatList.unfavorite') : t('home.chatList.favorite'),
                 onClick: () => handleFavoriteChat(chat, {} as React.MouseEvent),
             },
             {
                 key: 'rename',
                 icon: <EditOutlined/>,
-                label: '重命名',
+                label: t('home.chatList.rename'),
                 disabled: !canRename,
                 onClick: () => startInlineEdit(chat.uuid, chat.title),
             },
             {
                 key: 'delete',
                 icon: <DeleteOutlined/>,
-                label: '删除',
+                label: t('home.chatList.delete'),
                 danger: true,
                 onClick: () => showDeleteConfirm(chat.uuid, chat.title),
             },
@@ -550,21 +552,21 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
 
         if (chatDateOnly.getTime() === today.getTime()) {
             // 今天：显示时间
-            return date.toLocaleTimeString('zh-CN', {
+            return date.toLocaleTimeString(i18n.language === 'en-US' ? 'en-US' : 'zh-CN', {
                 hour: '2-digit',
                 minute: '2-digit',
             });
         } else if (chatDateOnly.getTime() === yesterday.getTime()) {
             // 昨天：显示"昨天"
-            return '昨天';
+            return t('home.chatList.yesterday');
         } else if (
             chatDateOnly >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
         ) {
             // 过去7天：显示星期几
-            return date.toLocaleDateString('zh-CN', {weekday: 'short'});
+            return date.toLocaleDateString(i18n.language === 'en-US' ? 'en-US' : 'zh-CN', {weekday: 'short'});
         } else {
             // 更久以前：显示月日
-            return date.toLocaleDateString('zh-CN', {
+            return date.toLocaleDateString(i18n.language === 'en-US' ? 'en-US' : 'zh-CN', {
                 month: 'short',
                 day: 'numeric',
             });
@@ -615,7 +617,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                             e.stopPropagation();
                                             confirmInlineEdit();
                                         }}
-                                        title="确认"
+                                        title={t('home.chatList.editConfirm')}
                                     />
                                     <Button
                                         type="text"
@@ -626,7 +628,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                             e.stopPropagation();
                                             cancelInlineEdit();
                                         }}
-                                        title="取消"
+                                        title={t('home.chatList.editCancel')}
                                     />
                                 </div>
                             </div>
@@ -638,8 +640,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                         <button
                                             type="button"
                                             className={styles.generatingStopBtn}
-                                            title="停止生成"
-                                            aria-label="停止生成"
+                                            title={t('home.chatList.stopGeneration')}
+                                            aria-label={t('home.chatList.stopGenerationAria')}
                                             onClick={e => {
                                                 e.stopPropagation();
                                                 e.preventDefault();
@@ -655,9 +657,9 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                     )}
                                     <div
                                         className={styles.chatTitle}
-                                        title={chat.title || '新对话'}
+                                        title={chat.title || t('home.chatList.defaultTitle')}
                                     >
-                                        {chat.title || '新对话'}
+                                        {chat.title || t('home.chatList.defaultTitle')}
                                     </div>
                                 </div>
                                 <div className={styles.chatActions}>
@@ -726,10 +728,10 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     key => groupedChats[key as keyof GroupedChats].length > 0
                 ) ? (
                     <>
-                        {renderGroup('今天', groupedChats.today)}
-                        {renderGroup('昨天', groupedChats.yesterday)}
-                        {renderGroup('过去7天', groupedChats.pastWeek)}
-                        {renderGroup('更久以前', groupedChats.older)}
+                        {renderGroup(t('home.chatList.today'), groupedChats.today)}
+                        {renderGroup(t('home.chatList.yesterday'), groupedChats.yesterday)}
+                        {renderGroup(t('home.chatList.pastWeek'), groupedChats.pastWeek)}
+                        {renderGroup(t('home.chatList.older'), groupedChats.older)}
 
                         {/* 加载更多按钮或已加载全部提示 */}
                         {loadingMore && (
@@ -742,7 +744,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                                         color: 'var(--text-color-secondary)',
                                     }}
                                 >
-                  加载中...
+                  {t('common.loading')}
                 </span>
                             </div>
                         )}
@@ -751,8 +753,8 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                             <div className={styles.endContainer}>
                                 <Text type="secondary" className={styles.endText}>
                                     {activeTab === 'favorites'
-                                        ? `已加载全部收藏对话 (${totalCount} 条)`
-                                        : `已加载全部聊天记录 (${totalCount} 条)`}
+                                        ? t('home.chatList.allFavoritesLoaded', { count: totalCount })
+                                        : t('home.chatList.allHistoryLoaded', { count: totalCount })}
                                 </Text>
                             </div>
                         )}
@@ -761,12 +763,12 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                         description={searchQuery
-                            ? (activeTab === 'favorites' ? '未找到匹配的收藏对话' : '未找到匹配的对话')
-                            : (activeTab === 'favorites' ? '暂无收藏对话' : '暂无对话记录')}
+                            ? t('home.chatList.noResults')
+                            : (activeTab === 'favorites' ? t('home.chatList.emptyFavorites') : t('home.chatList.emptyHistory'))}
                     >
                         {activeTab === 'favorites' && (
                             <p style={{color: 'var(--text-color-secondary)', fontSize: '14px'}}>
-                                点击对话菜单中的收藏按钮，将对话添加到收藏夹
+                                {t('home.chatList.favoritesHint')}
                             </p>
                         )}
                     </Empty>
@@ -780,7 +782,7 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
             <div className={styles.searchContainer}>
                 <Search
                     ref={searchInputRef}
-                    placeholder="搜索对话..."
+                    placeholder={t('home.chatList.searchPlaceholder')}
                     value={searchQuery}
                     onChange={handleSearchChange}
                     prefix={<SearchOutlined/>}
@@ -797,20 +799,20 @@ const SidebarChats: React.FC<SidebarChatsProps> = ({
                         <ExclamationCircleOutlined
                             style={{color: '#faad14', fontSize: '16px'}}
                         />
-                        <span>确认删除</span>
+                        <span>{t('home.chatList.deleteModalTitle')}</span>
                     </div>
                 }
                 open={deleteModalVisible}
                 onOk={handleDeleteChat}
                 onCancel={handleCancelDelete}
-                okText="删除"
-                cancelText="取消"
+                okText={t('home.chatList.deleteModalOk')}
+                cancelText={t('home.chatList.deleteModalCancel')}
                 okButtonProps={{danger: true}}
                 confirmLoading={loading}
             >
-                <p>确定要删除对话 "{deletingChatTitle}" 吗？</p>
+                <p>{t('home.chatList.deleteModalContent', { title: deletingChatTitle })}</p>
                 <p style={{color: '#666', fontSize: '14px', marginTop: '8px'}}>
-                    删除后无法恢复，请谨慎操作。
+                    {t('home.chatList.deleteWarning')}
                 </p>
             </Modal>
         </div>

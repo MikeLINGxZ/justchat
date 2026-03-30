@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import TurndownService from "turndown";
@@ -61,10 +62,12 @@ function insertHardBreak(view: EditorView): boolean {
 
 const RichMarkdownEditor: React.FC<RichMarkdownEditorProps> = ({
     value = "",
-    placeholder = "输入消息... (支持 Markdown 格式)",
+    placeholder,
     onChange,
     onSend,
 }) => {
+    const { t } = useTranslation();
+    const resolvedPlaceholder = placeholder ?? t('chat.input.editorPlaceholder');
     const initialContent = useMemo(() => markdownToHtml(value), [value]);
     const lastMarkdownRef = useRef(value);
 
@@ -75,7 +78,7 @@ const RichMarkdownEditor: React.FC<RichMarkdownEditorProps> = ({
                 codeBlock: true,
             }),
             Placeholder.configure({
-                placeholder,
+                placeholder: resolvedPlaceholder,
             }),
         ],
         content: initialContent,

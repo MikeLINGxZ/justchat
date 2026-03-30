@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 )
 
 func WorkspaceRoot() string {
@@ -40,7 +42,7 @@ func DescribeScope(target string) string {
 	target = filepath.Clean(target)
 	rel, err := filepath.Rel(root, target)
 	if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "工作区内"
+		return i18n.TCurrent("tool.approval.scope.workspace", nil)
 	}
-	return "工作区外"
+	return i18n.TCurrent("tool.approval.scope.outside_workspace", nil)
 }

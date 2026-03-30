@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Layout, Menu, Button } from 'antd';
 import {
   SettingOutlined,
   ApiOutlined,
-  UserOutlined,
-  SecurityScanOutlined,
-  BellOutlined,
   InfoCircleOutlined,
   ArrowLeftOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import ProviderSettingPage from './provider';
 import AboutPage from './about';
 import GeneralSettingsPage from './general';
 import PromptSettingsPage from './prompt';
+import LanguageRegionSettingsPage from './language-region';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { initializeFontSize } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
@@ -25,6 +24,7 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
+  const { t } = useTranslation();
   const [selectedKey, setSelectedKey] = useState('general');
   const [showContent, setShowContent] = useState(false); // 控制移动端内容显示
   const { isMobile } = useViewportHeight(); // 使用移动端检测
@@ -47,28 +47,37 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
     initializeFontSize();
   }, []);
 
-  const menuItems = [
+  useEffect(() => {
+    document.title = t('app.settingsTitle');
+  }, [t]);
+
+  const menuItems = useMemo(() => [
     {
       key: 'general',
       icon: <SettingOutlined />,
-      label: '通用设置',
+      label: t('settings.menu.general'),
+    },
+    {
+      key: 'language-region',
+      icon: <SettingOutlined />,
+      label: t('settings.menu.languageRegion'),
     },
     {
       key: 'provider',
       icon: <ApiOutlined />,
-      label: '模型供应商',
+      label: t('settings.menu.provider'),
     },
     {
       key: 'prompt',
       icon: <FileTextOutlined />,
-      label: '提示词',
+      label: t('settings.menu.prompt'),
     },
     {
       key: 'about',
       icon: <InfoCircleOutlined />,
-      label: '关于',
+      label: t('settings.menu.about'),
     },
-  ];
+  ], [t]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     setSelectedKey(key);
@@ -92,14 +101,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           return <ProviderSettingPage />;
         case 'general':
           return <GeneralSettingsPage />;
+        case 'language-region':
+          return <LanguageRegionSettingsPage />;
         case 'prompt':
           return <PromptSettingsPage />;
         case 'account':
-          return <div className={styles.placeholder}>账户设置功能开发中...</div>;
+          return <div className={styles.placeholder}>{t('settings.placeholders.account')}</div>;
         case 'security':
-          return <div className={styles.placeholder}>安全设置功能开发中...</div>;
+          return <div className={styles.placeholder}>{t('settings.placeholders.security')}</div>;
         case 'notifications':
-          return <div className={styles.placeholder}>通知设置功能开发中...</div>;
+          return <div className={styles.placeholder}>{t('settings.placeholders.notifications')}</div>;
         case 'about':
           return <AboutPage />;
         default:
@@ -118,7 +129,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
               onClick={handleBackToMenu}
               className={styles.backButton}
             >
-              返回
+              {t('settings.back')}
             </Button>
             <span className={styles.mobileTitle}>
               {menuItems.find(item => item.key === selectedKey)?.label}
@@ -142,7 +153,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           {/* 移动端菜单 */}
           <div className={`${styles.mobileMenu} ${showContent ? styles.hidden : ''}`}>
             <div className={styles.siderHeader}>
-              <h3>设置</h3>
+              <h3>{t('settings.title')}</h3>
             </div>
             <Menu
               mode="inline"
@@ -167,7 +178,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             theme="light"
           >
             <div className={styles.siderHeader}>
-              <h3>设置</h3>
+              <h3>{t('settings.title')}</h3>
             </div>
             <Menu
               mode="inline"

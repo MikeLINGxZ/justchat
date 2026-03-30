@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Space } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   UserOutlined,
   SettingOutlined,
@@ -19,6 +20,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
@@ -31,19 +33,19 @@ const Layout: React.FC<LayoutProps> = () => {
     {
       key: 'chat',
       icon: <MessageOutlined />,
-      label: 'AI聊天',
+      label: t('layout.chat'),
       onClick: () => navigate('/home'),
     },
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: '个人资料',
+      label: t('layout.profile'),
       onClick: () => navigate('/app/profile'),
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: '设置',
+      label: t('layout.settings'),
       onClick: () => navigate('/app/settings'),
     },
   ];
@@ -71,12 +73,12 @@ const Layout: React.FC<LayoutProps> = () => {
             {
               key: '/app/profile',
               icon: <UserOutlined />,
-              label: '个人资料',
+              label: t('layout.profile'),
             },
             {
               key: '/app/settings',
               icon: <SettingOutlined />,
-              label: '设置',
+              label: t('layout.settings'),
             },
           ]}
           onClick={handleMenuClick}

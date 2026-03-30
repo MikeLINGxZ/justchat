@@ -28,6 +28,7 @@ func NewStorage() (*Storage, error) {
 	}
 
 	err = db.AutoMigrate(
+		&data_models.AppPreferences{},
 		&data_models.Model{},
 		&data_models.Provider{},
 		&data_models.Chat{},

@@ -36,6 +36,7 @@ import {
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
+import { useTranslation } from 'react-i18next';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import { ProviderType } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models';
@@ -43,6 +44,76 @@ import styles from './index.module.scss';
 
 const { Text } = Typography;
 const { Option } = Select;
+
+const toAssetUrl = (path: string) => {
+  const base = import.meta.env.BASE_URL || '/';
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  return `${normalizedBase}${path.replace(/^\/+/, '')}`;
+};
+
+const detectProviderTypeFromName = (providerName?: string): ProviderType | undefined => {
+  const normalizedName = providerName?.trim().toLowerCase();
+  if (!normalizedName) {
+    return undefined;
+  }
+
+  if (normalizedName.includes('deepseek') || normalizedName.includes('深度求索')) {
+    return ProviderType.ProviderTypeDeepseek;
+  }
+  if (
+    normalizedName.includes('aliyun') ||
+    normalizedName.includes('alibaba cloud') ||
+    normalizedName.includes('bailian') ||
+    normalizedName.includes('阿里云') ||
+    normalizedName.includes('百炼') ||
+    normalizedName.includes('qwen')
+  ) {
+    return ProviderType.ProviderTypeAliyuns;
+  }
+  if (normalizedName.includes('openrouter')) {
+    return ProviderType.ProviderTypeOpenrouter;
+  }
+  if (normalizedName.includes('ollama')) {
+    return ProviderType.ProviderTypeOllama;
+  }
+  if (
+    normalizedName.includes('openai-compatible') ||
+    normalizedName.includes('openai compatible api') ||
+    normalizedName.includes('openai compatible') ||
+    normalizedName.includes('openai 标准接口') ||
+    normalizedName.includes('openai-compatible api')
+  ) {
+    return ProviderType.ProviderTypeOther;
+  }
+
+  return undefined;
+};
+
+const detectProviderTypeFromBaseUrl = (baseUrl?: string): ProviderType | undefined => {
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    if (hostname.includes('deepseek')) {
+      return ProviderType.ProviderTypeDeepseek;
+    }
+    if (hostname.includes('dashscope') || hostname.includes('aliyuncs')) {
+      return ProviderType.ProviderTypeAliyuns;
+    }
+    if (hostname.includes('openrouter')) {
+      return ProviderType.ProviderTypeOpenrouter;
+    }
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return ProviderType.ProviderTypeOllama;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
 
 interface ProviderSettingPageProps {
   className?: string;
@@ -64,6 +135,7 @@ interface ProviderConfig {
 }
 
 const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
@@ -140,15 +212,25 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     if (!icon) {
       return undefined;
     }
-    if (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
+    if (icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
       return icon;
+    }
+    if (icon.startsWith('/')) {
+      return toAssetUrl(icon);
+    }
+    if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(icon)) {
+      return toAssetUrl(icon);
     }
     return `data:image/png;base64,${icon}`;
   };
 
-  const findSupportProvider = (providerType?: ProviderType, providerName?: string) => {
-    if (providerType) {
-      const matchedByType = supportProviders.find(item => item.provider_type === providerType);
+  const findSupportProvider = (providerType?: ProviderType, providerName?: string, baseUrl?: string) => {
+    const resolvedProviderType =
+      providerType ||
+      detectProviderTypeFromName(providerName) ||
+      detectProviderTypeFromBaseUrl(baseUrl);
+    if (resolvedProviderType) {
+      const matchedByType = supportProviders.find(item => item.provider_type === resolvedProviderType);
       if (matchedByType) {
         return matchedByType;
       }
@@ -166,8 +248,12 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (providers && providers.length > 0) {
         // 转换后端数据格式，添加前端需要的字段
         const formattedProviders = providers.map(provider => {
-          const matchedSupportProvider = findSupportProvider(provider.provider_type, provider.provider_name);
-          const extras = getProviderExtras(provider.provider_name, provider.provider_type);
+          const matchedSupportProvider = findSupportProvider(
+            provider.provider_type,
+            provider.provider_name,
+            provider.base_url,
+          );
+          const extras = getProviderExtras(provider.provider_name, provider.provider_type, provider.base_url);
           const icon = matchedSupportProvider?.icon || extras.icon;
           
           return {
@@ -186,7 +272,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       }
     } catch (error) {
       console.error('加载供应商配置失败:', error);
-      message.error('加载供应商配置失败');
+      message.error(t('settings.provider.messages.loadProvidersFailed'));
     } finally {
       setLoading(false);
     }
@@ -228,10 +314,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       );
       setProviders(updatedProviders);
 
-      message.success('保存成功');
+      message.success(t('settings.provider.messages.saveSuccess'));
     } catch (error) {
       console.error('保存失败:', error);
-      message.error('保存失败');
+      message.error(t('settings.provider.messages.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -275,7 +361,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       );
       setProviders(connectedProviders);
       
-      message.success('连接测试成功');
+      message.success(t('settings.provider.messages.testSuccess'));
     } catch (error) {
       // 更新状态为连接失败
       const failedProviders = providers.map(p => 
@@ -284,7 +370,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       setProviders(failedProviders);
       
       console.error('连接测试失败:', error);
-      message.error('连接测试失败');
+      message.error(t('settings.provider.messages.testFailed'));
     } finally {
       setTestingConnection(false);
     }
@@ -298,7 +384,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       setSupportProviders(providers || []);
     } catch (error) {
       console.error('加载支持的供应商列表失败:', error);
-      message.error('加载支持的供应商列表失败');
+      message.error(t('settings.provider.messages.loadSupportFailed'));
     } finally {
       setLoadingSupportProviders(false);
     }
@@ -359,10 +445,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       setSelectedSupportProvider(null);
       addProviderForm.resetFields();
 
-      message.success('供应商创建成功');
+      message.success(t('settings.provider.messages.createSuccess'));
     } catch (error) {
       console.error('创建供应商失败:', error);
-      message.error('创建供应商失败');
+      message.error(t('settings.provider.messages.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -381,10 +467,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         setSelectedProvider(updatedProviders[0].id);
       }
 
-      message.success('供应商删除成功');
+      message.success(t('settings.provider.messages.deleteSuccess'));
     } catch (error) {
       console.error('删除供应商失败:', error);
-      message.error('删除供应商失败');
+      message.error(t('settings.provider.messages.deleteFailed'));
     }
   };
 
@@ -406,10 +492,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 重新加载供应商列表以获取最新的模型数据
       await loadProviderConfigs();
 
-      message.success('模型列表刷新成功');
+      message.success(t('settings.provider.messages.refreshModelsSuccess'));
     } catch (error) {
       console.error('刷新模型失败:', error);
-      message.error('刷新模型失败');
+      message.error(t('settings.provider.messages.refreshModelsFailed'));
     } finally {
       setLoading(false);
     }
@@ -422,10 +508,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       await Service.AddProviderCustomModel(selectedProvider, customModelName.trim());
       setCustomModelName('');
       await loadProviderConfigs();
-      message.success('自定义模型添加成功');
+      message.success(t('settings.provider.messages.addCustomModelSuccess'));
     } catch (error) {
       console.error('添加自定义模型失败:', error);
-      message.error('添加自定义模型失败');
+      message.error(t('settings.provider.messages.addCustomModelFailed'));
     } finally {
       setAddingCustomModel(false);
     }
@@ -437,10 +523,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     try {
       await Service.DeleteProviderCustomModel(selectedProvider, modelName);
       await loadProviderConfigs();
-      message.success('自定义模型删除成功');
+      message.success(t('settings.provider.messages.deleteCustomModelSuccess'));
     } catch (error) {
       console.error('删除自定义模型失败:', error);
-      message.error('删除自定义模型失败');
+      message.error(t('settings.provider.messages.deleteCustomModelFailed'));
     }
   };
 
@@ -472,7 +558,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     try {
       // 构造新供应商数据
       const newProviderData = new Provider({
-        provider_name: values.providerName || '新建供应商',
+        provider_name: values.providerName || t('settings.provider.configFallbackName'),
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
@@ -489,50 +575,57 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       setIsCreatingNew(false);
       setNewProviderTempId(null);
 
-      message.success('供应商创建成功');
+      message.success(t('settings.provider.messages.createSuccess'));
     } catch (error) {
       console.error('创建供应商失败:', error);
-      message.error('创建供应商失败');
+      message.error(t('settings.provider.messages.createFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   // 获取供应商图标和描述的辅助函数
-  const getProviderExtras = (providerName: string, providerType?: ProviderType) => {
-    const matchedSupportProvider = findSupportProvider(providerType, providerName);
+  const getProviderExtras = (providerName: string, providerType?: ProviderType, baseUrl?: string) => {
+    const matchedSupportProvider = findSupportProvider(providerType, providerName, baseUrl);
     if (matchedSupportProvider) {
       return {
         icon: matchedSupportProvider.icon || '🔧',
-        description: matchedSupportProvider.description || '第三方AI模型提供商',
+        description: matchedSupportProvider.description || t('settings.provider.descriptions.thirdParty'),
       };
     }
 
     const extras: { [key: string]: { icon: string; description: string } } = {
       'openai': {
         icon: '🤖',
-        description: '强大的GPT系列模型，支持聊天和文本生成'
+        description: t('settings.provider.descriptions.openai'),
       },
       'anthropic': {
         icon: '🧠', 
-        description: 'Claude系列模型，注重安全性和有用性'
+        description: t('settings.provider.descriptions.anthropic'),
       },
       'gemini': {
         icon: '✨',
-        description: 'Google最新的多模态AI模型'
+        description: t('settings.provider.descriptions.google'),
       },
       'google': {
         icon: '✨',
-        description: 'Google最新的多模态AI模型'
+        description: t('settings.provider.descriptions.google'),
       }
     };
     
     const key = providerName.toLowerCase();
-    return extras[key] || { icon: '🔧', description: '第三方AI模型提供商' };
+    return extras[key] || { icon: '🔧', description: t('settings.provider.descriptions.thirdParty') };
   };
 
-  const renderProviderAvatar = (icon?: string, size: number = 28, enabled: boolean = true) => {
+  const renderProviderAvatar = (
+    icon?: string,
+    providerName?: string,
+    size: number = 28,
+    enabled: boolean = true,
+  ) => {
     const iconSrc = resolveIconSrc(icon);
+    const fallbackText = providerName?.trim().slice(0, 1).toUpperCase() || 'P';
+
     if (icon) {
       if (iconSrc) {
         return (
@@ -540,7 +633,9 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             size={size}
             src={iconSrc}
             style={{ backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)' }}
-          />
+          >
+            {fallbackText}
+          </Avatar>
         );
       }
       return (
@@ -554,7 +649,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             justifyContent: 'center',
           }}
         >
-          {icon}
+          {icon.length <= 2 ? icon : fallbackText}
         </Avatar>
       );
     }
@@ -581,12 +676,12 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             title={
               <Space>
                 <SettingOutlined />
-                <span>供应商列表</span>
+                <span>{t('settings.provider.listTitle')}</span>
               </Space>
             }
             className={styles.providerList}
             extra={
-              <Tooltip title="添加新的供应商">
+              <Tooltip title={t('settings.provider.addProvider')}>
                 <Button 
                   type="primary" 
                   size="small" 
@@ -594,7 +689,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   onClick={handleAddProvider}
                   className={styles.addBtn}
                 >
-                  添加
+                  {t('settings.provider.add')}
                 </Button>
               </Tooltip>
             }
@@ -612,13 +707,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                  <div className={`${styles.providerItemBox}`}>
                      <div className={styles.providerContent}>
                          <div className={styles.providerLeft}>
-                             {renderProviderAvatar(provider.icon, 28, provider.enable)}
+                             {renderProviderAvatar(provider.icon, provider.provider_name, 28, provider.enable)}
                              <div className={styles.providerDetails}>
                                  <div className={styles.providerName}>{provider.provider_name}</div>
                              </div>
                          </div>
                          <div className={styles.providerActions}>
-                             <Tooltip title={provider.enable ? '已启用' : '未启用'}>
+                             <Tooltip title={provider.enable ? t('settings.provider.status.enabled') : t('settings.provider.status.disabled')}>
                                  <Switch
                                      size="small"
                                      checked={provider.enable}
@@ -633,6 +728,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                                            // 调用后端接口更新
                                            const providerData = new Provider({
                                              provider_name: provider.provider_name,
+                                             provider_type: provider.provider_type,
                                              base_url: provider.base_url,
                                              file_upload_base_url: provider.file_upload_base_url || null,
                                              api_key: provider.api_key,
@@ -642,7 +738,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                            await Service.UpdateProvider(provider.id, providerData);
                                          } catch (error) {
                                            console.error('更新供应商状态失败:', error);
-                                           message.error('更新供应商状态失败');
+                                           message.error(t('settings.provider.messages.updateStatusFailed'));
                                            // 恢复UI状态
                                            const revertProviders = providers.map(p =>
                                                p.id === provider.id ? { ...p, enable: !checked } : p
@@ -652,13 +748,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                      }}
                                  />
                              </Tooltip>
-                             <Tooltip title="删除供应商">
+                             <Tooltip title={t('settings.provider.actions.delete')}>
                                  <Popconfirm
-                                     title="删除供应商"
-                                     description="确定要删除这个供应商吗？"
+                                     title={t('settings.provider.confirm.deleteTitle')}
+                                     description={t('settings.provider.confirm.deleteDescription')}
                                      onConfirm={() => handleDeleteProvider(provider.id)}
-                                     okText="确定"
-                                     cancelText="取消"
+                                     okText={t('common.confirm')}
+                                     cancelText={t('common.cancel')}
                                  >
                                      <Button
                                          type="text"
@@ -682,8 +778,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           <Card 
             title={
               <Space>
-                {renderProviderAvatar(currentProvider?.icon, 24, currentProvider?.enable)}
-                <span>配置 {currentProvider?.provider_name}</span>
+                {renderProviderAvatar(currentProvider?.icon, currentProvider?.provider_name, 24, currentProvider?.enable)}
+                <span>{t('settings.provider.configTitle', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}</span>
                 {currentProvider?.status === 'connected' && (
                   <Badge status="success" />
                 )}
@@ -700,14 +796,14 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               >
                 <div className={styles.formScrollArea}>
                   <Alert
-                    message="API密钥将加密保存在本地，不会上传到任何服务器。"
+                    message={t('settings.provider.securityAlert')}
                     type="info"
                     showIcon
                     className={styles.securityAlert}
                   />
 
                   <Form.Item
-                    label="启用状态"
+                    label={t('settings.provider.fields.enabled')}
                     name="enabled"
                     valuePropName="checked"
                   >
@@ -715,64 +811,64 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   </Form.Item>
 
                   <Form.Item
-                    label="供应商名称"
+                    label={t('settings.provider.fields.providerName')}
                     name="providerName"
                     rules={[
-                      { required: true, message: '请输入供应商名称' },
-                      { max: 50, message: '供应商名称不能超过50个字符' },
+                      { required: true, message: t('settings.provider.validation.providerNameRequired') },
+                      { max: 50, message: t('settings.provider.validation.providerNameMax') },
                     ]}
                   >
                     <Input 
-                      placeholder="为供应商设置一个名称" 
+                      placeholder={t('settings.provider.placeholders.providerName')} 
                     />
                   </Form.Item>
 
                   <Form.Item
-                    label="API 密钥"
+                    label={t('settings.provider.fields.apiKey')}
                     name="apiKey"
                     rules={[
-                      { required: false, message: '请输入API密钥' },
+                      { required: false, message: t('settings.provider.validation.apiKeyRequired') },
                     ]}
                   >
                     <Input.Password
-                      placeholder="请输入API密钥"
+                      placeholder={t('settings.provider.placeholders.apiKey')}
                       iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                     />
                   </Form.Item>
 
                   <Form.Item
-                    label="API 基础URL"
+                    label={t('settings.provider.fields.baseUrl')}
                     name="baseUrl"
                     rules={[
-                      { required: true, message: '请输入API基础URL' },
-                      { type: 'url', message: '请输入正确的URL格式' },
+                      { required: true, message: t('settings.provider.validation.baseUrlRequired') },
+                      { type: 'url', message: t('settings.provider.validation.invalidUrl') },
                     ]}
                   >
-                    <Input placeholder="https://api.example.com/v1" />
+                    <Input placeholder={t('settings.provider.placeholders.baseUrl')} />
                   </Form.Item>
 
                   <Form.Item
                     label={
                       <Space>
-                        <span>文件上传URL</span>
-                        <Tooltip title="多模态模型文件上传地址">
+                        <span>{t('settings.provider.fields.fileUploadUrl')}</span>
+                        <Tooltip title={t('settings.provider.helper.fileUploadUrl')}>
                           <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
                         </Tooltip>
                       </Space>
                     }
                     name="fileUploadBaseUrl"
                     rules={[
-                      { type: 'url', message: '请输入正确的URL格式' },
+                      { type: 'url', message: t('settings.provider.validation.invalidUrl') },
                     ]}
                     style={{ display: 'none' }}
                   >
-                    <Input placeholder="https://api.example.com/v1/uploads" />
+                    <Input placeholder={t('settings.provider.placeholders.fileUploadUrl')} />
                   </Form.Item>
 
                   <Form.Item
-                    label="默认模型"
+                    label={t('settings.provider.fields.defaultModel')}
                     name="defaultModel"
-                    help={`当前供应商共有 ${availableModelsForProvider.length} 个可用模型`}
+                    help={t('settings.provider.helper.modelCount', { count: availableModelsForProvider.length })}
                   >
                     <Input.Group compact>
                       <Form.Item 
@@ -781,10 +877,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       >
                         <Select 
                           key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
-                          placeholder="选择默认模型"
+                          placeholder={t('settings.provider.placeholders.selectDefaultModel')}
                           allowClear
                           showSearch
-                          notFoundContent="没有可用模型"
+                          notFoundContent={t('settings.provider.helper.noModels')}
                           style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
                           filterOption={(input, option) => {
                             if (!input) return true;
@@ -816,7 +912,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                           ))}
                         </Select>
                       </Form.Item>
-                      <Tooltip title="刷新模型列表">
+                      <Tooltip title={t('settings.provider.helper.refreshModels')}>
                         <Button 
                           icon={<ReloadOutlined />}
                           onClick={handleRefreshModels}
@@ -833,15 +929,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                       <div className={styles.customModelHeader}>
                         <div className={styles.customModelTitle}>
                           <SettingOutlined className={styles.customModelIcon} />
-                          <span>自定义模型</span>
+                          <span>{t('settings.provider.helper.customModels')}</span>
                         </div>
                         <Text type="secondary" className={styles.customModelDesc}>
-                          手动添加供应商未列出的模型
+                          {t('settings.provider.helper.customModelsDesc')}
                         </Text>
                       </div>
                       <div className={styles.customModelInput}>
                         <Input
-                          placeholder="输入模型名称，如 gpt-4o-mini"
+                          placeholder={t('settings.provider.placeholders.customModel')}
                           value={customModelName}
                           onChange={(e) => setCustomModelName(e.target.value)}
                           onPressEnter={handleAddCustomModel}
@@ -855,7 +951,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                           disabled={!customModelName.trim()}
                           className={styles.customModelAddBtn}
                         >
-                          添加
+                          {t('common.add')}
                         </Button>
                       </div>
                       {availableModelsForProvider.filter(m => m.is_custom).length > 0 && (
@@ -867,13 +963,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                                 <span className={styles.customModelName}>
                                   {model.alias || model.model}
                                 </span>
-                                <Tooltip title="删除此自定义模型">
+                                <Tooltip title={t('settings.provider.helper.deleteCustomModel')}>
                                   <Popconfirm
-                                    title="删除自定义模型"
-                                    description={`确定要删除模型 "${model.model}" 吗？`}
+                                    title={t('settings.provider.confirm.deleteCustomModelTitle')}
+                                    description={t('settings.provider.confirm.deleteCustomModelDescription', { name: model.model })}
                                     onConfirm={() => handleDeleteCustomModel(model.model)}
-                                    okText="确定"
-                                    cancelText="取消"
+                                    okText={t('common.confirm')}
+                                    cancelText={t('common.cancel')}
                                     okButtonProps={{ danger: true }}
                                   >
                                     <Button
@@ -908,7 +1004,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                             size="middle"
                             className={styles.primaryButton}
                           >
-                            新建
+                            {t('settings.provider.actions.createShort')}
                           </Button>
                           <Button 
                             icon={<DeleteOutlined />}
@@ -916,7 +1012,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                             size="middle"
                             className={styles.testButton}
                           >
-                            取消
+                            {t('common.cancel')}
                           </Button>
                         </>
                       ) : (
@@ -930,7 +1026,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                             size="middle"
                             className={styles.primaryButton}
                           >
-                            保存配置
+                            {t('settings.provider.actions.save')}
                           </Button>
                           <Button 
                             icon={<ReloadOutlined />}
@@ -939,19 +1035,19 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                             size="middle"
                             className={styles.testButton}
                           >
-                            测试连接
+                            {t('settings.provider.actions.testConnection')}
                           </Button>
                           <Popconfirm
-                            title="删除供应商"
+                            title={t('settings.provider.confirm.deleteTitle')}
                             description={
                               <div className={styles.deleteConfirm}>
                                 <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                                确定要删除 <strong>{currentProvider?.provider_name}</strong> 吗？
+                                {t('settings.provider.confirm.deleteCurrentDescription', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}
                               </div>
                             }
                             onConfirm={handleDeleteCurrentProvider}
-                            okText="确定删除"
-                            cancelText="取消"
+                            okText={t('settings.provider.confirm.okDelete')}
+                            cancelText={t('common.cancel')}
                             okButtonProps={{ danger: true }}
                           >
                             <Button 
@@ -960,7 +1056,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                               size="middle"
                               className={styles.dangerButton}
                             >
-                              删除供应商
+                              {t('settings.provider.actions.delete')}
                             </Button>
                           </Popconfirm>
                         </>
@@ -984,10 +1080,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 onClick={handleCancelSelectProvider}
                 style={{ padding: 0 }}
               />
-              <span>添加供应商 - {selectedSupportProvider.name}</span>
+              <span>{t('settings.provider.modal.addProvider', { name: selectedSupportProvider.name })}</span>
             </Space>
           ) : (
-            '选择供应商'
+            t('settings.provider.modal.selectProvider')
           )
         }
         open={addProviderModalVisible}
@@ -1041,7 +1137,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               );
             })}
             {supportProviders.length === 0 && !loadingSupportProviders && (
-              <div className={styles.supportProviderEmpty}>暂无可用的供应商</div>
+              <div className={styles.supportProviderEmpty}>{t('settings.provider.modal.emptyProviders')}</div>
             )}
           </div>
         ) : (
@@ -1051,14 +1147,14 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             onFinish={handleCreateProviderInModal}
           >
             <Alert
-              message="API密钥将加密保存在本地，不会上传到任何服务器。"
+              message={t('settings.provider.securityAlert')}
               type="info"
               showIcon
               className={styles.modalAlert}
             />
 
             <Form.Item
-              label="启用状态"
+              label={t('settings.provider.fields.enabled')}
               name="enabled"
               valuePropName="checked"
             >
@@ -1066,71 +1162,71 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
             </Form.Item>
 
             <Form.Item
-              label="供应商名称"
+              label={t('settings.provider.fields.providerName')}
               name="providerName"
               rules={[
-                { required: true, message: '请输入供应商名称' },
-                { max: 50, message: '供应商名称不能超过50个字符' },
+                { required: true, message: t('settings.provider.validation.providerNameRequired') },
+                { max: 50, message: t('settings.provider.validation.providerNameMax') },
               ]}
             >
-              <Input placeholder="为供应商设置一个名称" />
+              <Input placeholder={t('settings.provider.placeholders.providerName')} />
             </Form.Item>
 
             <Form.Item
-              label="API 密钥"
+              label={t('settings.provider.fields.apiKey')}
               name="apiKey"
               rules={[
-                { required: false, message: '请输入API密钥' },
+                { required: false, message: t('settings.provider.validation.apiKeyRequired') },
               ]}
             >
               <Input.Password
-                placeholder="请输入API密钥"
+                placeholder={t('settings.provider.placeholders.apiKey')}
                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
               />
             </Form.Item>
 
             <Form.Item
-              label="API 基础URL"
+              label={t('settings.provider.fields.baseUrl')}
               name="baseUrl"
               rules={[
-                { required: true, message: '请输入API基础URL' },
-                { type: 'url', message: '请输入正确的URL格式' },
+                { required: true, message: t('settings.provider.validation.baseUrlRequired') },
+                { type: 'url', message: t('settings.provider.validation.invalidUrl') },
               ]}
             >
-              <Input placeholder="https://api.example.com/v1" />
+              <Input placeholder={t('settings.provider.placeholders.baseUrl')} />
             </Form.Item>
 
             <Form.Item
               label={
                 <Space>
-                  <span>文件上传URL</span>
-                  <Tooltip title="多模态模型文件上传地址">
+                  <span>{t('settings.provider.fields.fileUploadUrl')}</span>
+                  <Tooltip title={t('settings.provider.helper.fileUploadUrl')}>
                     <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
               }
               name="fileUploadBaseUrl"
               rules={[
-                { type: 'url', message: '请输入正确的URL格式' },
+                { type: 'url', message: t('settings.provider.validation.invalidUrl') },
               ]}
               style={{ display: 'none' }}
             >
-              <Input placeholder="https://api.example.com/v1/uploads" />
+              <Input placeholder={t('settings.provider.placeholders.fileUploadUrl')} />
             </Form.Item>
 
             <Form.Item
-              label="默认模型"
+              label={t('settings.provider.fields.defaultModel')}
               name="defaultModel"
-              help="保存供应商后可以刷新模型列表"
+              help={t('settings.provider.helper.chooseModelAfterSave')}
             >
               <Select
-                placeholder="保存供应商后可选择默认模型"
+                placeholder={t('settings.provider.placeholders.chooseModelAfterSave')}
                 allowClear
                 showSearch
                 disabled
-                notFoundContent="请先保存供应商"
+                notFoundContent={t('settings.provider.helper.saveProviderFirst')}
               >
-                <Option value={0} disabled>请先保存供应商</Option>
+                <Option value={0} disabled>{t('settings.provider.helper.saveProviderFirst')}</Option>
               </Select>
             </Form.Item>
 
@@ -1145,7 +1241,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     addProviderForm.resetFields();
                   }}
                 >
-                  取消
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="primary"
@@ -1153,7 +1249,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                   icon={<PlusOutlined />}
                   loading={loading}
                 >
-                  创建供应商
+                  {t('settings.provider.actions.create')}
                 </Button>
               </Space>
             </Form.Item>

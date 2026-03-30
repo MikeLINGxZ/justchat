@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Card, Typography, Slider, Button, message } from 'antd';
 import { ReloadOutlined, CheckOutlined, FontSizeOutlined } from '@ant-design/icons';
-import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS, getFontSizeLabel } from '@/stores/fontSizeStore';
+import { useTranslation } from 'react-i18next';
+import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
 
 const { Title, Text } = Typography;
 
 const GeneralSettingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { fontSizeOffset, setFontSizeOffset } = useFontSizeStore();
   
   const [previewOffset, setPreviewOffset] = useState(fontSizeOffset);
@@ -20,7 +22,7 @@ const GeneralSettingsPage: React.FC = () => {
   const handleApplySettings = () => {
     setFontSizeOffset(previewOffset as any);
     setHasChanges(false);
-    message.success('字体设置已应用');
+    message.success(t('settings.general.applied'));
   };
 
   const handleResetSettings = () => {
@@ -28,10 +30,12 @@ const GeneralSettingsPage: React.FC = () => {
     setHasChanges(FONT_SIZE_OFFSETS.NORMAL !== fontSizeOffset);
   };
 
+  const getFontSizeLabel = (offset: number) => t(`settings.general.fontSizes.${offset}`);
+
   const sliderMarks = FONT_SIZE_OPTIONS.reduce((marks, option) => {
     marks[option.value] = {
       style: { fontSize: '11px', color: 'var(--text-color-secondary)' },
-      label: option.label,
+      label: getFontSizeLabel(option.value),
     };
     return marks;
   }, {} as any);
@@ -39,17 +43,17 @@ const GeneralSettingsPage: React.FC = () => {
   return (
     <div className={styles.generalSettings}>
       <div className={styles.content}>
-        <Card title="显示设置" className={styles.settingCard}>
+        <Card title={t('settings.general.displayTitle')} className={styles.settingCard}>
           <div className={styles.settingItem}>
             <div className={styles.settingLabel}>
-              <Title level={5}>字体大小</Title>
-              <Text type="secondary">调整应用中的文字大小，提升阅读体验</Text>
+              <Title level={5}>{t('settings.general.fontSizeTitle')}</Title>
+              <Text type="secondary">{t('settings.general.fontSizeDescription')}</Text>
             </div>
             
             <div className={styles.fontSizeControl}>
               <div className={styles.sliderContainer}>
                 <div className={styles.sliderHeader}>
-                  <Text strong>字体大小</Text>
+                  <Text strong>{t('settings.general.currentSize')}</Text>
                   <div className={styles.currentSize}>
                     <Text strong className={styles.sizeLabel}>{getFontSizeLabel(previewOffset)}</Text>
                     <Text type="secondary" className={styles.sizeDesc}>
@@ -68,7 +72,7 @@ const GeneralSettingsPage: React.FC = () => {
               </div>
 
               <div className={styles.presetOptions}>
-                <Text strong>快速选择</Text>
+                <Text strong>{t('settings.general.quickSelect')}</Text>
                 <div className={styles.presetButtons}>
                   {FONT_SIZE_OPTIONS.map((option) => (
                     <button
@@ -76,7 +80,7 @@ const GeneralSettingsPage: React.FC = () => {
                       className={`${styles.presetButton} ${previewOffset === option.value ? styles.active : ''}`}
                       onClick={() => handlePreviewChange(option.value)}
                     >
-                      <span className={styles.buttonLabel}>{option.label}</span>
+                      <span className={styles.buttonLabel}>{getFontSizeLabel(option.value)}</span>
                       <span className={styles.buttonSize}>{option.description}</span>
                     </button>
                   ))}
@@ -86,7 +90,7 @@ const GeneralSettingsPage: React.FC = () => {
               <div className={styles.previewArea}>
                 <div className={styles.previewHeader}>
                   <FontSizeOutlined className={styles.previewIcon} />
-                  <Title level={5}>预览效果</Title>
+                  <Title level={5}>{t('settings.general.previewTitle')}</Title>
                 </div>
                 <div 
                   className={styles.previewContent}
@@ -96,16 +100,16 @@ const GeneralSettingsPage: React.FC = () => {
                   }}
                 >
                   <div className={styles.previewText}>
-                    这是标准字体大小的文本预览。你可以通过调整上方的设置来改变文字的大小，找到最适合你阅读习惯的字体尺寸。
+                    {t('settings.general.previewText')}
                   </div>
                   <div className={styles.previewSmall} style={{ fontSize: `${12 + previewOffset}px` }}>
-                    小号文字：这是较小的辅助信息文本。
+                    {t('settings.general.previewSmall')}
                   </div>
                   <div className={styles.previewBold} style={{ fontSize: `${14 + previewOffset}px`, fontWeight: 600 }}>
-                    粗体文字：这是重要的加粗文本。
+                    {t('settings.general.previewBold')}
                   </div>
                   <div className={styles.previewSecondary} style={{ fontSize: `${14 + previewOffset}px`, opacity: 0.65 }}>
-                    次要文字：这是次要信息文本。
+                    {t('settings.general.previewSecondary')}
                   </div>
                 </div>
               </div>
@@ -117,7 +121,7 @@ const GeneralSettingsPage: React.FC = () => {
                   disabled={previewOffset === FONT_SIZE_OFFSETS.NORMAL}
                   className={styles.resetButton}
                 >
-                  恢复默认
+                  {t('settings.general.reset')}
                 </Button>
                 <Button 
                   type="primary" 
@@ -126,7 +130,7 @@ const GeneralSettingsPage: React.FC = () => {
                   disabled={!hasChanges}
                   className={styles.applyButton}
                 >
-                  应用设置
+                  {t('settings.general.apply')}
                 </Button>
               </div>
             </div>

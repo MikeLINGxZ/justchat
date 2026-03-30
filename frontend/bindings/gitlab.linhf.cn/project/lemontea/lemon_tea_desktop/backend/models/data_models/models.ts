@@ -15,6 +15,31 @@ import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../../time/models.js";
 
+export enum AppLanguage {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    AppLanguageZhCN = "zh-CN",
+    AppLanguageEnUS = "en-US",
+};
+
+export enum AppRegion {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    AppRegionAsia = "asia",
+    AppRegionEurope = "europe",
+    AppRegionNorthAmerica = "north-america",
+    AppRegionSouthAmerica = "south-america",
+    AppRegionAfrica = "africa",
+    AppRegionOceania = "oceania",
+    AppRegionAntarctica = "antarctica",
+};
+
 export class AssistantMessageExtra {
     "tool_uses": ToolUse[];
     "execution_trace": ExecutionTrace;

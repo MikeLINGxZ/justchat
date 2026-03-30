@@ -18,6 +18,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
@@ -102,14 +103,14 @@ func resetDirectAssistantState(message *data_models.Message) {
 func buildApprovalDecisionToolResult(toolName string, decision data_models.ToolApprovalDecision, comment string) string {
 	switch decision {
 	case data_models.ToolApprovalDecisionAllow:
-		return fmt.Sprintf("用户已允许执行工具：%s。", toolName)
+		return i18n.Sprintf(i18n.CurrentLocale(), "chat.approval.allow_result", toolName)
 	case data_models.ToolApprovalDecisionCustom:
 		if strings.TrimSpace(comment) == "" {
-			return fmt.Sprintf("用户没有直接批准执行工具：%s，并要求先补充更多说明。请根据用户反馈调整方案。", toolName)
+			return i18n.Sprintf(i18n.CurrentLocale(), "chat.approval.custom_result_without_comment", toolName)
 		}
-		return fmt.Sprintf("用户没有直接批准执行工具：%s，并提供了意见：%s。请根据该意见调整方案，必要时重新发起更合适的工具请求。", toolName, comment)
+		return i18n.Sprintf(i18n.CurrentLocale(), "chat.approval.custom_result_with_comment", toolName, comment)
 	default:
-		return fmt.Sprintf("用户拒绝了工具：%s 的本次调用。请不要执行该操作，并改用无需该操作的方案。", toolName)
+		return i18n.Sprintf(i18n.CurrentLocale(), "chat.approval.reject_result", toolName)
 	}
 }
 
@@ -197,7 +198,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			ToolUses:       []data_models.ToolUse{},
 			ExecutionTrace: data_models.ExecutionTrace{Steps: []data_models.TraceStep{}},
 			RouteType:      "",
-			CurrentStage:   "等待执行",
+			CurrentStage:   "chat.stage.pending",
 		},
 	}
 	assistantMessageId, err := s.storage.CreateMessage(ctx, chatUuid, assistantMessage)
@@ -503,13 +504,13 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		task.LastOutputAt = &now
 		parentStepID, _ := toolCtx.Value(traceParentStepIDContextKey).(string)
 		agentName, _ := toolCtx.Value(traceAgentNameContextKey).(string)
-		assistantMessage.AssistantMessageExtra.CurrentStage = "子任务执行"
+		assistantMessage.AssistantMessageExtra.CurrentStage = "chat.stage.running_tasks"
 		assistantMessage.AssistantMessageExtra.CurrentAgent = agentName
 		return appendTraceStepLocked(data_models.TraceStep{
 			StepID:       callID,
 			ParentStepID: parentStepID,
 			Type:         data_models.TraceStepTypeToolCall,
-			Title:        fmt.Sprintf("调用工具：%s", displayName),
+			Title:        i18n.TCurrent("chat.trace.tool_call_title", map[string]string{"name": displayName}),
 			Summary:      description,
 			Status:       data_models.TraceStepStatusRunning,
 			AgentName:    agentName,
@@ -519,7 +520,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			DetailBlocks: []data_models.TraceDetailBlock{
 				{
 					Kind:    "tool_args",
-					Title:   "工具参数",
+					Title:   i18n.TCurrent("chat.trace.tool_parameters", nil),
 					Content: toolArgs,
 					Format:  data_models.TraceDetailFormatJSON,
 				},
@@ -594,14 +595,14 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks[:0:0], traceStep.DetailBlocks...)
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
 				Kind:    "tool_result",
-				Title:   "工具结果",
+				Title:   i18n.TCurrent("chat.trace.tool_result", nil),
 				Content: toolUse.ToolResult,
 				Format:  data_models.TraceDetailFormatText,
 			})
 			if runErr != nil {
 				traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
 					Kind:    "tool_result",
-					Title:   "错误信息",
+					Title:   i18n.TCurrent("chat.trace.error_info", nil),
 					Content: runErr.Error(),
 					Format:  data_models.TraceDetailFormatText,
 				})
@@ -629,7 +630,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		summary := approval.Summary()
 		upsertPendingApprovalLocked(summary)
 		task.Status = data_models.TaskStatusWaitingApproval
-		assistantMessage.AssistantMessageExtra.CurrentStage = "等待用户确认"
+		assistantMessage.AssistantMessageExtra.CurrentStage = "chat.stage.awaiting_approval"
 		assistantMessage.AssistantMessageExtra.CurrentAgent, _ = toolCtx.Value(traceAgentNameContextKey).(string)
 
 		if idx := findToolUseIndexLocked(callID); idx != -1 {
@@ -644,7 +645,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks[:0:0], traceStep.DetailBlocks...)
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
 				Kind:    "approval_request",
-				Title:   "确认请求",
+				Title:   i18n.TCurrent("chat.trace.confirm_request", nil),
 				Content: approval.Message,
 				Format:  data_models.TraceDetailFormatMarkdown,
 			})
@@ -670,7 +671,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 
 		removePendingApprovalLocked(approval.ApprovalID)
 		task.Status = data_models.TaskStatusRunning
-		assistantMessage.AssistantMessageExtra.CurrentStage = "子任务执行"
+		assistantMessage.AssistantMessageExtra.CurrentStage = "chat.stage.running_tasks"
 		assistantMessage.AssistantMessageExtra.CurrentAgent, _ = toolCtx.Value(traceAgentNameContextKey).(string)
 
 		if idx := findToolUseIndexLocked(callID); idx != -1 {
@@ -694,8 +695,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks[:0:0], traceStep.DetailBlocks...)
 			traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
 				Kind:    "approval_response",
-				Title:   "确认结果",
-				Content: "用户已允许继续执行",
+				Title:   i18n.TCurrent("chat.trace.confirm_result", nil),
+				Content: i18n.TCurrent("chat.trace.confirm_result", nil),
 				Format:  data_models.TraceDetailFormatText,
 			})
 			assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[traceIdx] = traceStep
@@ -852,7 +853,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 								removePendingApprovalLocked(approval.ApprovalID)
 								task.Status = data_models.TaskStatusRunning
 								agentName, _ := toolCtx.Value(traceAgentNameContextKey).(string)
-								updateCurrentStageLocked("子任务执行", agentName)
+								updateCurrentStageLocked("chat.stage.running_tasks", agentName)
 								err = finishToolUseWithStatusLocked(
 									toolCtx,
 									input.CallID,
@@ -899,7 +900,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	directTools := append([]tool.BaseTool{newWorkflowHandoffTool(setWorkflowHandoff)}, agentTools...)
 
 	// 新建供应商（入口暴露 workflow handoff 工具 + 用户已选工具，工作流执行阶段仍使用 agentTools）
-	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, directTools, toolMiddleware, s.prompts)
+	localizedPrompts := s.localizedPromptSet()
+	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, directTools, toolMiddleware, localizedPrompts)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -924,7 +926,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		assistantMu.Lock()
 		task.Status = data_models.TaskStatusRunning
 		task.StartedAt = &now
-		updateCurrentStageLocked("准备执行", "")
+		updateCurrentStageLocked("chat.stage.preparing", "")
 		saveErr := s.storage.SaveTask(context.Background(), task)
 		assistantMu.Unlock()
 		if saveErr != nil {
@@ -995,7 +997,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			defer entryCancel()
 			entryMessages := append([]schema.Message{{
 				Role:    schema.System,
-				Content: s.prompts.EntrySystem,
+				Content: localizedPrompts.EntrySystem,
 			}}, schemaMessages...)
 			iter, err := provider.AgentCompletions(entryCtx, entryMessages)
 			if err != nil {
@@ -1086,18 +1088,18 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				if summary == "" {
 					summary = handoff.Reason
 				}
-				return startTraceStepLocked(stepID, "", data_models.TraceStepTypeClassify, "主模型交付 Workflow", summary, userRequest, "任务交付", "MainRouterAgent", []data_models.TraceDetailBlock{
-					{Kind: "input", Title: "用户输入", Content: userRequest, Format: data_models.TraceDetailFormatText},
-					{Kind: "review", Title: "交付结果", Content: fmt.Sprintf("{\"reason\":%q,\"summary\":%q,\"rule_name\":%q}", handoff.Reason, handoff.Summary, handoff.RuleName), Format: data_models.TraceDetailFormatJSON},
+				return startTraceStepLocked(stepID, "", data_models.TraceStepTypeClassify, i18n.TCurrent("chat.trace.workflow_handoff", nil), summary, userRequest, "chat.stage.classify", "MainRouterAgent", []data_models.TraceDetailBlock{
+					{Kind: "input", Title: i18n.TCurrent("chat.trace.user_input", nil), Content: userRequest, Format: data_models.TraceDetailFormatText},
+					{Kind: "review", Title: i18n.TCurrent("chat.trace.handoff_result", nil), Content: fmt.Sprintf("{\"reason\":%q,\"summary\":%q,\"rule_name\":%q}", handoff.Reason, handoff.Summary, handoff.RuleName), Format: data_models.TraceDetailFormatJSON},
 				}, map[string]interface{}{
 					"route_source": handoff.Source,
 					"rule_name":    handoff.RuleName,
 				})
 			}
 			finishWorkflowHandoff := func(stepID string, handoff workflowHandoff) error {
-				return finishTraceStepLocked(stepID, handoff.Reason, handoff.Summary, "任务交付", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-					{Kind: "input", Title: "用户输入", Content: userRequest, Format: data_models.TraceDetailFormatText},
-					{Kind: "review", Title: "交付结果", Content: fmt.Sprintf("{\"reason\":%q,\"summary\":%q,\"rule_name\":%q}", handoff.Reason, handoff.Summary, handoff.RuleName), Format: data_models.TraceDetailFormatJSON},
+				return finishTraceStepLocked(stepID, handoff.Reason, handoff.Summary, "chat.stage.classify", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+					{Kind: "input", Title: i18n.TCurrent("chat.trace.user_input", nil), Content: userRequest, Format: data_models.TraceDetailFormatText},
+					{Kind: "review", Title: i18n.TCurrent("chat.trace.handoff_result", nil), Content: fmt.Sprintf("{\"reason\":%q,\"summary\":%q,\"rule_name\":%q}", handoff.Reason, handoff.Summary, handoff.RuleName), Format: data_models.TraceDetailFormatJSON},
 				}, map[string]interface{}{
 					"route_source": handoff.Source,
 					"rule_name":    handoff.RuleName,
@@ -1122,7 +1124,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			}
 
 			assistantMu.Lock()
-			if err := startTraceStepLocked("plan", "", data_models.TraceStepTypePlan, "拆解任务", planningSummary, userRequest, "任务拆解", "PlannerAgent", []data_models.TraceDetailBlock{
+			if err := startTraceStepLocked("plan", "", data_models.TraceStepTypePlan, i18n.TCurrent("chat.trace.plan_title", nil), planningSummary, userRequest, "chat.stage.plan", "PlannerAgent", []data_models.TraceDetailBlock{
 				{Kind: "input", Title: planningInputLabel, Content: userRequest, Format: data_models.TraceDetailFormatText},
 			}, nil); err != nil {
 				assistantMu.Unlock()
@@ -1138,8 +1140,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				taskTitles = append(taskTitles, item.Title)
 			}
 			assistantMu.Lock()
-			err = finishTraceStepLocked("plan", fmt.Sprintf("共拆分 %d 个子任务", len(plan.Tasks)), strings.Join(taskTitles, " | "), "任务拆解", "PlannerAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-				{Kind: "plan", Title: "完整计划", Content: formatWorkflowPlanForTrace(plan), Format: data_models.TraceDetailFormatMarkdown},
+			err = finishTraceStepLocked("plan", i18n.Sprintf(i18n.CurrentLocale(), "chat.trace.plan_done", len(plan.Tasks)), strings.Join(taskTitles, " | "), "chat.stage.plan", "PlannerAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+				{Kind: "plan", Title: i18n.TCurrent("chat.trace.plan_complete", nil), Content: formatWorkflowPlanForTrace(plan), Format: data_models.TraceDetailFormatMarkdown},
 			}, map[string]interface{}{
 				"goal":                plan.Goal,
 				"completion_criteria": plan.CompletionCriteria,
@@ -1177,14 +1179,14 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 							defer wg.Done()
 							dispatchStepID := fmt.Sprintf("dispatch_%s_%d", taskItem.ID, retryCount)
 							assistantMu.Lock()
-							dispatchErr := startTraceStepLocked(dispatchStepID, "", data_models.TraceStepTypeDispatch, "分派子任务", fmt.Sprintf("第 %d 批：%s", batchNo+1, taskItem.Title), taskItem.Description, "子任务执行", "MainRouterAgent", []data_models.TraceDetailBlock{
-								{Kind: "plan", Title: "分派内容", Content: formatDispatchedTaskForTrace(taskItem, batchNo+1), Format: data_models.TraceDetailFormatMarkdown},
+							dispatchErr := startTraceStepLocked(dispatchStepID, "", data_models.TraceStepTypeDispatch, i18n.TCurrent("chat.trace.dispatch_task", nil), fmt.Sprintf("第 %d 批：%s", batchNo+1, taskItem.Title), taskItem.Description, "chat.stage.running_tasks", "MainRouterAgent", []data_models.TraceDetailBlock{
+								{Kind: "plan", Title: i18n.TCurrent("chat.trace.dispatch_content", nil), Content: formatDispatchedTaskForTrace(taskItem, batchNo+1), Format: data_models.TraceDetailFormatMarkdown},
 							}, map[string]interface{}{
 								"task_id": taskItem.ID,
 							})
 							if dispatchErr == nil {
-								dispatchErr = finishTraceStepLocked(dispatchStepID, "任务已分派", taskItem.Description, "子任务执行", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-									{Kind: "plan", Title: "分派内容", Content: formatDispatchedTaskForTrace(taskItem, batchNo+1), Format: data_models.TraceDetailFormatMarkdown},
+								dispatchErr = finishTraceStepLocked(dispatchStepID, i18n.TCurrent("chat.trace.dispatch_done", nil), taskItem.Description, "chat.stage.running_tasks", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+									{Kind: "plan", Title: i18n.TCurrent("chat.trace.dispatch_content", nil), Content: formatDispatchedTaskForTrace(taskItem, batchNo+1), Format: data_models.TraceDetailFormatMarkdown},
 								}, map[string]interface{}{
 									"task_id": taskItem.ID,
 								})
@@ -1197,7 +1199,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 
 							agentStepID := fmt.Sprintf("agent_%s_retry_%d", taskItem.ID, retryCount)
 							assistantMu.Lock()
-							agentErr := startTraceStepLocked(agentStepID, "", data_models.TraceStepTypeAgentRun, taskItem.Title, taskItem.Description, buildWorkerPrompt(plan, taskItem, priorResults), "子任务执行", taskItem.SuggestedAgent, buildAgentTraceDetails(plan, taskItem, priorResults, retryInstructions), map[string]interface{}{
+							agentErr := startTraceStepLocked(agentStepID, "", data_models.TraceStepTypeAgentRun, taskItem.Title, taskItem.Description, buildWorkerPrompt(plan, taskItem, priorResults), "chat.stage.running_tasks", taskItem.SuggestedAgent, buildAgentTraceDetails(plan, taskItem, priorResults, retryInstructions), map[string]interface{}{
 								"task_id":         taskItem.ID,
 								"expected_output": taskItem.ExpectedOutput,
 							})
@@ -1210,7 +1212,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 							execResult, execErr := executePlanTask(runCtx, provider, taskItem, plan, priorResults, originalUserMessage, agentTools, toolMiddleware, agentStepID)
 							assistantMu.Lock()
 							finishStatus := data_models.TraceStepStatusDone
-							summary := "子任务执行完成"
+							summary := i18n.TCurrent("chat.trace.agent_finished", nil)
 							outputPreview := compactText(execResult.Output, 240)
 							metadata := map[string]interface{}{
 								"task_id":    taskItem.ID,
@@ -1220,7 +1222,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 								finishStatus = data_models.TraceStepStatusError
 								summary = execErr.Error()
 							}
-							agentErr = finishTraceStepLocked(agentStepID, summary, outputPreview, "子任务执行", taskItem.SuggestedAgent, finishStatus, buildAgentResultTraceDetails(plan, taskItem, priorResults, retryInstructions, execResult, execErr), metadata)
+							agentErr = finishTraceStepLocked(agentStepID, summary, outputPreview, "chat.stage.running_tasks", taskItem.SuggestedAgent, finishStatus, buildAgentResultTraceDetails(plan, taskItem, priorResults, retryInstructions, execResult, execErr), metadata)
 							assistantMu.Unlock()
 							if agentErr != nil && execErr == nil {
 								execErr = agentErr
@@ -1249,7 +1251,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			review := reviewDecision{}
 			for attempt := 0; attempt < 2; attempt++ {
 				assistantMu.Lock()
-				err := startTraceStepLocked(fmt.Sprintf("synthesize_%d", attempt), "", data_models.TraceStepTypeSynthesize, "汇总子任务结果", synthesisSummary, userRequest, "结果汇总", "SynthesizerAgent", []data_models.TraceDetailBlock{
+				err := startTraceStepLocked(fmt.Sprintf("synthesize_%d", attempt), "", data_models.TraceStepTypeSynthesize, i18n.TCurrent("chat.trace.synthesize_title", nil), synthesisSummary, userRequest, "chat.stage.synthesize", "SynthesizerAgent", []data_models.TraceDetailBlock{
 					{Kind: "input", Title: planningInputLabel, Content: userRequest, Format: data_models.TraceDetailFormatText},
 				}, nil)
 				assistantMu.Unlock()
@@ -1261,8 +1263,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 					return err
 				}
 				assistantMu.Lock()
-				err = finishTraceStepLocked(fmt.Sprintf("synthesize_%d", attempt), "已生成候选答案", compactText(draft, 240), "结果汇总", "SynthesizerAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-					{Kind: "output", Title: "候选答案", Content: draft, Format: data_models.TraceDetailFormatMarkdown},
+				err = finishTraceStepLocked(fmt.Sprintf("synthesize_%d", attempt), i18n.TCurrent("chat.trace.candidate_generated", nil), compactText(draft, 240), "chat.stage.synthesize", "SynthesizerAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+					{Kind: "output", Title: i18n.TCurrent("chat.trace.candidate_answer", nil), Content: draft, Format: data_models.TraceDetailFormatMarkdown},
 				}, nil)
 				assistantMu.Unlock()
 				if err != nil {
@@ -1270,7 +1272,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				}
 
 				assistantMu.Lock()
-				err = startTraceStepLocked(fmt.Sprintf("review_%d", attempt), "", data_models.TraceStepTypeReview, "审核候选答案", reviewSummaryText, draft, "结果审核", "ReviewerAgent", []data_models.TraceDetailBlock{
+				err = startTraceStepLocked(fmt.Sprintf("review_%d", attempt), "", data_models.TraceStepTypeReview, i18n.TCurrent("chat.trace.review_title", nil), reviewSummaryText, draft, "chat.stage.review", "ReviewerAgent", []data_models.TraceDetailBlock{
 					{Kind: "output", Title: "待审核答案", Content: draft, Format: data_models.TraceDetailFormatMarkdown},
 				}, nil)
 				assistantMu.Unlock()
@@ -1288,8 +1290,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 					reviewStatus = data_models.TraceStepStatusError
 				}
 				assistantMu.Lock()
-				err = finishTraceStepLocked(fmt.Sprintf("review_%d", attempt), reviewSummary, compactText(review.RetryInstructions, 240), "结果审核", "ReviewerAgent", reviewStatus, []data_models.TraceDetailBlock{
-					{Kind: "review", Title: "审核结果", Content: formatReviewDecisionForTrace(review), Format: data_models.TraceDetailFormatJSON},
+				err = finishTraceStepLocked(fmt.Sprintf("review_%d", attempt), reviewSummary, compactText(review.RetryInstructions, 240), "chat.stage.review", "ReviewerAgent", reviewStatus, []data_models.TraceDetailBlock{
+					{Kind: "review", Title: i18n.TCurrent("chat.trace.review_result", nil), Content: formatReviewDecisionForTrace(review), Format: data_models.TraceDetailFormatJSON},
 				}, map[string]interface{}{
 					"approved":           review.Approved,
 					"affected_task_ids":  review.AffectedTaskIDs,
@@ -1309,9 +1311,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				retryStepID := fmt.Sprintf("retry_%d", attempt+1)
 				assistantMu.Lock()
 				assistantMessage.AssistantMessageExtra.RetryCount = attempt + 1
-				err = startTraceStepLocked(retryStepID, "", data_models.TraceStepTypeRetry, fmt.Sprintf("第 %d 次修正", attempt+1), strings.Join(review.Issues, "；"), review.RetryInstructions, "重新生成", "MainRouterAgent", []data_models.TraceDetailBlock{
-					{Kind: "retry", Title: "重试原因", Content: strings.Join(review.Issues, "\n"), Format: data_models.TraceDetailFormatMarkdown},
-					{Kind: "retry", Title: "修正指令", Content: review.RetryInstructions, Format: data_models.TraceDetailFormatText},
+				err = startTraceStepLocked(retryStepID, "", data_models.TraceStepTypeRetry, i18n.Sprintf(i18n.CurrentLocale(), "chat.trace.retry_title", attempt+1), strings.Join(review.Issues, "；"), review.RetryInstructions, "chat.stage.retry", "MainRouterAgent", []data_models.TraceDetailBlock{
+					{Kind: "retry", Title: i18n.TCurrent("chat.trace.retry_reason", nil), Content: strings.Join(review.Issues, "\n"), Format: data_models.TraceDetailFormatMarkdown},
+					{Kind: "retry", Title: i18n.TCurrent("chat.trace.retry_instruction", nil), Content: review.RetryInstructions, Format: data_models.TraceDetailFormatText},
 				}, map[string]interface{}{
 					"retry_instructions": review.RetryInstructions,
 				})
@@ -1333,8 +1335,8 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				}
 				reviewFeedback = strings.Join(review.Issues, "；") + "\n" + review.RetryInstructions
 				assistantMu.Lock()
-				err = finishTraceStepLocked(retryStepID, "已完成定向重试", review.RetryInstructions, "重新生成", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-					{Kind: "retry", Title: "重试结果", Content: formatRetrySummaryForTrace(review), Format: data_models.TraceDetailFormatMarkdown},
+				err = finishTraceStepLocked(retryStepID, i18n.TCurrent("chat.trace.retry_done", nil), review.RetryInstructions, "chat.stage.retry", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+					{Kind: "retry", Title: i18n.TCurrent("chat.trace.retry_result", nil), Content: formatRetrySummaryForTrace(review), Format: data_models.TraceDetailFormatMarkdown},
 				}, map[string]interface{}{
 					"affected_task_ids": review.AffectedTaskIDs,
 				})
@@ -1351,16 +1353,16 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			}
 
 			assistantMu.Lock()
-			err = startTraceStepLocked("finalize_workflow", "", data_models.TraceStepTypeFinalize, "输出最终答案", finalSummary, draft, "已完成", "MainRouterAgent", []data_models.TraceDetailBlock{
-				{Kind: "output", Title: "最终答案草稿", Content: draft, Format: data_models.TraceDetailFormatMarkdown},
+			err = startTraceStepLocked("finalize_workflow", "", data_models.TraceStepTypeFinalize, i18n.TCurrent("chat.trace.finalize_title", nil), finalSummary, draft, "chat.stage.finished", "MainRouterAgent", []data_models.TraceDetailBlock{
+				{Kind: "output", Title: i18n.TCurrent("chat.trace.final_draft", nil), Content: draft, Format: data_models.TraceDetailFormatMarkdown},
 			}, nil)
 			if err == nil {
 				assistantMessage.Content = draft
 				err = persistAssistantSnapshotLocked(true)
 			}
 			if err == nil {
-				err = finishTraceStepLocked("finalize_workflow", finalSummary, compactText(draft, 240), "已完成", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
-					{Kind: "output", Title: "最终答案", Content: draft, Format: data_models.TraceDetailFormatMarkdown},
+				err = finishTraceStepLocked("finalize_workflow", finalSummary, compactText(draft, 240), "chat.stage.finished", "MainRouterAgent", data_models.TraceStepStatusDone, []data_models.TraceDetailBlock{
+					{Kind: "output", Title: i18n.TCurrent("chat.trace.final_answer", nil), Content: draft, Format: data_models.TraceDetailFormatMarkdown},
 				}, map[string]interface{}{
 					"approved": review.Approved,
 				})
@@ -1557,7 +1559,7 @@ func (s *Service) GenChatTitle(ctx context.Context, chatUuid string, modelId uin
 
 func (s *Service) genChatTitle(ctx context.Context, chatUuid string, providerModel wrapper_models.ProviderModel, update bool) (string, error) {
 	// 新建供应商
-	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{}, compose.ToolMiddleware{}, s.prompts)
+	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{}, compose.ToolMiddleware{}, s.localizedPromptSet())
 	if err != nil {
 		return "", err
 	}

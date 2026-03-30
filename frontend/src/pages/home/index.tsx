@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {BackTop, Layout, message} from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Index from './sidebar';
 import {useViewportHeight} from '@/hooks/useViewportHeight';
 import './index.module.scss';
@@ -15,6 +16,7 @@ interface ChatPageProps {
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({className}) => {
+    const { t } = useTranslation();
     // 获取路由参数和导航函数
     const {chatUuid: urlChatUuid} = useParams<{ chatUuid?: string }>();
     const navigate = useNavigate();
@@ -49,8 +51,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
 
     // 设置页面标题
     useEffect(() => {
-        document.title = 'AI聊天 - Lemon Tea';
-    }, []);
+        document.title = t('app.chatTitle');
+    }, [t]);
 
     useEffect(() => {
         console.log('监听页面参数 chatUuid 变化:', urlChatUuid);
@@ -116,13 +118,13 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 if (refreshChatList) {
                     refreshChatList();
                 }
-                message.success('聊天删除成功');
+                message.success(t('home.chat.deleteSuccess'));
             } catch (error) {
                 console.error('删除聊天失败:', error);
-                message.error('删除聊天失败');
+                message.error(t('home.chat.deleteFailed'));
             }
         },
-        [currentChatUuid, handleNewChat, refreshChatList]
+        [currentChatUuid, handleNewChat, refreshChatList, t]
     );
 
     // 设置刷新聊天列表的回调

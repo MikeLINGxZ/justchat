@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Layout from '@/components/layout';
 import { initializeStores } from '@/stores';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
@@ -27,12 +28,14 @@ function EntryRedirect() {
 }
 
 function App() {
+  const { t } = useTranslation();
+
   // 初始化视口高度检测
   useViewportHeight();
 
   // 初始化所有stores
   useEffect(() => {
-    initializeStores();
+    void initializeStores();
   }, []);
 
   return (
@@ -62,7 +65,7 @@ function App() {
               />
             ))}
           </div>
-          <span style={{ fontSize: '14px', color: '#666', whiteSpace: 'nowrap' }}>加载中...</span>
+          <span style={{ fontSize: '14px', color: '#666', whiteSpace: 'nowrap' }}>{t('common.loading')}</span>
           <style>{`
             @keyframes loading-wave {
               0%, 40%, 100% {

@@ -12,6 +12,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tool_approval"
 )
 
@@ -28,18 +29,18 @@ func (s *ShellTool) Id() string {
 }
 
 func (s *ShellTool) Name() string {
-	return "Shell 工具"
+	return i18n.TCurrent("tool.shell.name", nil)
 }
 
 func (s *ShellTool) Description() string {
-	return "执行一次非交互式 shell 命令。每次执行前都必须获得用户确认。"
+	return i18n.TCurrent("tool.shell.description", nil)
 }
 
 func (s *ShellTool) Tool() tool.BaseTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
 			Name: "shell_tool",
-			Desc: "执行一次非交互式 shell 命令，返回 stdout、stderr 和 exit_code。调用前系统会请求用户确认。",
+			Desc: i18n.TCurrent("tool.shell.description", nil),
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 				"command": {
 					Type:     schema.String,
@@ -116,13 +117,12 @@ func (s *ShellTool) BuildApprovalPrompt(ctx context.Context, argumentsJSON strin
 	dir := tool_approval.ResolveWorkingDirectory(params.WorkingDirectory)
 	scope := tool_approval.DescribeScope(dir)
 	return &tool_approval.ApprovalPrompt{
-		Title: "Shell 工具请求执行命令",
-		Message: fmt.Sprintf(
-			"工具想要执行以下命令：\n\n`%s`\n\n工作目录：`%s`\n范围：%s\n",
-			command,
-			dir,
-			scope,
-		),
-		Scope: fmt.Sprintf("%s：%s", scope, dir),
+		Title: i18n.TCurrent("tool.shell.approval.title", nil),
+		Message: i18n.TCurrent("tool.shell.approval.message", map[string]string{
+			"command":   command,
+			"directory": dir,
+			"scope":     scope,
+		}) + "\n" + i18n.TCurrent("tool.approval.actions", nil),
+		Scope: fmt.Sprintf("%s: %s", scope, dir),
 	}, nil
 }
