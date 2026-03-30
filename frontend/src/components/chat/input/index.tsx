@@ -37,6 +37,12 @@ interface ChatInputProps {
     onMessageListScrollToBottom?: () => void;
     // 模型选择框点击事件
     onModelSelectorClick?: () => void;
+    // 当前审批回复上下文
+    approvalInput?: { approvalId: string; title: string; message: string } | null;
+    // 发送审批意见
+    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void;
+    // 取消审批意见输入
+    onCancelApprovalComment?: () => void;
 }
 
 const DEFAULT_MODEL_KEY = 'chat_default_model';
@@ -76,6 +82,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onSelectModelChange,
     onMessageListScrollToBottom,
     onModelSelectorClick,
+    approvalInput,
+    onSendApprovalComment,
+    onCancelApprovalComment,
 }) => {
 
     const [showAddMenu, setShowAddMenu] = useState(false);
@@ -256,19 +265,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }, [availableModels, modelSearchValue]);
 
     // 消息发送事件
-    const handleSend = useCallback(() => {
-        if (!hasSelectedModel) {
+    const handleSend = useCallback(async () => {
+        if (!approvalInput && !hasSelectedModel) {
             return;
         }
         if (onMessageListScrollToBottom != null) {
             onMessageListScrollToBottom();
         }
         const trimmedValue = inputValue.trim();
+        if (approvalInput) {
+            if (!trimmedValue) {
+                return;
+            }
+            await onSendApprovalComment?.(approvalInput.approvalId, trimmedValue);
+            clearInput();
+            return;
+        }
         if (trimmedValue || selectFiles.length > 0) {
             onSendButtonClick();
             clearInput(); // 清空输入框和文件列表
         }
-    }, [hasSelectedModel, inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
+    }, [approvalInput, hasSelectedModel, inputValue, selectFiles, onSendApprovalComment, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
 
     const handleInputChange = useCallback((value: string) => {
         setInputValue(value);
@@ -299,12 +316,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
         };
     }, [showAddMenu, showModelMenu, showToolMenu]);
 
-    const isSendDisabled = !hasSelectedModel || (!inputValue.trim() && selectFiles.length === 0);
+    const isSendDisabled = approvalInput
+        ? !inputValue.trim()
+        : !hasSelectedModel || (!inputValue.trim() && selectFiles.length === 0);
 
     return (
         <div className={`${styles.chatInput}`}>
-            {!hasSelectedModel && (
+            {!approvalInput && !hasSelectedModel && (
                 <div className={styles.modelWarning}>请先选择模型</div>
+            )}
+            {approvalInput && (
+                <div className={styles.approvalNotice}>
+                    <div className={styles.approvalNoticeText}>
+                        <div className={styles.approvalNoticeTitle}>正在回复审批意见：{approvalInput.title}</div>
+                        <div className={styles.approvalNoticeBody}>{approvalInput.message}</div>
+                    </div>
+                    <button
+                        type="button"
+                        className={styles.approvalNoticeClose}
+                        onClick={onCancelApprovalComment}
+                    >
+                        取消
+                    </button>
+                </div>
             )}
             <div className={styles.inputContainer}>
                  {/* 文件列表显示区域 */}
@@ -349,7 +383,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         value={inputValue}
                         onChange={handleInputChange}
                         onSend={handleSend}
-                        placeholder="输入消息... (支持 Markdown 格式)"
+                        placeholder={approvalInput ? "输入你对这次工具请求的意见..." : "输入消息... (支持 Markdown 格式)"}
                     />
                 </div>
                 
@@ -577,7 +611,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 onClick={handleSend}
                                 disabled={isSendDisabled}
                                 type="button"
-                                title={hasSelectedModel ? "发送消息" : "请先选择模型"}
+                                title={approvalInput ? "发送审批意见" : (hasSelectedModel ? "发送消息" : "请先选择模型")}
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

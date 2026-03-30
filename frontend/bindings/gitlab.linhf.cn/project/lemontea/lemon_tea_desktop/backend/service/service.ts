@@ -209,6 +209,10 @@ export function ResetPromptFile(name: string): $CancellablePromise<view_models$0
     });
 }
 
+export function RespondToolApproval(input: data_models$0.ToolApprovalResponse): $CancellablePromise<void> {
+    return $Call.ByID(1866640078, input);
+}
+
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
         return $$createType26($result);

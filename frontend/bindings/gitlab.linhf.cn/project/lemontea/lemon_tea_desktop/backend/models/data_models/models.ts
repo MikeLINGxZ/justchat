@@ -18,6 +18,7 @@ import * as time$0 from "../../../../../../../time/models.js";
 export class AssistantMessageExtra {
     "tool_uses": ToolUse[];
     "execution_trace": ExecutionTrace;
+    "pending_approvals": ToolApprovalSummary[];
     "route_type": RouteType;
     "retry_count": number;
     "current_stage": string;
@@ -34,6 +35,9 @@ export class AssistantMessageExtra {
         }
         if (!("execution_trace" in $$source)) {
             this["execution_trace"] = (new ExecutionTrace());
+        }
+        if (!("pending_approvals" in $$source)) {
+            this["pending_approvals"] = [];
         }
         if (!("route_type" in $$source)) {
             this["route_type"] = RouteType.$zero;
@@ -69,12 +73,16 @@ export class AssistantMessageExtra {
     static createFrom($$source: any = {}): AssistantMessageExtra {
         const $$createField0_0 = $$createType1;
         const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tool_uses" in $$parsedSource) {
             $$parsedSource["tool_uses"] = $$createField0_0($$parsedSource["tool_uses"]);
         }
         if ("execution_trace" in $$parsedSource) {
             $$parsedSource["execution_trace"] = $$createField1_0($$parsedSource["execution_trace"]);
+        }
+        if ("pending_approvals" in $$parsedSource) {
+            $$parsedSource["pending_approvals"] = $$createField2_0($$parsedSource["pending_approvals"]);
         }
         return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
     }
@@ -145,7 +153,7 @@ export class ExecutionTrace {
      * Creates a new ExecutionTrace instance from a string or object.
      */
     static createFrom($$source: any = {}): ExecutionTrace {
-        const $$createField0_0 = $$createType4;
+        const $$createField0_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("steps" in $$parsedSource) {
             $$parsedSource["steps"] = $$createField0_0($$parsedSource["steps"]);
@@ -259,8 +267,8 @@ export class Message {
      * Creates a new Message instance from a string or object.
      */
     static createFrom($$source: any = {}): Message {
-        const $$createField11_0 = $$createType6;
-        const $$createField12_0 = $$createType8;
+        const $$createField11_0 = $$createType8;
+        const $$createField12_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("user_message_extra" in $$parsedSource) {
             $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
@@ -442,10 +450,123 @@ export enum TaskStatus {
 
     TaskStatusPending = "pending",
     TaskStatusRunning = "running",
+    TaskStatusWaitingApproval = "waiting_approval",
     TaskStatusCompleted = "completed",
     TaskStatusFailed = "failed",
     TaskStatusStopped = "stopped",
 };
+
+export enum ToolApprovalDecision {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ToolApprovalDecisionAllow = "allow",
+    ToolApprovalDecisionReject = "reject",
+    ToolApprovalDecisionCustom = "custom",
+};
+
+export class ToolApprovalResponse {
+    "approval_id": string;
+    "decision": ToolApprovalDecision;
+    "comment": string;
+
+    /** Creates a new ToolApprovalResponse instance. */
+    constructor($$source: Partial<ToolApprovalResponse> = {}) {
+        if (!("approval_id" in $$source)) {
+            this["approval_id"] = "";
+        }
+        if (!("decision" in $$source)) {
+            this["decision"] = ToolApprovalDecision.$zero;
+        }
+        if (!("comment" in $$source)) {
+            this["comment"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ToolApprovalResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ToolApprovalResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ToolApprovalResponse($$parsedSource as Partial<ToolApprovalResponse>);
+    }
+}
+
+export enum ToolApprovalStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ToolApprovalStatusPending = "pending",
+    ToolApprovalStatusResolved = "resolved",
+    ToolApprovalStatusExpired = "expired",
+};
+
+export class ToolApprovalSummary {
+    "approval_id": string;
+    "tool_call_id": string;
+    "tool_id": string;
+    "tool_name": string;
+    "status": ToolApprovalStatus;
+    "decision": ToolApprovalDecision;
+    "title": string;
+    "message": string;
+    "scope": string;
+    "requested_at": time$0.Time | null;
+    "responded_at": time$0.Time | null;
+
+    /** Creates a new ToolApprovalSummary instance. */
+    constructor($$source: Partial<ToolApprovalSummary> = {}) {
+        if (!("approval_id" in $$source)) {
+            this["approval_id"] = "";
+        }
+        if (!("tool_call_id" in $$source)) {
+            this["tool_call_id"] = "";
+        }
+        if (!("tool_id" in $$source)) {
+            this["tool_id"] = "";
+        }
+        if (!("tool_name" in $$source)) {
+            this["tool_name"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = ToolApprovalStatus.$zero;
+        }
+        if (!("decision" in $$source)) {
+            this["decision"] = ToolApprovalDecision.$zero;
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("message" in $$source)) {
+            this["message"] = "";
+        }
+        if (!("scope" in $$source)) {
+            this["scope"] = "";
+        }
+        if (!("requested_at" in $$source)) {
+            this["requested_at"] = null;
+        }
+        if (!("responded_at" in $$source)) {
+            this["responded_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ToolApprovalSummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ToolApprovalSummary {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ToolApprovalSummary($$parsedSource as Partial<ToolApprovalSummary>);
+    }
+}
 
 export class ToolUse {
     "index": number;
@@ -516,7 +637,9 @@ export enum ToolUseStatus {
 
     ToolUseStatusPending = "pending",
     ToolUseStatusRunning = "running",
+    ToolUseStatusAwaitingApproval = "awaiting_approval",
     ToolUseStatusDone = "done",
+    ToolUseStatusRejected = "rejected",
     ToolUseStatusError = "error",
 };
 
@@ -636,8 +759,8 @@ export class TraceStep {
      * Creates a new TraceStep instance from a string or object.
      */
     static createFrom($$source: any = {}): TraceStep {
-        const $$createField13_0 = $$createType10;
-        const $$createField14_0 = $$createType11;
+        const $$createField13_0 = $$createType12;
+        const $$createField14_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("detail_blocks" in $$parsedSource) {
             $$parsedSource["detail_blocks"] = $$createField13_0($$parsedSource["detail_blocks"]);
@@ -657,7 +780,9 @@ export enum TraceStepStatus {
 
     TraceStepStatusPending = "pending",
     TraceStepStatusRunning = "running",
+    TraceStepStatusAwaitingApproval = "awaiting_approval",
     TraceStepStatusDone = "done",
+    TraceStepStatusRejected = "rejected",
     TraceStepStatusError = "error",
     TraceStepStatusSkipped = "skipped",
 };
@@ -730,9 +855,9 @@ export class UserMessageExtra {
      * Creates a new UserMessageExtra instance from a string or object.
      */
     static createFrom($$source: any = {}): UserMessageExtra {
-        const $$createField2_0 = $$createType13;
-        const $$createField3_0 = $$createType14;
-        const $$createField4_0 = $$createType14;
+        const $$createField2_0 = $$createType15;
+        const $$createField3_0 = $$createType16;
+        const $$createField4_0 = $$createType16;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
@@ -751,15 +876,17 @@ export class UserMessageExtra {
 const $$createType0 = ToolUse.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = ExecutionTrace.createFrom;
-const $$createType3 = TraceStep.createFrom;
+const $$createType3 = ToolApprovalSummary.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = UserMessageExtra.createFrom;
-const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = AssistantMessageExtra.createFrom;
+const $$createType5 = TraceStep.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = UserMessageExtra.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = TraceDetailBlock.createFrom;
-const $$createType10 = $Create.Array($$createType9);
-const $$createType11 = $Create.Map($Create.Any, $Create.Any);
-const $$createType12 = File.createFrom;
-const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = $Create.Array($Create.Any);
+const $$createType9 = AssistantMessageExtra.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = TraceDetailBlock.createFrom;
+const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = $Create.Map($Create.Any, $Create.Any);
+const $$createType14 = File.createFrom;
+const $$createType15 = $Create.Array($$createType14);
+const $$createType16 = $Create.Array($Create.Any);

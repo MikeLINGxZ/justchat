@@ -262,3 +262,97 @@ func TestGetChatActiveTaskSkipsStaleAndReturnsLiveTask(t *testing.T) {
 		t.Fatalf("stale task status = %#v, want failed", staleAfter)
 	}
 }
+
+func TestRecoverWaitingApprovalTaskExpiresPendingApproval(t *testing.T) {
+	svc, st := newTaskRecoveryTestService(t)
+
+	startedAt := time.Now().Add(-2 * time.Second)
+	task := data_models.Task{
+		TaskUuid:             "task-waiting-approval-1",
+		ChatUuid:             "chat-waiting-approval-1",
+		AssistantMessageUuid: "assistant-waiting-approval-1",
+		Status:               data_models.TaskStatusWaitingApproval,
+		EventKey:             "event:task:waiting-approval-1",
+		StartedAt:            &startedAt,
+	}
+	message := data_models.Message{
+		MessageUuid: "assistant-waiting-approval-1",
+		Role:        schema.Assistant,
+		AssistantMessageExtra: &data_models.AssistantMessageExtra{
+			CurrentStage: "等待用户确认",
+			ToolUses: []data_models.ToolUse{
+				{CallID: "tool-approval-1", Status: data_models.ToolUseStatusAwaitingApproval, StartedAt: &startedAt},
+			},
+			PendingApprovals: []data_models.ToolApprovalSummary{
+				{ApprovalID: "approval-pending-1", ToolCallID: "tool-approval-1", ToolName: "文件工具", Status: data_models.ToolApprovalStatusPending},
+			},
+			ExecutionTrace: data_models.ExecutionTrace{
+				Steps: []data_models.TraceStep{
+					{StepID: "tool-approval-1", Status: data_models.TraceStepStatusAwaitingApproval, StartedAt: &startedAt},
+				},
+			},
+		},
+	}
+	seedTaskRecoveryFixture(t, st, task, message)
+	if err := st.CreateToolApproval(context.Background(), data_models.ToolApproval{
+		ApprovalID:           "approval-pending-1",
+		TaskUuid:             task.TaskUuid,
+		ChatUuid:             task.ChatUuid,
+		AssistantMessageUuid: task.AssistantMessageUuid,
+		ToolCallID:           "tool-approval-1",
+		ToolID:               "file_tool",
+		ToolName:             "文件工具",
+		Status:               data_models.ToolApprovalStatusPending,
+		Title:                "读取文件",
+		Message:              "等待确认",
+		RequestedAt:          &startedAt,
+	}); err != nil {
+		t.Fatalf("CreateToolApproval() error = %v", err)
+	}
+
+	if err := svc.recoverStaleRunningTasks(context.Background()); err != nil {
+		t.Fatalf("recoverStaleRunningTasks() error = %v", err)
+	}
+
+	gotTask, err := st.GetTask(context.Background(), task.TaskUuid)
+	if err != nil {
+		t.Fatalf("GetTask() error = %v", err)
+	}
+	if gotTask == nil {
+		t.Fatal("GetTask() = nil, want task")
+	}
+	if gotTask.FinishError != expiredApprovalFinishError {
+		t.Fatalf("finish_error = %q, want %q", gotTask.FinishError, expiredApprovalFinishError)
+	}
+
+	gotMessage, err := st.GetMessageByUUID(context.Background(), task.AssistantMessageUuid)
+	if err != nil {
+		t.Fatalf("GetMessageByUUID() error = %v", err)
+	}
+	if gotMessage == nil || gotMessage.AssistantMessageExtra == nil {
+		t.Fatalf("assistant message = %#v, want assistant extra", gotMessage)
+	}
+	if len(gotMessage.AssistantMessageExtra.PendingApprovals) != 0 {
+		t.Fatalf("pending approvals len = %d, want 0", len(gotMessage.AssistantMessageExtra.PendingApprovals))
+	}
+	if gotMessage.AssistantMessageExtra.ToolUses[0].Status != data_models.ToolUseStatusError {
+		t.Fatalf("tool status = %q, want error", gotMessage.AssistantMessageExtra.ToolUses[0].Status)
+	}
+	if gotMessage.AssistantMessageExtra.ExecutionTrace.Steps[0].Status != data_models.TraceStepStatusError {
+		t.Fatalf("trace status = %q, want error", gotMessage.AssistantMessageExtra.ExecutionTrace.Steps[0].Status)
+	}
+
+	storedApproval, err := st.GetToolApprovalByApprovalID(context.Background(), "approval-pending-1")
+	if err != nil {
+		t.Fatalf("GetToolApprovalByApprovalID() error = %v", err)
+	}
+	if storedApproval == nil {
+		t.Fatal("stored approval = nil")
+	}
+	if storedApproval.Status != data_models.ToolApprovalStatusExpired {
+		t.Fatalf("approval status = %q, want expired", storedApproval.Status)
+	}
+	if storedApproval.ResponseComment != expiredApprovalFinishError {
+		t.Fatalf("response comment = %q, want %q", storedApproval.ResponseComment, expiredApprovalFinishError)
+	}
+}

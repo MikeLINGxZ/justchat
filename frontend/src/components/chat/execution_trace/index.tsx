@@ -15,6 +15,8 @@ interface ExecutionTraceProps {
     currentStage?: string;
     retryCount?: number;
     isStreaming?: boolean;
+    onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
+    onApprovalComment?: (approvalId: string, title: string, message: string) => void;
 }
 
 const stageLabelMap: Record<string, string> = {
@@ -25,6 +27,7 @@ const stageLabelMap: Record<string, string> = {
     "直接回答": "直接回答",
     "任务拆解": "任务拆解",
     "子任务执行": "子任务执行",
+    "等待用户确认": "等待用户确认",
     "结果汇总": "结果汇总",
     "结果审核": "结果审核",
     "重新生成": "重新生成",
@@ -53,6 +56,10 @@ function getStatusLabel(status?: string): string {
             return "跳过";
         case TraceStepStatus.TraceStepStatusPending:
             return "准备中";
+        case TraceStepStatus.TraceStepStatusAwaitingApproval:
+            return "等待确认";
+        case TraceStepStatus.TraceStepStatusRejected:
+            return "已拒绝";
         default:
             return "执行中";
     }
@@ -80,7 +87,10 @@ function parseTime(value: unknown): number | null {
 }
 
 function isRunningStep(step: TraceStep): boolean {
-    return step.status === TraceStepStatus.TraceStepStatusRunning || step.status === TraceStepStatus.TraceStepStatusPending || step.status === "";
+    return step.status === TraceStepStatus.TraceStepStatusRunning
+        || step.status === TraceStepStatus.TraceStepStatusPending
+        || step.status === TraceStepStatus.TraceStepStatusAwaitingApproval
+        || step.status === "";
 }
 
 function getTraceStepElapsedMs(step: TraceStep, nowMs: number): number {
@@ -177,13 +187,26 @@ function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: numb
     );
 }
 
+function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; message: string } | null {
+    const metadata = step.metadata ?? {};
+    const approvalId = typeof metadata.approval_id === "string" ? metadata.approval_id : "";
+    if (!approvalId) {
+        return null;
+    }
+    const title = typeof metadata.approval_title === "string" ? metadata.approval_title : (step.title || "工具确认");
+    const message = typeof metadata.approval_message === "string" ? metadata.approval_message : (step.summary || "");
+    return { approvalId, title, message };
+}
+
 const TraceNode: React.FC<{
     step: TraceStep;
     tree: Map<string, TraceStep[]>;
     nowMs: number;
     depth?: number;
     autoExpand?: boolean;
-}> = ({ step, tree, nowMs, depth = 0, autoExpand = false }) => {
+    onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
+    onApprovalComment?: (approvalId: string, title: string, message: string) => void;
+}> = ({ step, tree, nowMs, depth = 0, autoExpand = false, onApprovalDecision, onApprovalComment }) => {
     const children = tree.get(step.step_id) ?? [];
     const inlineChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? children : [];
     const nestedChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? [] : children;
@@ -192,10 +215,12 @@ const TraceNode: React.FC<{
     const isRunning = isRunningStep(step);
     const statusClassName = isRunning
         ? styles.running
-        : step.status === TraceStepStatus.TraceStepStatusError
+        : step.status === TraceStepStatus.TraceStepStatusError || step.status === TraceStepStatus.TraceStepStatusRejected
             ? styles.error
             : styles.done;
     const detailBlocks = step.detail_blocks ?? [];
+    const approvalMeta = getApprovalMeta(step);
+    const isAwaitingApproval = step.status === TraceStepStatus.TraceStepStatusAwaitingApproval && approvalMeta != null;
     const isAgentStep = step.type === TraceStepType.TraceStepTypeAgentRun;
     const leadingDetailBlocks = isAgentStep
         ? detailBlocks.filter((block) => block.kind !== "output" && block.kind !== "tool_result")
@@ -259,6 +284,8 @@ const TraceNode: React.FC<{
                                                     nowMs={nowMs}
                                                     depth={0}
                                                     autoExpand={isRunning}
+                                                    onApprovalDecision={onApprovalDecision}
+                                                    onApprovalComment={onApprovalComment}
                                                 />
                                             ))}
                                         </div>
@@ -279,6 +306,35 @@ const TraceNode: React.FC<{
                             {detailBlocks.map((block, index) => renderDetailBlock(step, block, index))}
                         </div>
                     )}
+                    {expanded && isAwaitingApproval && approvalMeta && (
+                        <div className={styles.approvalCard}>
+                            <div className={styles.approvalTitle}>{approvalMeta.title}</div>
+                            <div className={styles.approvalBody}>{approvalMeta.message}</div>
+                            <div className={styles.approvalActions}>
+                                <button
+                                    type="button"
+                                    className={styles.approvalButton}
+                                    onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'allow')}
+                                >
+                                    1. 允许
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.approvalButton}
+                                    onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'reject')}
+                                >
+                                    2. 拒绝
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.approvalButton}
+                                    onClick={() => onApprovalComment?.(approvalMeta.approvalId, approvalMeta.title, approvalMeta.message)}
+                                >
+                                    3. 告诉ai应该怎么做
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {expanded && !isAgentStep && inlineChildren.length > 0 && (
                         <div className={styles.inlineChildrenSection}>
                             <div className={styles.inlineChildrenTitle}>工具调用</div>
@@ -291,6 +347,8 @@ const TraceNode: React.FC<{
                                         nowMs={nowMs}
                                         depth={0}
                                         autoExpand={isRunning}
+                                        onApprovalDecision={onApprovalDecision}
+                                        onApprovalComment={onApprovalComment}
                                     />
                                 ))}
                             </div>
@@ -305,7 +363,16 @@ const TraceNode: React.FC<{
             {nestedChildren.length > 0 && expanded && (
                 <div className={styles.children}>
                     {nestedChildren.map((child) => (
-                        <TraceNode key={child.step_id} step={child} tree={tree} nowMs={nowMs} depth={depth + 1} autoExpand={isRunning} />
+                        <TraceNode
+                            key={child.step_id}
+                            step={child}
+                            tree={tree}
+                            nowMs={nowMs}
+                            depth={depth + 1}
+                            autoExpand={isRunning}
+                            onApprovalDecision={onApprovalDecision}
+                            onApprovalComment={onApprovalComment}
+                        />
                     ))}
                 </div>
             )}
@@ -318,6 +385,8 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
     currentStage,
     retryCount = 0,
     isStreaming = false,
+    onApprovalDecision,
+    onApprovalComment,
 }) => {
     const steps = trace?.steps ?? [];
     const [nowMs, setNowMs] = useState(() => Date.now());
@@ -368,7 +437,15 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
             {expanded && (
                 <div className={styles.body}>
                     {rootSteps.map((step) => (
-                        <TraceNode key={step.step_id} step={step} tree={tree} nowMs={nowMs} autoExpand={step.status !== TraceStepStatus.TraceStepStatusDone} />
+                        <TraceNode
+                            key={step.step_id}
+                            step={step}
+                            tree={tree}
+                            nowMs={nowMs}
+                            autoExpand={step.status !== TraceStepStatus.TraceStepStatusDone}
+                            onApprovalDecision={onApprovalDecision}
+                            onApprovalComment={onApprovalComment}
+                        />
                     ))}
                 </div>
             )}

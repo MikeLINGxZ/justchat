@@ -1,4 +1,5 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import { createPortal } from "react-dom";
 import styles from "./index.module.scss";
 import ReasoningContent from "@/components/chat/reasoning_message";
 import ExecutionTracePanel from "@/components/chat/execution_trace";
@@ -11,6 +12,8 @@ import MarkdownRenderer from "@/components/markdown_renderer";
 interface ChatMessageProps {
     message: Message
     isLoading?: boolean
+    onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void
+    onApprovalComment?: (approvalId: string, title: string, message: string) => void
 }
 
 let cachedToolsPromise: Promise<ViewTool[]> | null = null;
@@ -87,6 +90,12 @@ function formatDuration(elapsedMs: number): string {
 function getStatusLabel(toolUse: ToolUse): string {
     if (toolUse.status === ToolUseStatus.ToolUseStatusDone) {
         return "已完成";
+    }
+    if (toolUse.status === ToolUseStatus.ToolUseStatusAwaitingApproval) {
+        return "等待确认";
+    }
+    if (toolUse.status === ToolUseStatus.ToolUseStatusRejected) {
+        return "已拒绝";
     }
     if (toolUse.status === ToolUseStatus.ToolUseStatusError) {
         return "失败";
@@ -182,6 +191,94 @@ function buildFriendlyFinishError(rawError: string): string {
     return finalizeCandidate(trimmed.replace(/\{.*\}/g, " "));
 }
 
+const TOOLTIP_OFFSET = 8;
+const TOOLTIP_VIEWPORT_GAP = 12;
+
+const InlineToolMarker: React.FC<{
+    label: string;
+    tooltip: string;
+}> = ({ label, tooltip }) => {
+    const triggerRef = useRef<HTMLSpanElement | null>(null);
+    const tooltipRef = useRef<HTMLSpanElement | null>(null);
+    const [visible, setVisible] = useState(false);
+    const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+    useLayoutEffect(() => {
+        if (!visible || !triggerRef.current || !tooltipRef.current) {
+            return;
+        }
+
+        const updatePosition = () => {
+            const rect = triggerRef.current?.getBoundingClientRect();
+            const tooltipRect = tooltipRef.current?.getBoundingClientRect();
+            if (!rect || !tooltipRect) {
+                return;
+            }
+
+            const centerX = rect.left + rect.width / 2;
+            const minLeft = TOOLTIP_VIEWPORT_GAP;
+            const maxLeft = Math.max(
+                minLeft,
+                window.innerWidth - tooltipRect.width - TOOLTIP_VIEWPORT_GAP
+            );
+            const left = Math.min(
+                maxLeft,
+                Math.max(minLeft, centerX - tooltipRect.width / 2)
+            );
+
+            const preferredTop = rect.top - tooltipRect.height - TOOLTIP_OFFSET;
+            const hasEnoughSpaceAbove = preferredTop >= TOOLTIP_VIEWPORT_GAP;
+            const top = hasEnoughSpaceAbove
+                ? preferredTop
+                : Math.min(
+                    window.innerHeight - tooltipRect.height - TOOLTIP_VIEWPORT_GAP,
+                    rect.bottom + TOOLTIP_OFFSET
+                );
+
+            setTooltipStyle({
+                position: "fixed",
+                left,
+                top,
+            });
+        };
+
+        updatePosition();
+        window.addEventListener("scroll", updatePosition, true);
+        window.addEventListener("resize", updatePosition);
+
+        return () => {
+            window.removeEventListener("scroll", updatePosition, true);
+            window.removeEventListener("resize", updatePosition);
+        };
+    }, [visible]);
+
+    return (
+        <>
+            <span
+                ref={triggerRef}
+                className={styles.inlineToolMarkerWrap}
+                onMouseEnter={() => setVisible(true)}
+                onMouseLeave={() => setVisible(false)}
+            >
+                <sup className={styles.inlineToolMarker}>
+                    {label}
+                </sup>
+            </span>
+            {visible && typeof document !== "undefined" && createPortal(
+                <span
+                    ref={tooltipRef}
+                    className={`${styles.inlineToolTooltip} ${styles.inlineToolTooltipPortal}`}
+                    style={tooltipStyle}
+                    role="tooltip"
+                >
+                    {tooltip}
+                </span>,
+                document.body
+            )}
+        </>
+    );
+};
+
 function renderTextWithToolMarkers(
     value: string,
     toolUsesByIndex: Map<number, { toolUse: ToolUse; fallbackIndex: number }>,
@@ -202,17 +299,11 @@ function renderTextWithToolMarkers(
         }
 
         return (
-            <span
+            <InlineToolMarker
                 key={`marker-${displayIndex}-${idx}`}
-                className={styles.inlineToolMarkerWrap}
-            >
-                <sup className={styles.inlineToolMarker}>
-                    {part}
-                </sup>
-                <span className={styles.inlineToolTooltip} role="tooltip">
-                    {buildToolMetaTooltip(toolUseInfo.toolUse, toolUseInfo.fallbackIndex, toolDefinitions)}
-                </span>
-            </span>
+                label={part}
+                tooltip={buildToolMetaTooltip(toolUseInfo.toolUse, toolUseInfo.fallbackIndex, toolDefinitions)}
+            />
         );
     });
 }
@@ -247,7 +338,7 @@ const ToolUseItem: React.FC<{ toolUse: ToolUse; fallbackIndex: number; nowMs: nu
     const statusLabel = getStatusLabel(toolUse);
     const statusClassName = isToolUseRunning(toolUse)
         ? styles.toolUseStatusRunning
-        : toolUse.status === ToolUseStatus.ToolUseStatusError
+        : toolUse.status === ToolUseStatus.ToolUseStatusError || toolUse.status === ToolUseStatus.ToolUseStatusRejected
             ? styles.toolUseStatusError
             : styles.toolUseStatusDone;
     const tooltip = buildToolMetaTooltip(toolUse, fallbackIndex, toolDefinitions);
@@ -326,6 +417,8 @@ const ToolUsesSection: React.FC<{ toolUses: ToolUse[]; toolDefinitions: Map<stri
 const ChatMessage: React.FC<ChatMessageProps> = ({
     message,
     isLoading = false,
+    onApprovalDecision,
+    onApprovalComment,
 }: ChatMessageProps) => {
     const [toolDefinitions, setToolDefinitions] = useState<Map<string, ViewTool>>(new Map());
     const isUser = message.role === RoleType.User;
@@ -463,6 +556,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 currentStage={message.assistant_message_extra?.current_stage}
                                 retryCount={message.assistant_message_extra?.retry_count}
                                 isStreaming={isLoading}
+                                onApprovalDecision={onApprovalDecision}
+                                onApprovalComment={onApprovalComment}
                             />
 
                             {message.reasoning_content && (

@@ -39,7 +39,11 @@ func (s *Storage) GetTask(ctx context.Context, taskUuid string) (*data_models.Ta
 func (s *Storage) GetChatActiveTask(ctx context.Context, chatUuid string) (*data_models.Task, error) {
 	var task data_models.Task
 	err := s.sqliteDB.WithContext(ctx).
-		Where("chat_uuid = ? AND status IN ?", chatUuid, []data_models.TaskStatus{data_models.TaskStatusPending, data_models.TaskStatusRunning}).
+		Where("chat_uuid = ? AND status IN ?", chatUuid, []data_models.TaskStatus{
+			data_models.TaskStatusPending,
+			data_models.TaskStatusRunning,
+			data_models.TaskStatusWaitingApproval,
+		}).
 		Order("created_at DESC").
 		First(&task).Error
 	if err != nil {
@@ -52,7 +56,11 @@ func (s *Storage) GetChatActiveTask(ctx context.Context, chatUuid string) (*data
 }
 
 func (s *Storage) GetRunningTasks(ctx context.Context) ([]data_models.Task, error) {
-	return s.GetTasksByStatus(ctx, []data_models.TaskStatus{data_models.TaskStatusPending, data_models.TaskStatusRunning})
+	return s.GetTasksByStatus(ctx, []data_models.TaskStatus{
+		data_models.TaskStatusPending,
+		data_models.TaskStatusRunning,
+		data_models.TaskStatusWaitingApproval,
+	})
 }
 
 func (s *Storage) GetTasksByStatus(ctx context.Context, statuses []data_models.TaskStatus) ([]data_models.Task, error) {

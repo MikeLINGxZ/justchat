@@ -12,9 +12,11 @@ import {
     Tool
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
+import {ToolApprovalDecision, ToolApprovalResponse} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
 import {RoleType} from "@bindings/github.com/cloudwego/eino/schema";
 import {BuildTaskFromCompletions, CompletionsUtils, SubscribeTaskStream, type TaskStreamEvent} from "@/utils/completions.ts";
 import {useNavigate} from "react-router-dom";
+import {notify} from "@/utils/notification.ts";
 
 interface ChatProps {
     // 对话uuid
@@ -52,6 +54,12 @@ function assistantHasSubstantiveOutput(message: Message): boolean {
     const toolUses = message.assistant_message_extra?.tool_uses?.length ?? 0;
     const traceSteps = message.assistant_message_extra?.execution_trace?.steps?.length ?? 0;
     return content.length > 0 || reasoning.length > 0 || prefaceContent.length > 0 || prefaceReasoning.length > 0 || toolUses > 0 || traceSteps > 0;
+}
+
+interface ApprovalInputContext {
+    approvalId: string;
+    title: string;
+    message: string;
 }
 
 const Chat: React.FC<ChatProps> = ({
@@ -97,6 +105,7 @@ const Chat: React.FC<ChatProps> = ({
     // 输入框选择文件
     const [inputFiles,setInputFiles] = useState<FileInfo[]>([]);
     const [displayTitle, setDisplayTitle] = useState<string>("新建对话");
+    const [approvalInputContext, setApprovalInputContext] = useState<ApprovalInputContext | null>(null);
     // 当前聊天消息
     const [messages,setMessages] = useState<Message[]>([]);
     // 消息列表引用
@@ -331,6 +340,7 @@ const Chat: React.FC<ChatProps> = ({
             setDisplayTitle("新建对话");
             setLoading(false);
             setMessages([]);
+            setApprovalInputContext(null);
             setInputMessage("");
             setInputFiles([]);
             setInputResetKey(prev => prev + 1);
@@ -398,6 +408,18 @@ const Chat: React.FC<ChatProps> = ({
     const onMessageChange = (message: string) => {
         setInputMessage(message);
     }
+
+    useEffect(() => {
+        if (!approvalInputContext) {
+            return;
+        }
+        const pendingApprovalIds = messages.flatMap((message) =>
+            message.assistant_message_extra?.pending_approvals?.map((approval) => approval.approval_id) ?? []
+        );
+        if (!pendingApprovalIds.includes(approvalInputContext.approvalId)) {
+            setApprovalInputContext(null);
+        }
+    }, [approvalInputContext, messages]);
 
     // onSelectFileChange 输入文件变更
     const onSelectFileChange = (paths: FileInfo[]) => {
@@ -538,6 +560,40 @@ const Chat: React.FC<ChatProps> = ({
         setDisplayTitle(newTitle);
     }, [currentChatUuid, propUuid]);
 
+    const handleApprovalDecision = useCallback(async (approvalId: string, decision: 'allow' | 'reject') => {
+        try {
+            await Service.RespondToolApproval(new ToolApprovalResponse({
+                approval_id: approvalId,
+                decision: decision === 'allow'
+                    ? ToolApprovalDecision.ToolApprovalDecisionAllow
+                    : ToolApprovalDecision.ToolApprovalDecisionReject,
+                comment: "",
+            }));
+            if (approvalInputContext?.approvalId === approvalId) {
+                setApprovalInputContext(null);
+            }
+        } catch (error: any) {
+            notify.error("操作失败", error?.message || "无法提交审批结果");
+        }
+    }, [approvalInputContext]);
+
+    const handleApprovalComment = useCallback((approvalId: string, title: string, message: string) => {
+        setApprovalInputContext({ approvalId, title, message });
+    }, []);
+
+    const handleSendApprovalComment = useCallback(async (approvalId: string, comment: string) => {
+        try {
+            await Service.RespondToolApproval(new ToolApprovalResponse({
+                approval_id: approvalId,
+                decision: ToolApprovalDecision.ToolApprovalDecisionCustom,
+                comment,
+            }));
+            setApprovalInputContext(null);
+        } catch (error: any) {
+            notify.error("发送失败", error?.message || "无法提交审批意见");
+        }
+    }, []);
+
     useEffect(() => {
         if (!chatInfo?.title?.trim()) {
             return;
@@ -582,6 +638,8 @@ const Chat: React.FC<ChatProps> = ({
                     messages={messages}
                     isGenerating={isGenerating}
                     useInstantScrollOnFirstLoad
+                    onApprovalDecision={handleApprovalDecision}
+                    onApprovalComment={handleApprovalComment}
                 />
             </div>
             <div className={`${styles.chatInput}`}>
@@ -601,6 +659,9 @@ const Chat: React.FC<ChatProps> = ({
                     onSelectFileChange={onSelectFileChange}
                     onStopGeneration={onStopGeneration}
                     onModelSelectorClick={onModelSelectorClick}
+                    approvalInput={approvalInputContext}
+                    onSendApprovalComment={handleSendApprovalComment}
+                    onCancelApprovalComment={() => setApprovalInputContext(null)}
                     onMessageListScrollToBottom={() => {
                         messageListRef.current?.scrollToBottom();
                     }}

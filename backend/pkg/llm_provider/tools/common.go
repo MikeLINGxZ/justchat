@@ -24,6 +24,8 @@ func init() {
 	ToolRouter.RegisterTool(&CurrentDate{})
 	ToolRouter.RegisterTool(&CurrentTime{})
 	ToolRouter.RegisterTool(&Block{})
+	ToolRouter.RegisterTool(&FileTool{})
+	ToolRouter.RegisterTool(&ShellTool{})
 }
 
 var ToolRouter *router

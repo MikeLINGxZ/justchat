@@ -15,6 +15,9 @@
   max-width: 100%;
   min-width: 0;
   .messageContainer {
+    position: relative;
+    overflow: visible;
+    isolation: isolate;
     max-width: 100%;
     min-width: 0;
     padding: var(--spacing-md);
@@ -181,12 +184,6 @@
   display: inline-flex;
   align-items: flex-start;
   cursor: help;
-
-  &:hover .inlineToolTooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, -6px);
-  }
 }
 
 .inlineToolMarker {
@@ -222,7 +219,7 @@
   position: absolute;
   left: 50%;
   bottom: 100%;
-  z-index: 20;
+  z-index: var(--z-index-tooltip);
   min-width: 180px;
   max-width: 260px;
   padding: 8px 10px;
@@ -234,11 +231,20 @@
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-line;
-  opacity: 0;
-  visibility: hidden;
   pointer-events: none;
   transform: translate(-50%, 0);
-  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+}
+
+.inlineToolTooltipPortal {
+  left: auto;
+  right: auto;
+  top: 0;
+  bottom: auto;
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  white-space: pre-line;
 }
 
 // 工具调用区域
@@ -280,6 +286,7 @@
 
 .toolUseItem {
   position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   overflow: visible;
@@ -294,6 +301,10 @@
     opacity: 1;
     visibility: visible;
     transform: translate(-50%, -6px);
+  }
+
+  &:hover {
+    z-index: var(--z-index-tooltip);
   }
 }
 
@@ -394,7 +405,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
-  z-index: 20;
+  z-index: var(--z-index-tooltip);
   min-width: 220px;
   max-width: 300px;
   padding: 8px 10px;

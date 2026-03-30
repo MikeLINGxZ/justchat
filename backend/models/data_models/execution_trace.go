@@ -27,11 +27,13 @@ const (
 type TraceStepStatus string
 
 const (
-	TraceStepStatusPending TraceStepStatus = "pending"
-	TraceStepStatusRunning TraceStepStatus = "running"
-	TraceStepStatusDone    TraceStepStatus = "done"
-	TraceStepStatusError   TraceStepStatus = "error"
-	TraceStepStatusSkipped TraceStepStatus = "skipped"
+	TraceStepStatusPending          TraceStepStatus = "pending"
+	TraceStepStatusRunning          TraceStepStatus = "running"
+	TraceStepStatusAwaitingApproval TraceStepStatus = "awaiting_approval"
+	TraceStepStatusDone             TraceStepStatus = "done"
+	TraceStepStatusRejected         TraceStepStatus = "rejected"
+	TraceStepStatusError            TraceStepStatus = "error"
+	TraceStepStatusSkipped          TraceStepStatus = "skipped"
 )
 
 type ExecutionTrace struct {

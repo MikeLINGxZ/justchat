@@ -24,7 +24,7 @@ export interface TaskStreamEvent {
 }
 
 function isTaskFinished(event: TaskStreamEvent): boolean {
-    return event.status !== "pending" && event.status !== "running";
+    return event.status !== "pending" && event.status !== "running" && event.status !== "waiting_approval";
 }
 
 export function SubscribeTaskStream(

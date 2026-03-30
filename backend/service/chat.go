@@ -22,6 +22,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tasker"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tool_approval"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/event"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
@@ -93,8 +94,23 @@ func resetDirectAssistantState(message *data_models.Message) {
 	message.AssistantMessageExtra.RouteType = ""
 	message.AssistantMessageExtra.CurrentStage = ""
 	message.AssistantMessageExtra.CurrentAgent = ""
+	message.AssistantMessageExtra.PendingApprovals = nil
 	message.AssistantMessageExtra.ExecutionTrace = data_models.ExecutionTrace{Steps: []data_models.TraceStep{}}
 	message.AssistantMessageExtra.FinishError = ""
+}
+
+func buildApprovalDecisionToolResult(toolName string, decision data_models.ToolApprovalDecision, comment string) string {
+	switch decision {
+	case data_models.ToolApprovalDecisionAllow:
+		return fmt.Sprintf("用户已允许执行工具：%s。", toolName)
+	case data_models.ToolApprovalDecisionCustom:
+		if strings.TrimSpace(comment) == "" {
+			return fmt.Sprintf("用户没有直接批准执行工具：%s，并要求先补充更多说明。请根据用户反馈调整方案。", toolName)
+		}
+		return fmt.Sprintf("用户没有直接批准执行工具：%s，并提供了意见：%s。请根据该意见调整方案，必要时重新发起更合适的工具请求。", toolName, comment)
+	default:
+		return fmt.Sprintf("用户拒绝了工具：%s 的本次调用。请不要执行该操作，并改用无需该操作的方案。", toolName)
+	}
 }
 
 // Completions 聊天
@@ -223,6 +239,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			if len(src.AssistantMessageExtra.ToolUses) > 0 {
 				assistantExtra.ToolUses = append([]data_models.ToolUse(nil), src.AssistantMessageExtra.ToolUses...)
 			}
+			if len(src.AssistantMessageExtra.PendingApprovals) > 0 {
+				assistantExtra.PendingApprovals = append([]data_models.ToolApprovalSummary(nil), src.AssistantMessageExtra.PendingApprovals...)
+			}
 			if len(src.AssistantMessageExtra.ExecutionTrace.Steps) > 0 {
 				assistantExtra.ExecutionTrace.Steps = make([]data_models.TraceStep, 0, len(src.AssistantMessageExtra.ExecutionTrace.Steps))
 				for _, step := range src.AssistantMessageExtra.ExecutionTrace.Steps {
@@ -306,6 +325,44 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			}
 		}
 		return -1
+	}
+
+	findPendingApprovalIndexLocked := func(approvalID string) int {
+		if assistantMessage.AssistantMessageExtra == nil {
+			return -1
+		}
+		for idx := range assistantMessage.AssistantMessageExtra.PendingApprovals {
+			if assistantMessage.AssistantMessageExtra.PendingApprovals[idx].ApprovalID == approvalID {
+				return idx
+			}
+		}
+		return -1
+	}
+
+	upsertPendingApprovalLocked := func(summary data_models.ToolApprovalSummary) {
+		if assistantMessage.AssistantMessageExtra == nil {
+			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+		}
+		idx := findPendingApprovalIndexLocked(summary.ApprovalID)
+		if idx == -1 {
+			assistantMessage.AssistantMessageExtra.PendingApprovals = append(assistantMessage.AssistantMessageExtra.PendingApprovals, summary)
+			return
+		}
+		assistantMessage.AssistantMessageExtra.PendingApprovals[idx] = summary
+	}
+
+	removePendingApprovalLocked := func(approvalID string) {
+		if assistantMessage.AssistantMessageExtra == nil {
+			return
+		}
+		idx := findPendingApprovalIndexLocked(approvalID)
+		if idx == -1 {
+			return
+		}
+		assistantMessage.AssistantMessageExtra.PendingApprovals = append(
+			assistantMessage.AssistantMessageExtra.PendingApprovals[:idx],
+			assistantMessage.AssistantMessageExtra.PendingApprovals[idx+1:]...,
+		)
 	}
 
 	appendTraceStepLocked := func(step data_models.TraceStep) error {
@@ -473,7 +530,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		})
 	}
 
-	finishToolUseLocked := func(toolCtx context.Context, callID, toolName, toolResult string, runErr error) error {
+	finishToolUseWithStatusLocked := func(toolCtx context.Context, callID, toolName, toolResult string, toolStatus data_models.ToolUseStatus, traceStatus data_models.TraceStepStatus, runErr error) error {
 		if assistantMessage.AssistantMessageExtra == nil {
 			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
 		}
@@ -516,13 +573,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		toolUse.FinishedAt = &now
 		toolUse.ToolResult = toolResult
 		toolUse.ElapsedMs = now.Sub(*toolUse.StartedAt).Milliseconds()
-		if runErr != nil {
-			toolUse.Status = data_models.ToolUseStatusError
-			if toolUse.ToolResult == "" {
-				toolUse.ToolResult = runErr.Error()
-			}
-		} else {
-			toolUse.Status = data_models.ToolUseStatusDone
+		toolUse.Status = toolStatus
+		if runErr != nil && toolUse.ToolResult == "" {
+			toolUse.ToolResult = runErr.Error()
 		}
 		task.LastOutputAt = &now
 		traceIdx := findTraceStepIndexLocked(callID)
@@ -531,10 +584,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			if traceStep.StartedAt == nil {
 				traceStep.StartedAt = &now
 			}
-			traceStep.Status = data_models.TraceStepStatusDone
-			if runErr != nil {
-				traceStep.Status = data_models.TraceStepStatusError
-			}
+			traceStep.Status = traceStatus
 			traceStep.OutputPreview = compactText(toolUse.ToolResult, 240)
 			traceStep.Summary = toolUse.ToolDescription
 			traceStep.ToolName = toolUse.ToolName
@@ -561,6 +611,99 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		return persistAssistantSnapshotLocked(true)
 	}
 
+	finishToolUseLocked := func(toolCtx context.Context, callID, toolName, toolResult string, runErr error) error {
+		toolStatus := data_models.ToolUseStatusDone
+		traceStatus := data_models.TraceStepStatusDone
+		if runErr != nil {
+			toolStatus = data_models.ToolUseStatusError
+			traceStatus = data_models.TraceStepStatusError
+		}
+		return finishToolUseWithStatusLocked(toolCtx, callID, toolName, toolResult, toolStatus, traceStatus, runErr)
+	}
+
+	setToolApprovalPendingLocked := func(toolCtx context.Context, callID string, approval data_models.ToolApproval) error {
+		if assistantMessage.AssistantMessageExtra == nil {
+			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+		}
+
+		summary := approval.Summary()
+		upsertPendingApprovalLocked(summary)
+		task.Status = data_models.TaskStatusWaitingApproval
+		assistantMessage.AssistantMessageExtra.CurrentStage = "等待用户确认"
+		assistantMessage.AssistantMessageExtra.CurrentAgent, _ = toolCtx.Value(traceAgentNameContextKey).(string)
+
+		if idx := findToolUseIndexLocked(callID); idx != -1 {
+			assistantMessage.AssistantMessageExtra.ToolUses[idx].Status = data_models.ToolUseStatusAwaitingApproval
+			assistantMessage.AssistantMessageExtra.ToolUses[idx].ToolResult = approval.Message
+		}
+
+		if traceIdx := findTraceStepIndexLocked(callID); traceIdx != -1 {
+			traceStep := assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[traceIdx]
+			traceStep.Status = data_models.TraceStepStatusAwaitingApproval
+			traceStep.Summary = approval.Message
+			traceStep.DetailBlocks = append(traceStep.DetailBlocks[:0:0], traceStep.DetailBlocks...)
+			traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
+				Kind:    "approval_request",
+				Title:   "确认请求",
+				Content: approval.Message,
+				Format:  data_models.TraceDetailFormatMarkdown,
+			})
+			if traceStep.Metadata == nil {
+				traceStep.Metadata = map[string]interface{}{}
+			}
+			traceStep.Metadata["approval_id"] = approval.ApprovalID
+			traceStep.Metadata["approval_status"] = approval.Status
+			traceStep.Metadata["approval_decision_required"] = true
+			traceStep.Metadata["approval_title"] = approval.Title
+			traceStep.Metadata["approval_message"] = approval.Message
+			traceStep.Metadata["approval_scope"] = approval.Scope
+			assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[traceIdx] = traceStep
+			pendingTraceDelta = append(pendingTraceDelta, traceStep)
+		}
+		return persistAssistantSnapshotLocked(true)
+	}
+
+	resumeApprovedToolLocked := func(toolCtx context.Context, callID string, approval data_models.ToolApproval) error {
+		if assistantMessage.AssistantMessageExtra == nil {
+			assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+		}
+
+		removePendingApprovalLocked(approval.ApprovalID)
+		task.Status = data_models.TaskStatusRunning
+		assistantMessage.AssistantMessageExtra.CurrentStage = "子任务执行"
+		assistantMessage.AssistantMessageExtra.CurrentAgent, _ = toolCtx.Value(traceAgentNameContextKey).(string)
+
+		if idx := findToolUseIndexLocked(callID); idx != -1 {
+			toolUse := &assistantMessage.AssistantMessageExtra.ToolUses[idx]
+			toolUse.Status = data_models.ToolUseStatusRunning
+			toolUse.ToolResult = ""
+			toolUse.FinishedAt = nil
+		}
+		if traceIdx := findTraceStepIndexLocked(callID); traceIdx != -1 {
+			traceStep := assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[traceIdx]
+			traceStep.Status = data_models.TraceStepStatusRunning
+			traceStep.FinishedAt = nil
+			traceStep.OutputPreview = ""
+			if traceStep.Metadata == nil {
+				traceStep.Metadata = map[string]interface{}{}
+			}
+			traceStep.Metadata["approval_id"] = approval.ApprovalID
+			traceStep.Metadata["approval_status"] = approval.Status
+			traceStep.Metadata["approval_decision_required"] = false
+			traceStep.Metadata["approval_decision"] = approval.Decision
+			traceStep.DetailBlocks = append(traceStep.DetailBlocks[:0:0], traceStep.DetailBlocks...)
+			traceStep.DetailBlocks = append(traceStep.DetailBlocks, data_models.TraceDetailBlock{
+				Kind:    "approval_response",
+				Title:   "确认结果",
+				Content: "用户已允许继续执行",
+				Format:  data_models.TraceDetailFormatText,
+			})
+			assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[traceIdx] = traceStep
+			pendingTraceDelta = append(pendingTraceDelta, traceStep)
+		}
+		return persistAssistantSnapshotLocked(true)
+	}
+
 	finalizeRunningToolUsesLocked := func() {
 		if assistantMessage.AssistantMessageExtra == nil {
 			return
@@ -568,7 +711,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		now := time.Now()
 		for idx := range assistantMessage.AssistantMessageExtra.ToolUses {
 			toolUse := &assistantMessage.AssistantMessageExtra.ToolUses[idx]
-			if toolUse.Status != data_models.ToolUseStatusRunning && toolUse.Status != data_models.ToolUseStatusPending {
+			if toolUse.Status != data_models.ToolUseStatusRunning &&
+				toolUse.Status != data_models.ToolUseStatusPending &&
+				toolUse.Status != data_models.ToolUseStatusAwaitingApproval {
 				continue
 			}
 			if toolUse.StartedAt == nil {
@@ -580,7 +725,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		}
 		for idx := range assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps {
 			step := &assistantMessage.AssistantMessageExtra.ExecutionTrace.Steps[idx]
-			if step.Status != data_models.TraceStepStatusRunning && step.Status != data_models.TraceStepStatusPending {
+			if step.Status != data_models.TraceStepStatusRunning &&
+				step.Status != data_models.TraceStepStatusPending &&
+				step.Status != data_models.TraceStepStatusAwaitingApproval {
 				continue
 			}
 			if step.StartedAt == nil {
@@ -590,6 +737,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			step.ElapsedMs = now.Sub(*step.StartedAt).Milliseconds()
 			step.Status = data_models.TraceStepStatusError
 		}
+		assistantMessage.AssistantMessageExtra.PendingApprovals = nil
 	}
 
 	var handoffMu sync.Mutex
@@ -613,12 +761,116 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	toolMiddleware := compose.ToolMiddleware{
 		Invokable: func(next compose.InvokableToolEndpoint) compose.InvokableToolEndpoint {
 			return func(toolCtx context.Context, input *compose.ToolInput) (*compose.ToolOutput, error) {
+				finishWithMiddlewareError := func(err error) (*compose.ToolOutput, error) {
+					if input.Name == workflowHandoffToolName {
+						return nil, err
+					}
+					assistantMu.Lock()
+					finishErr := finishToolUseLocked(toolCtx, input.CallID, input.Name, "", err)
+					assistantMu.Unlock()
+					if finishErr != nil {
+						return nil, finishErr
+					}
+					return nil, err
+				}
+
 				if input.Name != workflowHandoffToolName {
 					assistantMu.Lock()
 					err := startToolUseLocked(toolCtx, input.CallID, input.Name, input.Arguments)
 					assistantMu.Unlock()
 					if err != nil {
 						return nil, err
+					}
+
+					if registeredTool, ok := tools.ToolRouter.GetToolByID(input.Name); ok {
+						if approvalTool, ok := registeredTool.(tool_approval.ApprovalAwareTool); ok {
+							prompt, err := approvalTool.BuildApprovalPrompt(toolCtx, input.Arguments)
+							if err != nil {
+								return finishWithMiddlewareError(err)
+							}
+
+							requestedAt := time.Now()
+							approval := data_models.ToolApproval{
+								ApprovalID:           uuid.NewString(),
+								TaskUuid:             task.TaskUuid,
+								ChatUuid:             task.ChatUuid,
+								AssistantMessageUuid: task.AssistantMessageUuid,
+								ToolCallID:           input.CallID,
+								ToolID:               registeredTool.Id(),
+								ToolName:             registeredTool.Name(),
+								Status:               data_models.ToolApprovalStatusPending,
+								Title:                prompt.Title,
+								Message:              prompt.Message,
+								Scope:                prompt.Scope,
+								ArgumentsJSON:        input.Arguments,
+								RequestedAt:          &requestedAt,
+							}
+
+							if err := tool_approval.Manager.Register(approval.ApprovalID); err != nil {
+								return finishWithMiddlewareError(err)
+							}
+							if err := s.storage.CreateToolApproval(context.Background(), approval); err != nil {
+								tool_approval.Manager.Cancel(approval.ApprovalID)
+								return finishWithMiddlewareError(err)
+							}
+
+							assistantMu.Lock()
+							err = setToolApprovalPendingLocked(toolCtx, input.CallID, approval)
+							assistantMu.Unlock()
+							if err != nil {
+								tool_approval.Manager.Cancel(approval.ApprovalID)
+								return finishWithMiddlewareError(err)
+							}
+
+							waitResult, err := tool_approval.Manager.Wait(toolCtx, approval.ApprovalID)
+							if err != nil {
+								expiredAt := time.Now()
+								approval.Status = data_models.ToolApprovalStatusExpired
+								approval.Decision = data_models.ToolApprovalDecisionReject
+								approval.ResponseComment = err.Error()
+								approval.RespondedAt = &expiredAt
+								_ = s.storage.SaveToolApproval(context.Background(), approval)
+								return finishWithMiddlewareError(err)
+							}
+
+							approval.Status = data_models.ToolApprovalStatusResolved
+							approval.Decision = waitResult.Decision
+							approval.ResponseComment = waitResult.Comment
+							approval.RespondedAt = &waitResult.RespondedAt
+
+							switch waitResult.Decision {
+							case data_models.ToolApprovalDecisionAllow:
+								assistantMu.Lock()
+								err = resumeApprovedToolLocked(toolCtx, input.CallID, approval)
+								assistantMu.Unlock()
+								if err != nil {
+									return finishWithMiddlewareError(err)
+								}
+							case data_models.ToolApprovalDecisionReject, data_models.ToolApprovalDecisionCustom:
+								result := buildApprovalDecisionToolResult(approval.ToolName, waitResult.Decision, waitResult.Comment)
+								assistantMu.Lock()
+								removePendingApprovalLocked(approval.ApprovalID)
+								task.Status = data_models.TaskStatusRunning
+								agentName, _ := toolCtx.Value(traceAgentNameContextKey).(string)
+								updateCurrentStageLocked("子任务执行", agentName)
+								err = finishToolUseWithStatusLocked(
+									toolCtx,
+									input.CallID,
+									input.Name,
+									result,
+									data_models.ToolUseStatusRejected,
+									data_models.TraceStepStatusRejected,
+									nil,
+								)
+								assistantMu.Unlock()
+								if err != nil {
+									return nil, err
+								}
+								return &compose.ToolOutput{Result: result}, nil
+							default:
+								return finishWithMiddlewareError(fmt.Errorf("unknown approval decision: %s", waitResult.Decision))
+							}
+						}
 					}
 				}
 

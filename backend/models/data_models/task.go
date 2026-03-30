@@ -5,11 +5,12 @@ import "time"
 type TaskStatus string
 
 const (
-	TaskStatusPending   TaskStatus = "pending"
-	TaskStatusRunning   TaskStatus = "running"
-	TaskStatusCompleted TaskStatus = "completed"
-	TaskStatusFailed    TaskStatus = "failed"
-	TaskStatusStopped   TaskStatus = "stopped"
+	TaskStatusPending         TaskStatus = "pending"
+	TaskStatusRunning         TaskStatus = "running"
+	TaskStatusWaitingApproval TaskStatus = "waiting_approval"
+	TaskStatusCompleted       TaskStatus = "completed"
+	TaskStatusFailed          TaskStatus = "failed"
+	TaskStatusStopped         TaskStatus = "stopped"
 )
 
 type Task struct {
