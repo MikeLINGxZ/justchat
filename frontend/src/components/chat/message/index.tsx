@@ -2,13 +2,10 @@ import React, {useEffect, useMemo, useState} from "react";
 import styles from "./index.module.scss";
 import ReasoningContent from "@/components/chat/reasoning_message";
 import ExecutionTracePanel from "@/components/chat/execution_trace";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
-import {tomorrow} from "react-syntax-highlighter/dist/esm/styles/prism";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import type {Message, Tool as ViewTool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {ToolUseStatus, type ToolUse} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
+import MarkdownRenderer from "@/components/markdown_renderer";
 
 interface ChatMessageProps {
     message: Message
@@ -141,6 +138,47 @@ function buildContentWithToolMarkers(content: string, toolUses: ToolUse[]): stri
     }
 
     return chunks.join("");
+}
+
+function buildFriendlyFinishError(rawError: string): string {
+    const trimmed = rawError.trim();
+    if (!trimmed) {
+        return "";
+    }
+
+    const hasMeaningfulText = (value: string): boolean => /[\p{L}\p{N}\u4e00-\u9fff]/u.test(value);
+    const normalizeCandidate = (value: string): string => value.replace(/\s+/g, " ").trim();
+    const finalizeCandidate = (value: string): string => {
+        const normalized = normalizeCandidate(value)
+            .replace(/^[\s"'`[{(,:;]+/, "")
+            .replace(/[\s"'`}\]),:;]+$/, "")
+            .trim();
+
+        return hasMeaningfulText(normalized) ? normalized : "";
+    };
+
+    const timeoutMatch = trimmed.match(/Error:\s*([^"}\]]+)/i);
+    if (timeoutMatch?.[1]) {
+        return finalizeCandidate(timeoutMatch[1]);
+    }
+
+    const mcpMatch = trimmed.match(/mcp server return error:\s*(.+)$/i);
+    if (mcpMatch?.[1]) {
+        const sanitized = mcpMatch[1]
+            .replace(/^\{?["']?content["']?:/i, "")
+            .replace(/["'{}\[\]]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const extractedError = sanitized.match(/Error:\s*(.+)$/i);
+        if (extractedError?.[1]) {
+            return finalizeCandidate(extractedError[1]);
+        }
+
+        return finalizeCandidate(sanitized);
+    }
+
+    return finalizeCandidate(trimmed.replace(/\{.*\}/g, " "));
 }
 
 function renderTextWithToolMarkers(
@@ -323,17 +361,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const messageContent = message.content?.trim() ?? "";
     const reasoningContent = message.reasoning_content?.trim() ?? "";
+    const prefaceContent = message.assistant_message_extra?.preface_content?.trim() ?? "";
+    const prefaceReasoningContent = message.assistant_message_extra?.preface_reasoning_content?.trim() ?? "";
     const finishReason = message.assistant_message_extra?.finish_reason?.trim() ?? "";
+    const finishError = message.assistant_message_extra?.finish_error?.trim() ?? "";
     const currentStage = message.assistant_message_extra?.current_stage?.trim() ?? "";
+    const friendlyFinishError = useMemo(() => buildFriendlyFinishError(finishError), [finishError]);
     const isReasoningStreaming = !isUser && isLoading && !finishReason && messageContent.length === 0;
     const isEmptyAssistant = !isUser &&
         !messageContent &&
         !reasoningContent &&
+        !prefaceContent &&
+        !prefaceReasoningContent &&
         traceSteps.length === 0 &&
         toolUses.length === 0 &&
         (message.assistant_message_extra?.finish_error == "");
     const hasTrace = traceSteps.length > 0;
-    const hasVisibleProgress = hasTrace || currentStage.length > 0 || reasoningContent.length > 0;
+    const hasVisibleProgress = hasTrace || currentStage.length > 0 || reasoningContent.length > 0 || prefaceContent.length > 0 || prefaceReasoningContent.length > 0;
     const shouldShowHeadLoading = isLoading && isEmptyAssistant && !hasVisibleProgress;
     const shouldShowTailLoading = !isUser && isLoading && !finishReason && hasVisibleProgress;
 
@@ -341,16 +385,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         if (messageContent) {
             return message.content;
         }
-        if (!messageContent && message.assistant_message_extra?.finish_error != "") {
-            return message.assistant_message_extra?.finish_error;
-        }
         return '';
     };
-
-    const displayMarkdownContent = useMemo(
-        () => buildContentWithToolMarkers(message.content, toolUses),
-        [message.content, toolUses]
-    );
 
     if (isEmptyAssistant && !isLoading) {
         return null;
@@ -370,8 +406,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className={styles.messageContainer}>
                     {isUser ? (
                         <>
-                            <div className={styles.messageContent}>
-                                {getDisplayContent()}
+                            <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                <MarkdownRenderer
+                                    content={getDisplayContent()}
+                                    variant="user"
+                                />
                             </div>
                             {(message.user_message_extra?.files?.length ?? 0) > 0 && (
                                 <div className={styles.fileList}>
@@ -402,11 +441,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 </div>
                             )}
 
-                            {message.reasoning_content && (
+                            {prefaceReasoningContent && (
                                 <ReasoningContent
-                                    content={message.reasoning_content}
-                                    isStreaming={isReasoningStreaming}
+                                    content={prefaceReasoningContent}
                                 />
+                            )}
+
+                            {prefaceContent && (
+                                <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                    <MarkdownRenderer
+                                        content={prefaceContent}
+                                        variant="assistant"
+                                        decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}
+                                    />
+                                </div>
                             )}
 
                             <ExecutionTracePanel
@@ -416,90 +464,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 isStreaming={isLoading}
                             />
 
-                            <div className={`${styles.messageContent} ${styles.markdownContent}`}>
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        code(props: any) {
-                                            const { inline, className, children, ...rest } = props;
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            const language = match ? match[1] : '';
+                            {message.reasoning_content && (
+                                <ReasoningContent
+                                    content={message.reasoning_content}
+                                    isStreaming={isReasoningStreaming}
+                                />
+                            )}
 
-                                            return !inline && language ? (
-                                                <SyntaxHighlighter
-                                                    style={tomorrow}
-                                                    language={language}
-                                                    PreTag="div"
-                                                    customStyle={{
-                                                        margin: '8px 0',
-                                                        borderRadius: '8px',
-                                                        fontSize: '14px'
-                                                    } as any}
-                                                    {...rest}
-                                                >
-                                                    {String(children).replace(/\n$/, '')}
-                                                </SyntaxHighlighter>
-                                            ) : (
-                                                <code className={`${className} ${styles.inlineCode}`} {...rest}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        },
-                                        table: ({children}) => (
-                                            <div className={styles.tableWrapper}>
-                                                <table className={styles.markdownTable}>{children}</table>
-                                            </div>
-                                        ),
-                                        a: ({children, href}) => (
-                                            <a
-                                                href={href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={styles.markdownLink}
-                                            >
-                                                {children}
-                                            </a>
-                                        ),
-                                        blockquote: ({children}) => (
-                                            <blockquote className={styles.markdownBlockquote}>
-                                                {withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}
-                                            </blockquote>
-                                        ),
-                                        ul: ({children}) => (
-                                            <ul className={styles.markdownList}>{children}</ul>
-                                        ),
-                                        ol: ({children}) => (
-                                            <ol className={styles.markdownList}>{children}</ol>
-                                        ),
-                                        p: ({children}) => (
-                                            <p>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</p>
-                                        ),
-                                        li: ({children}) => (
-                                            <li>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</li>
-                                        ),
-                                        h1: ({children}) => (
-                                            <h1>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h1>
-                                        ),
-                                        h2: ({children}) => (
-                                            <h2>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h2>
-                                        ),
-                                        h3: ({children}) => (
-                                            <h3>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h3>
-                                        ),
-                                        h4: ({children}) => (
-                                            <h4>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h4>
-                                        ),
-                                        h5: ({children}) => (
-                                            <h5>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h5>
-                                        ),
-                                        h6: ({children}) => (
-                                            <h6>{withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}</h6>
-                                        ),
-                                    }}
-                                >
-                                    {displayMarkdownContent}
-                                </ReactMarkdown>
+                            <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                <MarkdownRenderer
+                                    content={getDisplayContent()}
+                                    variant="assistant"
+                                    transformContent={(content) => buildContentWithToolMarkers(content, toolUses)}
+                                    decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions)}
+                                />
                             </div>
+
+                            {!messageContent && finishReason === 'error' && friendlyFinishError && (
+                                <div
+                                    className={styles.errorSummary}
+                                    title={finishError}
+                                >
+                                    {friendlyFinishError}
+                                </div>
+                            )}
 
                             {toolUses.length > 0 && traceSteps.length === 0 && (
                                 <ToolUsesSection toolUses={toolUses} toolDefinitions={toolDefinitions} />

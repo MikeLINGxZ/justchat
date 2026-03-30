@@ -4,6 +4,7 @@ import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
 import {FileInfo, Model, Tool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {notify} from "@/utils/notification.ts";
+import RichMarkdownEditor from "@/components/chat/input/rich_markdown_editor";
 
 interface ChatInputProps {
     // 所选模型
@@ -78,7 +79,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [showModelMenu, setShowModelMenu] = useState(false);
     const [showToolMenu, setShowToolMenu] = useState(false);
     const [inputValue, setInputValue] = useState('');
-    const [isComposing, setIsComposing] = useState(false);
     const [modelSearchValue, setModelSearchValue] = useState('');
     const [isAddingMCPTool, setIsAddingMCPTool] = useState(false);
     const [defaultModelId, setDefaultModelId] = useState<number | null>(() => {
@@ -87,39 +87,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const addMenuRef = useRef<HTMLDivElement>(null);
     const modelMenuRef = useRef<HTMLDivElement>(null);
     const toolMenuRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const lastHeightRef = useRef<number>(0);
     const isMobile =  useIsMobile();
     const [selectFiles, setSelectFiles] = useState<FileInfo[]>([]);
-
-    // 优化的高度调整函数
-    const adjustTextareaHeight = useCallback(() => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-
-        // 避免不必要的DOM操作
-        const currentScrollHeight = textarea.scrollHeight;
-        if (currentScrollHeight === lastHeightRef.current) {
-            return;
-        }
-
-        // 使用requestAnimationFrame优化DOM操作
-        requestAnimationFrame(() => {
-            textarea.style.height = 'auto';
-            const scrollHeight = textarea.scrollHeight;
-            const maxHeight = parseFloat(getComputedStyle(textarea).maxHeight);
-            
-            if (scrollHeight <= maxHeight) {
-                textarea.style.height = `${scrollHeight}px`;
-                textarea.style.overflowY = 'hidden';
-            } else {
-                textarea.style.height = `${maxHeight}px`;
-                textarea.style.overflowY = 'auto';
-            }
-            
-            lastHeightRef.current = scrollHeight;
-        });
-    }, []);
 
     // 清空输入框
     const clearInput = useCallback(() => {
@@ -127,22 +96,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         setSelectFiles([]);
         onSelectFileChange([]);
         onMessageChange('');
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = '40px';
-        }
     }, [onMessageChange, onSelectFileChange]);
-
-    // 处理中文输入开始
-    const handleCompositionStart = useCallback(() => {
-        setIsComposing(true);
-    }, []);
-
-    // 处理中文输入结束
-    const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLTextAreaElement>) => {
-        setIsComposing(false);
-        adjustTextareaHeight();
-    }, [adjustTextareaHeight]);
 
     // 添加按钮点击事件
     const handleAddClick = useCallback(() => {
@@ -226,7 +180,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     // 文件上传事件
     const handleFileUpload = useCallback(() => {
-        textareaRef.current?.blur();
         setShowAddMenu(false);
         Service.SelectFiles().then(async (files: FileInfo[]) => {
             if (files.length === 0) return;
@@ -311,33 +264,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
 
-    //
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        // 如果正在使用中文输入法（composition状态），不处理回车键
-        if (isComposing) {
-            return;
-        }
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    }, [handleSend, isComposing]);
-
-    //
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const value = e.target.value;
+    const handleInputChange = useCallback((value: string) => {
         setInputValue(value);
         onMessageChange(value);
-        // 使用 requestAnimationFrame 优化性能
-        requestAnimationFrame(() => {
-            adjustTextareaHeight();
-        });
-    }, [adjustTextareaHeight]);
-
-    // 初始化时调整高度
-    useEffect(() => {
-        adjustTextareaHeight();
-    }, [adjustTextareaHeight]);
+    }, [onMessageChange]);
 
     // 处理点击外部区域关闭菜单
     useEffect(() => {
@@ -403,23 +333,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         ))}
                     </div>
                 )}
-                <textarea
-                    ref={textareaRef}
-                    className={styles.textInput}
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onCompositionStart={handleCompositionStart}
-                    onCompositionEnd={handleCompositionEnd}
-                    onKeyDown={handleKeyDown}
-                    placeholder="输入消息... (支持 Markdown 格式)"
-                    rows={1}
-                    data-markdown="true"
-                    style={{
-                        height: 'auto',
-                        minHeight: '40px',
-                        maxHeight: 'calc(1.5em * 8 + 16px)'
-                    }}
-                />
+                <div className={styles.richEditorWrapper}>
+                    <RichMarkdownEditor
+                        value={inputValue}
+                        onChange={handleInputChange}
+                        onSend={handleSend}
+                        placeholder="输入消息... (支持 Markdown 格式)"
+                    />
+                </div>
                 
                 <div className={styles.bottomBar}>
                     <div className={styles.leftActions}>

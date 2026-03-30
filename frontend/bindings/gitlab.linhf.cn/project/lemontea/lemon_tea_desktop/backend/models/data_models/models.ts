@@ -22,6 +22,8 @@ export class AssistantMessageExtra {
     "retry_count": number;
     "current_stage": string;
     "current_agent": string;
+    "preface_content": string;
+    "preface_reasoning_content": string;
     "finish_reason": string;
     "finish_error": string;
 
@@ -44,6 +46,12 @@ export class AssistantMessageExtra {
         }
         if (!("current_agent" in $$source)) {
             this["current_agent"] = "";
+        }
+        if (!("preface_content" in $$source)) {
+            this["preface_content"] = "";
+        }
+        if (!("preface_reasoning_content" in $$source)) {
+            this["preface_reasoning_content"] = "";
         }
         if (!("finish_reason" in $$source)) {
             this["finish_reason"] = "";

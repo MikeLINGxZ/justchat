@@ -1,9 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./index.module.scss";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
     TraceDetailFormat,
     TraceStepStatus,
@@ -12,6 +8,7 @@ import {
     type TraceDetailBlock,
     type TraceStep,
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
+import MarkdownRenderer from "@/components/markdown_renderer";
 
 interface ExecutionTraceProps {
     trace?: ExecutionTrace | null;
@@ -167,36 +164,7 @@ function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: numb
             <div key={`${block.kind}-${index}`} className={styles.detailBlock}>
                 <div className={styles.detailTitle}>{displayTitle}</div>
                 <div className={`${styles.detailContent} ${styles.detailMarkdown}`}>
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                            code(props: any) {
-                                const { inline, className, children, ...rest } = props;
-                                const match = /language-(\w+)/.exec(className || '');
-                                const language = match ? match[1] : '';
-                                return !inline && language ? (
-                                    <SyntaxHighlighter
-                                        style={tomorrow}
-                                        language={language}
-                                        PreTag="div"
-                                        customStyle={{ margin: '8px 0', borderRadius: '8px', fontSize: '12px' } as any}
-                                        {...rest}
-                                    >
-                                        {String(children).replace(/\n$/, '')}
-                                    </SyntaxHighlighter>
-                                ) : (
-                                    <code className={styles.inlineCode} {...rest}>{children}</code>
-                                );
-                            },
-                            ul: ({ children }) => <ul className={styles.markdownList}>{children}</ul>,
-                            ol: ({ children }) => <ol className={styles.markdownList}>{children}</ol>,
-                            li: ({ children }) => <li className={styles.markdownListItem}>{children}</li>,
-                            p: ({ children }) => <p className={styles.markdownParagraph}>{children}</p>,
-                            strong: ({ children }) => <strong className={styles.markdownStrong}>{children}</strong>,
-                        }}
-                    >
-                        {block.content}
-                    </ReactMarkdown>
+                    <MarkdownRenderer content={block.content} variant="trace" />
                 </div>
             </div>
         );

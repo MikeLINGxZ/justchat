@@ -47,9 +47,11 @@ function assistantHasSubstantiveOutput(message: Message): boolean {
     if (message.role !== RoleType.Assistant) return false;
     const content = message.content?.trim() ?? "";
     const reasoning = message.reasoning_content?.trim() ?? "";
+    const prefaceContent = message.assistant_message_extra?.preface_content?.trim() ?? "";
+    const prefaceReasoning = message.assistant_message_extra?.preface_reasoning_content?.trim() ?? "";
     const toolUses = message.assistant_message_extra?.tool_uses?.length ?? 0;
     const traceSteps = message.assistant_message_extra?.execution_trace?.steps?.length ?? 0;
-    return content.length > 0 || reasoning.length > 0 || toolUses > 0 || traceSteps > 0;
+    return content.length > 0 || reasoning.length > 0 || prefaceContent.length > 0 || prefaceReasoning.length > 0 || toolUses > 0 || traceSteps > 0;
 }
 
 const Chat: React.FC<ChatProps> = ({
@@ -455,6 +457,8 @@ const Chat: React.FC<ChatProps> = ({
                     retry_count: 0,
                     current_stage: "",
                     current_agent: "",
+                    preface_content: "",
+                    preface_reasoning_content: "",
                     finish_reason: "",
                     finish_error: "",
                     tool_uses: [],

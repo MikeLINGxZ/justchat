@@ -66,6 +66,37 @@ func (s *Service) ChatMessages(ctx context.Context, chatUuid string, offset, lim
 	}, nil
 }
 
+func preserveWorkflowPreface(message *data_models.Message) {
+	if message == nil {
+		return
+	}
+	if message.AssistantMessageExtra == nil {
+		message.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+	}
+	if message.AssistantMessageExtra.PrefaceContent == "" && strings.TrimSpace(message.Content) != "" {
+		message.AssistantMessageExtra.PrefaceContent = message.Content
+	}
+	if message.AssistantMessageExtra.PrefaceReasoningContent == "" && strings.TrimSpace(message.ReasoningContent) != "" {
+		message.AssistantMessageExtra.PrefaceReasoningContent = message.ReasoningContent
+	}
+}
+
+func resetDirectAssistantState(message *data_models.Message) {
+	if message == nil {
+		return
+	}
+	if message.AssistantMessageExtra == nil {
+		message.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
+	}
+	message.Content = ""
+	message.ReasoningContent = ""
+	message.AssistantMessageExtra.RouteType = ""
+	message.AssistantMessageExtra.CurrentStage = ""
+	message.AssistantMessageExtra.CurrentAgent = ""
+	message.AssistantMessageExtra.ExecutionTrace = data_models.ExecutionTrace{Steps: []data_models.TraceStep{}}
+	message.AssistantMessageExtra.FinishError = ""
+}
+
 // Completions 聊天
 func (s *Service) Completions(ctx context.Context, inputMessage view_models.Message) (*view_models.Completions, error) {
 	if inputMessage.UserMessageExtra == nil {
@@ -704,16 +735,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		}
 
 		resetDirectAssistantStateLocked := func() {
-			if assistantMessage.AssistantMessageExtra == nil {
-				assistantMessage.AssistantMessageExtra = &data_models.AssistantMessageExtra{}
-			}
-			assistantMessage.Content = ""
-			assistantMessage.ReasoningContent = ""
-			assistantMessage.AssistantMessageExtra.RouteType = ""
-			assistantMessage.AssistantMessageExtra.CurrentStage = ""
-			assistantMessage.AssistantMessageExtra.CurrentAgent = ""
-			assistantMessage.AssistantMessageExtra.ExecutionTrace = data_models.ExecutionTrace{Steps: []data_models.TraceStep{}}
-			assistantMessage.AssistantMessageExtra.FinishError = ""
+			resetDirectAssistantState(&assistantMessage)
 		}
 
 		runSinglePassEntry := func(userRequest string) error {
@@ -832,6 +854,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 
 			if handoff != nil {
 				assistantMu.Lock()
+				preserveWorkflowPreface(&assistantMessage)
 				resetDirectAssistantStateLocked()
 				err := persistAssistantSnapshotLocked(false)
 				if err == nil {

@@ -1,6 +1,7 @@
 package data_models
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,5 +117,29 @@ func TestToSchemaMessage_PreservesLeadingTextWithAttachment(t *testing.T) {
 	}
 	if got.UserInputMultiContent[0].Text != "帮我看看这个文件" {
 		t.Fatalf("first part text = %q, want original content", got.UserInputMultiContent[0].Text)
+	}
+}
+
+func TestAssistantMessageExtraJSONRoundTripPreservesPrefaceFields(t *testing.T) {
+	extra := AssistantMessageExtra{
+		PrefaceContent:          "先给你一个结论",
+		PrefaceReasoningContent: "我先快速分析一下",
+		CurrentStage:            "任务交付",
+	}
+
+	raw, err := json.Marshal(extra)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	var decoded AssistantMessageExtra
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if decoded.PrefaceContent != extra.PrefaceContent {
+		t.Fatalf("preface_content = %q, want %q", decoded.PrefaceContent, extra.PrefaceContent)
+	}
+	if decoded.PrefaceReasoningContent != extra.PrefaceReasoningContent {
+		t.Fatalf("preface_reasoning_content = %q, want %q", decoded.PrefaceReasoningContent, extra.PrefaceReasoningContent)
 	}
 }

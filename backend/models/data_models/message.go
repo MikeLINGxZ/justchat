@@ -117,14 +117,16 @@ type UserMessageExtra struct {
 }
 
 type AssistantMessageExtra struct {
-	ToolUses       []ToolUse      `json:"tool_uses"`
-	ExecutionTrace ExecutionTrace `json:"execution_trace"`
-	RouteType      RouteType      `json:"route_type"`
-	RetryCount     int            `json:"retry_count"`
-	CurrentStage   string         `json:"current_stage"`
-	CurrentAgent   string         `json:"current_agent"`
-	FinishReason   string         `json:"finish_reason"`
-	FinishError    string         `json:"finish_error"`
+	ToolUses                []ToolUse      `json:"tool_uses"`
+	ExecutionTrace          ExecutionTrace `json:"execution_trace"`
+	RouteType               RouteType      `json:"route_type"`
+	RetryCount              int            `json:"retry_count"`
+	CurrentStage            string         `json:"current_stage"`
+	CurrentAgent            string         `json:"current_agent"`
+	PrefaceContent          string         `json:"preface_content"`
+	PrefaceReasoningContent string         `json:"preface_reasoning_content"`
+	FinishReason            string         `json:"finish_reason"`
+	FinishError             string         `json:"finish_error"`
 }
 
 type ToolUseStatus string
