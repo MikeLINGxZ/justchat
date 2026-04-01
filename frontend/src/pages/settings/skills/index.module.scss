@@ -1,0 +1,345 @@
+@use '@/styles/variables.scss' as *;
+
+.skillSettings {
+  background: transparent;
+  height: 100%;
+  min-height: 0;
+}
+
+.desktopLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: var(--spacing-lg);
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+}
+
+.listColumn,
+.editorColumn {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.listCard,
+.editorCard {
+  height: 100%;
+  border-radius: 16px;
+  border: none;
+  background: var(--background-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.ant-card-head) {
+    background: transparent;
+    border-bottom: none;
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+    min-height: auto;
+
+    :global(.ant-card-head-title) {
+      color: var(--text-color);
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+  }
+}
+
+.listCard {
+  :global(.ant-card-body) {
+    padding: 0;
+    height: calc(100% - 72px);
+    overflow: hidden;
+  }
+}
+
+.editorCard {
+  :global(.ant-card-body) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.listLoading,
+.editorLoading,
+.emptyState {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+}
+
+.skillList {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.skillItem {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  row-gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-color-light);
+  padding: 14px var(--spacing-md) 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 108px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    transition: background 0.2s ease;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+
+  &.selected {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(24, 144, 255, 0.04));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+}
+
+.skillItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.skillItemTitle {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: var(--font-size);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skillItemHeader :global(.ant-tag) {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+
+.skillItemDesc {
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  padding-right: 6px;
+  min-height: 38px;
+  max-height: 38px;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.skillItemTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+
+  :global(.ant-tag) {
+    margin-inline-end: 0;
+    font-size: 11px;
+    line-height: 18px;
+    padding: 0 6px;
+  }
+}
+
+.editorHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.editorTitleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+
+  h4 {
+    margin: 0 !important;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+  }
+}
+
+.editorDescription {
+  margin-bottom: 0 !important;
+  color: var(--text-color-secondary);
+}
+
+.tipAlert {
+  border-radius: 12px;
+  border: 1px solid var(--border-color-light);
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(24, 144, 255, 0.02));
+}
+
+.editorArea {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.textArea {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  resize: none;
+  border-radius: 14px;
+  border: 1px solid var(--border-color-light);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.78), rgba(255, 255, 255, 0.96));
+  padding: 18px 20px;
+  color: var(--text-color);
+  font-size: 13px;
+  line-height: 1.75;
+  font-family: 'SFMono-Regular', 'Consolas', 'Monaco', monospace;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+
+  &:hover,
+  &:focus {
+    border-color: rgba(24, 144, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.08);
+  }
+
+  :global(textarea) {
+    height: 100% !important;
+    min-height: 0 !important;
+    resize: none !important;
+    overflow-y: auto !important;
+  }
+}
+
+.editorActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color-light);
+}
+
+.actionHint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-color-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.mobileEditor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.mobileBackButton {
+  align-self: flex-start;
+  padding-left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+@include respond-below(md) {
+  .skillSettings {
+    height: auto;
+  }
+
+  .desktopLayout {
+    height: auto;
+  }
+
+  .editorCard {
+    min-height: auto;
+    height: auto;
+
+    :global(.ant-card-body) {
+      padding: var(--spacing-lg);
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  .listCard {
+    height: auto;
+
+    :global(.ant-card-body) {
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  .listCard,
+  .editorCard {
+    border-radius: 16px;
+  }
+
+  .skillItem {
+    padding: var(--spacing-md);
+  }
+
+  .textArea {
+    min-height: 360px !important;
+    height: 360px !important;
+  }
+
+  .editorActions {
+    align-items: stretch;
+
+    :global(.ant-space) {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+}

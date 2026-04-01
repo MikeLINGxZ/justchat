@@ -25,6 +25,8 @@ func (c *CurrentDate) Description() string {
 	return i18n.TCurrent("tool.current_date.description", nil)
 }
 
+func (c *CurrentDate) RequireConfirmation() bool { return false }
+
 func (c *CurrentDate) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{
@@ -59,6 +61,8 @@ func (c *CurrentTime) Name() string {
 func (c *CurrentTime) Description() string {
 	return i18n.TCurrent("tool.current_time.description", nil)
 }
+
+func (c *CurrentTime) RequireConfirmation() bool { return false }
 
 func (c *CurrentTime) Tool() tool.BaseTool {
 	t := utils.NewTool(

@@ -36,6 +36,8 @@ func (s *ShellTool) Description() string {
 	return i18n.TCurrent("tool.shell.description", nil)
 }
 
+func (s *ShellTool) RequireConfirmation() bool { return true }
+
 func (s *ShellTool) Tool() tool.BaseTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
@@ -122,7 +124,7 @@ func (s *ShellTool) BuildApprovalPrompt(ctx context.Context, argumentsJSON strin
 			"command":   command,
 			"directory": dir,
 			"scope":     scope,
-		}) + "\n" + i18n.TCurrent("tool.approval.actions", nil),
+		}),
 		Scope: fmt.Sprintf("%s: %s", scope, dir),
 	}, nil
 }

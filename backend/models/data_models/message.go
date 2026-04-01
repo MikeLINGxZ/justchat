@@ -120,6 +120,7 @@ type AssistantMessageExtra struct {
 	ToolUses                []ToolUse             `json:"tool_uses"`
 	ExecutionTrace          ExecutionTrace        `json:"execution_trace"`
 	PendingApprovals        []ToolApprovalSummary `json:"pending_approvals"`
+	SubAgentTasks           []SubAgentTask        `json:"sub_agent_tasks"`
 	RouteType               RouteType             `json:"route_type"`
 	RetryCount              int                   `json:"retry_count"`
 	CurrentStage            string                `json:"current_stage"`
@@ -153,6 +154,20 @@ type ToolUse struct {
 	StartedAt       *time.Time    `json:"started_at"`
 	FinishedAt      *time.Time    `json:"finished_at"`
 	ElapsedMs       int64         `json:"elapsed_ms"`
+}
+
+type SubAgentTask struct {
+	TaskID       string        `json:"task_id"`
+	AgentID      string        `json:"agent_id"`
+	AgentName    string        `json:"agent_name"`
+	Status       ToolUseStatus `json:"status"`
+	Input        string        `json:"input"`
+	Output       string        `json:"output"`
+	ToolCalls    []ToolUse     `json:"tool_calls"`
+	CreatorAgent string        `json:"creator_agent"`
+	StartedAt    *time.Time    `json:"started_at"`
+	FinishedAt   *time.Time    `json:"finished_at"`
+	ElapsedMs    int64         `json:"elapsed_ms"`
 }
 
 type File struct {

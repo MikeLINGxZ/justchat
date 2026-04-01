@@ -71,7 +71,8 @@ export function CompleteOnboarding(provider: view_models$0.Provider): $Cancellab
 }
 
 /**
- * Completions 聊天
+ * Completions 聊天完成接口，负责参数校验、资源初始化和启动异步任务。
+ * 实际的执行逻辑委托给 completionRunner（见 chat_completion_runner.go）。
  */
 export function Completions(inputMessage: view_models$0.Message): $CancellablePromise<view_models$0.Completions | null> {
     return $Call.ByID(2526998161, inputMessage).then(($result: any) => {
@@ -80,10 +81,35 @@ export function Completions(inputMessage: view_models$0.Message): $CancellablePr
 }
 
 /**
+ * CreateCustomAgent creates a new custom agent.
+ */
+export function CreateCustomAgent(input: view_models$0.CustomAgentInput): $CancellablePromise<view_models$0.AgentDetail | null> {
+    return $Call.ByID(2169404366, input).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
+/**
+ * CreateSkill creates a new skill after validation.
+ */
+export function CreateSkill(input: view_models$0.SkillDetail): $CancellablePromise<view_models$0.SkillDetail | null> {
+    return $Call.ByID(1414931439, input).then(($result: any) => {
+        return $$createType13($result);
+    });
+}
+
+/**
  * DeleteChat 删除聊天
  */
 export function DeleteChat(chatUuid: string): $CancellablePromise<void> {
     return $Call.ByID(2431139091, chatUuid);
+}
+
+/**
+ * DeleteCustomAgent deletes a custom agent.
+ */
+export function DeleteCustomAgent(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1011731219, id);
 }
 
 export function DeleteMCPTool(toolID: string): $CancellablePromise<void> {
@@ -101,6 +127,13 @@ export function DeleteProviderCustomModel(providerId: number, modelName: string)
     return $Call.ByID(2573490636, providerId, modelName);
 }
 
+/**
+ * DeleteSkill removes a skill by name.
+ */
+export function DeleteSkill(name: string): $CancellablePromise<void> {
+    return $Call.ByID(1433770462, name);
+}
+
 export function ExitApp(): $CancellablePromise<void> {
     return $Call.ByID(125618793);
 }
@@ -112,15 +145,24 @@ export function GenChatTitle(chatUuid: string, modelId: number, modelName: strin
     return $Call.ByID(726618912, chatUuid, modelId, modelName, update);
 }
 
+/**
+ * GetAgent 返回指定 Agent 的详情，包含其关联的提示词内容。
+ */
+export function GetAgent(name: string): $CancellablePromise<view_models$0.AgentDetail | null> {
+    return $Call.ByID(675794715, name).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 export function GetAppPreferences(): $CancellablePromise<view_models$0.AppPreferences | null> {
     return $Call.ByID(3272455837).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType15($result);
     });
 }
 
 export function GetChatActiveTask(chatUuid: string): $CancellablePromise<view_models$0.Task | null> {
     return $Call.ByID(230063095, chatUuid).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType17($result);
     });
 }
 
@@ -129,13 +171,13 @@ export function GetChatActiveTask(chatUuid: string): $CancellablePromise<view_mo
  */
 export function GetModels(enableProvider: boolean | null, enableModel: boolean | null): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(2435611672, enableProvider, enableModel).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType19($result);
     });
 }
 
 export function GetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(508910466, name).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType21($result);
     });
 }
 
@@ -144,7 +186,7 @@ export function GetPromptFile(name: string): $CancellablePromise<view_models$0.P
  */
 export function GetProviderModels(provider: view_models$0.Provider): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(1264152129, provider).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType19($result);
     });
 }
 
@@ -153,13 +195,22 @@ export function GetProviderModels(provider: view_models$0.Provider): $Cancellabl
  */
 export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     return $Call.ByID(3921712104).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType23($result);
     });
 }
 
 export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | null> {
     return $Call.ByID(2644190933).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType25($result);
+    });
+}
+
+/**
+ * GetSkill returns the full detail of a skill by name.
+ */
+export function GetSkill(name: string): $CancellablePromise<view_models$0.SkillDetail | null> {
+    return $Call.ByID(1291472183, name).then(($result: any) => {
+        return $$createType13($result);
     });
 }
 
@@ -168,19 +219,19 @@ export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | 
  */
 export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
     return $Call.ByID(4035154853).then(($result: any) => {
-        return $$createType23($result);
+        return $$createType27($result);
     });
 }
 
 export function GetTask(taskUuid: string): $CancellablePromise<view_models$0.Task | null> {
     return $Call.ByID(167956275, taskUuid).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType17($result);
     });
 }
 
 export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     return $Call.ByID(432097153).then(($result: any) => {
-        return $$createType24($result);
+        return $$createType28($result);
     });
 }
 
@@ -188,14 +239,36 @@ export function IsInitialized(): $CancellablePromise<boolean> {
     return $Call.ByID(2734665048);
 }
 
+/**
+ * ListAgents 返回所有已注册 Agent 的摘要信息。
+ */
+export function ListAgents(): $CancellablePromise<view_models$0.AgentSummary[]> {
+    return $Call.ByID(1996549960).then(($result: any) => {
+        return $$createType30($result);
+    });
+}
+
 export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileSummary[]> {
     return $Call.ByID(3509338483).then(($result: any) => {
-        return $$createType26($result);
+        return $$createType32($result);
+    });
+}
+
+/**
+ * ListSkills returns a summary list of all available skills.
+ */
+export function ListSkills(): $CancellablePromise<view_models$0.SkillSummary[]> {
+    return $Call.ByID(1487878748).then(($result: any) => {
+        return $$createType34($result);
     });
 }
 
 export function OpenFile(path: string): $CancellablePromise<void> {
     return $Call.ByID(639918028, path);
+}
+
+export function OpenSettingsAboutWindow(): $CancellablePromise<void> {
+    return $Call.ByID(3760936256);
 }
 
 export function OpenSettingsWindow(): $CancellablePromise<void> {
@@ -209,9 +282,18 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
     return $Call.ByID(2654224378, chatUuid, title);
 }
 
+/**
+ * ResetAgentPrompt 将指定 Agent 的某个提示词恢复为默认内容。
+ */
+export function ResetAgentPrompt(agentName: string, promptName: string): $CancellablePromise<view_models$0.AgentDetail | null> {
+    return $Call.ByID(2502039740, agentName, promptName).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 export function ResetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(2827988805, name).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType21($result);
     });
 }
 
@@ -221,7 +303,7 @@ export function RespondToolApproval(input: data_models$0.ToolApprovalResponse): 
 
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType36($result);
     });
 }
 
@@ -237,8 +319,26 @@ export function StopTask(taskUuid: string): $CancellablePromise<void> {
     return $Call.ByID(2829427223, taskUuid);
 }
 
+/**
+ * UpdateAgentPrompt 更新指定 Agent 的某个提示词内容。
+ */
+export function UpdateAgentPrompt(agentName: string, promptName: string, content: string): $CancellablePromise<view_models$0.AgentDetail | null> {
+    return $Call.ByID(2219566078, agentName, promptName, content).then(($result: any) => {
+        return $$createType11($result);
+    });
+}
+
 export function UpdateAppPreferences(input: view_models$0.AppPreferences): $CancellablePromise<view_models$0.AppPreferences | null> {
     return $Call.ByID(3440343940, input).then(($result: any) => {
+        return $$createType15($result);
+    });
+}
+
+/**
+ * UpdateCustomAgent updates an existing custom agent.
+ */
+export function UpdateCustomAgent(input: view_models$0.CustomAgentInput): $CancellablePromise<view_models$0.AgentDetail | null> {
+    return $Call.ByID(2794305161, input).then(($result: any) => {
         return $$createType11($result);
     });
 }
@@ -249,7 +349,7 @@ export function UpdateMCPToolEnabled(toolID: string, enabled: boolean): $Cancell
 
 export function UpdatePromptFile(name: string, content: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(487143775, name, content).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType21($result);
     });
 }
 
@@ -267,6 +367,15 @@ export function UpdateProviderModels(providerId: number): $CancellablePromise<vo
     return $Call.ByID(3054855516, providerId);
 }
 
+/**
+ * UpdateSkill updates an existing skill.
+ */
+export function UpdateSkill(name: string, input: view_models$0.SkillDetail): $CancellablePromise<view_models$0.SkillDetail | null> {
+    return $Call.ByID(889877976, name, input).then(($result: any) => {
+        return $$createType13($result);
+    });
+}
+
 // Private type creation functions
 const $$createType0 = view_models$0.Tool.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
@@ -278,22 +387,30 @@ const $$createType6 = view_models$0.MessageList.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
 const $$createType8 = view_models$0.Completions.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = view_models$0.AppPreferences.createFrom;
+const $$createType10 = view_models$0.AgentDetail.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = data_models$0.Task.createFrom;
+const $$createType12 = view_models$0.SkillDetail.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = view_models$0.Model.createFrom;
-const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = view_models$0.PromptFileDetail.createFrom;
+const $$createType14 = view_models$0.AppPreferences.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = data_models$0.Task.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = view_models$0.Provider.createFrom;
+const $$createType18 = view_models$0.Model.createFrom;
 const $$createType19 = $Create.Array($$createType18);
-const $$createType20 = view_models$0.TaskList.createFrom;
+const $$createType20 = view_models$0.PromptFileDetail.createFrom;
 const $$createType21 = $Create.Nullable($$createType20);
-const $$createType22 = view_models$0.SupportProvider.createFrom;
+const $$createType22 = view_models$0.Provider.createFrom;
 const $$createType23 = $Create.Array($$createType22);
-const $$createType24 = $Create.Array($$createType0);
-const $$createType25 = view_models$0.PromptFileSummary.createFrom;
-const $$createType26 = $Create.Array($$createType25);
-const $$createType27 = data_models$0.File.createFrom;
-const $$createType28 = $Create.Array($$createType27);
+const $$createType24 = view_models$0.TaskList.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);
+const $$createType26 = view_models$0.SupportProvider.createFrom;
+const $$createType27 = $Create.Array($$createType26);
+const $$createType28 = $Create.Array($$createType0);
+const $$createType29 = view_models$0.AgentSummary.createFrom;
+const $$createType30 = $Create.Array($$createType29);
+const $$createType31 = view_models$0.PromptFileSummary.createFrom;
+const $$createType32 = $Create.Array($$createType31);
+const $$createType33 = view_models$0.SkillSummary.createFrom;
+const $$createType34 = $Create.Array($$createType33);
+const $$createType35 = data_models$0.File.createFrom;
+const $$createType36 = $Create.Array($$createType35);

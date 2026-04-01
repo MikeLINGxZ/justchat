@@ -27,6 +27,8 @@ func (a *AliasedTool) Description() string {
 	return a.Desc
 }
 
+func (a *AliasedTool) RequireConfirmation() bool { return false }
+
 func (a *AliasedTool) Tool() einotool.BaseTool {
 	return a
 }

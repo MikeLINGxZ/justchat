@@ -14,6 +14,7 @@ type ITool interface {
 	Name() string
 	Description() string
 	Tool() tool.BaseTool
+	RequireConfirmation() bool
 }
 
 func init() {

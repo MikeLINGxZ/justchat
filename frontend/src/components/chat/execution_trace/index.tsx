@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import styles from "./index.module.scss";
 import {
@@ -17,7 +17,7 @@ interface ExecutionTraceProps {
     retryCount?: number;
     isStreaming?: boolean;
     onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
-    onApprovalComment?: (approvalId: string, title: string, message: string) => void;
+    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void;
 }
 
 const stageLabelMap: Record<string, string> = {
@@ -58,6 +58,24 @@ const typeLabelMap: Record<string, string> = {
     [TraceStepType.TraceStepTypeFinalize]: "chat.executionTrace.finalize",
 };
 
+function getStatusDotClass(status: string | undefined): string {
+    switch (status) {
+        case TraceStepStatus.TraceStepStatusDone:
+            return styles.statusDotDone;
+        case TraceStepStatus.TraceStepStatusError:
+        case TraceStepStatus.TraceStepStatusRejected:
+            return styles.statusDotError;
+        case TraceStepStatus.TraceStepStatusSkipped:
+            return styles.statusDotSkipped;
+        case TraceStepStatus.TraceStepStatusPending:
+            return styles.statusDotPending;
+        case TraceStepStatus.TraceStepStatusAwaitingApproval:
+            return styles.statusDotAwaitingApproval;
+        default:
+            return styles.statusDotRunning;
+    }
+}
+
 function getStatusLabel(status: string | undefined, t: (key: string) => string): string {
     switch (status) {
         case TraceStepStatus.TraceStepStatusDone:
@@ -84,7 +102,8 @@ function formatElapsedMs(value?: number): string {
     }
     const sec = Math.floor(ms / 1000);
     if (sec < 60) {
-        return `${sec}s`;
+        const tenths = Math.floor((ms % 1000) / 100);
+        return tenths > 0 ? `${sec}.${tenths}s` : `${sec}s`;
     }
     return `${Math.floor(sec / 60)}m ${sec % 60}s`;
 }
@@ -168,19 +187,47 @@ function getDetailBlockDisplayTitle(step: TraceStep, block: TraceDetailBlock, t:
     return block.title;
 }
 
-function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: number, t: (key: string) => string) {
+/** Wrench icon for tool call rows */
+const WrenchIcon: React.FC = () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.5 2.5a3.5 3.5 0 0 0-3.27 4.73L2.5 12l1.5 1.5 4.77-4.73A3.5 3.5 0 0 0 14 5.5l-2 2-1.5-.5-.5-1.5 2-2a3.5 3.5 0 0 0-1.5-.5z" />
+    </svg>
+);
+
+/** Agent icon for sub-agent call rows */
+const AgentIcon: React.FC = () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="5" r="2.5" />
+        <path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" />
+    </svg>
+);
+
+/** Detail block with optional "show more" for long content */
+const DetailBlockView: React.FC<{
+    step: TraceStep;
+    block: TraceDetailBlock;
+    index: number;
+    t: (key: string) => string;
+}> = ({ step, block, index, t }) => {
     const displayTitle = getDetailBlockDisplayTitle(step, block, t);
+    const [contentExpanded, setContentExpanded] = useState(false);
+
+    if (block.collapsed) {
+        return null;
+    }
+
     if (!block.content?.trim()) {
         return null;
     }
-    if (block.format === TraceDetailFormat.TraceDetailFormatJSON) {
-        return (
-            <div key={`${block.kind}-${index}`} className={styles.detailBlock}>
-                <div className={styles.detailTitle}>{displayTitle}</div>
-                <pre className={`${styles.detailContent} ${styles.jsonBlock}`}>{block.content}</pre>
-            </div>
-        );
-    }
+
+    const isLong = (block.content?.length ?? 0) > 500;
+    const contentClasses = [
+        styles.detailContent,
+        block.format === TraceDetailFormat.TraceDetailFormatJSON ? styles.jsonBlock : '',
+        isLong && !contentExpanded ? styles.detailContentClamped : '',
+        isLong && contentExpanded ? styles.detailContentExpanded : '',
+    ].filter(Boolean).join(' ');
+
     if (block.format === TraceDetailFormat.TraceDetailFormatMarkdown) {
         return (
             <div key={`${block.kind}-${index}`} className={styles.detailBlock}>
@@ -191,13 +238,23 @@ function renderDetailBlock(step: TraceStep, block: TraceDetailBlock, index: numb
             </div>
         );
     }
+
     return (
         <div key={`${block.kind}-${index}`} className={styles.detailBlock}>
             <div className={styles.detailTitle}>{displayTitle}</div>
-            <pre className={styles.detailContent}>{block.content}</pre>
+            <pre className={contentClasses}>{block.content}</pre>
+            {isLong && (
+                <button
+                    type="button"
+                    className={styles.showMoreBtn}
+                    onClick={() => setContentExpanded(!contentExpanded)}
+                >
+                    {contentExpanded ? t('chat.executionTrace.collapse') : t('chat.executionTrace.expand')}
+                </button>
+            )}
         </div>
     );
-}
+};
 
 function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; message: string } | null {
     const metadata = step.metadata ?? {};
@@ -210,6 +267,19 @@ function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; 
     return { approvalId, title, message };
 }
 
+/** Get agent step CSS classes for the left border accent */
+function getAgentMainClasses(step: TraceStep): string {
+    const classes = [styles.nodeMain, styles.nodeMainAgent];
+    if (isRunningStep(step)) {
+        classes.push(styles.nodeMainAgentRunning);
+    } else if (step.status === TraceStepStatus.TraceStepStatusError || step.status === TraceStepStatus.TraceStepStatusRejected) {
+        classes.push(styles.nodeMainAgentError);
+    } else {
+        classes.push(styles.nodeMainAgentDone);
+    }
+    return classes.join(' ');
+}
+
 const TraceNode: React.FC<{
     step: TraceStep;
     tree: Map<string, TraceStep[]>;
@@ -217,24 +287,44 @@ const TraceNode: React.FC<{
     depth?: number;
     autoExpand?: boolean;
     onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
-    onApprovalComment?: (approvalId: string, title: string, message: string) => void;
-}> = ({ step, tree, nowMs, depth = 0, autoExpand = false, onApprovalDecision, onApprovalComment }) => {
+    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void;
+}> = ({ step, tree, nowMs, depth = 0, autoExpand = false, onApprovalDecision, onSendApprovalComment }) => {
     const { t } = useTranslation();
     const children = tree.get(step.step_id) ?? [];
     const inlineChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? children : [];
     const nestedChildren = step.type === TraceStepType.TraceStepTypeAgentRun ? [] : children;
     const [expanded, setExpanded] = useState(autoExpand);
+    const [showInlineInput, setShowInlineInput] = useState(false);
+    const [inlineComment, setInlineComment] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const inlineInputRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleSendComment = useCallback(async (approvalId: string) => {
+        const trimmed = inlineComment.trim();
+        if (!trimmed || isSending) return;
+        setIsSending(true);
+        try {
+            await onSendApprovalComment?.(approvalId, trimmed);
+            setShowInlineInput(false);
+            setInlineComment('');
+        } finally {
+            setIsSending(false);
+        }
+    }, [inlineComment, isSending, onSendApprovalComment]);
+
+    useEffect(() => {
+        if (showInlineInput && inlineInputRef.current) {
+            inlineInputRef.current.focus();
+        }
+    }, [showInlineInput]);
     const hasChildren = children.length > 0;
     const isRunning = isRunningStep(step);
-    const statusClassName = isRunning
-        ? styles.running
-        : step.status === TraceStepStatus.TraceStepStatusError || step.status === TraceStepStatus.TraceStepStatusRejected
-            ? styles.error
-            : styles.done;
     const detailBlocks = step.detail_blocks ?? [];
     const approvalMeta = getApprovalMeta(step);
     const isAwaitingApproval = step.status === TraceStepStatus.TraceStepStatusAwaitingApproval && approvalMeta != null;
     const isAgentStep = step.type === TraceStepType.TraceStepTypeAgentRun;
+    const isToolCallStep = step.type === TraceStepType.TraceStepTypeToolCall;
+    const isSubAgent = isToolCallStep && (step.metadata as Record<string, unknown>)?.is_sub_agent === true;
     const leadingDetailBlocks = isAgentStep
         ? detailBlocks.filter((block) => block.kind !== "output" && block.kind !== "tool_result")
         : detailBlocks;
@@ -242,23 +332,141 @@ const TraceNode: React.FC<{
         ? detailBlocks.filter((block) => block.kind === "output" || block.kind === "tool_result")
         : [];
 
+    const hasExpandableContent = hasChildren || detailBlocks.length > 0;
+
     useEffect(() => {
         if (isRunning) {
             setExpanded(true);
         }
     }, [isRunning]);
 
+    // ── Tool Call: compact single-line row ───────────────────────────────
+    if (isToolCallStep) {
+        return (
+            <div className={styles.node} style={{ marginLeft: depth * 14 }}>
+                <div className={styles.nodeHeader}>
+                    <div
+                        className={styles.toolCallRow}
+                        onClick={() => hasExpandableContent && setExpanded(!expanded)}
+                        role={hasExpandableContent ? "button" : undefined}
+                        tabIndex={hasExpandableContent ? 0 : undefined}
+                        onKeyDown={hasExpandableContent ? (e) => { if (e.key === 'Enter' || e.key === ' ') setExpanded(!expanded); } : undefined}
+                    >
+                        <span className={isSubAgent ? styles.agentCallIcon : styles.toolCallIcon}>{isSubAgent ? <AgentIcon /> : <WrenchIcon />}</span>
+                        {isSubAgent && <span className={styles.subAgentBadge}>{t('chat.executionTrace.agent')}</span>}
+                        {isSubAgent && step.agent_name && <span className={styles.callerInfo}>{t('chat.executionTrace.caller', { name: step.agent_name })}</span>}
+                        <span className={styles.toolCallName}>{step.tool_name || step.title || t('chat.executionTrace.unnamedStep')}</span>
+                        <span className={styles.toolCallSep}>&middot;</span>
+                        <span className={styles.toolCallElapsed}>{formatElapsedMs(getTraceStepElapsedMs(step, nowMs))}</span>
+                        <span className={`${styles.statusDot} ${getStatusDotClass(step.status)}`} />
+                    </div>
+                </div>
+                {/* Expandable detail content */}
+                <div className={`${styles.expandableContent} ${expanded ? styles.expandableContentExpanded : styles.expandableContentCollapsed}`}>
+                    {expanded && detailBlocks.length > 0 && (
+                        <div className={styles.detailSection} style={{ marginLeft: 8 }}>
+                            {detailBlocks.map((block, index) => (
+                                <DetailBlockView key={`${block.kind}-${index}`} step={step} block={block} index={index} t={t} />
+                            ))}
+                        </div>
+                    )}
+                    {expanded && (step.summary || step.output_preview) && (
+                        <div className={styles.nodeSummary} style={{ marginLeft: 8, marginTop: 4 }}>
+                            {step.summary || step.output_preview}
+                        </div>
+                    )}
+                    {expanded && isAwaitingApproval && approvalMeta && (
+                        <div className={styles.approvalCard} style={{ marginLeft: 8 }}>
+                            <div className={styles.approvalTitle}>{approvalMeta.title}</div>
+                            <div className={styles.approvalBody}>{approvalMeta.message}</div>
+                            <div className={styles.approvalActions}>
+                                <button type="button" className={`${styles.approvalButton} ${styles.approvalButtonAllow}`} onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'allow')}>
+                                    {t('chat.executionTrace.allow')}
+                                </button>
+                                <button type="button" className={`${styles.approvalButton} ${styles.approvalButtonReject}`} onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'reject')}>
+                                    {t('chat.executionTrace.reject')}
+                                </button>
+                                <button type="button" className={`${styles.approvalButton} ${styles.approvalButtonGuide}`} onClick={() => setShowInlineInput(true)}>
+                                    {t('chat.executionTrace.guideAi')}
+                                </button>
+                            </div>
+                            {showInlineInput && (
+                                <div className={styles.approvalInlineInput}>
+                                    <textarea
+                                        ref={inlineInputRef}
+                                        className={styles.approvalTextarea}
+                                        value={inlineComment}
+                                        onChange={(e) => setInlineComment(e.target.value)}
+                                        placeholder={t('chat.executionTrace.inlinePlaceholder')}
+                                        rows={2}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendComment(approvalMeta.approvalId);
+                                            }
+                                            if (e.key === 'Escape') {
+                                                setShowInlineInput(false);
+                                                setInlineComment('');
+                                            }
+                                        }}
+                                        disabled={isSending}
+                                    />
+                                    <div className={styles.approvalInlineActions}>
+                                        <button
+                                            type="button"
+                                            className={styles.approvalInlineSend}
+                                            onClick={() => handleSendComment(approvalMeta.approvalId)}
+                                            disabled={!inlineComment.trim() || isSending}
+                                        >
+                                            {t('chat.executionTrace.sendComment')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={styles.approvalInlineCancel}
+                                            onClick={() => { setShowInlineInput(false); setInlineComment(''); }}
+                                            disabled={isSending}
+                                        >
+                                            {t('chat.executionTrace.cancelComment')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+                {nestedChildren.length > 0 && expanded && (
+                    <div className={styles.children}>
+                        {nestedChildren.map((child) => (
+                            <TraceNode
+                                key={child.step_id}
+                                step={child}
+                                tree={tree}
+                                nowMs={nowMs}
+                                depth={depth + 1}
+                                autoExpand={isRunning}
+                                onApprovalDecision={onApprovalDecision}
+                                onSendApprovalComment={onSendApprovalComment}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ── Agent Run & other step types: card layout ────────────────────────
+    const mainClasses = isAgentStep ? getAgentMainClasses(step) : styles.nodeMain;
+
     return (
         <div className={styles.node} style={{ marginLeft: depth * 14 }}>
             <div className={styles.nodeHeader}>
-                <span className={styles.toggleSpacer} />
-                <div className={styles.nodeMain}>
+                <div className={mainClasses}>
                     <div className={styles.nodeTopRow}>
                         <div className={styles.nodeTitleRow}>
                             <span className={styles.nodeType}>{t(typeLabelMap[step.type] || 'chat.executionTrace.step')}</span>
                             <span className={styles.nodeTitle}>{step.title || t('chat.executionTrace.unnamedStep')}</span>
                         </div>
-                        {(hasChildren || detailBlocks.length > 0) && (
+                        {hasExpandableContent && (
                             <button className={styles.toggle} type="button" onClick={() => setExpanded(!expanded)}>
                                 <span className={styles.toggleIcon}>{expanded ? "▾" : "▸"}</span>
                                 <span className={styles.toggleText}>{expanded ? t('chat.executionTrace.collapse') : t('chat.executionTrace.expand')}</span>
@@ -277,99 +485,149 @@ const TraceNode: React.FC<{
                             {step.tool_name ? `Tool: ${step.tool_name}` : ""}
                         </div>
                     )}
-                    {expanded && isAgentStep && (
-                        <div className={styles.agentFlowSection}>
-                            {leadingDetailBlocks.length > 0 && (
-                                <div className={styles.detailSection}>
-                                    {leadingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
-                                </div>
-                            )}
-                            {(inlineChildren.length > 0 || isRunning) && (
-                                <div className={styles.inlineChildrenSection}>
-                                    <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.reasoning')}</div>
-                                    {inlineChildren.length > 0 ? (
-                                        <div className={styles.inlineChildrenList}>
-                                            {inlineChildren.map((child) => (
-                                                <TraceNode
-                                                    key={child.step_id}
-                                                    step={child}
-                                                    tree={tree}
-                                                    nowMs={nowMs}
-                                                    depth={0}
-                                                    autoExpand={isRunning}
-                                                    onApprovalDecision={onApprovalDecision}
-                                                    onApprovalComment={onApprovalComment}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className={styles.agentThinkingPlaceholder}>{t('chat.executionTrace.agentThinking')}</div>
-                                    )}
-                                </div>
-                            )}
-                            {trailingDetailBlocks.length > 0 && (
-                                <div className={styles.detailSection}>
-                                    {trailingDetailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    {expanded && !isAgentStep && detailBlocks.length > 0 && (
-                        <div className={styles.detailSection}>
-                            {detailBlocks.map((block, index) => renderDetailBlock(step, block, index, t))}
-                        </div>
-                    )}
-                    {expanded && isAwaitingApproval && approvalMeta && (
-                        <div className={styles.approvalCard}>
-                            <div className={styles.approvalTitle}>{approvalMeta.title}</div>
-                            <div className={styles.approvalBody}>{approvalMeta.message}</div>
-                            <div className={styles.approvalActions}>
-                                <button
-                                    type="button"
-                                    className={styles.approvalButton}
-                                    onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'allow')}
-                                >
-                                    {t('chat.executionTrace.allow')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className={styles.approvalButton}
-                                    onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'reject')}
-                                >
-                                    {t('chat.executionTrace.reject')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className={styles.approvalButton}
-                                    onClick={() => onApprovalComment?.(approvalMeta.approvalId, approvalMeta.title, approvalMeta.message)}
-                                >
-                                    {t('chat.executionTrace.guideAi')}
-                                </button>
+                    {/* Expandable content with animation */}
+                    <div className={`${styles.expandableContent} ${expanded ? styles.expandableContentExpanded : styles.expandableContentCollapsed}`}>
+                        {expanded && isAgentStep && (
+                            <div className={styles.agentFlowSection}>
+                                {leadingDetailBlocks.length > 0 && (
+                                    <div className={styles.detailSection}>
+                                        {leadingDetailBlocks.map((block, index) => (
+                                            <DetailBlockView key={`${block.kind}-${index}`} step={step} block={block} index={index} t={t} />
+                                        ))}
+                                    </div>
+                                )}
+                                {(inlineChildren.length > 0 || isRunning) && (
+                                    <div className={styles.inlineChildrenSection}>
+                                        <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.reasoning')}</div>
+                                        {inlineChildren.length > 0 ? (
+                                            <div className={styles.inlineChildrenList}>
+                                                {inlineChildren.map((child) => (
+                                                    <TraceNode
+                                                        key={child.step_id}
+                                                        step={child}
+                                                        tree={tree}
+                                                        nowMs={nowMs}
+                                                        depth={0}
+                                                        autoExpand={isRunning}
+                                                        onApprovalDecision={onApprovalDecision}
+                                                        onSendApprovalComment={onSendApprovalComment}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className={styles.agentThinkingPlaceholder}>{t('chat.executionTrace.agentThinking')}</div>
+                                        )}
+                                    </div>
+                                )}
+                                {trailingDetailBlocks.length > 0 && (
+                                    <div className={styles.detailSection}>
+                                        {trailingDetailBlocks.map((block, index) => (
+                                            <DetailBlockView key={`${block.kind}-${index}`} step={step} block={block} index={index} t={t} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
-                    {expanded && !isAgentStep && inlineChildren.length > 0 && (
-                        <div className={styles.inlineChildrenSection}>
-                            <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.tools')}</div>
-                            <div className={styles.inlineChildrenList}>
-                                {inlineChildren.map((child) => (
-                                    <TraceNode
-                                        key={child.step_id}
-                                        step={child}
-                                        tree={tree}
-                                        nowMs={nowMs}
-                                        depth={0}
-                                        autoExpand={isRunning}
-                                        onApprovalDecision={onApprovalDecision}
-                                        onApprovalComment={onApprovalComment}
-                                    />
+                        )}
+                        {expanded && !isAgentStep && detailBlocks.length > 0 && (
+                            <div className={styles.detailSection}>
+                                {detailBlocks.map((block, index) => (
+                                    <DetailBlockView key={`${block.kind}-${index}`} step={step} block={block} index={index} t={t} />
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        )}
+                        {expanded && isAwaitingApproval && approvalMeta && (
+                            <div className={styles.approvalCard}>
+                                <div className={styles.approvalTitle}>{approvalMeta.title}</div>
+                                <div className={styles.approvalBody}>{approvalMeta.message}</div>
+                                <div className={styles.approvalActions}>
+                                    <button
+                                        type="button"
+                                        className={`${styles.approvalButton} ${styles.approvalButtonAllow}`}
+                                        onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'allow')}
+                                    >
+                                        {t('chat.executionTrace.allow')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.approvalButton} ${styles.approvalButtonReject}`}
+                                        onClick={() => onApprovalDecision?.(approvalMeta.approvalId, 'reject')}
+                                    >
+                                        {t('chat.executionTrace.reject')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.approvalButton} ${styles.approvalButtonGuide}`}
+                                        onClick={() => setShowInlineInput(true)}
+                                    >
+                                        {t('chat.executionTrace.guideAi')}
+                                    </button>
+                                </div>
+                                {showInlineInput && (
+                                    <div className={styles.approvalInlineInput}>
+                                        <textarea
+                                            ref={inlineInputRef}
+                                            className={styles.approvalTextarea}
+                                            value={inlineComment}
+                                            onChange={(e) => setInlineComment(e.target.value)}
+                                            placeholder={t('chat.executionTrace.inlinePlaceholder')}
+                                            rows={2}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendComment(approvalMeta.approvalId);
+                                                }
+                                                if (e.key === 'Escape') {
+                                                    setShowInlineInput(false);
+                                                    setInlineComment('');
+                                                }
+                                            }}
+                                            disabled={isSending}
+                                        />
+                                        <div className={styles.approvalInlineActions}>
+                                            <button
+                                                type="button"
+                                                className={styles.approvalInlineSend}
+                                                onClick={() => handleSendComment(approvalMeta.approvalId)}
+                                                disabled={!inlineComment.trim() || isSending}
+                                            >
+                                                {t('chat.executionTrace.sendComment')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={styles.approvalInlineCancel}
+                                                onClick={() => { setShowInlineInput(false); setInlineComment(''); }}
+                                                disabled={isSending}
+                                            >
+                                                {t('chat.executionTrace.cancelComment')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {expanded && !isAgentStep && inlineChildren.length > 0 && (
+                            <div className={styles.inlineChildrenSection}>
+                                <div className={styles.inlineChildrenTitle}>{t('chat.executionTrace.tools')}</div>
+                                <div className={styles.inlineChildrenList}>
+                                    {inlineChildren.map((child) => (
+                                        <TraceNode
+                                            key={child.step_id}
+                                            step={child}
+                                            tree={tree}
+                                            nowMs={nowMs}
+                                            depth={0}
+                                            autoExpand={isRunning}
+                                            onApprovalDecision={onApprovalDecision}
+                                            onSendApprovalComment={onSendApprovalComment}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className={styles.nodeMeta}>
-                    <span className={`${styles.status} ${statusClassName}`}>{getStatusLabel(step.status, t)}</span>
+                    <span className={`${styles.statusDot} ${getStatusDotClass(step.status)}`} />
                     <span className={styles.elapsed}>{formatElapsedMs(getTraceStepElapsedMs(step, nowMs))}</span>
                 </div>
             </div>
@@ -384,7 +642,7 @@ const TraceNode: React.FC<{
                             depth={depth + 1}
                             autoExpand={isRunning}
                             onApprovalDecision={onApprovalDecision}
-                            onApprovalComment={onApprovalComment}
+                            onSendApprovalComment={onSendApprovalComment}
                         />
                     ))}
                 </div>
@@ -399,27 +657,30 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
     retryCount = 0,
     isStreaming = false,
     onApprovalDecision,
-    onApprovalComment,
+    onSendApprovalComment,
 }) => {
     const { t } = useTranslation();
     const steps = trace?.steps ?? [];
+    const normalizedStage = currentStage?.trim() ?? "";
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expanded, setExpanded] = useState(false);
     const tree = useMemo(() => buildTree(steps), [steps]);
     const rootSteps = tree.get("__root__") ?? [];
     const hasRunningStep = useMemo(() => steps.some(isRunningStep), [steps]);
+    const shouldShowStageOnly = steps.length === 0 && isStreaming && normalizedStage !== "" && normalizedStage !== "chat.stage.finished";
+    const hasVisibleTraceContent = steps.length > 0 || shouldShowStageOnly;
     const prevIsStreamingRef = React.useRef(isStreaming);
     const prevHasRunningStepRef = React.useRef(hasRunningStep);
     const currentStageLabel = (() => {
-        const key = stageLabelMap[currentStage || ""];
+        const key = stageLabelMap[normalizedStage];
         if (key) {
             return t(key);
         }
-        if (currentStage?.includes('.')) {
-            return t(currentStage);
+        if (normalizedStage.includes('.')) {
+            return t(normalizedStage);
         }
-        if (currentStage) {
-            return currentStage;
+        if (normalizedStage) {
+            return normalizedStage;
         }
         return t('chat.executionTrace.processing');
     })();
@@ -447,7 +708,7 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
         prevHasRunningStepRef.current = hasRunningStep;
     }, [hasRunningStep, isStreaming, steps.length]);
 
-    if (steps.length === 0 && !currentStage) {
+    if (!hasVisibleTraceContent) {
         return null;
     }
 
@@ -455,11 +716,11 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
         <div className={styles.tracePanel}>
             <button type="button" className={styles.header} onClick={() => setExpanded(!expanded)}>
                 <div className={styles.headerMain}>
+                    <span className={styles.headerToggle}>{expanded ? "▾" : "▸"}</span>
                     <span className={styles.headerTitle}>{t('chat.executionTrace.title')}</span>
                     <span className={styles.stageBadge}>{currentStageLabel}</span>
                     {retryCount > 0 && <span className={styles.retryBadge}>{t('chat.executionTrace.retryCount', { count: retryCount })}</span>}
                 </div>
-                <span className={styles.headerToggle}>{expanded ? t('chat.executionTrace.collapse') : t('chat.executionTrace.expand')}</span>
             </button>
             {expanded && (
                 <div className={styles.body}>
@@ -471,7 +732,7 @@ const ExecutionTracePanel: React.FC<ExecutionTraceProps> = ({
                             nowMs={nowMs}
                             autoExpand={step.status !== TraceStepStatus.TraceStepStatusDone}
                             onApprovalDecision={onApprovalDecision}
-                            onApprovalComment={onApprovalComment}
+                            onSendApprovalComment={onSendApprovalComment}
                         />
                     ))}
                 </div>

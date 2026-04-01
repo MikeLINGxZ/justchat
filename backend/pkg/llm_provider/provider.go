@@ -26,55 +26,46 @@ type Provider struct {
 	prompts       prompts.PromptSet
 }
 
-// NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
-func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware, promptSet prompts.PromptSet) (*Provider, error) {
-	var chatModel model.ToolCallingChatModel
-	var err error
+// NewToolCallingChatModel 根据供应商配置创建 ToolCallingChatModel 实例。
+func NewToolCallingChatModel(ctx context.Context, providerModel wrapper_models.ProviderModel) (model.ToolCallingChatModel, error) {
 	switch providerModel.ProviderType {
 	case data_models.ProviderTypeDeepseek:
-		chatModel, err = deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
+		return deepseek.NewChatModel(ctx, &deepseek.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
 			Model:   providerModel.Model,
 			APIKey:  providerModel.ApiKey,
 		})
-		if err != nil {
-			return nil, err
-		}
 	case data_models.ProviderTypeAliyuns:
-		chatModel, err = qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
+		return qwen.NewChatModel(ctx, &qwen.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
 			Model:   providerModel.Model,
 			APIKey:  providerModel.ApiKey,
 		})
-		if err != nil {
-			return nil, err
-		}
 	case data_models.ProviderTypeOpenrouter:
-		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
 			Model:   providerModel.Model,
 			APIKey:  providerModel.ApiKey,
 		})
-		if err != nil {
-			return nil, err
-		}
 	case data_models.ProviderTypeOllama:
-		chatModel, err = ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
+		return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
 			Model:   providerModel.Model,
 		})
-		if err != nil {
-			return nil, err
-		}
 	default:
-		chatModel, err = openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 			BaseURL: providerModel.BaseUrl,
 			Model:   providerModel.Model,
 			APIKey:  providerModel.ApiKey,
 		})
-		if err != nil {
-			return nil, err
-		}
+	}
+}
+
+// NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
+func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware, promptSet prompts.PromptSet) (*Provider, error) {
+	chatModel, err := NewToolCallingChatModel(ctx, providerModel)
+	if err != nil {
+		return nil, err
 	}
 
 	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools, toolMiddleware, promptSet.MainAgentSystem)

@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
-    AppstoreOutlined,
+    InfoCircleOutlined,
     BulbOutlined,
     CheckOutlined,
     LogoutOutlined,
@@ -12,13 +12,11 @@ import {
     SunOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import {Modal} from 'antd';
 import { useTranslation } from 'react-i18next';
 import {useAuthStore} from '@/stores/authStore.ts';
 import SidebarChats from '@/pages/home/sidebar/chat_lists.tsx';
 import '@/pages/home/sidebar/index.scss';
-import {OpenSettingsWindow} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/service.ts";
-import AppsPage from '@/pages/apps/index.tsx';
+import {OpenSettingsWindow, OpenSettingsAboutWindow} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/service.ts";
 
 interface SidebarProps {
     className?: string;
@@ -55,7 +53,6 @@ const Index: React.FC<SidebarProps> = ({
         'auto'
     );
     const [activeTab, setActiveTab] = useState<'history' | 'favorites'>('history'); // 添加tab状态
-    const [isAppsModalOpen, setIsAppsModalOpen] = useState(false); // 应用对话框状态
     const userMenuRef = useRef<HTMLDivElement>(null);
     const themeMenuRef = useRef<HTMLDivElement>(null);
     const themeCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -410,12 +407,12 @@ const Index: React.FC<SidebarProps> = ({
                                 </div>
 
                                 <div className="menu-item" onClick={()=>{
-                                    setIsAppsModalOpen(true);
+                                    OpenSettingsAboutWindow();
                                     setIsUserMenuOpen(false);
                                 }}>
                                     <div className="menu-item-content">
-                                        <AppstoreOutlined/>
-                                        <span>{t('home.sidebar.apps')}</span>
+                                        <InfoCircleOutlined/>
+                                        <span>{t('home.sidebar.about')}</span>
                                     </div>
                                 </div>
 
@@ -443,17 +440,6 @@ const Index: React.FC<SidebarProps> = ({
                 )}
             </div>
 
-            {/* 应用对话框 */}
-            <Modal
-                title={t('home.sidebar.appsTitle')}
-                open={isAppsModalOpen}
-                onCancel={() => setIsAppsModalOpen(false)}
-                footer={null}
-                width={800}
-                centered
-            >
-                <AppsPage/>
-            </Modal>
         </div>
     );
 };

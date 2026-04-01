@@ -44,6 +44,7 @@ export class AssistantMessageExtra {
     "tool_uses": ToolUse[];
     "execution_trace": ExecutionTrace;
     "pending_approvals": ToolApprovalSummary[];
+    "sub_agent_tasks": SubAgentTask[];
     "route_type": RouteType;
     "retry_count": number;
     "current_stage": string;
@@ -63,6 +64,9 @@ export class AssistantMessageExtra {
         }
         if (!("pending_approvals" in $$source)) {
             this["pending_approvals"] = [];
+        }
+        if (!("sub_agent_tasks" in $$source)) {
+            this["sub_agent_tasks"] = [];
         }
         if (!("route_type" in $$source)) {
             this["route_type"] = RouteType.$zero;
@@ -99,6 +103,7 @@ export class AssistantMessageExtra {
         const $$createField0_0 = $$createType1;
         const $$createField1_0 = $$createType2;
         const $$createField2_0 = $$createType4;
+        const $$createField3_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tool_uses" in $$parsedSource) {
             $$parsedSource["tool_uses"] = $$createField0_0($$parsedSource["tool_uses"]);
@@ -108,6 +113,9 @@ export class AssistantMessageExtra {
         }
         if ("pending_approvals" in $$parsedSource) {
             $$parsedSource["pending_approvals"] = $$createField2_0($$parsedSource["pending_approvals"]);
+        }
+        if ("sub_agent_tasks" in $$parsedSource) {
+            $$parsedSource["sub_agent_tasks"] = $$createField3_0($$parsedSource["sub_agent_tasks"]);
         }
         return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
     }
@@ -178,7 +186,7 @@ export class ExecutionTrace {
      * Creates a new ExecutionTrace instance from a string or object.
      */
     static createFrom($$source: any = {}): ExecutionTrace {
-        const $$createField0_0 = $$createType6;
+        const $$createField0_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("steps" in $$parsedSource) {
             $$parsedSource["steps"] = $$createField0_0($$parsedSource["steps"]);
@@ -292,8 +300,8 @@ export class Message {
      * Creates a new Message instance from a string or object.
      */
     static createFrom($$source: any = {}): Message {
-        const $$createField11_0 = $$createType8;
-        const $$createField12_0 = $$createType10;
+        const $$createField11_0 = $$createType10;
+        const $$createField12_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("user_message_extra" in $$parsedSource) {
             $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
@@ -393,6 +401,71 @@ export enum RouteType {
     RouteTypeWorkflow = "workflow",
     RouteTypeClarify = "clarify",
 };
+
+export class SubAgentTask {
+    "task_id": string;
+    "agent_id": string;
+    "agent_name": string;
+    "status": ToolUseStatus;
+    "input": string;
+    "output": string;
+    "tool_calls": ToolUse[];
+    "creator_agent": string;
+    "started_at": time$0.Time | null;
+    "finished_at": time$0.Time | null;
+    "elapsed_ms": number;
+
+    /** Creates a new SubAgentTask instance. */
+    constructor($$source: Partial<SubAgentTask> = {}) {
+        if (!("task_id" in $$source)) {
+            this["task_id"] = "";
+        }
+        if (!("agent_id" in $$source)) {
+            this["agent_id"] = "";
+        }
+        if (!("agent_name" in $$source)) {
+            this["agent_name"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = ToolUseStatus.$zero;
+        }
+        if (!("input" in $$source)) {
+            this["input"] = "";
+        }
+        if (!("output" in $$source)) {
+            this["output"] = "";
+        }
+        if (!("tool_calls" in $$source)) {
+            this["tool_calls"] = [];
+        }
+        if (!("creator_agent" in $$source)) {
+            this["creator_agent"] = "";
+        }
+        if (!("started_at" in $$source)) {
+            this["started_at"] = null;
+        }
+        if (!("finished_at" in $$source)) {
+            this["finished_at"] = null;
+        }
+        if (!("elapsed_ms" in $$source)) {
+            this["elapsed_ms"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SubAgentTask instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SubAgentTask {
+        const $$createField6_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tool_calls" in $$parsedSource) {
+            $$parsedSource["tool_calls"] = $$createField6_0($$parsedSource["tool_calls"]);
+        }
+        return new SubAgentTask($$parsedSource as Partial<SubAgentTask>);
+    }
+}
 
 export class Task {
     "id": number;
@@ -673,6 +746,7 @@ export class TraceDetailBlock {
     "title": string;
     "content": string;
     "format": TraceDetailFormat;
+    "collapsed"?: boolean;
 
     /** Creates a new TraceDetailBlock instance. */
     constructor($$source: Partial<TraceDetailBlock> = {}) {
@@ -784,8 +858,8 @@ export class TraceStep {
      * Creates a new TraceStep instance from a string or object.
      */
     static createFrom($$source: any = {}): TraceStep {
-        const $$createField13_0 = $$createType12;
-        const $$createField14_0 = $$createType13;
+        const $$createField13_0 = $$createType14;
+        const $$createField14_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("detail_blocks" in $$parsedSource) {
             $$parsedSource["detail_blocks"] = $$createField13_0($$parsedSource["detail_blocks"]);
@@ -880,9 +954,9 @@ export class UserMessageExtra {
      * Creates a new UserMessageExtra instance from a string or object.
      */
     static createFrom($$source: any = {}): UserMessageExtra {
-        const $$createField2_0 = $$createType15;
-        const $$createField3_0 = $$createType16;
-        const $$createField4_0 = $$createType16;
+        const $$createField2_0 = $$createType17;
+        const $$createField3_0 = $$createType18;
+        const $$createField4_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("files" in $$parsedSource) {
             $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
@@ -903,15 +977,17 @@ const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = ExecutionTrace.createFrom;
 const $$createType3 = ToolApprovalSummary.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = TraceStep.createFrom;
+const $$createType5 = SubAgentTask.createFrom;
 const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = UserMessageExtra.createFrom;
-const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = AssistantMessageExtra.createFrom;
+const $$createType7 = TraceStep.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = UserMessageExtra.createFrom;
 const $$createType10 = $Create.Nullable($$createType9);
-const $$createType11 = TraceDetailBlock.createFrom;
-const $$createType12 = $Create.Array($$createType11);
-const $$createType13 = $Create.Map($Create.Any, $Create.Any);
-const $$createType14 = File.createFrom;
-const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = $Create.Array($Create.Any);
+const $$createType11 = AssistantMessageExtra.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = TraceDetailBlock.createFrom;
+const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = $Create.Map($Create.Any, $Create.Any);
+const $$createType16 = File.createFrom;
+const $$createType17 = $Create.Array($$createType16);
+const $$createType18 = $Create.Array($Create.Any);

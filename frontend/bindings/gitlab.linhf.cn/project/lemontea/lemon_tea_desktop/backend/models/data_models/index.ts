@@ -12,6 +12,7 @@ export {
     Model,
     ProviderType,
     RouteType,
+    SubAgentTask,
     Task,
     TaskStatus,
     ToolApprovalDecision,

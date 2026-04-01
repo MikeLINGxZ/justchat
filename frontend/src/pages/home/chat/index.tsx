@@ -1,23 +1,34 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import { Events } from '@wailsio/runtime';
+import {Events} from '@wailsio/runtime';
 import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
 import ChatInput from "@/components/chat/input";
 import {
-    type Chat as ChatType, FileInfo,
+    type Chat as ChatType,
+    FileInfo,
     type Message,
     Model,
     Task,
     Tool
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
-import {ToolApprovalDecision, ToolApprovalResponse} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
+import {
+    RouteType,
+    TaskStatus,
+    ToolApprovalDecision,
+    ToolApprovalResponse
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
 import {RoleType} from "@bindings/github.com/cloudwego/eino/schema";
-import {BuildTaskFromCompletions, CompletionsUtils, SubscribeTaskStream, type TaskStreamEvent} from "@/utils/completions.ts";
+import {
+    BuildTaskFromCompletions,
+    CompletionsUtils,
+    SubscribeTaskStream,
+    type TaskStreamEvent
+} from "@/utils/completions.ts";
 import {useNavigate} from "react-router-dom";
 import {notify} from "@/utils/notification.ts";
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 interface ChatProps {
     // 对话uuid
@@ -36,16 +47,6 @@ interface ChatProps {
     onRegisterStopGenerationForChat?: (fn: (chatUuid: string) => void) => void;
 }
 
-function mergeStreamingAssistant(propUuid: string, list: Message[], cache: Record<string, Message>): Message[] {
-    const cached = cache[propUuid];
-    if (!cached || list.length === 0) return list;
-    const index = list.findIndex(message => message.message_uuid === cached.message_uuid);
-    if (index === -1) return [...list, cached];
-    const next = [...list];
-    next[index] = cached;
-    return next;
-}
-
 function assistantHasSubstantiveOutput(message: Message): boolean {
     if (message.role !== RoleType.Assistant) return false;
     const content = message.content?.trim() ?? "";
@@ -57,11 +58,103 @@ function assistantHasSubstantiveOutput(message: Message): boolean {
     return content.length > 0 || reasoning.length > 0 || prefaceContent.length > 0 || prefaceReasoning.length > 0 || toolUses > 0 || traceSteps > 0;
 }
 
-interface ApprovalInputContext {
-    approvalId: string;
-    title: string;
-    message: string;
+function isAssistantPlaceholderMessage(message: Message): boolean {
+    if (message.role !== RoleType.Assistant) return false;
+    if (assistantHasSubstantiveOutput(message)) return false;
+    const finishReason = message.assistant_message_extra?.finish_reason?.trim() ?? "";
+    const finishError = message.assistant_message_extra?.finish_error?.trim() ?? "";
+    return finishReason === "" && finishError === "";
 }
+
+function toTaskStatus(status: string): TaskStatus {
+    switch (status) {
+        case TaskStatus.TaskStatusPending:
+            return TaskStatus.TaskStatusPending;
+        case TaskStatus.TaskStatusRunning:
+            return TaskStatus.TaskStatusRunning;
+        case TaskStatus.TaskStatusWaitingApproval:
+            return TaskStatus.TaskStatusWaitingApproval;
+        case TaskStatus.TaskStatusCompleted:
+            return TaskStatus.TaskStatusCompleted;
+        case TaskStatus.TaskStatusFailed:
+            return TaskStatus.TaskStatusFailed;
+        case TaskStatus.TaskStatusStopped:
+            return TaskStatus.TaskStatusStopped;
+        default:
+            return TaskStatus.$zero;
+    }
+}
+
+function isTerminalTaskStatus(status: string | TaskStatus | undefined | null): boolean {
+    return status === TaskStatus.TaskStatusCompleted ||
+        status === TaskStatus.TaskStatusFailed ||
+        status === TaskStatus.TaskStatusStopped;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+    return fallback;
+}
+
+function mergeAssistantMessage(current: Message, incoming: Message): Message {
+    return {
+        ...current,
+        ...incoming,
+        assistant_message_extra: incoming.assistant_message_extra
+            ? {
+                ...(current.assistant_message_extra || {}),
+                ...incoming.assistant_message_extra,
+                execution_trace: incoming.assistant_message_extra.execution_trace || current.assistant_message_extra?.execution_trace,
+            }
+            : current.assistant_message_extra,
+    };
+}
+
+function findMessageIndexForUpsert(list: Message[], incoming: Message): number {
+    if (incoming.message_uuid) {
+        const exactIndex = list.findIndex(item => item.message_uuid === incoming.message_uuid);
+        if (exactIndex !== -1) {
+            return exactIndex;
+        }
+    }
+
+    if (incoming.role !== RoleType.Assistant) {
+        return -1;
+    }
+
+    for (let index = list.length - 1; index >= 0; index -= 1) {
+        const message = list[index];
+        if (!isAssistantPlaceholderMessage(message)) {
+            continue;
+        }
+        const incomingChatUuid = incoming.chat_uuid ?? "";
+        const currentChatUuid = message.chat_uuid ?? "";
+        if (!incomingChatUuid || !currentChatUuid || incomingChatUuid === currentChatUuid) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+function upsertMessage(list: Message[], incoming: Message): Message[] {
+    const index = findMessageIndexForUpsert(list, incoming);
+    if (index === -1) {
+        return [...list, incoming];
+    }
+    const next = [...list];
+    next[index] = mergeAssistantMessage(next[index], incoming);
+    return next;
+}
+
+function mergeStreamingAssistant(propUuid: string, list: Message[], cache: Record<string, Message>): Message[] {
+    const cached = cache[propUuid];
+    if (!cached) return list;
+    return upsertMessage(list, cached);
+}
+
 
 const Chat: React.FC<ChatProps> = ({
     chatUuid,
@@ -78,6 +171,7 @@ const Chat: React.FC<ChatProps> = ({
     const [chatInfo, setChatInfo] = useState<ChatType | null>(null);
     // 当前对话uuid
     const [currentChatUuid,setCurrentChatUuid] = useState<string>("");
+    const currentChatUuidRef = useRef<string>("");
     // 所选择的模型
     const [selectModel,setSelectModelId] = useState<number>(-1);
     const [selectModelName,setSelectModelName] = useState<string>("");
@@ -107,7 +201,6 @@ const Chat: React.FC<ChatProps> = ({
     // 输入框选择文件
     const [inputFiles,setInputFiles] = useState<FileInfo[]>([]);
     const [displayTitle, setDisplayTitle] = useState<string>("");
-    const [approvalInputContext, setApprovalInputContext] = useState<ApprovalInputContext | null>(null);
     // 当前聊天消息
     const [messages,setMessages] = useState<Message[]>([]);
     // 消息列表引用
@@ -116,6 +209,8 @@ const Chat: React.FC<ChatProps> = ({
     const skipNextFetchRef = useRef<string | null>(null);
     // 用于重置 ChatInput 内部状态（切换对话/新建对话时递增）
     const [inputResetKey, setInputResetKey] = useState<number>(0);
+    // 子Agent面板是否打开
+
     // 当前路由可见会话，用于将流式事件路由到正确会话
     const visibleChatUuidRef = useRef<string>("");
     // 非当前可见会话的进行中 assistant 快照（切回时与 DB 合并）
@@ -172,6 +267,10 @@ const Chat: React.FC<ChatProps> = ({
     }, [activeTasksByChat]);
 
     useEffect(() => {
+        currentChatUuidRef.current = currentChatUuid;
+    }, [currentChatUuid]);
+
+    useEffect(() => {
         Service.GetModels(true,true)
             .then((models: Model[])=>{
                 setAvailableModels(models);
@@ -209,26 +308,29 @@ const Chat: React.FC<ChatProps> = ({
         }
     }, [selectedToolIds]);
 
-    const upsertMessage = (list: Message[], incoming: Message): Message[] => {
-        const index = list.findIndex(item => item.message_uuid === incoming.message_uuid);
-        if (index === -1) {
-            return [...list, incoming];
+    const shouldApplyEventToMessages = useCallback((list: Message[], event: TaskStreamEvent): boolean => {
+        if (visibleChatUuidRef.current === event.chat_uuid) {
+            return true;
         }
-        const next = [...list];
-        const current = next[index];
-        next[index] = {
-            ...current,
-            ...incoming,
-            assistant_message_extra: incoming.assistant_message_extra
-                ? {
-                    ...(current.assistant_message_extra || {}),
-                    ...incoming.assistant_message_extra,
-                    execution_trace: incoming.assistant_message_extra.execution_trace || current.assistant_message_extra?.execution_trace,
-                }
-                : current.assistant_message_extra,
-        };
-        return next;
-    };
+        if (currentChatUuidRef.current === event.chat_uuid) {
+            return true;
+        }
+        if (list.some(message => (message.chat_uuid ?? "") === event.chat_uuid)) {
+            return true;
+        }
+        if (visibleChatUuidRef.current !== "" || currentChatUuidRef.current !== "") {
+            return false;
+        }
+        return list.some(message => isAssistantPlaceholderMessage(message) && (message.chat_uuid ?? "") === "");
+    }, []);
+
+    const syncStreamingAssistantToMessages = useCallback((chatUuidToSync: string) => {
+        const cached = streamingAssistantByChatRef.current[chatUuidToSync];
+        if (!cached) {
+            return;
+        }
+        setMessages(prev => upsertMessage(prev, cached));
+    }, []);
 
     const finishTaskTracking = (event: TaskStreamEvent) => {
         const cancel = taskSubscriptionsRef.current.get(event.task_uuid);
@@ -240,9 +342,28 @@ const Chat: React.FC<ChatProps> = ({
             delete next[event.chat_uuid];
             return next;
         });
-        delete streamingAssistantByChatRef.current[event.chat_uuid];
+        if (visibleChatUuidRef.current === event.chat_uuid || currentChatUuidRef.current === event.chat_uuid) {
+            delete streamingAssistantByChatRef.current[event.chat_uuid];
+        }
         refreshChatList?.();
     };
+
+    const finishTaskTrackingByTask = useCallback((task: Task) => {
+        const cancel = taskSubscriptionsRef.current.get(task.task_uuid);
+        cancel?.();
+        taskSubscriptionsRef.current.delete(task.task_uuid);
+        setGeneratingUuids(prev => prev.filter(x => x !== task.chat_uuid));
+        setPendingExistingChatUuids(prev => prev.filter(uuid => uuid !== task.chat_uuid));
+        setActiveTasksByChat(prev => {
+            const next = {...prev};
+            delete next[task.chat_uuid];
+            return next;
+        });
+        if (visibleChatUuidRef.current === task.chat_uuid || currentChatUuidRef.current === task.chat_uuid) {
+            delete streamingAssistantByChatRef.current[task.chat_uuid];
+        }
+        refreshChatList?.();
+    }, [refreshChatList]);
 
     const handleTaskEvent = (event: TaskStreamEvent) => {
         const assistantMessage = event.assistant_message;
@@ -258,7 +379,7 @@ const Chat: React.FC<ChatProps> = ({
                 chat_uuid: event.chat_uuid,
                 assistant_message_uuid: assistantMessage?.message_uuid ?? prev[event.chat_uuid]?.assistant_message_uuid ?? "",
                 event_key: event.event_key,
-                status: event.status,
+                status: toTaskStatus(event.status),
                 finish_reason: event.finish_reason,
                 finish_error: event.finish_error,
             }),
@@ -268,7 +389,7 @@ const Chat: React.FC<ChatProps> = ({
             setGeneratingUuids(prev => prev.includes(event.chat_uuid) ? prev : [...prev, event.chat_uuid]);
         } else {
             setMessages(prev => {
-                if (visibleChatUuidRef.current !== event.chat_uuid) {
+                if (!shouldApplyEventToMessages(prev, event)) {
                     return prev;
                 }
                 return upsertMessage(prev, assistantMessage);
@@ -308,6 +429,41 @@ const Chat: React.FC<ChatProps> = ({
         }
     };
 
+    const reconcileTaskAfterSubscription = useCallback(async (task: Task | null | undefined) => {
+        if (!task?.task_uuid) {
+            return;
+        }
+        try {
+            const latestTask = await Service.GetTask(task.task_uuid);
+            if (!latestTask || !isTerminalTaskStatus(latestTask.status)) {
+                return;
+            }
+
+            console.warn("missed terminal event, reconciled from GetTask", {
+                task_uuid: latestTask.task_uuid,
+                chat_uuid: latestTask.chat_uuid,
+                event_key: latestTask.event_key,
+                status: latestTask.status,
+                finish_reason: latestTask.finish_reason,
+                finish_error: latestTask.finish_error,
+            });
+
+            finishTaskTrackingByTask(latestTask);
+
+            if (visibleChatUuidRef.current !== latestTask.chat_uuid && currentChatUuidRef.current !== latestTask.chat_uuid) {
+                return;
+            }
+
+            const messageList = await Service.ChatMessages(latestTask.chat_uuid, 0, 200);
+            const raw = messageList?.messages ?? [];
+            const merged = mergeStreamingAssistant(latestTask.chat_uuid, raw, streamingAssistantByChatRef.current);
+            setMessages(merged);
+            delete streamingAssistantByChatRef.current[latestTask.chat_uuid];
+        } catch (error) {
+            console.error("Failed to reconcile task after subscription:", error);
+        }
+    }, [finishTaskTrackingByTask]);
+
     useEffect(() => {
         Service.GetRunningTasks()
             .then((taskList) => {
@@ -332,6 +488,7 @@ const Chat: React.FC<ChatProps> = ({
         if (skipNextFetchRef.current && skipNextFetchRef.current === v) {
             skipNextFetchRef.current = null;
             setCurrentChatUuid(v);
+            syncStreamingAssistantToMessages(v);
             return;
         }
 
@@ -342,7 +499,6 @@ const Chat: React.FC<ChatProps> = ({
             setDisplayTitle("");
             setLoading(false);
             setMessages([]);
-            setApprovalInputContext(null);
             setInputMessage("");
             setInputFiles([]);
             setInputResetKey(prev => prev + 1);
@@ -370,6 +526,7 @@ const Chat: React.FC<ChatProps> = ({
                     const raw = messageList!.messages;
                     const merged = mergeStreamingAssistant(v, raw, streamingAssistantByChatRef.current);
                     setMessages(merged);
+                    delete streamingAssistantByChatRef.current[v];
                 })
                 .catch((err) => {
                     console.error("Failed to fetch chat messages info:", err);
@@ -410,18 +567,6 @@ const Chat: React.FC<ChatProps> = ({
     const onMessageChange = (message: string) => {
         setInputMessage(message);
     }
-
-    useEffect(() => {
-        if (!approvalInputContext) {
-            return;
-        }
-        const pendingApprovalIds = messages.flatMap((message) =>
-            message.assistant_message_extra?.pending_approvals?.map((approval) => approval.approval_id) ?? []
-        );
-        if (!pendingApprovalIds.includes(approvalInputContext.approvalId)) {
-            setApprovalInputContext(null);
-        }
-    }, [approvalInputContext, messages]);
 
     // onSelectFileChange 输入文件变更
     const onSelectFileChange = (paths: FileInfo[]) => {
@@ -480,7 +625,7 @@ const Chat: React.FC<ChatProps> = ({
                     execution_trace: {
                         steps: [],
                     },
-                    route_type: "",
+                    route_type: RouteType.$zero,
                     retry_count: 0,
                     current_stage: "",
                     current_agent: "",
@@ -489,6 +634,7 @@ const Chat: React.FC<ChatProps> = ({
                     finish_reason: "",
                     finish_error: "",
                     tool_uses: [],
+                    pending_approvals: [],
                 },
                 assistant_message_extra_content: "",
             }
@@ -528,6 +674,12 @@ const Chat: React.FC<ChatProps> = ({
             );
             const task = BuildTaskFromCompletions(resp, assistantMessage);
             ensureTaskSubscription(task);
+            console.log("chat task created:", {
+                task_uuid: task.task_uuid,
+                event_key: task.event_key,
+                chat_uuid: task.chat_uuid,
+            });
+            void reconcileTaskAfterSubscription(task);
             refreshChatList?.();
         }catch (e) {
             setMessages(prevMessages);
@@ -571,17 +723,10 @@ const Chat: React.FC<ChatProps> = ({
                     : ToolApprovalDecision.ToolApprovalDecisionReject,
                 comment: "",
             }));
-            if (approvalInputContext?.approvalId === approvalId) {
-                setApprovalInputContext(null);
-            }
         } catch (error: any) {
-            notify.error(t('home.chat.approvalFailed'), error?.message || t('home.chat.approvalFailedDesc'));
+            notify.error(t('home.chat.approvalFailed'), getErrorMessage(error, t('home.chat.approvalFailedDesc')));
         }
-    }, [approvalInputContext, t]);
-
-    const handleApprovalComment = useCallback((approvalId: string, title: string, message: string) => {
-        setApprovalInputContext({ approvalId, title, message });
-    }, []);
+    }, [t]);
 
     const handleSendApprovalComment = useCallback(async (approvalId: string, comment: string) => {
         try {
@@ -590,9 +735,8 @@ const Chat: React.FC<ChatProps> = ({
                 decision: ToolApprovalDecision.ToolApprovalDecisionCustom,
                 comment,
             }));
-            setApprovalInputContext(null);
         } catch (error: any) {
-            notify.error(t('home.chat.approvalCommentFailed'), error?.message || t('home.chat.approvalCommentFailedDesc'));
+            notify.error(t('home.chat.approvalCommentFailed'), getErrorMessage(error, t('home.chat.approvalCommentFailedDesc')));
         }
     }, [t]);
 
@@ -610,11 +754,12 @@ const Chat: React.FC<ChatProps> = ({
         const eventKey = `event:chat_title:${activeTitleChatUuid}`;
         const cancel = Events.On(eventKey, (event) => {
             const payload = event.data as { chat_uuid?: string; title?: string };
-            if (payload?.chat_uuid !== activeTitleChatUuid || !payload?.title) {
+            const nextTitle = payload?.title;
+            if (payload?.chat_uuid !== activeTitleChatUuid || !nextTitle) {
                 return;
             }
-            setDisplayTitle(payload.title);
-            setChatInfo(prev => (prev ? {...prev, title: payload.title} : prev));
+            setDisplayTitle(nextTitle);
+            setChatInfo(prev => (prev ? {...prev, title: nextTitle} : prev));
         });
 
         return () => {
@@ -641,7 +786,7 @@ const Chat: React.FC<ChatProps> = ({
                     isGenerating={isGenerating}
                     useInstantScrollOnFirstLoad
                     onApprovalDecision={handleApprovalDecision}
-                    onApprovalComment={handleApprovalComment}
+                    onSendApprovalComment={handleSendApprovalComment}
                 />
             </div>
             <div className={`${styles.chatInput}`}>
@@ -661,9 +806,6 @@ const Chat: React.FC<ChatProps> = ({
                     onSelectFileChange={onSelectFileChange}
                     onStopGeneration={onStopGeneration}
                     onModelSelectorClick={onModelSelectorClick}
-                    approvalInput={approvalInputContext}
-                    onSendApprovalComment={handleSendApprovalComment}
-                    onCancelApprovalComment={() => setApprovalInputContext(null)}
                     onMessageListScrollToBottom={() => {
                         messageListRef.current?.scrollToBottom();
                     }}

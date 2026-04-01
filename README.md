@@ -4,7 +4,7 @@ English | [简体中文](./README_CN.md)
 
 Lemon Tea Desktop is a cross-platform AI desktop client built with Wails v3, Go, React, and TypeScript. It focuses on chat, tool calling, workflow-style task execution, and local desktop integration.
 
-<p align="center"><img src="docs/app_home.png" alt="Lemon Tea Desktop Home" width="80%" height="auto" /></p>
+<p align="center"><img src="docs/imgs/app_home.png" alt="Lemon Tea Desktop Home" width="80%" height="auto" /></p>
 
 ## Current Features
 

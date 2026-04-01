@@ -1,12 +1,17 @@
-import { Events } from '@wailsio/runtime';
-import { Service } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
+import {Events} from '@wailsio/runtime';
+import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
 import {
     Completions,
-    Task,
     type Message,
+    Task,
 } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
-import type { ExecutionTrace, TraceStep } from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
-import * as view_models$0 from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
+import {
+    type ExecutionTrace,
+    TaskStatus,
+    type TraceStep
+} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
+import * as view_models$0
+    from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models/models.ts";
 
 export interface TaskStreamEvent {
     task_uuid: string;
@@ -41,6 +46,7 @@ export function SubscribeTaskStream(
     cancel = Events.On(task.event_key, (event) => {
         try {
             const payload = event.data as TaskStreamEvent;
+            console.log("payload:",payload)
             onEvent(payload);
             if (isTaskFinished(payload)) {
                 onComplete?.(payload);
@@ -72,6 +78,6 @@ export function BuildTaskFromCompletions(resp: Completions, assistantMessage: Me
         chat_uuid: resp.chat_uuid,
         assistant_message_uuid: assistantMessage.message_uuid || resp.message_uuid,
         event_key: resp.event_key,
-        status: "pending",
+        status: TaskStatus.TaskStatusPending,
     });
 }

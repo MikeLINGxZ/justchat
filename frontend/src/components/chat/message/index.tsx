@@ -14,7 +14,7 @@ interface ChatMessageProps {
     message: Message
     isLoading?: boolean
     onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void
-    onApprovalComment?: (approvalId: string, title: string, message: string) => void
+    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void
 }
 
 let cachedToolsPromise: Promise<ViewTool[]> | null = null;
@@ -448,7 +448,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     message,
     isLoading = false,
     onApprovalDecision,
-    onApprovalComment,
+    onSendApprovalComment,
 }: ChatMessageProps) => {
     const { t } = useTranslation();
     const [toolDefinitions, setToolDefinitions] = useState<Map<string, ViewTool>>(new Map());
@@ -588,7 +588,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 retryCount={message.assistant_message_extra?.retry_count}
                                 isStreaming={isLoading}
                                 onApprovalDecision={onApprovalDecision}
-                                onApprovalComment={onApprovalComment}
+                                onSendApprovalComment={onSendApprovalComment}
                             />
 
                             {message.reasoning_content && (

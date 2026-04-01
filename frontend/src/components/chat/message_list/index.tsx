@@ -19,7 +19,7 @@ interface MessageListProps {
     // 初次加载时使用立即滚动（无动画），如历史聊天首次加载
     useInstantScrollOnFirstLoad?: boolean;
     onApprovalDecision?: (approvalId: string, decision: 'allow' | 'reject') => void;
-    onApprovalComment?: (approvalId: string, title: string, message: string) => void;
+    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void;
 }
 
 export interface MessageListRef {
@@ -36,7 +36,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
     isGenerating = false,
     useInstantScrollOnFirstLoad = false,
     onApprovalDecision,
-    onApprovalComment,
+    onSendApprovalComment,
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -457,7 +457,7 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
                                     message={message}
                                     isLoading={isGenerating && index === messages.length - 1 && message.role !== 'user'}
                                     onApprovalDecision={onApprovalDecision}
-                                    onApprovalComment={onApprovalComment}
+                                    onSendApprovalComment={onSendApprovalComment}
                                 />
                             </div>
                         ))

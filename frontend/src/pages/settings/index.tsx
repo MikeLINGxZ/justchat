@@ -6,13 +6,17 @@ import {
   InfoCircleOutlined,
   ArrowLeftOutlined,
   FileTextOutlined,
+  RobotOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import ProviderSettingPage from './provider';
 import AboutPage from './about';
 import GeneralSettingsPage from './general';
 import PromptSettingsPage from './prompt';
-import LanguageRegionSettingsPage from './language-region';
+import AgentSettingsPage from './agents';
+import SkillSettingsPage from './skills';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { initializeFontSize } from '@/stores/fontSizeStore';
 import styles from './index.module.scss';
@@ -25,7 +29,13 @@ interface SettingsPageProps {
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
   const { t } = useTranslation();
-  const [selectedKey, setSelectedKey] = useState('general');
+  const [searchParams] = useSearchParams();
+  const validKeys = useMemo(() => ['general', 'provider', 'agents', 'skills', 'prompt', 'about'], []);
+  const initialTab = useMemo(() => {
+    const tab = searchParams.get('tab');
+    return tab && validKeys.includes(tab) ? tab : 'general';
+  }, [searchParams, validKeys]);
+  const [selectedKey, setSelectedKey] = useState(initialTab);
   const [showContent, setShowContent] = useState(false); // 控制移动端内容显示
   const { isMobile } = useViewportHeight(); // 使用移动端检测
 
@@ -58,14 +68,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       label: t('settings.menu.general'),
     },
     {
-      key: 'language-region',
-      icon: <SettingOutlined />,
-      label: t('settings.menu.languageRegion'),
-    },
-    {
       key: 'provider',
       icon: <ApiOutlined />,
       label: t('settings.menu.provider'),
+    },
+    {
+      key: 'agents',
+      icon: <RobotOutlined />,
+      label: t('settings.menu.agents'),
+    },
+    {
+      key: 'skills',
+      icon: <ThunderboltOutlined />,
+      label: t('settings.menu.skills'),
     },
     {
       key: 'prompt',
@@ -101,10 +116,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           return <ProviderSettingPage />;
         case 'general':
           return <GeneralSettingsPage />;
-        case 'language-region':
-          return <LanguageRegionSettingsPage />;
         case 'prompt':
           return <PromptSettingsPage />;
+        case 'agents':
+          return <AgentSettingsPage />;
+        case 'skills':
+          return <SkillSettingsPage />;
         case 'account':
           return <div className={styles.placeholder}>{t('settings.placeholders.account')}</div>;
         case 'security':
@@ -189,7 +206,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             />
           </Sider>
           <Layout className={styles.settingsContent}>
-            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider') ? styles.contentAreaLocked : ''}`}>
+            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider' || selectedKey === 'agents' || selectedKey === 'skills' || selectedKey === 'general' || selectedKey === 'about') ? styles.contentAreaLocked : ''}`}>
               {renderContent()}
             </Content>
           </Layout>

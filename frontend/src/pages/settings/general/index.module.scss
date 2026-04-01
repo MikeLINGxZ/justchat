@@ -1,395 +1,328 @@
 @use '@/styles/variables.scss' as *;
 
 .generalSettings {
-  padding: 0;
-  max-width: 800px;
-  margin: 0 auto;
   background: transparent;
-  
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .settingCard {
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-    border: none;
-    background: var(--background-color);
-    transition: all var(--transition-normal);
-    overflow: hidden;
-
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-    }
-
-    :global(.ant-card-head) {
-      border-bottom: none;
-      background: transparent;
-      padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
-      min-height: auto;
-      
-      :global(.ant-card-head-title) {
-        color: var(--text-color);
-        font-weight: 600;
-        font-size: 20px;
-        letter-spacing: -0.02em;
-      }
-    }
-
-    :global(.ant-card-body) {
-      background: transparent;
-      padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-  }
-
-  .settingItem {
-    margin-bottom: 0;
-  }
-
-  .settingLabel {
-    margin-bottom: var(--spacing-xl);
-    
-    h5 {
-      margin-bottom: var(--spacing-xs);
-      color: var(--text-color);
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-    }
-    
-    span {
-      color: var(--text-color-secondary);
-      font-size: var(--font-size);
-      line-height: 1.6;
-    }
-  }
-
-  .fontSizeControl {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xl);
-  }
-
-  .sliderContainer {
-    .sliderHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: var(--spacing-lg);
-      padding: 0;
-    }
-
-    .currentSize {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-      
-      .sizeLabel {
-        color: var(--text-color);
-        font-weight: 600;
-        font-size: 16px;
-        letter-spacing: -0.01em;
-      }
-      
-      .sizeDesc {
-        font-size: var(--font-size-sm);
-        color: var(--text-color-secondary);
-      }
-    }
-  }
-
-  .presetOptions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    
-    > span {
-      color: var(--text-color);
-      font-weight: 600;
-      font-size: var(--font-size);
-      letter-spacing: -0.01em;
-    }
-
-    .presetButtons {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-      gap: var(--spacing-sm);
-    }
-
-    .presetButton {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--spacing-md) var(--spacing-sm);
-      border: 1.5px solid var(--border-color-light);
-      border-radius: 12px;
-      background: var(--background-color);
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      min-height: 72px;
-      
-      &:hover {
-        border-color: var(--primary-color);
-        background: var(--primary-color-light);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.12);
-      }
-      
-      &.active {
-        border-color: var(--primary-color);
-        background: var(--primary-color-light);
-        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
-        
-        .buttonLabel {
-          color: var(--primary-color);
-        }
-        
-        .buttonSize {
-          color: var(--primary-color);
-          opacity: 0.8;
-        }
-      }
-      
-      .buttonLabel {
-        font-weight: 600;
-        font-size: var(--font-size);
-        margin-bottom: 4px;
-        color: var(--text-color);
-        transition: color 0.2s;
-      }
-      
-      .buttonSize {
-        font-size: var(--font-size-sm);
-        color: var(--text-color-secondary);
-        opacity: 0.7;
-        transition: all 0.2s;
-      }
-    }
-  }
-
-  .previewArea {
-    background: var(--background-color-light);
-    border: 1px solid var(--border-color-light);
-    border-radius: 12px;
-    padding: var(--spacing-xl);
-    position: relative;
-    transition: all 0.2s ease;
-
-    .previewHeader {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-      margin-bottom: var(--spacing-lg);
-      
-      .previewIcon {
-        font-size: 18px;
-        color: var(--primary-color);
-      }
-      
-      h5 {
-        margin: 0;
-        color: var(--text-color);
-        font-weight: 600;
-        font-size: var(--font-size-lg);
-        letter-spacing: -0.01em;
-      }
-    }
-
-    .previewContent {
-      line-height: 1.7;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      
-      .previewText {
-        margin-bottom: var(--spacing-md);
-        color: var(--text-color);
-        line-height: inherit;
-      }
-      
-      .previewSmall {
-        margin-bottom: var(--spacing-sm);
-        color: var(--text-color-secondary);
-        line-height: inherit;
-      }
-      
-      .previewBold {
-        margin-bottom: var(--spacing-sm);
-        color: var(--text-color);
-        line-height: inherit;
-      }
-      
-      .previewSecondary {
-        color: var(--text-color-secondary);
-        line-height: inherit;
-      }
-    }
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: flex-end;
-    padding-top: var(--spacing-lg);
-    border-top: 1px solid var(--border-color-light);
-    margin-top: var(--spacing-lg);
-    
-    .resetButton {
-      min-width: 120px;
-      height: 40px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border-color);
-      background: var(--background-color);
-      color: var(--text-color);
-      font-weight: 500;
-      font-size: var(--font-size);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      
-      &:hover:not(:disabled) {
-        border-color: var(--text-color-secondary);
-        color: var(--text-color);
-        background: var(--background-color-light);
-        transform: translateY(-1px);
-      }
-      
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-        transform: none;
-      }
-    }
-
-    .applyButton {
-      min-width: 120px;
-      height: 40px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: var(--font-size);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      
-      &:global(.ant-btn-primary) {
-        background: var(--primary-color);
-        border: none;
-        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
-        
-        &:hover:not(:disabled) {
-          background: var(--primary-color-hover);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
-        }
-        
-        &:active:not(:disabled) {
-          transform: translateY(0);
-        }
-        
-        &:disabled {
-          background: var(--border-color-light);
-          color: var(--text-color-disabled);
-          cursor: not-allowed;
-          box-shadow: none;
-        }
-      }
-    }
-  }
-
-
+  height: 100%;
+  min-height: 0;
 }
 
-// 移动端适配
+.desktopLayout {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: var(--spacing-lg);
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+}
+
+.listColumn,
+.detailColumn {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.listCard,
+.detailCard {
+  height: 100%;
+  border-radius: 16px;
+  border: none;
+  background: var(--background-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.ant-card-head) {
+    background: transparent;
+    border-bottom: none;
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+    min-height: auto;
+
+    :global(.ant-card-head-title) {
+      color: var(--text-color);
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+  }
+}
+
+.listCard {
+  :global(.ant-card-body) {
+    padding: 0;
+    height: calc(100% - 72px);
+    overflow: hidden;
+  }
+}
+
+.detailCard {
+  :global(.ant-card-body) {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xl);
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+.sectionList {
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-color-light);
+  padding: 16px var(--spacing-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    transition: background 0.2s ease;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+
+  &.selected {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(24, 144, 255, 0.04));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+}
+
+.sectionIcon {
+  font-size: 16px;
+  color: var(--text-color-secondary);
+  flex-shrink: 0;
+
+  .selected & {
+    color: var(--primary-color);
+  }
+}
+
+.sectionTitle {
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: var(--font-size);
+}
+
+.settingContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.settingHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  h4 {
+    margin: 0 !important;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+  }
+}
+
+.sliderSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sliderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.currentSize {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.presetSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.presetButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.presetButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-color-light);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: rgba(24, 144, 255, 0.04);
+  }
+
+  &.active {
+    border-color: var(--primary-color);
+    background: rgba(24, 144, 255, 0.08);
+    box-shadow: 0 0 0 1px var(--primary-color);
+  }
+}
+
+.buttonLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.buttonSize {
+  font-size: 11px;
+  color: var(--text-color-secondary);
+}
+
+.previewArea {
+  border-radius: 12px;
+  border: 1px solid var(--border-color-light);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.96));
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color-light);
+  color: var(--text-color-secondary);
+}
+
+.previewContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-color);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color-light);
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.formItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.formLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.formLabelIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-color);
+}
+
+.formHint {
+  font-size: 12px;
+}
+
+.mobileDetail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.mobileBackButton {
+  align-self: flex-start;
+  padding-left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 @include respond-below(md) {
   .generalSettings {
-    max-width: 100%;
+    height: auto;
+  }
 
-    .settingCard {
-      border-radius: 12px;
-      
-      :global(.ant-card-head) {
-        padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
-      }
-      
-      :global(.ant-card-body) {
-        padding: 0 var(--spacing-lg) var(--spacing-lg);
-      }
-    }
+  .desktopLayout {
+    height: auto;
+  }
 
-    .settingLabel {
-      margin-bottom: var(--spacing-lg);
-    }
+  .listCard,
+  .detailCard {
+    height: auto;
+    border-radius: 16px;
 
-    .sliderContainer {
-      .sliderHeader {
-        flex-direction: row;
-        align-items: flex-end;
-        
-        .currentSize {
-          align-items: flex-end;
-        }
-      }
+    :global(.ant-card-body) {
+      height: auto;
+      overflow: visible;
     }
+  }
 
-    .presetOptions {
-      .presetButtons {
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-xs);
-      }
-      
-      .presetButton {
-        padding: var(--spacing-sm);
-        min-height: 64px;
-      }
-    }
-    
-    .previewArea {
-      padding: var(--spacing-lg);
-    }
-
-    .actions {
-      flex-direction: column;
-      gap: var(--spacing-sm);
-
-      .resetButton,
-      .applyButton {
-        width: 100%;
-        min-width: auto;
-      }
-    }
+  .presetButtons {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-// 小屏幕设备适配
 @include respond-below(sm) {
-  .generalSettings {
-    .settingCard {
-      border-radius: 12px;
-      
-      :global(.ant-card-head) {
-        padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
-      }
-      
-      :global(.ant-card-body) {
-        padding: 0 var(--spacing-md) var(--spacing-md);
-      }
-    }
-
-    .presetOptions {
-      .presetButtons {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      .presetButton {
-        min-height: 60px;
-      }
-    }
-    
-    .previewArea {
-      padding: var(--spacing-md);
-      
-      .previewHeader {
-        margin-bottom: var(--spacing-md);
-      }
-    }
+  .presetButtons {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

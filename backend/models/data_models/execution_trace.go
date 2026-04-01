@@ -49,10 +49,11 @@ const (
 )
 
 type TraceDetailBlock struct {
-	Kind    string            `json:"kind"`
-	Title   string            `json:"title"`
-	Content string            `json:"content"`
-	Format  TraceDetailFormat `json:"format"`
+	Kind      string            `json:"kind"`
+	Title     string            `json:"title"`
+	Content   string            `json:"content"`
+	Format    TraceDetailFormat `json:"format"`
+	Collapsed bool              `json:"collapsed,omitempty"`
 }
 
 type TraceStep struct {

@@ -21,6 +21,8 @@ func (b *Block) Name() string {
 	return i18n.TCurrent("tool.block.name", nil)
 }
 
+func (b *Block) RequireConfirmation() bool { return false }
+
 func (b *Block) Tool() tool.BaseTool {
 	t := utils.NewTool(
 		&schema.ToolInfo{

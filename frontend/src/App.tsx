@@ -14,9 +14,11 @@ function EntryRedirect() {
   const [searchParams] = useSearchParams();
   const entry = searchParams.get('entry');
 
+  const tab = searchParams.get('tab');
+
   switch (entry) {
     case 'settings':
-      return <Navigate to="/settings" replace />;
+      return <Navigate to={tab ? `/settings?tab=${tab}` : '/settings'} replace />;
     case 'onboarding':
       return <Navigate to="/onboarding" replace />;
     case 'home':

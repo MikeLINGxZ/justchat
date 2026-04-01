@@ -38,12 +38,6 @@ interface ChatInputProps {
     onMessageListScrollToBottom?: () => void;
     // 模型选择框点击事件
     onModelSelectorClick?: () => void;
-    // 当前审批回复上下文
-    approvalInput?: { approvalId: string; title: string; message: string } | null;
-    // 发送审批意见
-    onSendApprovalComment?: (approvalId: string, comment: string) => Promise<void> | void;
-    // 取消审批意见输入
-    onCancelApprovalComment?: () => void;
 }
 
 const DEFAULT_MODEL_KEY = 'chat_default_model';
@@ -83,9 +77,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onSelectModelChange,
     onMessageListScrollToBottom,
     onModelSelectorClick,
-    approvalInput,
-    onSendApprovalComment,
-    onCancelApprovalComment,
 }) => {
     const { t } = useTranslation();
 
@@ -274,26 +265,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     // 消息发送事件
     const handleSend = useCallback(async () => {
-        if (!approvalInput && !hasSelectedModel) {
+        if (!hasSelectedModel) {
             return;
         }
         if (onMessageListScrollToBottom != null) {
             onMessageListScrollToBottom();
         }
         const trimmedValue = inputValue.trim();
-        if (approvalInput) {
-            if (!trimmedValue) {
-                return;
-            }
-            await onSendApprovalComment?.(approvalInput.approvalId, trimmedValue);
-            clearInput();
-            return;
-        }
         if (trimmedValue || selectFiles.length > 0) {
             onSendButtonClick();
-            clearInput(); // 清空输入框和文件列表
+            clearInput();
         }
-    }, [approvalInput, hasSelectedModel, inputValue, selectFiles, onSendApprovalComment, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
+    }, [hasSelectedModel, inputValue, selectFiles, onSendButtonClick, onMessageListScrollToBottom, clearInput]);
 
     const handleInputChange = useCallback((value: string) => {
         setInputValue(value);
@@ -324,29 +307,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
         };
     }, [showAddMenu, showModelMenu, showToolMenu]);
 
-    const isSendDisabled = approvalInput
-        ? !inputValue.trim()
-        : !hasSelectedModel || (!inputValue.trim() && selectFiles.length === 0);
+    const isSendDisabled = !hasSelectedModel || (!inputValue.trim() && selectFiles.length === 0);
 
     return (
         <div className={`${styles.chatInput}`}>
-            {!approvalInput && !hasSelectedModel && (
+            {!hasSelectedModel && (
                 <div className={styles.modelWarning}>{t('chat.input.selectModelFirst')}</div>
-            )}
-            {approvalInput && (
-                <div className={styles.approvalNotice}>
-                    <div className={styles.approvalNoticeText}>
-                        <div className={styles.approvalNoticeTitle}>{t('chat.input.approvalReplyTitle', { title: approvalInput.title })}</div>
-                        <div className={styles.approvalNoticeBody}>{approvalInput.message}</div>
-                    </div>
-                    <button
-                        type="button"
-                        className={styles.approvalNoticeClose}
-                        onClick={onCancelApprovalComment}
-                    >
-                        {t('chat.input.cancelApproval')}
-                    </button>
-                </div>
             )}
             <div className={styles.inputContainer}>
                  {/* 文件列表显示区域 */}
@@ -388,11 +354,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 )}
                 <div className={styles.richEditorWrapper}>
                     <RichMarkdownEditor
-                        key={approvalInput ? `approval-${t('chat.input.approvalPlaceholder')}` : `default-${t('chat.input.editorPlaceholder')}`}
+                        key={`default-${t('chat.input.editorPlaceholder')}`}
                         value={inputValue}
                         onChange={handleInputChange}
                         onSend={handleSend}
-                        placeholder={approvalInput ? t('chat.input.approvalPlaceholder') : t('chat.input.editorPlaceholder')}
+                        placeholder={t('chat.input.editorPlaceholder')}
                     />
                 </div>
                 
@@ -620,7 +586,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 onClick={handleSend}
                                 disabled={isSendDisabled}
                                 type="button"
-                                title={approvalInput ? t('chat.input.sendApproval') : (hasSelectedModel ? t('chat.input.sendMessage') : t('chat.input.sendDisabled'))}
+                                title={hasSelectedModel ? t('chat.input.sendMessage') : t('chat.input.sendDisabled')}
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

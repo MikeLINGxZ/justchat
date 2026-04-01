@@ -17,6 +17,7 @@ require (
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/image v0.35.0
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.5
 )
@@ -105,5 +106,4 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

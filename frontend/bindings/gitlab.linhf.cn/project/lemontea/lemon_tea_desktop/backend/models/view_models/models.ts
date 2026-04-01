@@ -15,6 +15,181 @@ import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../../time/models.js";
 
+export class AgentDetail {
+    "name": string;
+    "display_name": string;
+    "description": string;
+    "agent_type": string;
+    "agent_role": string;
+    "prompt_names": string[];
+    "is_deletable": boolean;
+    "tools": string[];
+    "skills": string[];
+    "prompts": AgentPrompt[];
+
+    /** Creates a new AgentDetail instance. */
+    constructor($$source: Partial<AgentDetail> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("display_name" in $$source)) {
+            this["display_name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("agent_type" in $$source)) {
+            this["agent_type"] = "";
+        }
+        if (!("agent_role" in $$source)) {
+            this["agent_role"] = "";
+        }
+        if (!("prompt_names" in $$source)) {
+            this["prompt_names"] = [];
+        }
+        if (!("is_deletable" in $$source)) {
+            this["is_deletable"] = false;
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+        if (!("skills" in $$source)) {
+            this["skills"] = [];
+        }
+        if (!("prompts" in $$source)) {
+            this["prompts"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AgentDetail instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AgentDetail {
+        const $$createField5_0 = $$createType0;
+        const $$createField7_0 = $$createType0;
+        const $$createField8_0 = $$createType0;
+        const $$createField9_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("prompt_names" in $$parsedSource) {
+            $$parsedSource["prompt_names"] = $$createField5_0($$parsedSource["prompt_names"]);
+        }
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField7_0($$parsedSource["tools"]);
+        }
+        if ("skills" in $$parsedSource) {
+            $$parsedSource["skills"] = $$createField8_0($$parsedSource["skills"]);
+        }
+        if ("prompts" in $$parsedSource) {
+            $$parsedSource["prompts"] = $$createField9_0($$parsedSource["prompts"]);
+        }
+        return new AgentDetail($$parsedSource as Partial<AgentDetail>);
+    }
+}
+
+export class AgentPrompt {
+    "name": string;
+    "title": string;
+    "description": string;
+    "content": string;
+    "is_system": boolean;
+
+    /** Creates a new AgentPrompt instance. */
+    constructor($$source: Partial<AgentPrompt> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("is_system" in $$source)) {
+            this["is_system"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AgentPrompt instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AgentPrompt {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AgentPrompt($$parsedSource as Partial<AgentPrompt>);
+    }
+}
+
+export class AgentSummary {
+    "name": string;
+    "display_name": string;
+    "description": string;
+    "agent_type": string;
+    "agent_role": string;
+    "prompt_names": string[];
+    "is_deletable": boolean;
+    "tools": string[];
+    "skills": string[];
+
+    /** Creates a new AgentSummary instance. */
+    constructor($$source: Partial<AgentSummary> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("display_name" in $$source)) {
+            this["display_name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("agent_type" in $$source)) {
+            this["agent_type"] = "";
+        }
+        if (!("agent_role" in $$source)) {
+            this["agent_role"] = "";
+        }
+        if (!("prompt_names" in $$source)) {
+            this["prompt_names"] = [];
+        }
+        if (!("is_deletable" in $$source)) {
+            this["is_deletable"] = false;
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+        if (!("skills" in $$source)) {
+            this["skills"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AgentSummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AgentSummary {
+        const $$createField5_0 = $$createType0;
+        const $$createField7_0 = $$createType0;
+        const $$createField8_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("prompt_names" in $$parsedSource) {
+            $$parsedSource["prompt_names"] = $$createField5_0($$parsedSource["prompt_names"]);
+        }
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField7_0($$parsedSource["tools"]);
+        }
+        if ("skills" in $$parsedSource) {
+            $$parsedSource["skills"] = $$createField8_0($$parsedSource["skills"]);
+        }
+        return new AgentSummary($$parsedSource as Partial<AgentSummary>);
+    }
+}
+
 export class AppPreferences {
     "language": data_models$0.AppLanguage;
     "region": data_models$0.AppRegion;
@@ -63,7 +238,7 @@ export class ChatList {
      * Creates a new ChatList instance from a string or object.
      */
     static createFrom($$source: any = {}): ChatList {
-        const $$createField0_0 = $$createType1;
+        const $$createField0_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("lists" in $$parsedSource) {
             $$parsedSource["lists"] = $$createField0_0($$parsedSource["lists"]);
@@ -105,6 +280,55 @@ export class Completions {
     }
 }
 
+export class CustomAgentInput {
+    "id": string;
+    "name": string;
+    "description": string;
+    "prompt": string;
+    "tools": string[];
+    "skills": string[];
+
+    /** Creates a new CustomAgentInput instance. */
+    constructor($$source: Partial<CustomAgentInput> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("prompt" in $$source)) {
+            this["prompt"] = "";
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+        if (!("skills" in $$source)) {
+            this["skills"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CustomAgentInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CustomAgentInput {
+        const $$createField4_0 = $$createType0;
+        const $$createField5_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField4_0($$parsedSource["tools"]);
+        }
+        if ("skills" in $$parsedSource) {
+            $$parsedSource["skills"] = $$createField5_0($$parsedSource["skills"]);
+        }
+        return new CustomAgentInput($$parsedSource as Partial<CustomAgentInput>);
+    }
+}
+
 export const FileInfo = data_models$0.File;
 export type FileInfo = data_models$0.File;
 
@@ -131,7 +355,7 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType3;
+        const $$createField0_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
@@ -367,8 +591,8 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType5;
-        const $$createField11_0 = $$createType7;
+        const $$createField10_0 = $$createType8;
+        const $$createField11_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -377,6 +601,84 @@ export class Provider {
             $$parsedSource["custom_models"] = $$createField11_0($$parsedSource["custom_models"]);
         }
         return new Provider($$parsedSource as Partial<Provider>);
+    }
+}
+
+export class SkillDetail {
+    "name": string;
+    "description": string;
+    "version": string;
+    "tags": string[];
+    "content": string;
+
+    /** Creates a new SkillDetail instance. */
+    constructor($$source: Partial<SkillDetail> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+        if (!("tags" in $$source)) {
+            this["tags"] = [];
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SkillDetail instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SkillDetail {
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tags" in $$parsedSource) {
+            $$parsedSource["tags"] = $$createField3_0($$parsedSource["tags"]);
+        }
+        return new SkillDetail($$parsedSource as Partial<SkillDetail>);
+    }
+}
+
+export class SkillSummary {
+    "name": string;
+    "description": string;
+    "version": string;
+    "tags": string[];
+
+    /** Creates a new SkillSummary instance. */
+    constructor($$source: Partial<SkillSummary> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+        if (!("tags" in $$source)) {
+            this["tags"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SkillSummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SkillSummary {
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tags" in $$parsedSource) {
+            $$parsedSource["tags"] = $$createField3_0($$parsedSource["tags"]);
+        }
+        return new SkillSummary($$parsedSource as Partial<SkillSummary>);
     }
 }
 
@@ -440,7 +742,7 @@ export class TaskList {
      * Creates a new TaskList instance from a string or object.
      */
     static createFrom($$source: any = {}): TaskList {
-        const $$createField0_0 = $$createType9;
+        const $$createField0_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tasks" in $$parsedSource) {
             $$parsedSource["tasks"] = $$createField0_0($$parsedSource["tasks"]);
@@ -491,13 +793,16 @@ export class Tool {
 }
 
 // Private type creation functions
-const $$createType0 = data_models$0.Chat.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = data_models$0.Message.createFrom;
-const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = Model.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = data_models$0.Model.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = data_models$0.Task.createFrom;
-const $$createType9 = $Create.Array($$createType8);
+const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = AgentPrompt.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = data_models$0.Chat.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = data_models$0.Message.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = Model.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = data_models$0.Model.createFrom;
+const $$createType10 = $Create.Array($$createType9);
+const $$createType11 = data_models$0.Task.createFrom;
+const $$createType12 = $Create.Array($$createType11);

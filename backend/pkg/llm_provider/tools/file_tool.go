@@ -35,6 +35,8 @@ func (f *FileTool) Description() string {
 	return i18n.TCurrent("tool.file.description", nil)
 }
 
+func (f *FileTool) RequireConfirmation() bool { return true }
+
 func (f *FileTool) Tool() tool.BaseTool {
 	return utils.NewTool(
 		&schema.ToolInfo{
@@ -137,7 +139,6 @@ func (f *FileTool) BuildApprovalPrompt(ctx context.Context, argumentsJSON string
 		}
 		message += i18n.TCurrent("tool.file.approval.preview", map[string]string{"content": preview})
 	}
-	message += "\n" + i18n.TCurrent("tool.approval.actions", nil)
 
 	return &tool_approval.ApprovalPrompt{
 		Title:   title,

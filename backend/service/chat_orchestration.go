@@ -80,11 +80,6 @@ func shouldForceWorkflow(message data_models.Message) workflowGuardDecision {
 		}
 	}
 
-	content := strings.TrimSpace(message.Content)
-	if content == "" {
-		return workflowGuardDecision{}
-	}
-
 	return workflowGuardDecision{}
 }
 

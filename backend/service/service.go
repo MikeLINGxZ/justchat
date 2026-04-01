@@ -6,6 +6,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/agents"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/storage"
@@ -50,6 +51,8 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 	if err := s.reloadPromptSet(); err != nil {
 		logger.Warm("load prompt set fallback:", err)
 	}
+
+	agents.SyncCustomAgentsToRegistry()
 
 	if err := s.syncCustomMCPTools(ctx); err != nil {
 		return err
