@@ -98,4 +98,5 @@ var zhCN = map[string]string{
 	"mcp.service.prefix":                          "MCP 服务：{{name}}",
 	"mcp.service.default_description":             "用户添加的 MCP 服务",
 	"mcp.service.summary.more_tools":              "%s；等 %d 个工具",
+	"agent.system.tool_approval_hint":             "重要提示：当你需要执行工具时，请直接调用工具，不要自行向用户询问是否确认执行。系统内置了审批机制，会在需要时自动弹出确认界面请求用户批准。",
 }

@@ -15,6 +15,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/agents"
+	llmtools "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/skills"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tasker"
@@ -177,6 +178,14 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			skillContent := skills.ResolveSkillContents(customDef.SkillIDs)
 			if skillContent != "" {
 				instruction = instruction + "\n\n" + skillContent
+			}
+		}
+
+		// 如果 agent 拥有需要用户确认的工具，追加系统提示：不要自行询问确认，直接调用工具
+		for _, toolID := range customDef.ToolIDs {
+			if registeredTool, ok := llmtools.ToolRouter.GetToolByID(toolID); ok && registeredTool.RequireConfirmation() {
+				instruction = instruction + "\n\n" + i18n.TCurrent("agent.system.tool_approval_hint", nil)
+				break
 			}
 		}
 

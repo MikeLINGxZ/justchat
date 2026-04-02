@@ -6,10 +6,8 @@ type ReviewerAgentDef struct{}
 
 func init() { RegisterAgent(&ReviewerAgentDef{}) }
 
-func (a *ReviewerAgentDef) Name() string { return "reviewer_agent" }
-func (a *ReviewerAgentDef) Desc() string {
-	return "审核 Agent，负责检查工作流最终答案是否满足目标"
-}
+func (a *ReviewerAgentDef) Name() string    { return "reviewer_agent" }
+func (a *ReviewerAgentDef) Desc() string    { return "审核 Agent，负责检查工作流最终答案是否满足目标" }
 func (a *ReviewerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *ReviewerAgentDef) Role() AgentRole { return AgentRoleReviewer }
 func (a *ReviewerAgentDef) PromptNames() []string {

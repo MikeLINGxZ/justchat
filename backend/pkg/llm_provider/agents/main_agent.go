@@ -15,10 +15,8 @@ type MainAgentDef struct{}
 
 func init() { RegisterAgent(&MainAgentDef{}) }
 
-func (a *MainAgentDef) Name() string { return "main_agent" }
-func (a *MainAgentDef) Desc() string {
-	return "主对话助手，负责直接回答用户问题或决定转入工作流"
-}
+func (a *MainAgentDef) Name() string    { return "main_agent" }
+func (a *MainAgentDef) Desc() string    { return "主对话助手，负责直接回答用户问题或决定转入工作流" }
 func (a *MainAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *MainAgentDef) Role() AgentRole { return AgentRoleMain }
 func (a *MainAgentDef) PromptNames() []string {

@@ -4,7 +4,7 @@
         <key>CFBundlePackageType</key>
             <string>APPL</string>
         <key>CFBundleName</key>
-            <string>My Product</string>
+            <string>Lemontea</string>
         <key>CFBundleExecutable</key>
             <string>lemontea-desktop</string>
         <key>CFBundleIdentifier</key>

@@ -9,6 +9,8 @@ import type {Message, Tool as ViewTool} from "@bindings/gitlab.linhf.cn/project/
 import {ToolUseStatus, type ToolUse} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models/models";
 import {RoleType} from "@bindings/github.com/cloudwego/eino/schema/models";
 import MarkdownRenderer from "@/components/markdown_renderer";
+import { isDirectMode, buildInterleavedSegments } from "./interleave_utils";
+import InterleavedContent from "./interleaved_content";
 
 interface ChatMessageProps {
     message: Message
@@ -505,6 +507,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     const hasVisibleProgress = hasTrace || currentStage.length > 0 || reasoningContent.length > 0 || prefaceContent.length > 0 || prefaceReasoningContent.length > 0;
     const shouldShowHeadLoading = isLoading && isEmptyAssistant && !hasVisibleProgress;
     const shouldShowTailLoading = !isUser && isLoading && !finishReason && hasVisibleProgress;
+    const useInterleaved = useMemo(() => {
+        return !isUser && isDirectMode(message.assistant_message_extra) && toolUses.length > 0;
+    }, [isUser, message.assistant_message_extra, toolUses.length]);
+    const interleavedSegments = useMemo(() => {
+        if (!useInterleaved) return [];
+        return buildInterleavedSegments(message.content ?? '', toolUses, traceSteps);
+    }, [useInterleaved, message.content, toolUses, traceSteps]);
 
     const getDisplayContent = () => {
         if (messageContent) {
@@ -577,35 +586,60 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                     <MarkdownRenderer
                                         content={prefaceContent}
                                         variant="assistant"
-                                        decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
+                                        decorateText={useInterleaved ? undefined : (children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
                                     />
                                 </div>
                             )}
 
-                            <ExecutionTracePanel
-                                trace={message.assistant_message_extra?.execution_trace}
-                                currentStage={message.assistant_message_extra?.current_stage}
-                                retryCount={message.assistant_message_extra?.retry_count}
-                                isStreaming={isLoading}
-                                onApprovalDecision={onApprovalDecision}
-                                onSendApprovalComment={onSendApprovalComment}
-                            />
+                            {useInterleaved ? (
+                                <>
+                                    {message.reasoning_content && (
+                                        <ReasoningContent
+                                            content={message.reasoning_content}
+                                            isStreaming={isReasoningStreaming}
+                                        />
+                                    )}
+                                    <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                        <InterleavedContent
+                                            segments={interleavedSegments}
+                                            isStreaming={isLoading}
+                                            onApprovalDecision={onApprovalDecision}
+                                            onSendApprovalComment={onSendApprovalComment}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <ExecutionTracePanel
+                                        trace={message.assistant_message_extra?.execution_trace}
+                                        currentStage={message.assistant_message_extra?.current_stage}
+                                        retryCount={message.assistant_message_extra?.retry_count}
+                                        isStreaming={isLoading}
+                                        onApprovalDecision={onApprovalDecision}
+                                        onSendApprovalComment={onSendApprovalComment}
+                                    />
 
-                            {message.reasoning_content && (
-                                <ReasoningContent
-                                    content={message.reasoning_content}
-                                    isStreaming={isReasoningStreaming}
-                                />
+                                    {message.reasoning_content && (
+                                        <ReasoningContent
+                                            content={message.reasoning_content}
+                                            isStreaming={isReasoningStreaming}
+                                        />
+                                    )}
+
+                                    <div className={`${styles.messageContent} ${styles.markdownContent}`}>
+                                        <MarkdownRenderer
+                                            content={getDisplayContent()}
+                                            variant="assistant"
+                                            transformContent={(content) => buildContentWithToolMarkers(content, toolUses)}
+                                            decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
+                                        />
+                                    </div>
+
+                                    {toolUses.length > 0 && traceSteps.length === 0 && (
+                                        <ToolUsesSection toolUses={toolUses} toolDefinitions={toolDefinitions} />
+                                    )}
+                                </>
                             )}
-
-                            <div className={`${styles.messageContent} ${styles.markdownContent}`}>
-                                <MarkdownRenderer
-                                    content={getDisplayContent()}
-                                    variant="assistant"
-                                    transformContent={(content) => buildContentWithToolMarkers(content, toolUses)}
-                                    decorateText={(children) => withInlineToolMarkers(children, toolUsesByIndex, toolDefinitions, t)}
-                                />
-                            </div>
 
                             {!messageContent && finishReason === 'error' && friendlyFinishError && (
                                 <div
@@ -614,10 +648,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 >
                                     {friendlyFinishError}
                                 </div>
-                            )}
-
-                            {toolUses.length > 0 && traceSteps.length === 0 && (
-                                <ToolUsesSection toolUses={toolUses} toolDefinitions={toolDefinitions} />
                             )}
 
                             {shouldShowTailLoading && (

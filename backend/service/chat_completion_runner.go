@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
@@ -23,6 +22,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tool_approval"
+	"github.com/cloudwego/eino/components/tool"
 )
 
 // =============================================================================
@@ -36,14 +36,14 @@ import (
 // completionRunner 封装一次 Completions 调用的全部运行时状态。
 type completionRunner struct {
 	// ---- 外部依赖（创建后只读） ----
-	svc              *Service                      // 服务实例，用于访问 storage 和事件系统
+	svc              *Service                     // 服务实例，用于访问 storage 和事件系统
 	provider         *llm_provider.Provider        // LLM 供应商，执行 AI 推理
 	localizedPrompts prompts.PromptSet             // 本地化的系统提示词集合
 	inputMessage     view_models.Message           // 用户输入消息
 	providerModel    *wrapper_models.ProviderModel // 选中的模型配置
 	agentTools       []tool.BaseTool               // 用户选择的工具集
 	toolMetaByID     map[string]toolMeta           // 工具元数据索引（toolID → meta）
-	customAgentIDs   map[string]string             // 自定义 agent ID → 显示名（用于识别子 agent 工具调用）
+	customAgentIDs   map[string]string              // 自定义 agent ID → 显示名（用于识别子 agent 工具调用）
 	cleanupTools     func()                        // 工具资源清理回调
 	schemaMessages   []schema.Message              // 转换后的历史消息（含当前用户消息）
 	isNewChat        bool                          // 是否为新建对话
@@ -57,11 +57,11 @@ type completionRunner struct {
 	// ---- 受 mu 保护的可变状态 ----
 	// 所有以 Locked 结尾的方法都假设调用者已持有 mu 锁
 	mu                            sync.Mutex
-	assistantMessage              data_models.Message     // 当前助手消息（持续更新）
-	task                          data_models.Task        // 当前任务状态
+	assistantMessage              data_models.Message    // 当前助手消息（持续更新）
+	task                          data_models.Task       // 当前任务状态
 	pendingTraceDelta             []data_models.TraceStep // 待发送的追踪步骤增量
-	lastSnapshotPersistAt         time.Time               // 上次持久化时间（用于节流）
-	lastSnapshotPersistContentLen int                     // 上次持久化时的内容长度（用于节流）
+	lastSnapshotPersistAt         time.Time              // 上次持久化时间（用于节流）
+	lastSnapshotPersistContentLen int                    // 上次持久化时的内容长度（用于节流）
 
 	// ---- 工作流切换状态（受 handoffMu 保护） ----
 	handoffMu               sync.Mutex

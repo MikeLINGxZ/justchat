@@ -6,10 +6,8 @@ type SynthesizerAgentDef struct{}
 
 func init() { RegisterAgent(&SynthesizerAgentDef{}) }
 
-func (a *SynthesizerAgentDef) Name() string { return "synthesizer_agent" }
-func (a *SynthesizerAgentDef) Desc() string {
-	return "综合 Agent，负责整合所有子任务输出为最终答案"
-}
+func (a *SynthesizerAgentDef) Name() string    { return "synthesizer_agent" }
+func (a *SynthesizerAgentDef) Desc() string    { return "综合 Agent，负责整合所有子任务输出为最终答案" }
 func (a *SynthesizerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *SynthesizerAgentDef) Role() AgentRole { return AgentRoleSynthesizer }
 func (a *SynthesizerAgentDef) PromptNames() []string {

@@ -170,6 +170,7 @@ const zhCN = {
         save: '保存配置',
         testConnection: '测试连接',
         delete: '删除供应商',
+        backToList: '返回列表',
       },
       modal: {
         selectProvider: '选择供应商',

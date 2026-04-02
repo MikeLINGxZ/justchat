@@ -11,10 +11,7 @@ import {
   Alert,
   message,
   Typography,
-  Row,
-  Col,
   Popconfirm,
-  Badge,
   Avatar,
   Tooltip,
   Modal,
@@ -154,6 +151,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const { models: availableModels, isLoading: isLoadingModels } = useModels();
   const { refetch: refetchModels } = useModelStore();
   const [isMobile, setIsMobile] = useState(() => isMobileDevice());
+  const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
 
   // 监听窗口大小变化，更新移动端状态
   useEffect(() => {
@@ -666,127 +664,101 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   // 使用供应商的模型列表，而不是过滤所有模型
   const availableModelsForProvider = currentProvider?.models || [];
 
-  return (
-    <div className={`${styles.providerSettings} ${className || ''}`}>
-
-
-      <Row gutter={[24, 24]} className={styles.providerLayout}>
-        <Col xs={24} lg={8} className={styles.listCol}>
-          <Card 
-            title={
-              <Space>
-                <SettingOutlined />
-                <span>{t('settings.provider.listTitle')}</span>
-              </Space>
-            }
-            className={styles.providerList}
-            extra={
-              <Tooltip title={t('settings.provider.addProvider')}>
-                <Button 
-                  type="primary" 
-                  size="small" 
-                  icon={<PlusOutlined />}
-                  onClick={handleAddProvider}
-                  className={styles.addBtn}
-                >
-                  {t('settings.provider.add')}
-                </Button>
-              </Tooltip>
-            }
-            styles={{ body: { padding: 0 } }}
+  const renderProviderList = () => (
+    <Card
+      title={t('settings.provider.listTitle')}
+      className={styles.listCard}
+      extra={
+        <Button
+          type="text"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={handleAddProvider}
+        >
+          {t('settings.provider.add')}
+        </Button>
+      }
+      styles={{ body: { padding: 0 } }}
+    >
+      <div className={styles.providerItems}>
+        {providers.map(provider => (
+          <div
+            key={provider.id}
+            className={`${styles.providerItem} ${
+              selectedProvider === provider.id ? styles.selected : ''
+            }`}
+            onClick={() => {
+              setSelectedProvider(provider.id);
+              if (isMobile) setShowEditorOnMobile(true);
+            }}
           >
-            <div className={styles.providerItems}>
-              {providers.map(provider => (
-                <div
-                  key={provider.id}
-                  className={`${styles.providerItem} ${
-                    selectedProvider === provider.id ? styles.selected : ''
-                  }`}
-                  onClick={() => setSelectedProvider(provider.id)}
+            <div className={styles.providerItemHeader}>
+              <div className={styles.providerItemTitle}>
+                {renderProviderAvatar(provider.icon, provider.provider_name, 22, provider.enable)}
+                <span className={styles.providerName}>{provider.provider_name}</span>
+              </div>
+              <div className={styles.providerItemActions}>
+                <Switch
+                  size="small"
+                  checked={provider.enable}
+                  onChange={async (checked, e) => {
+                    e.stopPropagation();
+                    try {
+                      const updatedProviders = providers.map(p =>
+                        p.id === provider.id ? { ...p, enable: checked } : p
+                      );
+                      setProviders(updatedProviders);
+                      const providerData = new Provider({
+                        provider_name: provider.provider_name,
+                        provider_type: provider.provider_type,
+                        base_url: provider.base_url,
+                        file_upload_base_url: provider.file_upload_base_url || null,
+                        api_key: provider.api_key,
+                        enable: checked,
+                        default_model_id: provider.default_model_id,
+                      });
+                      await Service.UpdateProvider(provider.id, providerData);
+                    } catch (error) {
+                      console.error('更新供应商状态失败:', error);
+                      message.error(t('settings.provider.messages.updateStatusFailed'));
+                      const revertProviders = providers.map(p =>
+                        p.id === provider.id ? { ...p, enable: !checked } : p
+                      );
+                      setProviders(revertProviders);
+                    }
+                  }}
+                />
+                <Popconfirm
+                  title={t('settings.provider.confirm.deleteTitle')}
+                  description={t('settings.provider.confirm.deleteDescription')}
+                  onConfirm={() => handleDeleteProvider(provider.id)}
+                  okText={t('common.confirm')}
+                  cancelText={t('common.cancel')}
                 >
-                 <div className={`${styles.providerItemBox}`}>
-                     <div className={styles.providerContent}>
-                         <div className={styles.providerLeft}>
-                             {renderProviderAvatar(provider.icon, provider.provider_name, 28, provider.enable)}
-                             <div className={styles.providerDetails}>
-                                 <div className={styles.providerName}>{provider.provider_name}</div>
-                             </div>
-                         </div>
-                         <div className={styles.providerActions}>
-                             <Tooltip title={provider.enable ? t('settings.provider.status.enabled') : t('settings.provider.status.disabled')}>
-                                 <Switch
-                                     size="small"
-                                     checked={provider.enable}
-                                     className={styles.enableSwitch}
-                                     onChange={async (checked) => {
-                                         try {
-                                           // 先更新UI状态
-                                           const updatedProviders = providers.map(p =>
-                                               p.id === provider.id ? { ...p, enable: checked } : p
-                                           );
-                                           setProviders(updatedProviders);
-                                                           // 调用后端接口更新
-                                           const providerData = new Provider({
-                                             provider_name: provider.provider_name,
-                                             provider_type: provider.provider_type,
-                                             base_url: provider.base_url,
-                                             file_upload_base_url: provider.file_upload_base_url || null,
-                                             api_key: provider.api_key,
-                                             enable: checked,
-                                             default_model_id: provider.default_model_id,
-                                           });
-                                           await Service.UpdateProvider(provider.id, providerData);
-                                         } catch (error) {
-                                           console.error('更新供应商状态失败:', error);
-                                           message.error(t('settings.provider.messages.updateStatusFailed'));
-                                           // 恢复UI状态
-                                           const revertProviders = providers.map(p =>
-                                               p.id === provider.id ? { ...p, enable: !checked } : p
-                                           );
-                                           setProviders(revertProviders);
-                                         }
-                                     }}
-                                 />
-                             </Tooltip>
-                             <Tooltip title={t('settings.provider.actions.delete')}>
-                                 <Popconfirm
-                                     title={t('settings.provider.confirm.deleteTitle')}
-                                     description={t('settings.provider.confirm.deleteDescription')}
-                                     onConfirm={() => handleDeleteProvider(provider.id)}
-                                     okText={t('common.confirm')}
-                                     cancelText={t('common.cancel')}
-                                 >
-                                     <Button
-                                         type="text"
-                                         size="small"
-                                         icon={<DeleteOutlined />}
-                                         className={styles.deleteBtn}
-                                         onClick={(e) => e.stopPropagation()}
-                                     />
-                                 </Popconfirm>
-                             </Tooltip>
-                         </div>
-                     </div>
-                 </div>
-                </div>
-              ))}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    className={styles.deleteBtn}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
+              </div>
             </div>
-          </Card>
-        </Col>
+            <div className={styles.providerItemMeta}>
+              {provider.base_url}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
 
-        <Col xs={24} lg={16} className={styles.configCol}>
-          <Card 
-            title={
-              <Space>
-                {renderProviderAvatar(currentProvider?.icon, currentProvider?.provider_name, 24, currentProvider?.enable)}
-                <span>{t('settings.provider.configTitle', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}</span>
-                {currentProvider?.status === 'connected' && (
-                  <Badge status="success" />
-                )}
-              </Space>
-            }
-            className={styles.configCard}
-          >
+  const renderEditor = () => (
+    <Card
+      title={t('settings.provider.configTitle', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}
+      className={styles.configCard}
+    >
             <Form
                 form={form}
                 layout="vertical"
@@ -991,83 +963,94 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                 </div>
 
                 <div className={styles.formFooter}>
-                  <Form.Item className={styles.buttonGroup}>
-                    <Space size="middle" className={styles.actionButtons}>
-                      {isCreatingNew ? (
-                        // 新建供应商时的按钮
-                        <>
-                          <Button 
-                            type="primary" 
-                            htmlType="submit" 
-                            icon={<PlusOutlined />}
-                            loading={loading}
-                            size="middle"
-                            className={styles.primaryButton}
-                          >
-                            {t('settings.provider.actions.createShort')}
-                          </Button>
-                          <Button 
+                  <Space wrap>
+                    {isCreatingNew ? (
+                      <>
+                        <Button
+                          type="primary"
+                          htmlType="submit"
+                          icon={<PlusOutlined />}
+                          loading={loading}
+                        >
+                          {t('settings.provider.actions.createShort')}
+                        </Button>
+                        <Button
+                          icon={<DeleteOutlined />}
+                          onClick={handleCancelCreate}
+                        >
+                          {t('common.cancel')}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          type="primary"
+                          htmlType="submit"
+                          icon={<SaveOutlined />}
+                          loading={loading}
+                        >
+                          {t('settings.provider.actions.save')}
+                        </Button>
+                        <Button
+                          icon={<ReloadOutlined />}
+                          onClick={handleTestConnection}
+                          loading={testingConnection}
+                        >
+                          {t('settings.provider.actions.testConnection')}
+                        </Button>
+                        <Popconfirm
+                          title={t('settings.provider.confirm.deleteTitle')}
+                          description={
+                            <div className={styles.deleteConfirm}>
+                              <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
+                              {t('settings.provider.confirm.deleteCurrentDescription', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}
+                            </div>
+                          }
+                          onConfirm={handleDeleteCurrentProvider}
+                          okText={t('settings.provider.confirm.okDelete')}
+                          cancelText={t('common.cancel')}
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            danger
                             icon={<DeleteOutlined />}
-                            onClick={handleCancelCreate}
-                            size="middle"
-                            className={styles.testButton}
                           >
-                            {t('common.cancel')}
+                            {t('settings.provider.actions.delete')}
                           </Button>
-                        </>
-                      ) : (
-                        // 编辑供应商时的按钮
-                        <>
-                          <Button 
-                            type="primary" 
-                            htmlType="submit" 
-                            icon={<SaveOutlined />}
-                            loading={loading}
-                            size="middle"
-                            className={styles.primaryButton}
-                          >
-                            {t('settings.provider.actions.save')}
-                          </Button>
-                          <Button 
-                            icon={<ReloadOutlined />}
-                            onClick={handleTestConnection}
-                            loading={testingConnection}
-                            size="middle"
-                            className={styles.testButton}
-                          >
-                            {t('settings.provider.actions.testConnection')}
-                          </Button>
-                          <Popconfirm
-                            title={t('settings.provider.confirm.deleteTitle')}
-                            description={
-                              <div className={styles.deleteConfirm}>
-                                <ExclamationCircleOutlined style={{ color: 'var(--warning-color)', marginRight: 8 }} />
-                                {t('settings.provider.confirm.deleteCurrentDescription', { name: currentProvider?.provider_name || t('settings.provider.configFallbackName') })}
-                              </div>
-                            }
-                            onConfirm={handleDeleteCurrentProvider}
-                            okText={t('settings.provider.confirm.okDelete')}
-                            cancelText={t('common.cancel')}
-                            okButtonProps={{ danger: true }}
-                          >
-                            <Button 
-                              danger
-                              icon={<DeleteOutlined />}
-                              size="middle"
-                              className={styles.dangerButton}
-                            >
-                              {t('settings.provider.actions.delete')}
-                            </Button>
-                          </Popconfirm>
-                        </>
-                      )}
-                    </Space>
-                  </Form.Item>
+                        </Popconfirm>
+                      </>
+                    )}
+                  </Space>
                 </div>
               </Form>
-            </Card>
-        </Col>
-      </Row>
+          </Card>
+  );
+
+  return (
+    <div className={`${styles.providerSettings} ${className || ''}`}>
+      {isMobile ? (
+        <>
+          {!showEditorOnMobile && renderProviderList()}
+          {showEditorOnMobile && (
+            <div className={styles.mobileEditor}>
+              <Button
+                type="text"
+                className={styles.mobileBackButton}
+                icon={<ArrowLeftOutlined />}
+                onClick={() => setShowEditorOnMobile(false)}
+              >
+                {t('settings.provider.actions.backToList')}
+              </Button>
+              {renderEditor()}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className={styles.desktopLayout}>
+          <div className={styles.listColumn}>{renderProviderList()}</div>
+          <div className={styles.editorColumn}>{renderEditor()}</div>
+        </div>
+      )}
 
       {/* 添加供应商对话框 */}
       <Modal

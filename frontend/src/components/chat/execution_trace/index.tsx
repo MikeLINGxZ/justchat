@@ -58,7 +58,7 @@ const typeLabelMap: Record<string, string> = {
     [TraceStepType.TraceStepTypeFinalize]: "chat.executionTrace.finalize",
 };
 
-function getStatusDotClass(status: string | undefined): string {
+export function getStatusDotClass(status: string | undefined): string {
     switch (status) {
         case TraceStepStatus.TraceStepStatusDone:
             return styles.statusDotDone;
@@ -76,7 +76,7 @@ function getStatusDotClass(status: string | undefined): string {
     }
 }
 
-function getStatusLabel(status: string | undefined, t: (key: string) => string): string {
+export function getStatusLabel(status: string | undefined, t: (key: string) => string): string {
     switch (status) {
         case TraceStepStatus.TraceStepStatusDone:
             return t('chat.executionTrace.finished');
@@ -95,7 +95,7 @@ function getStatusLabel(status: string | undefined, t: (key: string) => string):
     }
 }
 
-function formatElapsedMs(value?: number): string {
+export function formatElapsedMs(value?: number): string {
     const ms = value ?? 0;
     if (ms < 1000) {
         return `${ms}ms`;
@@ -108,7 +108,7 @@ function formatElapsedMs(value?: number): string {
     return `${Math.floor(sec / 60)}m ${sec % 60}s`;
 }
 
-function parseTime(value: unknown): number | null {
+export function parseTime(value: unknown): number | null {
     if (!value) {
         return null;
     }
@@ -117,14 +117,14 @@ function parseTime(value: unknown): number | null {
     return Number.isNaN(timestamp) ? null : timestamp;
 }
 
-function isRunningStep(step: TraceStep): boolean {
+export function isRunningStep(step: TraceStep): boolean {
     return step.status === TraceStepStatus.TraceStepStatusRunning
         || step.status === TraceStepStatus.TraceStepStatusPending
         || step.status === TraceStepStatus.TraceStepStatusAwaitingApproval
         || step.status === "";
 }
 
-function getTraceStepElapsedMs(step: TraceStep, nowMs: number): number {
+export function getTraceStepElapsedMs(step: TraceStep, nowMs: number): number {
     const startedAtMs = parseTime(step.started_at);
     const finishedAtMs = parseTime(step.finished_at);
     const baseElapsedMs = step.elapsed_ms ?? 0;
@@ -188,14 +188,14 @@ function getDetailBlockDisplayTitle(step: TraceStep, block: TraceDetailBlock, t:
 }
 
 /** Wrench icon for tool call rows */
-const WrenchIcon: React.FC = () => (
+export const WrenchIcon: React.FC = () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10.5 2.5a3.5 3.5 0 0 0-3.27 4.73L2.5 12l1.5 1.5 4.77-4.73A3.5 3.5 0 0 0 14 5.5l-2 2-1.5-.5-.5-1.5 2-2a3.5 3.5 0 0 0-1.5-.5z" />
     </svg>
 );
 
 /** Agent icon for sub-agent call rows */
-const AgentIcon: React.FC = () => (
+export const AgentIcon: React.FC = () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="8" cy="5" r="2.5" />
         <path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" />
@@ -203,7 +203,7 @@ const AgentIcon: React.FC = () => (
 );
 
 /** Detail block with optional "show more" for long content */
-const DetailBlockView: React.FC<{
+export const DetailBlockView: React.FC<{
     step: TraceStep;
     block: TraceDetailBlock;
     index: number;
@@ -256,7 +256,7 @@ const DetailBlockView: React.FC<{
     );
 };
 
-function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; message: string } | null {
+export function getApprovalMeta(step: TraceStep): { approvalId: string; title: string; message: string } | null {
     const metadata = step.metadata ?? {};
     const approvalId = typeof metadata.approval_id === "string" ? metadata.approval_id : "";
     if (!approvalId) {

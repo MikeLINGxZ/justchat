@@ -98,4 +98,5 @@ var enUS = map[string]string{
 	"mcp.service.prefix":                          "MCP Service: {{name}}",
 	"mcp.service.default_description":             "User-added MCP service",
 	"mcp.service.summary.more_tools":              "%s; plus %d more tools",
+	"agent.system.tool_approval_hint":             "Important: When you need to execute a tool, call it directly. Do NOT ask the user for confirmation yourself. The system has a built-in approval mechanism that automatically prompts the user for confirmation when needed.",
 }

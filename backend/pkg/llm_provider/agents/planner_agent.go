@@ -6,10 +6,8 @@ type PlannerAgentDef struct{}
 
 func init() { RegisterAgent(&PlannerAgentDef{}) }
 
-func (a *PlannerAgentDef) Name() string { return "planner_agent" }
-func (a *PlannerAgentDef) Desc() string {
-	return "规划 Agent，负责将用户请求拆解为可执行的子任务计划"
-}
+func (a *PlannerAgentDef) Name() string    { return "planner_agent" }
+func (a *PlannerAgentDef) Desc() string    { return "规划 Agent，负责将用户请求拆解为可执行的子任务计划" }
 func (a *PlannerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *PlannerAgentDef) Role() AgentRole { return AgentRolePlanner }
 func (a *PlannerAgentDef) PromptNames() []string {

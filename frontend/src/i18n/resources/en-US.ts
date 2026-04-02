@@ -170,6 +170,7 @@ const enUS = {
         save: 'Save Configuration',
         testConnection: 'Test Connection',
         delete: 'Delete Provider',
+        backToList: 'Back to List',
       },
       modal: {
         selectProvider: 'Select a Provider',

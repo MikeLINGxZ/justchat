@@ -1,50 +1,35 @@
 @use '@/styles/variables.scss' as *;
 
 .providerSettings {
+  background: transparent;
   height: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-
-  .header {
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-    
-    h3 {
-      margin-bottom: var(--spacing-sm);
-      color: var(--text-color);
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-  }
 }
 
-.providerLayout {
-  flex: 1;
-  height: 100%;
-  min-height: 0;
+.desktopLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: var(--spacing-lg);
   align-items: stretch;
-  overflow: hidden;
-}
-
-.listCol,
-.configCol {
-  min-height: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.providerList {
   height: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+}
+
+.listColumn,
+.editorColumn {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+// ── Card base ──────────────────────────────────────────────────────────
+.listCard,
+.configCard {
+  height: 100%;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color-light);
+  border: none;
   background: var(--background-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   overflow: hidden;
   transition: all var(--transition-normal);
 
@@ -53,200 +38,158 @@
   }
 
   :global(.ant-card-head) {
-    flex-shrink: 0;
     background: transparent;
     border-bottom: none;
     padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
     min-height: auto;
 
     :global(.ant-card-head-title) {
+      color: var(--text-color);
       font-size: var(--font-size-lg);
       font-weight: 600;
-      color: var(--text-color);
       letter-spacing: -0.02em;
     }
   }
-
-  :global(.ant-card-body) {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .addBtn {
-    border-radius: 8px;
-    border: none;
-    box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
-    font-weight: 500;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
-    }
-  }
 }
 
-.providerItems {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-
-  .providerItem {
-    cursor: pointer;
-    border-bottom: 1px solid var(--border-color-light);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    min-height: 52px;
-    align-items: center;
-    display: flex;
-
-    .providerItemBox {
-      width: 100%;
-      height: 100%;
-      padding: 0 var(--spacing-md);
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: transparent;
-      border-radius: 0 2px 2px 0;
-      transition: all 0.2s ease;
-    }
-
-    &:hover {
-      background: var(--primary-color-light);
-
-      &::before {
-        background: var(--primary-color);
-      }
-    }
-
-    &.selected {
-      background: var(--primary-color-light);
-
-      &::before {
-        background: var(--primary-color);
-        width: 3px;
-      }
-
-      .providerName {
-        color: var(--primary-color);
-        font-weight: 600;
-      }
-    }
-
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-
-  .providerContent {
-    @include flex-between;
-    align-items: center;
-    height: 100%;
-
-    .providerLeft {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-      flex: 1;
-
-      .providerDetails {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-
-        .providerName {
-          font-size: var(--font-size);
-          font-weight: var(--font-weight-medium);
-          color: var(--text-color);
-          line-height: 1.4;
-          margin: 0;
-          transition: color 0.2s ease;
-        }
-      }
-    }
-
-    .providerActions {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-
-      .enableSwitch {
-        // antd default style
-      }
-
-      .deleteBtn {
-        color: var(--text-color-disabled);
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &:hover {
-          color: var(--error-color);
-          background: rgba(255, 77, 79, 0.08);
-        }
-      }
-    }
-  }
-}
-
-.configCard {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color-light);
-  background: var(--background-color);
-  overflow: hidden;
-  transition: all var(--transition-normal);
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  }
-
-  :global(.ant-card-head) {
-    flex-shrink: 0;
-    background: transparent;
-    border-bottom: none;
-    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md);
-    min-height: auto;
-
-    :global(.ant-card-head-title) {
-      font-size: var(--font-size-xl);
-      font-weight: 600;
-      color: var(--text-color);
-      letter-spacing: -0.01em;
-    }
-  }
-
+// ── List card ──────────────────────────────────────────────────────────
+.listCard {
   :global(.ant-card-body) {
     padding: 0;
-    flex: 1;
-    min-height: 0;
+    height: calc(100% - 72px);
     overflow: hidden;
+  }
+}
+
+// ── Provider list ──────────────────────────────────────────────────────
+.providerItems {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.providerItem {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  row-gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-color-light);
+  padding: 14px var(--spacing-md) 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 72px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    transition: background 0.2s ease;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+
+  &.selected {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(24, 144, 255, 0.04));
+
+    &::before {
+      background: var(--primary-color);
+    }
+  }
+}
+
+.providerItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.providerItemTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
+
+  .providerName {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: var(--font-size);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+    @include text-ellipsis;
+  }
+}
+
+.providerItemActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+
+  .deleteBtn {
+    color: var(--text-color-disabled);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--error-color);
+      background: rgba(255, 77, 79, 0.08);
+    }
+  }
+}
+
+.providerItemMeta {
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  @include text-ellipsis;
+}
+
+// ── Config card (editor) ───────────────────────────────────────────────
+.configCard {
+  :global(.ant-card-body) {
     display: flex;
     flex-direction: column;
+    padding: 0;
+    height: calc(100% - 72px);
+    min-height: 0;
+    overflow: hidden;
   }
 
   .securityAlert {
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid var(--border-color-light);
-    background: var(--background-color-light);
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(24, 144, 255, 0.02));
     margin-bottom: var(--spacing-lg);
   }
 
@@ -284,28 +227,9 @@
       padding-bottom: var(--spacing-xs);
 
       > label {
-        font-weight: 600;
+        font-weight: 500;
         font-size: var(--font-size);
         color: var(--text-color);
-      }
-    }
-
-    :global(.ant-input),
-    :global(.ant-input-password),
-    :global(.ant-select-selector) {
-      border-radius: 10px;
-      border: 1.5px solid var(--border-color-light);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        border-color: var(--primary-color-hover);
-      }
-
-      &:focus,
-      &:focus-within {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
-        outline: none;
       }
     }
   }
@@ -352,19 +276,6 @@
       .customModelInputField {
         flex: 1;
       }
-
-      .customModelAddBtn {
-        border-radius: 10px;
-        border: none;
-        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
-        font-weight: 500;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-        &:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
-        }
-      }
     }
 
     .customModelList {
@@ -382,10 +293,10 @@
       gap: 4px;
       padding: 4px 6px 4px 12px;
       background: var(--background-color);
-      border: 1.5px solid var(--border-color-light);
+      border: 1px solid var(--border-color-light);
       border-radius: 16px;
       font-size: var(--font-size-sm);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
 
       &:hover {
         border-color: var(--primary-color);
@@ -430,74 +341,6 @@
     border-color: var(--border-color-light);
   }
 
-  .buttonGroup {
-    margin-bottom: 0;
-
-    .actionButtons {
-      width: 100%;
-      justify-content: flex-start;
-      gap: 10px !important;
-
-      :global(.ant-btn) {
-        border-radius: 10px;
-        font-weight: 500;
-        height: 34px;
-        padding: 0 12px;
-        font-size: var(--font-size);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-        &:hover {
-          transform: translateY(-1px);
-        }
-      }
-
-      .primaryButton {
-        background: var(--primary-color);
-        border: none;
-        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
-
-        &:hover {
-          background: var(--primary-color-hover);
-          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
-        }
-      }
-
-      .testButton {
-        border: 1.5px solid var(--border-color);
-        background: var(--background-color);
-        color: var(--text-color);
-
-        &:hover {
-          border-color: var(--primary-color);
-          color: var(--primary-color);
-          background: var(--primary-color-light);
-        }
-      }
-
-      .dangerButton {
-        background: var(--error-color);
-        border: none;
-        color: white;
-        box-shadow: 0 2px 4px rgba(255, 77, 79, 0.2);
-
-        &:hover {
-          box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
-        }
-
-        &:disabled {
-          background: var(--background-color-dark);
-          border-color: var(--border-color-light);
-          color: var(--text-color-disabled);
-          box-shadow: none;
-
-          &:hover {
-            transform: none;
-          }
-        }
-      }
-    }
-  }
-
   .deleteConfirm {
     display: flex;
     align-items: center;
@@ -509,7 +352,15 @@
   }
 }
 
-// Modal 内供应商列表
+.emptyState {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+}
+
+// ── Modal styles ───────────────────────────────────────────────────────
 .supportProviderList {
   display: flex;
   flex-direction: column;
@@ -523,11 +374,11 @@
   cursor: pointer;
   padding: var(--spacing-md);
   border-radius: 12px;
-  border: 1.5px solid var(--border-color-light);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-color-light);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: var(--primary-color-light);
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
     border-color: var(--primary-color);
   }
 }
@@ -566,147 +417,27 @@
   font-size: var(--font-size);
 }
 
-// Modal 表单样式
-.modalFormFooter {
-  margin-bottom: 0;
-}
-
-.modalFormActions {
-  width: 100%;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-}
-
 .modalAlert {
   margin-bottom: var(--spacing-lg);
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--border-color-light);
-  background: var(--background-color-light);
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(24, 144, 255, 0.02));
 }
 
-// 响应式设计
-@include respond-below(xl) {
-  .providerSettings {
-    .header h3 {
-      font-size: var(--font-size-xl);
-    }
-  }
+// ── Mobile ─────────────────────────────────────────────────────────────
+.mobileEditor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-@include respond-below(lg) {
-  .providerSettings {
-    height: auto;
-    overflow: visible;
-
-    :global(.ant-row) {
-      flex-direction: column;
-    }
-
-    :global(.ant-col) {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-  }
-
-  .providerLayout {
-    height: auto;
-    overflow: visible;
-  }
-
-  .listCol,
-  .configCol {
-    height: auto;
-  }
-
-  .providerList {
-    height: auto;
-    min-height: auto;
-    margin-bottom: var(--spacing-lg);
-    overflow: visible;
-
-    :global(.ant-card-body) {
-      height: auto;
-      overflow: visible;
-      display: block;
-    }
-  }
-
-  .providerItems {
-    height: auto;
-    min-height: auto;
-    overflow: visible;
-
-    .providerItem {
-      padding: var(--spacing-sm) var(--spacing-md);
-      min-height: 48px;
-
-      .providerContent {
-        .providerLeft {
-          gap: var(--spacing-sm);
-        }
-
-        .providerActions {
-          gap: var(--spacing-sm);
-        }
-      }
-    }
-  }
-
-  .configCard {
-    height: auto;
-    min-height: auto;
-    overflow: visible;
-
-    :global(.ant-card-body) {
-      height: auto;
-      overflow: visible;
-      display: block;
-    }
-
-    .formShell,
-    .formScrollArea {
-      display: block;
-      min-height: auto;
-      overflow: visible;
-    }
-
-    .formScrollArea {
-      padding: 0 var(--spacing-lg) var(--spacing-lg);
-      padding-bottom: var(--spacing-lg);
-    }
-
-    .formFooter {
-      padding: 0 var(--spacing-lg) var(--spacing-lg);
-      border-top: none;
-      box-shadow: none;
-      background: transparent;
-    }
-
-    .buttonGroup {
-      .actionButtons {
-        flex-direction: column;
-        width: 100%;
-
-        :global(.ant-btn) {
-          width: 100%;
-        }
-      }
-    }
-  }
+.mobileBackButton {
+  margin-bottom: var(--spacing-sm);
+  align-self: flex-start;
 }
 
 @include respond-below(md) {
-  .providerSettings {
-    .header {
-      margin-bottom: var(--spacing-md);
-
-      h3 {
-        font-size: var(--font-size-lg);
-      }
-    }
-  }
-
-  .providerList,
+  .listCard,
   .configCard {
     border-radius: 12px;
 
@@ -716,30 +447,13 @@
   }
 
   .configCard {
-    :global(.ant-card-body) {
-      height: auto;
-      overflow: visible;
-    }
-
     .formScrollArea {
       padding: 0 var(--spacing-md) var(--spacing-md);
       padding-bottom: var(--spacing-md);
     }
 
     .formFooter {
-      padding: 0 var(--spacing-md) var(--spacing-md);
-    }
-
-    :global(.ant-form) {
-      :global(.ant-form-item) {
-        margin-bottom: var(--spacing-md);
-      }
-
-      :global(.ant-input),
-      :global(.ant-input-password),
-      :global(.ant-select-selector) {
-        border-radius: 8px;
-      }
+      padding: var(--spacing-sm) var(--spacing-md);
     }
 
     .customModelSection {
@@ -762,67 +476,9 @@
       }
     }
   }
-
-  .providerItems {
-    .providerItem {
-      padding: var(--spacing-xs) var(--spacing-sm);
-      min-height: 44px;
-
-      .providerContent {
-        .providerLeft {
-          gap: var(--spacing-xs);
-        }
-
-        .providerActions {
-          gap: var(--spacing-xs);
-
-          .deleteBtn {
-            width: 24px;
-            height: 24px;
-          }
-        }
-      }
-    }
-  }
 }
 
-// 移动端内容体特殊样式
-:global(.mobileContentBody) {
-  .providerSettings {
-    .header {
-      display: none;
-    }
-
-    :global(.ant-row) {
-      flex-direction: column;
-      gap: var(--spacing-md);
-    }
-
-    :global(.ant-col) {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-  }
-
-  .providerList {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .configCard {
-    .buttonGroup {
-      .actionButtons {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-
-        :global(.ant-btn) {
-          width: 100%;
-        }
-      }
-    }
-  }
-}
-
-// 添加供应商对话框样式
+// ── Add provider modal ─────────────────────────────────────────────────
 :global {
   .addProviderModal {
     z-index: 2001 !important;

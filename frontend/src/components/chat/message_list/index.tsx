@@ -147,16 +147,24 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
         const scrollContainer = getScrollContainer();
 
         if (scrollContainer && scrollContainer instanceof HTMLElement) {
+            scrollingToBottomLockRef.current = true;
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
             setIsAtBottom(true);
             setShowScrollButton(false);
+            requestAnimationFrame(() => {
+                scrollingToBottomLockRef.current = false;
+            });
             return;
         }
 
         if (containerRef.current) {
+            scrollingToBottomLockRef.current = true;
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
             setIsAtBottom(true);
             setShowScrollButton(false);
+            requestAnimationFrame(() => {
+                scrollingToBottomLockRef.current = false;
+            });
         }
     }, [getScrollContainer]);
 
@@ -396,6 +404,23 @@ const MessageList: React.ForwardRefRenderFunction<MessageListRef, MessageListPro
             isUserScrollingRef.current = false;
         }
     }, [isGenerating]);
+
+    // 监听内容区域高度变化，自动滚动到底部
+    // 解决工具调用卡片展开等导致DOM高度变化但messages未变的情况
+    useEffect(() => {
+        if (!contentRef.current) return;
+
+        const observer = new ResizeObserver(() => {
+            if (autoScrollRef.current && isGenerating && !isUserScrollingRef.current) {
+                scrollToBottomInstant();
+            } else {
+                checkIsAtBottom();
+            }
+        });
+        observer.observe(contentRef.current);
+
+        return () => observer.disconnect();
+    }, [isGenerating, scrollToBottomInstant]);
 
     // 消息变化时的自动滚动逻辑
     useLayoutEffect(() => {

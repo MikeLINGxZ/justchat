@@ -19,10 +19,8 @@ func init() {
 	RegisterAgent(&ToolWorkerAgentDef{})
 }
 
-func (a *GeneralWorkerAgentDef) Name() string { return "general_worker_agent" }
-func (a *GeneralWorkerAgentDef) Desc() string {
-	return "通用 Worker Agent，负责执行子任务并产出结果"
-}
+func (a *GeneralWorkerAgentDef) Name() string    { return "general_worker_agent" }
+func (a *GeneralWorkerAgentDef) Desc() string    { return "通用 Worker Agent，负责执行子任务并产出结果" }
 func (a *GeneralWorkerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *GeneralWorkerAgentDef) Role() AgentRole { return AgentRoleWorker }
 func (a *GeneralWorkerAgentDef) PromptNames() []string {
@@ -50,10 +48,8 @@ func (a *GeneralWorkerAgentDef) Prompt() string {
 // ToolWorkerAgentDef 工具专家 Agent
 type ToolWorkerAgentDef struct{}
 
-func (a *ToolWorkerAgentDef) Name() string { return "tool_worker_agent" }
-func (a *ToolWorkerAgentDef) Desc() string {
-	return "工具 Worker Agent，以工具调用为主的子任务执行"
-}
+func (a *ToolWorkerAgentDef) Name() string    { return "tool_worker_agent" }
+func (a *ToolWorkerAgentDef) Desc() string    { return "工具 Worker Agent，以工具调用为主的子任务执行" }
 func (a *ToolWorkerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *ToolWorkerAgentDef) Role() AgentRole { return AgentRoleWorker }
 func (a *ToolWorkerAgentDef) PromptNames() []string {
