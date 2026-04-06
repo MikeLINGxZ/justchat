@@ -17,7 +17,7 @@ func (s *Storage) GetChats(ctx context.Context, offset, limit int, keyword *stri
 	var res []data_models.Chat
 	var count int64
 
-	queryBase := s.sqliteDB.Model(&data_models.Chat{})
+	queryBase := s.sqliteDB.Model(&data_models.Chat{}).Where("chat_type = '' OR chat_type IS NULL")
 	if isCollection {
 		queryBase = queryBase.Where("is_collection = ?", 1)
 	}

@@ -429,6 +429,326 @@ export class Model {
     }
 }
 
+/**
+ * OPCCompletionInput 人员私聊输入
+ */
+export class OPCCompletionInput {
+    "chat_uuid": string;
+    "person_uuid": string;
+    "content": string;
+    "model_id": number;
+    "model_name": string;
+
+    /** Creates a new OPCCompletionInput instance. */
+    constructor($$source: Partial<OPCCompletionInput> = {}) {
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("person_uuid" in $$source)) {
+            this["person_uuid"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("model_id" in $$source)) {
+            this["model_id"] = 0;
+        }
+        if (!("model_name" in $$source)) {
+            this["model_name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCCompletionInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCCompletionInput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new OPCCompletionInput($$parsedSource as Partial<OPCCompletionInput>);
+    }
+}
+
+/**
+ * OPCGroupCompletionInput 群聊输入
+ */
+export class OPCGroupCompletionInput {
+    "chat_uuid": string;
+    "group_uuid": string;
+    "content": string;
+    "model_id": number;
+    "model_name": string;
+
+    /** Creates a new OPCGroupCompletionInput instance. */
+    constructor($$source: Partial<OPCGroupCompletionInput> = {}) {
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("group_uuid" in $$source)) {
+            this["group_uuid"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("model_id" in $$source)) {
+            this["model_id"] = 0;
+        }
+        if (!("model_name" in $$source)) {
+            this["model_name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCGroupCompletionInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCGroupCompletionInput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new OPCGroupCompletionInput($$parsedSource as Partial<OPCGroupCompletionInput>);
+    }
+}
+
+/**
+ * OPCGroupInput 创建/更新群组的输入
+ */
+export class OPCGroupInput {
+    "uuid": string;
+    "name": string;
+    "description": string;
+    "member_uuids": string[];
+
+    /** Creates a new OPCGroupInput instance. */
+    constructor($$source: Partial<OPCGroupInput> = {}) {
+        if (!("uuid" in $$source)) {
+            this["uuid"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("member_uuids" in $$source)) {
+            this["member_uuids"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCGroupInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCGroupInput {
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("member_uuids" in $$parsedSource) {
+            $$parsedSource["member_uuids"] = $$createField3_0($$parsedSource["member_uuids"]);
+        }
+        return new OPCGroupInput($$parsedSource as Partial<OPCGroupInput>);
+    }
+}
+
+/**
+ * OPCGroupView 群组视图（含成员和最后消息摘要）
+ */
+export class OPCGroupView {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "uuid": string;
+    "chat_uuid": string;
+    "name": string;
+    "description": string;
+    "is_pinned": boolean;
+    "members": OPCPersonView[];
+    "last_message": string | null;
+    "last_message_at": time$0.Time | null;
+
+    /** Creates a new OPCGroupView instance. */
+    constructor($$source: Partial<OPCGroupView> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("uuid" in $$source)) {
+            this["uuid"] = "";
+        }
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("is_pinned" in $$source)) {
+            this["is_pinned"] = false;
+        }
+        if (!("members" in $$source)) {
+            this["members"] = [];
+        }
+        if (!("last_message" in $$source)) {
+            this["last_message"] = null;
+        }
+        if (!("last_message_at" in $$source)) {
+            this["last_message_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCGroupView instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCGroupView {
+        const $$createField9_0 = $$createType8;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("members" in $$parsedSource) {
+            $$parsedSource["members"] = $$createField9_0($$parsedSource["members"]);
+        }
+        return new OPCGroupView($$parsedSource as Partial<OPCGroupView>);
+    }
+}
+
+/**
+ * OPCPersonInput 创建/更新人员的输入
+ */
+export class OPCPersonInput {
+    "uuid": string;
+    "name": string;
+    "role": string;
+    "prompt": string;
+    "tools": string[];
+    "skills": string[];
+    "avatar": string;
+
+    /** Creates a new OPCPersonInput instance. */
+    constructor($$source: Partial<OPCPersonInput> = {}) {
+        if (!("uuid" in $$source)) {
+            this["uuid"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("role" in $$source)) {
+            this["role"] = "";
+        }
+        if (!("prompt" in $$source)) {
+            this["prompt"] = "";
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+        if (!("skills" in $$source)) {
+            this["skills"] = [];
+        }
+        if (!("avatar" in $$source)) {
+            this["avatar"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCPersonInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCPersonInput {
+        const $$createField4_0 = $$createType0;
+        const $$createField5_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField4_0($$parsedSource["tools"]);
+        }
+        if ("skills" in $$parsedSource) {
+            $$parsedSource["skills"] = $$createField5_0($$parsedSource["skills"]);
+        }
+        return new OPCPersonInput($$parsedSource as Partial<OPCPersonInput>);
+    }
+}
+
+/**
+ * OPCPersonView 人员视图（含最后消息摘要）
+ */
+export class OPCPersonView {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "uuid": string;
+    "name": string;
+    "role": string;
+    "agent_id": string;
+    "avatar": string;
+    "is_pinned": boolean;
+    "chat_uuid": string;
+    "last_message": string | null;
+    "last_message_at": time$0.Time | null;
+
+    /** Creates a new OPCPersonView instance. */
+    constructor($$source: Partial<OPCPersonView> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("uuid" in $$source)) {
+            this["uuid"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("role" in $$source)) {
+            this["role"] = "";
+        }
+        if (!("agent_id" in $$source)) {
+            this["agent_id"] = "";
+        }
+        if (!("avatar" in $$source)) {
+            this["avatar"] = "";
+        }
+        if (!("is_pinned" in $$source)) {
+            this["is_pinned"] = false;
+        }
+        if (!("chat_uuid" in $$source)) {
+            this["chat_uuid"] = "";
+        }
+        if (!("last_message" in $$source)) {
+            this["last_message"] = null;
+        }
+        if (!("last_message_at" in $$source)) {
+            this["last_message_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OPCPersonView instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OPCPersonView {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new OPCPersonView($$parsedSource as Partial<OPCPersonView>);
+    }
+}
+
 export class PromptFileDetail {
     "name": string;
     "title": string;
@@ -591,8 +911,8 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType8;
-        const $$createField11_0 = $$createType10;
+        const $$createField10_0 = $$createType10;
+        const $$createField11_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -742,7 +1062,7 @@ export class TaskList {
      * Creates a new TaskList instance from a string or object.
      */
     static createFrom($$source: any = {}): TaskList {
-        const $$createField0_0 = $$createType12;
+        const $$createField0_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tasks" in $$parsedSource) {
             $$parsedSource["tasks"] = $$createField0_0($$parsedSource["tasks"]);
@@ -800,9 +1120,11 @@ const $$createType3 = data_models$0.Chat.createFrom;
 const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = data_models$0.Message.createFrom;
 const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = Model.createFrom;
+const $$createType7 = OPCPersonView.createFrom;
 const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = data_models$0.Model.createFrom;
+const $$createType9 = Model.createFrom;
 const $$createType10 = $Create.Array($$createType9);
-const $$createType11 = data_models$0.Task.createFrom;
+const $$createType11 = data_models$0.Model.createFrom;
 const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = data_models$0.Task.createFrom;
+const $$createType14 = $Create.Array($$createType13);

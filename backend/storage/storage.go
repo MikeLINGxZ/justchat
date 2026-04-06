@@ -37,6 +37,9 @@ func NewStorage() (*Storage, error) {
 		&data_models.Task{},
 		&data_models.CustomMCPServer{},
 		&data_models.ToolApproval{},
+		&data_models.OPCPerson{},
+		&data_models.OPCGroup{},
+		&data_models.OPCGroupMember{},
 	)
 	if err != nil {
 		logger.Errorf("Failed to migrate models: %v", err)

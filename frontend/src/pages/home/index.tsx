@@ -8,6 +8,11 @@ import './index.module.scss';
 import Chat from '@/pages/home/chat';
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/index.ts";
 import styles from './index.module.scss';
+import { useOPCStore } from '@/stores/opcStore';
+import OPCSidebar from './opc/sidebar';
+import OPCChatArea from './opc/chat';
+import AddPersonDialog from './opc/dialogs/AddPersonDialog';
+import CreateGroupDialog from './opc/dialogs/CreateGroupDialog';
 
 const {Content, Sider} = Layout;
 
@@ -32,6 +37,49 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const [isFirstHistoricalLoad, setIsFirstHistoricalLoad] = useState(false);
     // 使用视口高度检测 Hook
     const {isMobile} = useViewportHeight();
+    // OPC 模式状态
+    const { mode: appMode } = useOPCStore();
+    const [addPersonOpen, setAddPersonOpen] = useState(false);
+    const [createGroupOpen, setCreateGroupOpen] = useState(false);
+    const [editPersonData, setEditPersonData] = useState<any>(null);
+    const [editGroupData, setEditGroupData] = useState<any>(null);
+
+    const handleEditPerson = async (uuid: string) => {
+        try {
+            const person = await Service.OPCGetPerson(uuid);
+            if (!person) return;
+            // 需要获取 agent 详情来拿到 prompt/tools/skills
+            const agentDetail = await Service.GetAgent(person.agent_id).catch(() => null);
+            setEditPersonData({
+                uuid: person.uuid,
+                name: person.name,
+                role: person.role,
+                avatar: person.avatar || '',
+                prompt: agentDetail?.prompts?.[0]?.content || '',
+                tools: agentDetail?.tools || [],
+                skills: agentDetail?.skills || [],
+            });
+            setAddPersonOpen(true);
+        } catch (err) {
+            console.error('Failed to load person for edit:', err);
+        }
+    };
+
+    const handleEditGroup = async (uuid: string) => {
+        try {
+            const group = await Service.OPCGetGroup(uuid);
+            if (!group) return;
+            setEditGroupData({
+                uuid: group.uuid,
+                name: group.name,
+                description: group.description,
+                member_uuids: group.members?.map((m: any) => m.uuid) || [],
+            });
+            setCreateGroupOpen(true);
+        } catch (err) {
+            console.error('Failed to load group for edit:', err);
+        }
+    };
 
     // 移动端默认隐藏侧边栏
     useEffect(() => {
@@ -139,6 +187,52 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         [],
     );
 
+    // OPC 模式
+    if (appMode === 'opc') {
+        return (
+            <Layout className={`${className || ''} ${styles.chatLayout}`}>
+                <Sider
+                    className={`${styles.sidebar} ${isSidebarCollapsed ? styles.collapsed : ''}`}
+                    width={280}
+                    collapsedWidth={isMobile ? 0 : 50}
+                    collapsed={isSidebarCollapsed}
+                    trigger={null}
+                    collapsible
+                >
+                    <OPCSidebar
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onToggleSidebar={handleToggleSidebar}
+                        onOpenAddPerson={() => { setEditPersonData(null); setAddPersonOpen(true); }}
+                        onOpenCreateGroup={() => { setEditGroupData(null); setCreateGroupOpen(true); }}
+                        onEditPerson={handleEditPerson}
+                        onEditGroup={handleEditGroup}
+                    />
+                </Sider>
+                <Layout className={styles.mainLayout}>
+                    <Content className={styles.mainContent}>
+                        <OPCChatArea
+                            isSidebarCollapsed={isSidebarCollapsed}
+                            onToggleSidebar={handleToggleSidebar}
+                        />
+                    </Content>
+                </Layout>
+                <AddPersonDialog
+                    open={addPersonOpen}
+                    onClose={() => { setAddPersonOpen(false); setEditPersonData(null); }}
+                    onSuccess={() => window.dispatchEvent(new CustomEvent('opc-refresh'))}
+                    editData={editPersonData}
+                />
+                <CreateGroupDialog
+                    open={createGroupOpen}
+                    onClose={() => { setCreateGroupOpen(false); setEditGroupData(null); }}
+                    onSuccess={() => window.dispatchEvent(new CustomEvent('opc-refresh'))}
+                    editData={editGroupData}
+                />
+            </Layout>
+        );
+    }
+
+    // 聊天模式（原有逻辑）
     return (
         <Layout className={`${className || ''} ${styles.chatLayout}`}>
             <Sider

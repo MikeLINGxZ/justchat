@@ -155,6 +155,7 @@ function mergeStreamingAssistant(propUuid: string, list: Message[], cache: Recor
     return upsertMessage(list, cached);
 }
 
+const HIDDEN_BUILTIN_TOOL_IDS = new Set(['file_tool']);
 
 const Chat: React.FC<ChatProps> = ({
     chatUuid,
@@ -179,7 +180,7 @@ const Chat: React.FC<ChatProps> = ({
     const [availableModels,setAvailableModels] = useState<Model[]>([]);
     // 可用工具
     const [availableTools,setAvailableTools] = useState<Tool[]>([]);
-    // 用户选中的工具 id 列表（持久化到 localStorage）
+    // 用户选中的自定义 MCP 工具 id 列表（持久化到 localStorage）
     const [selectedToolIds, setSelectedToolIds] = useState<string[]>(() => {
         try {
             const raw = localStorage.getItem('chat_selected_tools');
@@ -225,6 +226,23 @@ const Chat: React.FC<ChatProps> = ({
         setAvailableTools(tools);
         return tools;
     }, []);
+
+    const defaultBuiltinToolIds = useMemo(() => (
+        availableTools
+            .filter((tool) => tool.source_type === 'builtin' && !HIDDEN_BUILTIN_TOOL_IDS.has(tool.id))
+            .map((tool) => tool.id)
+    ), [availableTools]);
+
+    const customTools = useMemo(() => (
+        availableTools.filter((tool) => tool.source_type === 'mcp_custom')
+    ), [availableTools]);
+
+    const effectiveSelectedToolIds = useMemo(() => (
+        [...new Set([
+            ...defaultBuiltinToolIds,
+            ...selectedToolIds,
+        ])]
+    ), [defaultBuiltinToolIds, selectedToolIds]);
 
     const propUuid = chatUuid ?? "";
     const activeTitleChatUuid = currentChatUuid || propUuid;
@@ -279,12 +297,12 @@ const Chat: React.FC<ChatProps> = ({
         });
     }, [refreshAvailableTools]);
 
-    // 当可用工具加载后，过滤掉无效内置工具，并自动纳入启用中的自定义 MCP 工具
+    // 当可用工具加载后，仅保留有效的自定义 MCP 工具，并自动纳入已启用项
     useEffect(() => {
         if (availableTools.length === 0) return;
-        const validBuiltinIds = new Set(
+        const validCustomIds = new Set(
             availableTools
-                .filter((tool) => tool.source_type === 'builtin')
+                .filter((tool) => tool.source_type === 'mcp_custom')
                 .map((tool) => tool.id)
         );
         const enabledCustomIds = availableTools
@@ -292,7 +310,7 @@ const Chat: React.FC<ChatProps> = ({
             .map((tool) => tool.id);
         setSelectedToolIds(prev => {
             const next = [...new Set([
-                ...prev.filter(id => validBuiltinIds.has(id)),
+                ...prev.filter(id => validCustomIds.has(id)),
                 ...enabledCustomIds,
             ])];
             return next.length === prev.length && next.every((id, index) => id === prev[index]) ? prev : next;
@@ -602,7 +620,7 @@ const Chat: React.FC<ChatProps> = ({
                     model_id: selectModel,
                     model_name: selectModelName,
                     files: inputFiles,
-                    tools: selectedToolIds,
+                    tools: effectiveSelectedToolIds,
                     agents: [],
                 },
                 user_message_extra_content: "",
@@ -795,7 +813,7 @@ const Chat: React.FC<ChatProps> = ({
                     selectedModelId={selectModel}
                     hasSelectedModel={selectModel > 0 && !!selectModelName.trim()}
                     availableModels={availableModels}
-                    availableTools={availableTools}
+                    availableTools={customTools}
                     selectedToolIds={selectedToolIds}
                     onSelectedToolsChange={setSelectedToolIds}
                     onRefreshTools={refreshAvailableTools}

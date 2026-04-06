@@ -21,6 +21,7 @@ type Message struct {
 	AssistantMessageExtraContent string                 `gorm:"type:text" json:"assistant_message_extra_content"`
 	UserMessageExtra             *UserMessageExtra      `gorm:"-" json:"user_message_extra"`
 	AssistantMessageExtra        *AssistantMessageExtra `gorm:"-" json:"assistant_message_extra"`
+	SenderPersonUuid             string                 `gorm:"type:varchar(255);default:''" json:"sender_person_uuid"`
 }
 
 func (m *Message) ToSchemaMessage() (*schema.Message, error) {

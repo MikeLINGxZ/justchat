@@ -130,6 +130,7 @@ export class Chat {
     "title": string;
     "prompt": string;
     "is_collection": boolean;
+    "chat_type": string;
 
     /** Creates a new Chat instance. */
     constructor($$source: Partial<Chat> = {}) {
@@ -156,6 +157,9 @@ export class Chat {
         }
         if (!("is_collection" in $$source)) {
             this["is_collection"] = false;
+        }
+        if (!("chat_type" in $$source)) {
+            this["chat_type"] = "";
         }
 
         Object.assign(this, $$source);
@@ -250,6 +254,7 @@ export class Message {
     "assistant_message_extra_content": string;
     "user_message_extra": UserMessageExtra | null;
     "assistant_message_extra": AssistantMessageExtra | null;
+    "sender_person_uuid": string;
 
     /** Creates a new Message instance. */
     constructor($$source: Partial<Message> = {}) {
@@ -291,6 +296,9 @@ export class Message {
         }
         if (!("assistant_message_extra" in $$source)) {
             this["assistant_message_extra"] = null;
+        }
+        if (!("sender_person_uuid" in $$source)) {
+            this["sender_person_uuid"] = "";
         }
 
         Object.assign(this, $$source);

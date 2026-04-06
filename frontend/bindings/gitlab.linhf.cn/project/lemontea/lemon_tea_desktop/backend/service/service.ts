@@ -263,6 +263,107 @@ export function ListSkills(): $CancellablePromise<view_models$0.SkillSummary[]> 
     });
 }
 
+/**
+ * OPCClearConversation 清除某个聊天的所有消息（不删除联系人或群聊）
+ */
+export function OPCClearConversation(chatUuid: string): $CancellablePromise<void> {
+    return $Call.ByID(2601657508, chatUuid);
+}
+
+export function OPCCreateGroup(input: view_models$0.OPCGroupInput): $CancellablePromise<view_models$0.OPCGroupView | null> {
+    return $Call.ByID(35429625, input).then(($result: any) => {
+        return $$createType36($result);
+    });
+}
+
+export function OPCCreatePerson(input: view_models$0.OPCPersonInput): $CancellablePromise<view_models$0.OPCPersonView | null> {
+    return $Call.ByID(217156171, input).then(($result: any) => {
+        return $$createType38($result);
+    });
+}
+
+export function OPCDeleteGroup(groupUuid: string): $CancellablePromise<void> {
+    return $Call.ByID(1904850228, groupUuid);
+}
+
+export function OPCDeletePerson(personUuid: string): $CancellablePromise<void> {
+    return $Call.ByID(550074600, personUuid);
+}
+
+export function OPCGetGroup(groupUuid: string): $CancellablePromise<view_models$0.OPCGroupView | null> {
+    return $Call.ByID(1215794833, groupUuid).then(($result: any) => {
+        return $$createType36($result);
+    });
+}
+
+export function OPCGetPerson(personUuid: string): $CancellablePromise<view_models$0.OPCPersonView | null> {
+    return $Call.ByID(3469665795, personUuid).then(($result: any) => {
+        return $$createType38($result);
+    });
+}
+
+/**
+ * OPCGroupChat 群聊：发送消息，agents 自主决定是否回复
+ */
+export function OPCGroupChat(input: view_models$0.OPCGroupCompletionInput): $CancellablePromise<view_models$0.Completions | null> {
+    return $Call.ByID(1083905707, input).then(($result: any) => {
+        return $$createType9($result);
+    });
+}
+
+export function OPCListGroups(): $CancellablePromise<view_models$0.OPCGroupView[]> {
+    return $Call.ByID(1818674966).then(($result: any) => {
+        return $$createType39($result);
+    });
+}
+
+export function OPCListPersons(): $CancellablePromise<view_models$0.OPCPersonView[]> {
+    return $Call.ByID(4240679872).then(($result: any) => {
+        return $$createType40($result);
+    });
+}
+
+/**
+ * OPCPersonChat 人员私聊：发送消息给指定人员，非流式返回完整回复
+ */
+export function OPCPersonChat(input: view_models$0.OPCCompletionInput): $CancellablePromise<view_models$0.Completions | null> {
+    return $Call.ByID(386058529, input).then(($result: any) => {
+        return $$createType9($result);
+    });
+}
+
+export function OPCSearch(keyword: string): $CancellablePromise<[view_models$0.OPCPersonView[], view_models$0.OPCGroupView[]]> {
+    return $Call.ByID(3725378810, keyword).then(($result: any) => {
+        $result[0] = $$createType40($result[0]);
+        $result[1] = $$createType39($result[1]);
+        return $result;
+    });
+}
+
+export function OPCSelectAvatar(): $CancellablePromise<string> {
+    return $Call.ByID(2379289307);
+}
+
+export function OPCTogglePinGroup(groupUuid: string, pinned: boolean): $CancellablePromise<void> {
+    return $Call.ByID(465678536, groupUuid, pinned);
+}
+
+export function OPCTogglePinPerson(personUuid: string, pinned: boolean): $CancellablePromise<void> {
+    return $Call.ByID(1662219716, personUuid, pinned);
+}
+
+export function OPCUpdateGroup(input: view_models$0.OPCGroupInput): $CancellablePromise<view_models$0.OPCGroupView | null> {
+    return $Call.ByID(2536825506, input).then(($result: any) => {
+        return $$createType36($result);
+    });
+}
+
+export function OPCUpdatePerson(input: view_models$0.OPCPersonInput): $CancellablePromise<view_models$0.OPCPersonView | null> {
+    return $Call.ByID(3479873286, input).then(($result: any) => {
+        return $$createType38($result);
+    });
+}
+
 export function OpenFile(path: string): $CancellablePromise<void> {
     return $Call.ByID(639918028, path);
 }
@@ -303,7 +404,7 @@ export function RespondToolApproval(input: data_models$0.ToolApprovalResponse): 
 
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType36($result);
+        return $$createType42($result);
     });
 }
 
@@ -412,5 +513,11 @@ const $$createType31 = view_models$0.PromptFileSummary.createFrom;
 const $$createType32 = $Create.Array($$createType31);
 const $$createType33 = view_models$0.SkillSummary.createFrom;
 const $$createType34 = $Create.Array($$createType33);
-const $$createType35 = data_models$0.File.createFrom;
-const $$createType36 = $Create.Array($$createType35);
+const $$createType35 = view_models$0.OPCGroupView.createFrom;
+const $$createType36 = $Create.Nullable($$createType35);
+const $$createType37 = view_models$0.OPCPersonView.createFrom;
+const $$createType38 = $Create.Nullable($$createType37);
+const $$createType39 = $Create.Array($$createType35);
+const $$createType40 = $Create.Array($$createType37);
+const $$createType41 = data_models$0.File.createFrom;
+const $$createType42 = $Create.Array($$createType41);

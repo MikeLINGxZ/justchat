@@ -18,11 +18,15 @@ export {
   initializeLanguage,
 } from './languageStore';
 
+// 导出OPC store
+export { useOPCStore, initializeOPC } from './opcStore';
+
 // 导入初始化函数
 import { initializeAuth } from './authStore';
 import { useAuthStore } from './authStore';
 import { initializeFontSize, useFontSizeStore } from './fontSizeStore';
 import { initializeLanguage, useLanguageStore } from './languageStore';
+import { initializeOPC } from './opcStore';
 
 // 初始化函数
 export const initializeStores = async () => {
@@ -32,6 +36,8 @@ export const initializeStores = async () => {
   initializeFontSize();
   // 初始化语言设置
   initializeLanguage();
+  // 初始化OPC状态
+  initializeOPC();
 };
 
 // 重置所有store
