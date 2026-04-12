@@ -313,7 +313,7 @@ const enUS = {
       listTitle: 'Skills',
       createTitle: 'Create Skill',
       empty: 'Select a skill from the list',
-      tip: 'Skill content will be injected as prompt into the agent context that uses it.',
+      tip: 'Skills are loaded progressively: the model sees only summaries and loads full content on demand via tool call.',
       listLoadFailed: 'Load Failed',
       listLoadFailedDesc: 'Failed to load skills list. Please try again later.',
       detailLoadFailed: 'Load Failed',
@@ -333,6 +333,9 @@ const enUS = {
       deleteConfirmTitle: 'Delete Skill',
       deleteConfirmContent: 'Are you sure you want to delete this skill? This action cannot be undone.',
       editorHint: 'Supports Markdown formatting for skill content.',
+      importFromFolder: 'Import from Folder',
+      importSuccess: 'Successfully imported {{count}} skills',
+      importEmpty: 'No importable skill files found',
       form: {
         name: 'Name',
         namePlaceholder: 'Unique identifier (letters, numbers, - and _ only)',
@@ -344,6 +347,8 @@ const enUS = {
         tagsPlaceholder: 'Type and press Enter to add tags',
         content: 'Content',
         contentPlaceholder: 'Enter skill content...',
+        when: 'Trigger Condition',
+        whenPlaceholder: 'Describe when this skill should be loaded, e.g.: when user asks for translation',
       },
       actions: {
         save: 'Save',

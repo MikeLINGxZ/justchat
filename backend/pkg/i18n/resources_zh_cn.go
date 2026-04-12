@@ -3,6 +3,7 @@ package i18n
 var zhCN = map[string]string{
 	"app.window.settings_title":                   "设置",
 	"app.dialog.select_mcp_folder":                "选择 MCP 服务目录",
+	"app.dialog.select_skill_folder":              "选择技能文件夹",
 	"prefs.language.invalid":                      "不支持的语言：{{value}}",
 	"prefs.region.invalid":                        "不支持的地区：{{value}}",
 	"errors.internal":                             "系统内部错误，请稍后重试",
@@ -39,6 +40,8 @@ var zhCN = map[string]string{
 	"tool.file.description":                       "读取、写入或删除文件。",
 	"tool.shell.name":                             "Shell 工具",
 	"tool.shell.description":                      "执行一次非交互式 shell 命令。",
+	"tool.load_skill.name":                        "加载技能",
+	"tool.load_skill.description":                 "按名称加载技能的完整内容。当用户请求匹配某个可用技能的触发条件时，调用此工具获取完整指令后再回复。",
 	"tool.file.operation.read":                    "读取",
 	"tool.file.operation.write":                   "写入",
 	"tool.file.operation.delete":                  "删除",

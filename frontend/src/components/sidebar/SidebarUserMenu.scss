@@ -198,6 +198,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
         padding: 10px 16px;
         cursor: pointer;
         transition: background-color 0.2s ease;
@@ -215,6 +216,7 @@
           align-items: center;
           gap: 10px;
           flex: 1;
+          white-space: nowrap;
 
           .anticon {
             font-size: 14px;
@@ -224,6 +226,17 @@
           span {
             font-size: var(--font-size-sm);
             color: var(--text-color);
+          }
+
+          .beta-tag {
+            flex-shrink: 0;
+            font-size: 10px;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            padding: 0 4px;
+            line-height: 16px;
+            cursor: default;
           }
         }
 

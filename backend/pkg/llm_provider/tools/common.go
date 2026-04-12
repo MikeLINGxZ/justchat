@@ -27,6 +27,7 @@ func init() {
 	ToolRouter.RegisterTool(&Block{})
 	ToolRouter.RegisterTool(&FileTool{})
 	ToolRouter.RegisterTool(&ShellTool{})
+	ToolRouter.RegisterTool(&LoadSkillTool{})
 }
 
 var ToolRouter *router

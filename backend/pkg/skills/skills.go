@@ -14,6 +14,7 @@ import (
 type SkillMeta struct {
 	Name        string   `yaml:"name" json:"name"`
 	Description string   `yaml:"description" json:"description"`
+	When        string   `yaml:"when" json:"when"`
 	Version     string   `yaml:"version" json:"version"`
 	Tags        []string `yaml:"tags" json:"tags"`
 }
@@ -174,4 +175,16 @@ func renderSkillFile(meta SkillMeta, body string) ([]byte, error) {
 	buf.WriteString("\n")
 
 	return []byte(buf.String()), nil
+}
+
+// ParseSkillContent parses raw bytes as a skill file (frontmatter + body).
+func ParseSkillContent(raw []byte) (*Skill, error) {
+	meta, body, err := parseFrontmatter(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &Skill{
+		SkillMeta: meta,
+		Content:   body,
+	}, nil
 }

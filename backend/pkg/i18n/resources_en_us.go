@@ -3,6 +3,7 @@ package i18n
 var enUS = map[string]string{
 	"app.window.settings_title":                   "Settings",
 	"app.dialog.select_mcp_folder":                "Select MCP Service Folder",
+	"app.dialog.select_skill_folder":              "Select Skills Folder",
 	"prefs.language.invalid":                      "Unsupported language: {{value}}",
 	"prefs.region.invalid":                        "Unsupported region: {{value}}",
 	"errors.internal":                             "Internal error. Please try again later.",
@@ -39,6 +40,8 @@ var enUS = map[string]string{
 	"tool.file.description":                       "Read, write, or delete files.",
 	"tool.shell.name":                             "Shell Tool",
 	"tool.shell.description":                      "Run a non-interactive shell command.",
+	"tool.load_skill.name":                        "Load Skill",
+	"tool.load_skill.description":                 "Load the full content of a skill by name. Call this tool when the user's request matches an available skill's trigger condition, then follow the loaded instructions.",
 	"tool.file.operation.read":                    "read",
 	"tool.file.operation.write":                   "write",
 	"tool.file.operation.delete":                  "delete",

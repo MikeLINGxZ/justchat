@@ -235,6 +235,15 @@ export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     });
 }
 
+/**
+ * ImportSkillsFromFolder scans a folder for .md skill files and imports them.
+ */
+export function ImportSkillsFromFolder(folderPath: string): $CancellablePromise<view_models$0.SkillSummary[]> {
+    return $Call.ByID(376506509, folderPath).then(($result: any) => {
+        return $$createType30($result);
+    });
+}
+
 export function IsInitialized(): $CancellablePromise<boolean> {
     return $Call.ByID(2734665048);
 }
@@ -244,13 +253,13 @@ export function IsInitialized(): $CancellablePromise<boolean> {
  */
 export function ListAgents(): $CancellablePromise<view_models$0.AgentSummary[]> {
     return $Call.ByID(1996549960).then(($result: any) => {
-        return $$createType30($result);
+        return $$createType32($result);
     });
 }
 
 export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileSummary[]> {
     return $Call.ByID(3509338483).then(($result: any) => {
-        return $$createType32($result);
+        return $$createType34($result);
     });
 }
 
@@ -259,7 +268,7 @@ export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileS
  */
 export function ListSkills(): $CancellablePromise<view_models$0.SkillSummary[]> {
     return $Call.ByID(1487878748).then(($result: any) => {
-        return $$createType34($result);
+        return $$createType30($result);
     });
 }
 
@@ -412,6 +421,13 @@ export function SelectMCPFolder(): $CancellablePromise<string> {
     return $Call.ByID(2243094534);
 }
 
+/**
+ * SelectSkillFolder opens a folder selection dialog for importing skills.
+ */
+export function SelectSkillFolder(): $CancellablePromise<string> {
+    return $Call.ByID(2018289455);
+}
+
 export function StopCompletions(messageKey: string): $CancellablePromise<void> {
     return $Call.ByID(115959129, messageKey);
 }
@@ -507,11 +523,11 @@ const $$createType25 = $Create.Nullable($$createType24);
 const $$createType26 = view_models$0.SupportProvider.createFrom;
 const $$createType27 = $Create.Array($$createType26);
 const $$createType28 = $Create.Array($$createType0);
-const $$createType29 = view_models$0.AgentSummary.createFrom;
+const $$createType29 = view_models$0.SkillSummary.createFrom;
 const $$createType30 = $Create.Array($$createType29);
-const $$createType31 = view_models$0.PromptFileSummary.createFrom;
+const $$createType31 = view_models$0.AgentSummary.createFrom;
 const $$createType32 = $Create.Array($$createType31);
-const $$createType33 = view_models$0.SkillSummary.createFrom;
+const $$createType33 = view_models$0.PromptFileSummary.createFrom;
 const $$createType34 = $Create.Array($$createType33);
 const $$createType35 = view_models$0.OPCGroupView.createFrom;
 const $$createType36 = $Create.Nullable($$createType35);

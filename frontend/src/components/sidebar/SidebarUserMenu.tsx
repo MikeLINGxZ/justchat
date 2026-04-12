@@ -203,6 +203,7 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                                             <div className="submenu-item-content">
                                                 <TeamOutlined />
                                                 <span>{t('opc.sidebar.modeOPC')}</span>
+                                                <span className="beta-tag" title="功能开发中，未完全可用">beta</span>
                                             </div>
                                             {currentMode === 'opc' && <CheckOutlined className="check-icon" />}
                                         </div>

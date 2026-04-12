@@ -927,6 +927,7 @@ export class Provider {
 export class SkillDetail {
     "name": string;
     "description": string;
+    "when": string;
     "version": string;
     "tags": string[];
     "content": string;
@@ -938,6 +939,9 @@ export class SkillDetail {
         }
         if (!("description" in $$source)) {
             this["description"] = "";
+        }
+        if (!("when" in $$source)) {
+            this["when"] = "";
         }
         if (!("version" in $$source)) {
             this["version"] = "";
@@ -956,10 +960,10 @@ export class SkillDetail {
      * Creates a new SkillDetail instance from a string or object.
      */
     static createFrom($$source: any = {}): SkillDetail {
-        const $$createField3_0 = $$createType0;
+        const $$createField4_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tags" in $$parsedSource) {
-            $$parsedSource["tags"] = $$createField3_0($$parsedSource["tags"]);
+            $$parsedSource["tags"] = $$createField4_0($$parsedSource["tags"]);
         }
         return new SkillDetail($$parsedSource as Partial<SkillDetail>);
     }
@@ -968,6 +972,7 @@ export class SkillDetail {
 export class SkillSummary {
     "name": string;
     "description": string;
+    "when": string;
     "version": string;
     "tags": string[];
 
@@ -978,6 +983,9 @@ export class SkillSummary {
         }
         if (!("description" in $$source)) {
             this["description"] = "";
+        }
+        if (!("when" in $$source)) {
+            this["when"] = "";
         }
         if (!("version" in $$source)) {
             this["version"] = "";
@@ -993,10 +1001,10 @@ export class SkillSummary {
      * Creates a new SkillSummary instance from a string or object.
      */
     static createFrom($$source: any = {}): SkillSummary {
-        const $$createField3_0 = $$createType0;
+        const $$createField4_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tags" in $$parsedSource) {
-            $$parsedSource["tags"] = $$createField3_0($$parsedSource["tags"]);
+            $$parsedSource["tags"] = $$createField4_0($$parsedSource["tags"]);
         }
         return new SkillSummary($$parsedSource as Partial<SkillSummary>);
     }

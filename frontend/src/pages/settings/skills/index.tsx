@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  Dropdown,
   Empty,
   Form,
   Input,
@@ -18,6 +19,7 @@ import {
 import {
   DeleteOutlined,
   FileTextOutlined,
+  FolderOpenOutlined,
   PlusOutlined,
   RollbackOutlined,
   SaveOutlined,
@@ -179,6 +181,7 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
       const input = new SkillDetail({
         name: detail.name,
         description: detail.description,
+        when: detail.when || '',
         version: detail.version,
         tags: detail.tags,
         content,
@@ -244,6 +247,7 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
       const input = new SkillDetail({
         name: values.name,
         description: values.description,
+        when: values.when || '',
         version: values.version || '1.0',
         tags: values.tags || [],
         content: values.content,
@@ -267,18 +271,52 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
     }
   };
 
+  const handleImportFromFolder = async () => {
+    try {
+      const folderPath = await Service.SelectSkillFolder();
+      if (!folderPath) return;
+
+      const imported = await Service.ImportSkillsFromFolder(folderPath);
+      if (imported && imported.length > 0) {
+        message.success(t('settings.skills.importSuccess', { count: imported.length }));
+        await refreshList(imported[0].name);
+        setActiveName(imported[0].name);
+      } else {
+        message.info(t('settings.skills.importEmpty'));
+      }
+    } catch (error) {
+      console.error('导入技能失败:', error);
+      message.error(t('settings.skills.createFailed'));
+    }
+  };
+
   const renderSkillList = () => (
     <Card
       className={styles.listCard}
       title={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span>{t('settings.skills.listTitle')}</span>
-          <Button
-            type="text"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          />
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'create',
+                  icon: <PlusOutlined />,
+                  label: t('settings.skills.actions.create'),
+                  onClick: () => setCreateModalOpen(true),
+                },
+                {
+                  key: 'import',
+                  icon: <FolderOpenOutlined />,
+                  label: t('settings.skills.importFromFolder'),
+                  onClick: () => void handleImportFromFolder(),
+                },
+              ],
+            }}
+            trigger={['click']}
+          >
+            <Button type="text" size="small" icon={<PlusOutlined />} />
+          </Dropdown>
         </div>
       }
     >
@@ -383,6 +421,11 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
               )}
             </div>
             <Paragraph className={styles.editorDescription}>{detail.description}</Paragraph>
+            {detail.when && (
+              <Paragraph type="secondary" style={{ marginBottom: 4 }}>
+                {t('settings.skills.form.when')}: {detail.when}
+              </Paragraph>
+            )}
             <Text type="secondary">{detail.version}</Text>
             {detail.tags && detail.tags.length > 0 && (
               <div className={styles.skillItemTags} style={{ marginTop: 8 }}>
@@ -486,6 +529,12 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
           rules={[{ required: true }]}
         >
           <Input placeholder={t('settings.skills.form.descriptionPlaceholder')} />
+        </Form.Item>
+        <Form.Item
+          name="when"
+          label={t('settings.skills.form.when')}
+        >
+          <Input placeholder={t('settings.skills.form.whenPlaceholder')} />
         </Form.Item>
         <Form.Item name="version" label={t('settings.skills.form.version')} initialValue="1.0">
           <Input />

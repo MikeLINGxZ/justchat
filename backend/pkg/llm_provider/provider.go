@@ -62,13 +62,18 @@ func NewToolCallingChatModel(ctx context.Context, providerModel wrapper_models.P
 }
 
 // NewLlmProvider 创建 LLM 供应商，tools 为可选参数，传入时会将工具绑定到模型以支持 tool calling
-func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware, promptSet prompts.PromptSet) (*Provider, error) {
+func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware, promptSet prompts.PromptSet, skillSummary string) (*Provider, error) {
 	chatModel, err := NewToolCallingChatModel(ctx, providerModel)
 	if err != nil {
 		return nil, err
 	}
 
-	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools, toolMiddleware, promptSet.MainAgentSystem)
+	instruction := promptSet.MainAgentSystem
+	if skillSummary != "" {
+		instruction = instruction + "\n\n" + skillSummary
+	}
+
+	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools, toolMiddleware, instruction)
 	if err != nil {
 		return nil, err
 	}

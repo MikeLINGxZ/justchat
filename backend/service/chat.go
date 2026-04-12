@@ -172,12 +172,19 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 			customToolCleanups = append(customToolCleanups, customCleanup)
 		}
 
-		// 解析 skill 内容并注入 prompt
+		// 如果 agent 有 skill，添加 load_skill 工具
+		if len(customDef.SkillIDs) > 0 {
+			if loadSkillTool, ok := llmtools.ToolRouter.GetToolByID("load_skill"); ok {
+				customTools = append(customTools, loadSkillTool.Tool())
+			}
+		}
+
+		// 解析 skill 摘要并注入 prompt（渐进注入）
 		instruction := customDef.PromptText
 		if len(customDef.SkillIDs) > 0 {
-			skillContent := skills.ResolveSkillContents(customDef.SkillIDs)
-			if skillContent != "" {
-				instruction = instruction + "\n\n" + skillContent
+			skillSummary := skills.ResolveSkillSummaries(customDef.SkillIDs)
+			if skillSummary != "" {
+				instruction = instruction + "\n\n" + skillSummary
 			}
 		}
 
@@ -308,8 +315,17 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 		}
 	}
 
+	// 构建主 Agent 的 skill 摘要（渐进注入）
+	mainSkillSummary := skills.ResolveAllSkillSummaries()
+
 	directTools := append([]tool.BaseTool{newWorkflowHandoffTool(runner.setWorkflowHandoff)}, agentTools...)
-	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, directTools, toolMiddleware, localizedPrompts)
+
+	// 始终添加 load_skill 工具以支持渐进式技能注入
+	if loadSkillTool, ok := llmtools.ToolRouter.GetToolByID("load_skill"); ok {
+		directTools = append(directTools, loadSkillTool.Tool())
+	}
+
+	provider, err := llm_provider.NewLlmProvider(ctx, *providerModel, subAgents, directTools, toolMiddleware, localizedPrompts, mainSkillSummary)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -460,7 +476,7 @@ func (s *Service) GenChatTitle(ctx context.Context, chatUuid string, modelId uin
 
 func (s *Service) genChatTitle(ctx context.Context, chatUuid string, providerModel wrapper_models.ProviderModel, update bool) (string, error) {
 	// 新建供应商
-	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{}, compose.ToolMiddleware{}, s.localizedPromptSet())
+	provider, err := llm_provider.NewLlmProvider(ctx, providerModel, []adk.Agent{}, []tool.BaseTool{}, compose.ToolMiddleware{}, s.localizedPromptSet(), "")
 	if err != nil {
 		return "", err
 	}

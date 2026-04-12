@@ -2,10 +2,13 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/i18n"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/skills"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
@@ -28,6 +31,7 @@ func (s *Service) ListSkills() ([]view_models.SkillSummary, error) {
 		result = append(result, view_models.SkillSummary{
 			Name:        m.Name,
 			Description: m.Description,
+			When:        m.When,
 			Version:     m.Version,
 			Tags:        tags,
 		})
@@ -51,6 +55,7 @@ func (s *Service) GetSkill(name string) (*view_models.SkillDetail, error) {
 		SkillSummary: view_models.SkillSummary{
 			Name:        skill.Name,
 			Description: skill.Description,
+			When:        skill.When,
 			Version:     skill.Version,
 			Tags:        tags,
 		},
@@ -108,6 +113,70 @@ func (s *Service) DeleteSkill(name string) error {
 	return nil
 }
 
+// SelectSkillFolder opens a folder selection dialog for importing skills.
+func (s *Service) SelectSkillFolder() (string, error) {
+	path, err := s.app.Dialog.OpenFile().
+		CanChooseDirectories(true).
+		CanChooseFiles(false).
+		SetTitle(i18n.TCurrent("app.dialog.select_skill_folder", nil)).
+		PromptForSingleSelection()
+	if err != nil {
+		return "", ierror.NewError(err)
+	}
+	return path, nil
+}
+
+// ImportSkillsFromFolder scans a folder for .md skill files and imports them.
+func (s *Service) ImportSkillsFromFolder(folderPath string) ([]view_models.SkillSummary, error) {
+	if folderPath == "" {
+		return nil, ierror.NewError(fmt.Errorf("folder path is empty"))
+	}
+
+	entries, err := os.ReadDir(folderPath)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+
+	var imported []view_models.SkillSummary
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+
+		raw, err := os.ReadFile(filepath.Join(folderPath, entry.Name()))
+		if err != nil {
+			continue
+		}
+
+		skill, err := skills.ParseSkillContent(raw)
+		if err != nil {
+			continue
+		}
+
+		if !skillNamePattern.MatchString(skill.Name) || skills.SkillExists(skill.Name) {
+			continue
+		}
+
+		if err := skills.SaveSkill(*skill); err != nil {
+			continue
+		}
+
+		tags := skill.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+		imported = append(imported, view_models.SkillSummary{
+			Name:        skill.Name,
+			Description: skill.Description,
+			When:        skill.When,
+			Version:     skill.Version,
+			Tags:        tags,
+		})
+	}
+
+	return imported, nil
+}
+
 func validateSkillInput(input view_models.SkillDetail) error {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
@@ -134,6 +203,7 @@ func viewModelToSkill(input view_models.SkillDetail) skills.Skill {
 		SkillMeta: skills.SkillMeta{
 			Name:        strings.TrimSpace(input.Name),
 			Description: strings.TrimSpace(input.Description),
+			When:        strings.TrimSpace(input.When),
 			Version:     strings.TrimSpace(input.Version),
 			Tags:        tags,
 		},

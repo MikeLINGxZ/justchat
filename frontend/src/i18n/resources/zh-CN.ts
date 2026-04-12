@@ -313,7 +313,7 @@ const zhCN = {
       listTitle: '技能列表',
       createTitle: '创建技能',
       empty: '请从左侧选择一个技能',
-      tip: '技能内容将作为提示词注入到使用该技能的智能体上下文中。',
+      tip: '技能将按需加载：系统仅向模型展示技能摘要，模型在需要时调用工具获取完整内容。',
       listLoadFailed: '列表加载失败',
       listLoadFailedDesc: '加载技能列表失败，请稍后重试。',
       detailLoadFailed: '读取技能失败',
@@ -333,6 +333,9 @@ const zhCN = {
       deleteConfirmTitle: '删除技能',
       deleteConfirmContent: '确定要删除这个技能吗？此操作无法撤销。',
       editorHint: '支持 Markdown 格式编写技能内容。',
+      importFromFolder: '从文件夹导入',
+      importSuccess: '成功导入 {{count}} 个技能',
+      importEmpty: '未找到可导入的技能文件',
       form: {
         name: '名称',
         namePlaceholder: '唯一标识，仅支持字母、数字、-、_',
@@ -344,6 +347,8 @@ const zhCN = {
         tagsPlaceholder: '输入标签后按回车添加',
         content: '内容',
         contentPlaceholder: '输入技能内容...',
+        when: '触发条件',
+        whenPlaceholder: '描述何时应加载此技能，例如：用户要求翻译内容时',
       },
       actions: {
         save: '保存',
