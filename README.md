@@ -65,11 +65,19 @@ Lemon Tea Desktop is a cross-platform AI desktop client built with Wails v3, Go,
 - Remove imported MCP tools.
 - MCP server process management.
 
+### Memory System
+
+- Automatic memory encoding from conversations, driven by LLM decisions.
+- Multi-phase lifecycle: encoding → consolidation → forgetting → contradiction detection.
+- Hybrid search combining keyword and semantic retrieval.
+- Configurable embedding model engine.
+
 ### Skill System
 
 - Create, edit, and delete custom skills (Markdown with YAML frontmatter).
 - Skill tagging for organization.
 - Bind skills to custom agents.
+- Import skills from a local folder.
 
 ### Prompt Management
 
@@ -83,13 +91,23 @@ Lemon Tea Desktop is a cross-platform AI desktop client built with Wails v3, Go,
 - Language-specific model prompts.
 - Dynamic language switching.
 
+### Plugin System
+
+- TypeScript-based extension host for running plugins in a separate process.
+- Hook chain for intercepting chat and message operations.
+- Agent bridge: plugins can define agents with custom tools.
+- Tool bridge: plugins can expose tools to the main agent system.
+- RPC-based communication between the app and plugins.
+
 ### Settings
 
 - Provider configuration: API keys, base URLs, enable/disable.
 - Agent management: view system agents, create/edit custom agents.
 - Skill management: browse, create, edit, delete.
 - Prompt management: view, edit, reset.
+- Memory settings: toggle memory, configure embedding engine.
 - General: font size, language.
+- Experimental features lab.
 - First-launch onboarding wizard.
 
 ### Cross-Platform
@@ -145,21 +163,29 @@ Using Wails directly:
 wails3 dev -config ./build/config.yml
 ```
 
-Or with Task:
+Or with dev:
 
 ```bash
-task dev
+wails3 dev
 ```
 
 ## Project Structure
 
 ```text
 .
-├── backend/     Go services, storage, provider adapters, agent workflow logic
-├── frontend/    React UI, chat pages, settings pages, components
-├── build/       Wails build and packaging configuration
-├── docs/        README assets
-└── main.go      Desktop app entry
+├── backend/          Go services, storage, provider adapters, agent workflow logic
+│   ├── agents/       Memory system (encoding, search, lifecycle)
+│   ├── models/       Data models, view models, wrapper models
+│   ├── pkg/          LLM providers, agents, tools, skills, i18n, task execution
+│   ├── plugin/       Plugin manager, hook chain, agent/tool bridge, RPC
+│   ├── service/      Core service layer (chat, orchestration, MCP, memory)
+│   ├── storage/      GORM/SQLite persistence
+│   └── utils/        Event system, error handling
+├── frontend/         React UI, chat pages, settings pages, components
+├── extension-host/   TypeScript plugin execution environment
+├── build/            Wails build and packaging configuration
+├── docs/             README assets
+└── main.go           Desktop app entry
 ```
 
 ## License

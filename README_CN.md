@@ -65,11 +65,19 @@ Lemon Tea Desktop 是一个基于 Wails v3、Go、React 和 TypeScript 构建的
 - 删除已导入的 MCP 工具。
 - MCP Server 进程管理。
 
+### 记忆系统
+
+- 由 LLM 自主决定从对话中提取和编码记忆。
+- 多阶段生命周期管理：编码 → 整合 → 遗忘 → 矛盾检测。
+- 混合检索，结合关键词搜索与语义搜索。
+- 支持配置嵌入模型引擎。
+
 ### 技能系统
 
 - 支持创建、编辑、删除自定义技能（Markdown + YAML frontmatter 格式）。
 - 支持技能标签分类管理。
 - 支持将技能绑定到自定义 Agent。
+- 支持从本地目录批量导入技能。
 
 ### 提示词管理
 
@@ -83,13 +91,23 @@ Lemon Tea Desktop 是一个基于 Wails v3、Go、React 和 TypeScript 构建的
 - 模型提示词多语言适配。
 - 支持动态切换语言。
 
+### 插件系统
+
+- 基于 TypeScript 的扩展宿主，在独立进程中运行插件。
+- Hook 链机制，可拦截聊天和消息操作。
+- Agent 桥接：插件可定义自带工具的 Agent。
+- 工具桥接：插件可向主 Agent 系统暴露工具。
+- 基于 RPC 的应用与插件间通信。
+
 ### 设置
 
 - 供应商配置：API Key、接口地址、启用/禁用。
 - Agent 管理：查看系统 Agent、创建/编辑自定义 Agent。
 - 技能管理：浏览、创建、编辑、删除。
 - 提示词管理：查看、编辑、重置。
+- 记忆设置：开关记忆功能、配置嵌入引擎。
 - 通用设置：字体大小、语言。
+- 实验室功能。
 - 首次启动引导向导。
 
 ### 跨平台
@@ -145,21 +163,29 @@ cd ..
 wails3 dev -config ./build/config.yml
 ```
 
-或使用 Task：
+或使用 dev：
 
 ```bash
-task dev
+wails3 dev
 ```
 
 ## 项目结构
 
 ```text
 .
-├── backend/     Go 服务、存储层、模型供应商适配、Agent 工作流逻辑
-├── frontend/    React 界面、聊天页、设置页、通用组件
-├── build/       Wails 构建与打包配置
-├── docs/        README 资源文件
-└── main.go      桌面应用入口
+├── backend/          Go 服务、存储层、模型供应商适配、Agent 工作流逻辑
+│   ├── agents/       记忆系统（编码、检索、生命周期）
+│   ├── models/       数据模型、视图模型、包装模型
+│   ├── pkg/          LLM 供应商、Agent、工具、技能、国际化、任务执行
+│   ├── plugin/       插件管理、Hook 链、Agent/工具桥接、RPC
+│   ├── service/      核心服务层（聊天、编排、MCP、记忆）
+│   ├── storage/      GORM/SQLite 持久化
+│   └── utils/        事件系统、错误处理
+├── frontend/         React 界面、聊天页、设置页、通用组件
+├── extension-host/   TypeScript 插件执行环境
+├── build/            Wails 构建与打包配置
+├── docs/             README 资源文件
+└── main.go           桌面应用入口
 ```
 
 ## 许可证
