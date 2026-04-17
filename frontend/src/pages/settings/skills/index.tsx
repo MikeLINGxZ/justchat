@@ -5,10 +5,8 @@ import {
   Card,
   Dropdown,
   Empty,
-  Form,
   Input,
   Modal,
-  Select,
   Skeleton,
   Space,
   Spin,
@@ -24,6 +22,7 @@ import {
   RollbackOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
+import { Events } from '@wailsio/runtime';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { useTranslation } from 'react-i18next';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
@@ -54,9 +53,6 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
   const [detailError, setDetailError] = useState('');
   const [isMobile, setIsMobile] = useState(() => isMobileDevice());
   const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [createForm] = Form.useForm();
 
   useEffect(() => {
     const handleResize = () => {
@@ -240,36 +236,24 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
     });
   };
 
-  const handleCreate = async () => {
-    try {
-      const values = await createForm.validateFields();
-      setCreating(true);
-      const input = new SkillDetail({
-        name: values.name,
-        description: values.description,
-        when: values.when || '',
-        version: values.version || '1.0',
-        tags: values.tags || [],
-        content: values.content,
-      });
-      const result = await Service.CreateSkill(input);
-      if (result) {
-        message.success(t('settings.skills.createSuccess'));
-        setCreateModalOpen(false);
-        createForm.resetFields();
-        setActiveName(result.name);
-        await refreshList(result.name);
-      }
-    } catch (error) {
-      if ((error as { errorFields?: unknown }).errorFields) {
-        return;
-      }
-      console.error('创建技能失败:', error);
-      message.error(t('settings.skills.createFailed'));
-    } finally {
-      setCreating(false);
-    }
+  const handleOpenCreateWindow = () => {
+    void Service.OpenAddSkillWindow();
   };
+
+  useEffect(() => {
+    const cancel = Events.On('settings:skills:changed', (event: any) => {
+      const newName = event?.data?.name as string | undefined;
+      void (async () => {
+        await refreshList(newName);
+        if (newName) setActiveName(newName);
+      })();
+    });
+    return () => {
+      cancel?.();
+      Events.Off('settings:skills:changed');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleImportFromFolder = async () => {
     try {
@@ -303,7 +287,7 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
                   key: 'create',
                   icon: <PlusOutlined />,
                   label: t('settings.skills.actions.create'),
-                  onClick: () => setCreateModalOpen(true),
+                  onClick: handleOpenCreateWindow,
                 },
                 {
                   key: 'import',
@@ -496,63 +480,6 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
     <Card className={styles.editorCard}>{renderEditorBody()}</Card>
   );
 
-  const renderCreateModal = () => (
-    <Modal
-      title={t('settings.skills.createTitle')}
-      open={createModalOpen}
-      onCancel={() => {
-        setCreateModalOpen(false);
-        createForm.resetFields();
-      }}
-      onOk={() => void handleCreate()}
-      confirmLoading={creating}
-      okText={t('settings.skills.actions.create')}
-      destroyOnClose
-    >
-      <Form form={createForm} layout="vertical" preserve={false}>
-        <Form.Item
-          name="name"
-          label={t('settings.skills.form.name')}
-          rules={[
-            { required: true },
-            {
-              pattern: /^[a-zA-Z0-9_-]+$/,
-              message: t('settings.skills.form.nameInvalid'),
-            },
-          ]}
-        >
-          <Input placeholder={t('settings.skills.form.namePlaceholder')} />
-        </Form.Item>
-        <Form.Item
-          name="description"
-          label={t('settings.skills.form.description')}
-          rules={[{ required: true }]}
-        >
-          <Input placeholder={t('settings.skills.form.descriptionPlaceholder')} />
-        </Form.Item>
-        <Form.Item
-          name="when"
-          label={t('settings.skills.form.when')}
-        >
-          <Input placeholder={t('settings.skills.form.whenPlaceholder')} />
-        </Form.Item>
-        <Form.Item name="version" label={t('settings.skills.form.version')} initialValue="1.0">
-          <Input />
-        </Form.Item>
-        <Form.Item name="tags" label={t('settings.skills.form.tags')}>
-          <Select mode="tags" placeholder={t('settings.skills.form.tagsPlaceholder')} />
-        </Form.Item>
-        <Form.Item
-          name="content"
-          label={t('settings.skills.form.content')}
-          rules={[{ required: true }]}
-        >
-          <TextArea rows={6} placeholder={t('settings.skills.form.contentPlaceholder')} />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-
   return (
     <div className={`${styles.skillSettings} ${className || ''}`}>
       {isMobile ? (
@@ -577,7 +504,6 @@ const SkillSettingsPage: React.FC<SkillSettingsPageProps> = ({ className }) => {
           <div className={styles.editorColumn}>{renderEditor()}</div>
         </div>
       )}
-      {renderCreateModal()}
     </div>
   );
 };

@@ -15,6 +15,7 @@ export {
     MemoryListQuery,
     MemoryListResponse,
     MemoryStats,
+    MemoryUpdateInput,
     Message,
     MessageList,
     Model,

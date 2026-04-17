@@ -63,6 +63,13 @@ export function ChatMessages(chatUuid: string, offset: number, limit: number): $
 }
 
 /**
+ * CloseFormWindow closes a form window by name. Used by form pages to self-close after submit.
+ */
+export function CloseFormWindow(name: string): $CancellablePromise<void> {
+    return $Call.ByID(1541477940, name);
+}
+
+/**
  * CollectionChat 收藏/取消收藏对话
  */
 export function CollectionChat(chatUuid: string, isCollection: boolean): $CancellablePromise<void> {
@@ -475,6 +482,26 @@ export function OPCUpdatePerson(input: view_models$0.OPCPersonInput): $Cancellab
     });
 }
 
+export function OpenAddAgentWindow(): $CancellablePromise<void> {
+    return $Call.ByID(1848431590);
+}
+
+export function OpenAddProviderWindow(): $CancellablePromise<void> {
+    return $Call.ByID(3698690788);
+}
+
+export function OpenAddSkillWindow(): $CancellablePromise<void> {
+    return $Call.ByID(3423520422);
+}
+
+/**
+ * OpenEditMemoryWindow opens a per-ID singleton window for editing a memory record.
+ * Multiple memories can be edited in parallel; reopening the same id focuses the existing window.
+ */
+export function OpenEditMemoryWindow(id: number): $CancellablePromise<void> {
+    return $Call.ByID(957739905, id);
+}
+
 export function OpenFile(path: string): $CancellablePromise<void> {
     return $Call.ByID(639918028, path);
 }
@@ -579,6 +606,15 @@ export function UpdateCustomAgent(input: view_models$0.CustomAgentInput): $Cance
 
 export function UpdateMCPToolEnabled(toolID: string, enabled: boolean): $CancellablePromise<void> {
     return $Call.ByID(2043009872, toolID, enabled);
+}
+
+/**
+ * UpdateMemory 编辑记忆并在可用时自动重建 embedding。
+ */
+export function UpdateMemory(id: number, input: view_models$0.MemoryUpdateInput): $CancellablePromise<view_models$0.Memory | null> {
+    return $Call.ByID(2392322548, id, input).then(($result: any) => {
+        return $$createType27($result);
+    });
 }
 
 export function UpdatePromptFile(name: string, content: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {

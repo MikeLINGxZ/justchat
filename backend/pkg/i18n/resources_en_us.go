@@ -2,6 +2,10 @@ package i18n
 
 var enUS = map[string]string{
 	"app.window.settings_title":                   "Settings",
+	"app.window.form_provider_title":              "Add Provider",
+	"app.window.form_agent_title":                 "Add Agent",
+	"app.window.form_skill_title":                 "Add Skill",
+	"app.window.form_memory_title":                "Edit Memory",
 	"app.dialog.select_mcp_folder":                "Select MCP Service Folder",
 	"app.dialog.select_skill_folder":              "Select Skills Folder",
 	"prefs.language.invalid":                      "Unsupported language: {{value}}",

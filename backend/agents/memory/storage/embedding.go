@@ -25,7 +25,7 @@ func (s *Storage) AutoMigrateEmbeddings() error {
 	return s.sqliteDb.AutoMigrate(&MemoryEmbedding{})
 }
 
-// SaveEmbedding 保存或更新一条记忆的嵌入向量。
+// SaveEmbedding 保存或更新一条记忆的嵌入向量，并回写 Memory.EmbeddingID。
 func (s *Storage) SaveEmbedding(ctx context.Context, memoryID uint, vector []float32, modelName string) error {
 	blob := float32sToBytes(vector)
 	emb := MemoryEmbedding{
@@ -34,10 +34,18 @@ func (s *Storage) SaveEmbedding(ctx context.Context, memoryID uint, vector []flo
 		ModelName:  modelName,
 		Dimensions: len(vector),
 	}
-	return s.sqliteDb.WithContext(ctx).
+	if err := s.sqliteDb.WithContext(ctx).
 		Where("memory_id = ?", memoryID).
 		Assign(emb).
-		FirstOrCreate(&emb).Error
+		FirstOrCreate(&emb).Error; err != nil {
+		return err
+	}
+
+	// 回写 Memory.EmbeddingID，使前端能判断该记忆已向量化
+	return s.sqliteDb.WithContext(ctx).
+		Table("memories").
+		Where("id = ?", memoryID).
+		Update("embedding_id", emb.ID).Error
 }
 
 // EmbeddingEntry 用于向量检索的缓存条目。
@@ -88,6 +96,16 @@ func (s *Storage) GetMemoryIDsWithoutEmbedding(ctx context.Context, limit int) (
 			 LIMIT ?`, limit).
 		Scan(&ids).Error
 	return ids, err
+}
+
+// RepairEmbeddingIDs 修复历史数据：将已有 embedding 但 memories.embedding_id 为空的记忆回写关联。
+func (s *Storage) RepairEmbeddingIDs(ctx context.Context) error {
+	return s.sqliteDb.WithContext(ctx).Exec(
+		`UPDATE memories SET embedding_id = (
+			SELECT e.id FROM memory_embeddings e WHERE e.memory_id = memories.id LIMIT 1
+		) WHERE embedding_id IS NULL AND EXISTS (
+			SELECT 1 FROM memory_embeddings e WHERE e.memory_id = memories.id
+		)`).Error
 }
 
 // ---- 序列化工具 ----

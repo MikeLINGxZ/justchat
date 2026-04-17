@@ -1,8 +1,28 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Input, Button, Tag, Empty, Spin, Popconfirm, Typography, Select, Pagination } from 'antd';
-import { SearchOutlined, DeleteOutlined, UndoOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Input,
+  Button,
+  Tag,
+  Empty,
+  Spin,
+  Popconfirm,
+  Typography,
+  Select,
+  Pagination,
+  Tooltip,
+} from 'antd';
+import {
+  SearchOutlined,
+  DeleteOutlined,
+  UndoOutlined,
+  DeploymentUnitOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
+import { Events } from '@wailsio/runtime';
 import { useTranslation } from 'react-i18next';
+import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { useMemoryStore } from '@/stores/memoryStore';
+import { useLabStore } from '@/stores/labStore';
 import styles from './index.module.scss';
 
 const { Text, Title } = Typography;
@@ -20,12 +40,24 @@ const MemorySettingsPage: React.FC = () => {
     memories, total, stats, isLoading, query,
     setQuery, fetchMemories, fetchStats, deleteMemory, restoreMemory,
   } = useMemoryStore();
+  const { vectorSearchEnabled } = useLabStore();
 
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     fetchMemories();
     fetchStats();
+  }, [fetchMemories, fetchStats]);
+
+  useEffect(() => {
+    const cancel = Events.On('settings:memories:changed', () => {
+      void fetchMemories();
+      void fetchStats();
+    });
+    return () => {
+      cancel?.();
+      Events.Off('settings:memories:changed');
+    };
   }, [fetchMemories, fetchStats]);
 
   const handleSearch = useCallback(() => {
@@ -57,6 +89,10 @@ const MemorySettingsPage: React.FC = () => {
     }
   };
 
+  const handleEdit = useCallback((id: number) => {
+    void Service.OpenEditMemoryWindow(id);
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -64,7 +100,6 @@ const MemorySettingsPage: React.FC = () => {
         <Text type="secondary">{t('settings.memory.description')}</Text>
       </div>
 
-      {/* 统计栏 */}
       {stats && (
         <div className={styles.statsBar}>
           <Tag>{t('settings.memory.statsTotal', { count: stats.total })}</Tag>
@@ -73,7 +108,6 @@ const MemorySettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* 筛选栏 */}
       <div className={styles.filterBar}>
         <Input
           placeholder={t('settings.memory.searchPlaceholder')}
@@ -99,7 +133,6 @@ const MemorySettingsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* 记忆列表 */}
       <Spin spinning={isLoading}>
         {memories.length === 0 ? (
           <Empty description={t('settings.memory.empty')} />
@@ -110,6 +143,11 @@ const MemorySettingsPage: React.FC = () => {
                 <div className={styles.memoryHeader}>
                   <Text strong className={styles.memoryTitle}>
                     {m.summary || t('settings.memory.noTitle')}
+                    {vectorSearchEnabled && m.has_embedding && (
+                      <Tooltip title={t('settings.memory.embedded')}>
+                        <DeploymentUnitOutlined className={styles.embeddingIcon} />
+                      </Tooltip>
+                    )}
                   </Text>
                   <Text type="secondary" className={styles.memoryDate}>
                     {formatDate(m.time_range_start as unknown as string) || formatDate(m.created_at as unknown as string)}
@@ -125,11 +163,21 @@ const MemorySettingsPage: React.FC = () => {
                   {m.location && <Tag color="cyan">{m.location}</Tag>}
                   {m.characters && <Tag color="purple">{m.characters}</Tag>}
                   <Text type="secondary" className={styles.memoryScore}>
-                    {t('settings.memory.trust')}: {(m.trust_score * 100).toFixed(0)}%
+                    {t('settings.memory.trust')}: {(m.trust_score * 100).toFixed(0)}
+                    %
                     {' · '}
-                    {t('settings.memory.importance')}: {(m.importance * 100).toFixed(0)}%
+                    {t('settings.memory.importance')}: {(m.importance * 100).toFixed(0)}
+                    %
                   </Text>
                   <div className={styles.memoryActions}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEdit(m.id)}
+                    >
+                      {t('settings.memory.edit')}
+                    </Button>
                     {m.is_forgotten ? (
                       <Button
                         type="link"
@@ -157,7 +205,6 @@ const MemorySettingsPage: React.FC = () => {
         )}
       </Spin>
 
-      {/* 分页 */}
       {total > query.limit && (
         <div className={styles.pagination}>
           <Pagination
@@ -170,6 +217,7 @@ const MemorySettingsPage: React.FC = () => {
           />
         </div>
       )}
+
     </div>
   );
 };

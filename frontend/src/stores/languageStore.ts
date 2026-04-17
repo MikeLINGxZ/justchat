@@ -22,7 +22,12 @@ function applyLanguage(language: AppLanguage) {
 }
 
 async function persistPreferences(preferences: { language: AppLanguage; region: AppRegion }) {
-  await Service.UpdateAppPreferences(new AppPreferences(preferences));
+  const current = await Service.GetAppPreferences();
+  await Service.UpdateAppPreferences(new AppPreferences({
+    ...current,
+    language: preferences.language,
+    region: preferences.region,
+  }));
 }
 
 export const useLanguageStore = create<LanguageState>()(

@@ -15,6 +15,7 @@ import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS } from '@/stores
 import { useLanguageStore } from '@/stores/languageStore';
 import { useLabStore } from '@/stores/labStore';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
+import { AppPreferences } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import { translateError } from '@/utils/errorHandler';
 import { LANGUAGE_OPTIONS, REGION_OPTIONS } from '@/i18n/types';
 import type { AppLanguage, AppRegion } from '@/i18n/types';
@@ -303,29 +304,101 @@ const LabSettings: React.FC = () => {
     setExpandedSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const saveLabPreferences = async (nextState: {
+    memorySystemEnabled: boolean;
+    vectorSearchEnabled: boolean;
+    embeddingConfig: typeof embeddingConfig;
+  }) => {
+    const current = await Service.GetAppPreferences();
+    await Service.UpdateAppPreferences(new AppPreferences({
+      ...current,
+      memory_system_enabled: nextState.memorySystemEnabled,
+      vector_search_enabled: nextState.vectorSearchEnabled,
+      embedding_provider: nextState.embeddingConfig.provider,
+      embedding_base_url: nextState.embeddingConfig.baseUrl,
+      embedding_api_key: nextState.embeddingConfig.apiKey,
+      embedding_model: nextState.embeddingConfig.model,
+    }));
+  };
+
+  const handleMemorySystemToggle = async (enabled: boolean) => {
+    const previousMemory = memorySystemEnabled;
+    const previousVector = vectorSearchEnabled;
+    const nextVector = enabled ? vectorSearchEnabled : false;
+
+    setMemorySystemEnabled(enabled);
+    if (!enabled && vectorSearchEnabled) {
+      setVectorSearchEnabled(false);
+    }
+
+    try {
+      await saveLabPreferences({
+        memorySystemEnabled: enabled,
+        vectorSearchEnabled: nextVector,
+        embeddingConfig,
+      });
+      if (!enabled && previousVector) {
+        await Service.DisableEmbedding();
+      }
+    } catch (error) {
+      setMemorySystemEnabled(previousMemory);
+      setVectorSearchEnabled(previousVector);
+      message.error(translateError(error, t('settings.saveFailed')));
+    }
+  };
+
   const handleVectorSearchToggle = async (enabled: boolean) => {
+    const previousEnabled = vectorSearchEnabled;
     setVectorSearchEnabled(enabled);
     if (enabled) {
       setExpandedSettings(prev => ({ ...prev, vectorSearch: true }));
       try {
+        await saveLabPreferences({
+          memorySystemEnabled,
+          vectorSearchEnabled: true,
+          embeddingConfig,
+        });
         await Service.ConfigureEmbedding(
           embeddingConfig.provider,
           embeddingConfig.baseUrl,
           embeddingConfig.apiKey,
           embeddingConfig.model,
         );
+        message.success(t('settings.saved'));
       } catch (e) {
         console.error('ConfigureEmbedding failed:', e);
-        setVectorSearchEnabled(false);
+        setVectorSearchEnabled(previousEnabled);
+        await saveLabPreferences({
+          memorySystemEnabled,
+          vectorSearchEnabled: previousEnabled,
+          embeddingConfig,
+        }).catch((persistError) => console.error('Failed to rollback vector search preference:', persistError));
+        message.error(translateError(e, t('settings.saveFailed')));
       }
     } else {
-      Service.DisableEmbedding();
+      try {
+        await saveLabPreferences({
+          memorySystemEnabled,
+          vectorSearchEnabled: false,
+          embeddingConfig,
+        });
+        await Service.DisableEmbedding();
+        message.success(t('settings.saved'));
+      } catch (e) {
+        setVectorSearchEnabled(previousEnabled);
+        message.error(translateError(e, t('settings.saveFailed')));
+      }
     }
   };
 
   const handleEmbeddingConfigSave = async () => {
     if (!vectorSearchEnabled) return;
     try {
+      await saveLabPreferences({
+        memorySystemEnabled,
+        vectorSearchEnabled,
+        embeddingConfig,
+      });
       await Service.ConfigureEmbedding(
         embeddingConfig.provider,
         embeddingConfig.baseUrl,
@@ -379,7 +452,7 @@ const LabSettings: React.FC = () => {
             </div>
             <Switch
               checked={memorySystemEnabled}
-              onChange={setMemorySystemEnabled}
+              onChange={handleMemorySystemToggle}
             />
           </div>
         </div>

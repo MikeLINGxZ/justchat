@@ -121,6 +121,17 @@ func (s *Service) retrieveMemoryContext(ctx context.Context, userMessage string)
 		}
 	}
 
+	// 检索无结果时，兜底返回最重要的记忆。
+	// 处理 "我是谁"、"你知道我什么" 等查询——关键词与记忆内容无文本重叠。
+	if len(memories) == 0 {
+		fallback, err := s.memoryStorage.TopImportantMemories(ctx, 3)
+		if err != nil {
+			logger.Error("memory fallback query error", err)
+			return ""
+		}
+		memories = fallback
+	}
+
 	if len(memories) == 0 {
 		return ""
 	}
@@ -194,7 +205,7 @@ func extractKeywords(message string) []string {
 func formatMemoryContext(memories []memory_models.Memory) string {
 	var lines []string
 	totalLen := 0
-	const maxLen = 1000 // 约 500 tokens
+	const maxLen = 2000 // 约 1000 tokens
 
 	for _, m := range memories {
 		dateStr := ""
@@ -204,17 +215,25 @@ func formatMemoryContext(memories []memory_models.Memory) string {
 			dateStr = m.CreatedAt.Format("2006-01-02")
 		}
 
-		summary := m.Summary
-		if summary == "" {
-			summary = m.Content
-		}
+		title := strings.TrimSpace(m.Summary)
+		content := strings.TrimSpace(m.Content)
+
 		// 截断过长的内容
-		runes := []rune(summary)
-		if len(runes) > 100 {
-			summary = string(runes[:100]) + "..."
+		contentRunes := []rune(content)
+		if len(contentRunes) > 200 {
+			content = string(contentRunes[:200]) + "..."
 		}
 
-		line := fmt.Sprintf("- [%s] %s", dateStr, summary)
+		var line string
+		if title != "" && content != "" && title != content {
+			line = fmt.Sprintf("- [%s] %s: %s", dateStr, title, content)
+		} else if content != "" {
+			line = fmt.Sprintf("- [%s] %s", dateStr, content)
+		} else if title != "" {
+			line = fmt.Sprintf("- [%s] %s", dateStr, title)
+		} else {
+			continue
+		}
 
 		lineLen := utf8.RuneCountInString(line)
 		if totalLen+lineLen > maxLen {
@@ -332,6 +351,18 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 			}
 		}
 		stream.Close()
+	}
+
+	// Memory Agent 可能写入了新记忆，为其生成 embedding 并刷新向量缓存
+	if s.memorySearcher != nil && s.memorySearcher.HasEmbedder() {
+		bgCtx, bgCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer bgCancel()
+		count, backfillErr := s.memorySearcher.BackfillEmbeddings(bgCtx, 10)
+		if backfillErr != nil {
+			logger.Error("post-encode backfill error:", backfillErr)
+		} else if count > 0 {
+			logger.Warm("post-encode: embedded", count, "new memories")
+		}
 	}
 }
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
-import { Memory, MemoryListQuery, MemoryStats } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
+import { Memory, MemoryListQuery, MemoryStats, MemoryUpdateInput } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 
 interface MemoryState {
   memories: Memory[];
@@ -14,6 +14,7 @@ interface MemoryState {
   fetchStats: () => Promise<void>;
   deleteMemory: (id: number) => Promise<void>;
   restoreMemory: (id: number) => Promise<void>;
+  updateMemory: (id: number, input: MemoryUpdateInput) => Promise<Memory | null>;
 }
 
 export const useMemoryStore = create<MemoryState>()((set, get) => ({
@@ -67,5 +68,11 @@ export const useMemoryStore = create<MemoryState>()((set, get) => ({
     await Service.RestoreMemory(id);
     await get().fetchMemories();
     await get().fetchStats();
+  },
+
+  updateMemory: async (id, input) => {
+    const updated = await Service.UpdateMemory(id, new MemoryUpdateInput(input));
+    await get().fetchMemories();
+    return updated;
   },
 }));

@@ -14,7 +14,6 @@ import {
   Popconfirm,
   Avatar,
   Tooltip,
-  Modal,
 } from 'antd';
 import {
   ApiOutlined,
@@ -30,6 +29,7 @@ import {
   QuestionCircleOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
+import { Events } from '@wailsio/runtime';
 import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
@@ -140,11 +140,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null); // 改为number类型
   const [isCreatingNew, setIsCreatingNew] = useState(false); // 新增：是否正在创建新供应商
   const [newProviderTempId, setNewProviderTempId] = useState<number | null>(null); // 新增：临时ID
-  const [addProviderModalVisible, setAddProviderModalVisible] = useState(false); // 添加供应商对话框显示状态
   const [supportProviders, setSupportProviders] = useState<SupportProvider[]>([]); // 支持的供应商列表
   const [loadingSupportProviders, setLoadingSupportProviders] = useState(false); // 加载支持的供应商状态
-  const [selectedSupportProvider, setSelectedSupportProvider] = useState<SupportProvider | null>(null); // 选中的支持供应商
-  const [addProviderForm] = Form.useForm(); // 添加供应商表单
   const [customModelName, setCustomModelName] = useState(''); // 自定义模型名称输入
   const [addingCustomModel, setAddingCustomModel] = useState(false); // 添加自定义模型loading
 
@@ -388,69 +385,22 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     }
   };
 
-  // 打开添加供应商对话框
+  // 打开添加供应商窗口
   const handleAddProvider = () => {
-    setAddProviderModalVisible(true);
-    setSelectedSupportProvider(null);
-    addProviderForm.resetFields();
-    loadSupportProviders();
+    void Service.OpenAddProviderWindow();
   };
 
-  // 选择支持的供应商
-  const handleSelectSupportProvider = (supportProvider: SupportProvider) => {
-    setSelectedSupportProvider(supportProvider);
-    // 设置表单默认值
-    addProviderForm.setFieldsValue({
-      enabled: true,
-      providerName: supportProvider.name,
-      apiKey: '',
-      baseUrl: supportProvider.base_url,
-      fileUploadBaseUrl: supportProvider.file_upload_base_url || '',
-      defaultModel: undefined,
+  // 监听来自添加供应商窗口的变更事件，刷新列表
+  useEffect(() => {
+    const cancel = Events.On('settings:providers:changed', () => {
+      void loadProviderConfigs();
     });
-  };
-
-  // 取消选择供应商，返回列表
-  const handleCancelSelectProvider = () => {
-    setSelectedSupportProvider(null);
-    addProviderForm.resetFields();
-  };
-
-  // 在对话框中创建供应商
-  const handleCreateProviderInModal = async (values: any) => {
-    if (!selectedSupportProvider) return;
-    
-    setLoading(true);
-    try {
-      // 构造新供应商数据
-      const newProviderData = new Provider({
-        provider_name: values.providerName || selectedSupportProvider.name,
-        provider_type: selectedSupportProvider.provider_type,
-        base_url: values.baseUrl || selectedSupportProvider.base_url,
-        file_upload_base_url: values.fileUploadBaseUrl || null,
-        api_key: values.apiKey || '',
-        enable: values.enabled,
-        default_model_id: values.defaultModel || 0,
-      });
-      
-      await Service.AddProvider(newProviderData);
-      
-      // 重新加载供应商列表
-      await loadProviderConfigs();
-      
-      // 关闭对话框并重置状态
-      setAddProviderModalVisible(false);
-      setSelectedSupportProvider(null);
-      addProviderForm.resetFields();
-
-      message.success(t('settings.provider.messages.createSuccess'));
-    } catch (error) {
-      console.error('创建供应商失败:', error);
-      message.error(t('settings.provider.messages.createFailed'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      cancel?.();
+      Events.Off('settings:providers:changed');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeleteProvider = async (providerId: number) => {
     try {
@@ -1051,194 +1001,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           <div className={styles.editorColumn}>{renderEditor()}</div>
         </div>
       )}
-
-      {/* 添加供应商对话框 */}
-      <Modal
-        title={
-          selectedSupportProvider ? (
-            <Space>
-              <Button
-                type="text"
-                icon={<ArrowLeftOutlined />}
-                onClick={handleCancelSelectProvider}
-                style={{ padding: 0 }}
-              />
-              <span>{t('settings.provider.modal.addProvider', { name: selectedSupportProvider.name })}</span>
-            </Space>
-          ) : (
-            t('settings.provider.modal.selectProvider')
-          )
-        }
-        open={addProviderModalVisible}
-        onCancel={() => {
-          setAddProviderModalVisible(false);
-          setSelectedSupportProvider(null);
-          addProviderForm.resetFields();
-        }}
-        footer={null}
-        width={isMobile ? 'calc(100vw - 32px)' : (selectedSupportProvider ? 700 : 600)}
-        centered
-        getContainer={() => document.body}
-        zIndex={2002}
-        wrapClassName={styles.addProviderModal}
-      >
-        {!selectedSupportProvider ? (
-          <div className={styles.supportProviderList}>
-            {supportProviders.map((item) => {
-              const extras = getProviderExtras(item.name, item.provider_type);
-              const iconSrc = resolveIconSrc(item.icon);
-              return (
-                <div
-                  key={item.provider_type || item.name}
-                  className={styles.supportProviderItem}
-                  onClick={() => handleSelectSupportProvider(item)}
-                >
-                  <Avatar
-                    size={40}
-                    src={iconSrc}
-                    style={{
-                      backgroundColor: item.icon ? 'transparent' : 'var(--primary-color-light)',
-                      fontSize: '20px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {!item.icon && extras.icon}
-                  </Avatar>
-                  <div className={styles.supportProviderInfo}>
-                    <span className={styles.supportProviderName}>{item.name}</span>
-                    <div className={styles.supportProviderDesc}>
-                      {item.description || extras.description}
-                    </div>
-                    {item.base_url && (
-                      <div className={styles.supportProviderUrl}>
-                        <ApiOutlined style={{ marginRight: 4 }} />
-                        {item.base_url}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {supportProviders.length === 0 && !loadingSupportProviders && (
-              <div className={styles.supportProviderEmpty}>{t('settings.provider.modal.emptyProviders')}</div>
-            )}
-          </div>
-        ) : (
-          <Form
-            form={addProviderForm}
-            layout="vertical"
-            onFinish={handleCreateProviderInModal}
-          >
-            <Alert
-              message={t('settings.provider.securityAlert')}
-              type="info"
-              showIcon
-              className={styles.modalAlert}
-            />
-
-            <Form.Item
-              label={t('settings.provider.fields.enabled')}
-              name="enabled"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-
-            <Form.Item
-              label={t('settings.provider.fields.providerName')}
-              name="providerName"
-              rules={[
-                { required: true, message: t('settings.provider.validation.providerNameRequired') },
-                { max: 50, message: t('settings.provider.validation.providerNameMax') },
-              ]}
-            >
-              <Input placeholder={t('settings.provider.placeholders.providerName')} />
-            </Form.Item>
-
-            <Form.Item
-              label={t('settings.provider.fields.apiKey')}
-              name="apiKey"
-              rules={[
-                { required: false, message: t('settings.provider.validation.apiKeyRequired') },
-              ]}
-            >
-              <Input.Password
-                placeholder={t('settings.provider.placeholders.apiKey')}
-                iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={t('settings.provider.fields.baseUrl')}
-              name="baseUrl"
-              rules={[
-                { required: true, message: t('settings.provider.validation.baseUrlRequired') },
-                { type: 'url', message: t('settings.provider.validation.invalidUrl') },
-              ]}
-            >
-              <Input placeholder={t('settings.provider.placeholders.baseUrl')} />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <Space>
-                  <span>{t('settings.provider.fields.fileUploadUrl')}</span>
-                  <Tooltip title={t('settings.provider.helper.fileUploadUrl')}>
-                    <QuestionCircleOutlined style={{ color: 'var(--text-color-secondary)', cursor: 'help' }} />
-                  </Tooltip>
-                </Space>
-              }
-              name="fileUploadBaseUrl"
-              rules={[
-                { type: 'url', message: t('settings.provider.validation.invalidUrl') },
-              ]}
-              style={{ display: 'none' }}
-            >
-              <Input placeholder={t('settings.provider.placeholders.fileUploadUrl')} />
-            </Form.Item>
-
-            <Form.Item
-              label={t('settings.provider.fields.defaultModel')}
-              name="defaultModel"
-              help={t('settings.provider.helper.chooseModelAfterSave')}
-            >
-              <Select
-                placeholder={t('settings.provider.placeholders.chooseModelAfterSave')}
-                allowClear
-                showSearch
-                disabled
-                notFoundContent={t('settings.provider.helper.saveProviderFirst')}
-              >
-                <Option value={0} disabled>{t('settings.provider.helper.saveProviderFirst')}</Option>
-              </Select>
-            </Form.Item>
-
-            <Divider />
-
-            <Form.Item className={styles.modalFormFooter}>
-              <Space className={styles.modalFormActions}>
-                <Button
-                  onClick={() => {
-                    setAddProviderModalVisible(false);
-                    setSelectedSupportProvider(null);
-                    addProviderForm.resetFields();
-                  }}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  icon={<PlusOutlined />}
-                  loading={loading}
-                >
-                  {t('settings.provider.actions.create')}
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        )}
-      </Modal>
     </div>
   );
 };

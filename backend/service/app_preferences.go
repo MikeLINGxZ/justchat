@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
@@ -43,9 +44,39 @@ func normalizeRegion(region data_models.AppRegion) (data_models.AppRegion, error
 
 func toAppPreferencesViewModel(prefs *data_models.AppPreferences) *view_models.AppPreferences {
 	return &view_models.AppPreferences{
-		Language: prefs.Language,
-		Region:   prefs.Region,
+		Language:            prefs.Language,
+		Region:              prefs.Region,
+		MemorySystemEnabled: prefs.MemorySystemEnabled,
+		VectorSearchEnabled: prefs.VectorSearchEnabled,
+		EmbeddingProvider:   prefs.EmbeddingProvider,
+		EmbeddingBaseURL:    prefs.EmbeddingBaseURL,
+		EmbeddingAPIKey:     prefs.EmbeddingAPIKey,
+		EmbeddingModel:      prefs.EmbeddingModel,
 	}
+}
+
+func normalizeEmbeddingProvider(provider string) string {
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		return "ollama"
+	}
+	return provider
+}
+
+func normalizeEmbeddingBaseURL(baseURL string, provider string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" && provider == "ollama" {
+		return "http://localhost:11434"
+	}
+	return baseURL
+}
+
+func normalizeEmbeddingModel(model string, provider string) string {
+	model = strings.TrimSpace(model)
+	if model == "" && provider == "ollama" {
+		return "bge-m3"
+	}
+	return model
 }
 
 func (s *Service) loadAppPreferences(ctx context.Context) (*data_models.AppPreferences, error) {
@@ -61,6 +92,9 @@ func (s *Service) loadAppPreferences(ctx context.Context) (*data_models.AppPrefe
 	if err != nil {
 		return nil, err
 	}
+	prefs.EmbeddingProvider = normalizeEmbeddingProvider(prefs.EmbeddingProvider)
+	prefs.EmbeddingBaseURL = normalizeEmbeddingBaseURL(prefs.EmbeddingBaseURL, prefs.EmbeddingProvider)
+	prefs.EmbeddingModel = normalizeEmbeddingModel(prefs.EmbeddingModel, prefs.EmbeddingProvider)
 	prefs.Language = language
 	prefs.Region = region
 	return prefs, nil
@@ -85,9 +119,15 @@ func (s *Service) UpdateAppPreferences(input view_models.AppPreferences) (*view_
 	}
 
 	prefs := data_models.AppPreferences{
-		SingletonID: data_models.AppPreferencesSingletonID,
-		Language:    language,
-		Region:      region,
+		SingletonID:         data_models.AppPreferencesSingletonID,
+		Language:            language,
+		Region:              region,
+		MemorySystemEnabled: input.MemorySystemEnabled,
+		VectorSearchEnabled: input.VectorSearchEnabled,
+		EmbeddingProvider:   normalizeEmbeddingProvider(input.EmbeddingProvider),
+		EmbeddingBaseURL:    normalizeEmbeddingBaseURL(input.EmbeddingBaseURL, normalizeEmbeddingProvider(input.EmbeddingProvider)),
+		EmbeddingAPIKey:     strings.TrimSpace(input.EmbeddingAPIKey),
+		EmbeddingModel:      normalizeEmbeddingModel(input.EmbeddingModel, normalizeEmbeddingProvider(input.EmbeddingProvider)),
 	}
 	if err := s.storage.SaveAppPreferences(context.Background(), prefs); err != nil {
 		return nil, ierror.NewError(err)

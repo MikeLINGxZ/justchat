@@ -193,6 +193,12 @@ export class AgentSummary {
 export class AppPreferences {
     "language": data_models$0.AppLanguage;
     "region": data_models$0.AppRegion;
+    "memory_system_enabled": boolean;
+    "vector_search_enabled": boolean;
+    "embedding_provider": string;
+    "embedding_base_url": string;
+    "embedding_api_key": string;
+    "embedding_model": string;
 
     /** Creates a new AppPreferences instance. */
     constructor($$source: Partial<AppPreferences> = {}) {
@@ -201,6 +207,24 @@ export class AppPreferences {
         }
         if (!("region" in $$source)) {
             this["region"] = data_models$0.AppRegion.$zero;
+        }
+        if (!("memory_system_enabled" in $$source)) {
+            this["memory_system_enabled"] = false;
+        }
+        if (!("vector_search_enabled" in $$source)) {
+            this["vector_search_enabled"] = false;
+        }
+        if (!("embedding_provider" in $$source)) {
+            this["embedding_provider"] = "";
+        }
+        if (!("embedding_base_url" in $$source)) {
+            this["embedding_base_url"] = "";
+        }
+        if (!("embedding_api_key" in $$source)) {
+            this["embedding_api_key"] = "";
+        }
+        if (!("embedding_model" in $$source)) {
+            this["embedding_model"] = "";
         }
 
         Object.assign(this, $$source);
@@ -346,6 +370,7 @@ export class Memory {
     "trust_score": number;
     "is_forgotten": boolean;
     "recall_count": number;
+    "has_embedding": boolean;
     "created_at": time$0.Time;
     "updated_at": time$0.Time;
 
@@ -389,6 +414,9 @@ export class Memory {
         }
         if (!("recall_count" in $$source)) {
             this["recall_count"] = 0;
+        }
+        if (!("has_embedding" in $$source)) {
+            this["has_embedding"] = false;
         }
         if (!("created_at" in $$source)) {
             this["created_at"] = null;
@@ -501,6 +529,59 @@ export class MemoryStats {
     static createFrom($$source: any = {}): MemoryStats {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new MemoryStats($$parsedSource as Partial<MemoryStats>);
+    }
+}
+
+export class MemoryUpdateInput {
+    "summary": string;
+    "content": string;
+    "type": string;
+    "time_range_start": string | null;
+    "time_range_end": string | null;
+    "location": string | null;
+    "characters": string | null;
+    "importance": number;
+    "emotional_valence": number;
+
+    /** Creates a new MemoryUpdateInput instance. */
+    constructor($$source: Partial<MemoryUpdateInput> = {}) {
+        if (!("summary" in $$source)) {
+            this["summary"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = "";
+        }
+        if (!("time_range_start" in $$source)) {
+            this["time_range_start"] = null;
+        }
+        if (!("time_range_end" in $$source)) {
+            this["time_range_end"] = null;
+        }
+        if (!("location" in $$source)) {
+            this["location"] = null;
+        }
+        if (!("characters" in $$source)) {
+            this["characters"] = null;
+        }
+        if (!("importance" in $$source)) {
+            this["importance"] = 0;
+        }
+        if (!("emotional_valence" in $$source)) {
+            this["emotional_valence"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MemoryUpdateInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MemoryUpdateInput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MemoryUpdateInput($$parsedSource as Partial<MemoryUpdateInput>);
     }
 }
 

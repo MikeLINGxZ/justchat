@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Empty,
-  Form,
   Input,
   Modal,
   Segmented,
@@ -24,6 +23,7 @@ import {
   RollbackOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
+import { Events } from '@wailsio/runtime';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { useTranslation } from 'react-i18next';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
@@ -68,12 +68,9 @@ const AgentSettingsPage: React.FC<AgentSettingsPageProps> = ({ className }) => {
   const [isMobile, setIsMobile] = useState(() => isMobileDevice());
   const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
 
-  const [createModalVisible, setCreateModalVisible] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [tools, setTools] = useState<Tool[]>([]);
   const [skillsList, setSkillsList] = useState<SkillSummary[]>([]);
-  const [form] = Form.useForm();
 
   const [customDraft, setCustomDraft] = useState<{
     name: string;
@@ -257,30 +254,26 @@ const AgentSettingsPage: React.FC<AgentSettingsPageProps> = ({ className }) => {
     }
   };
 
-  const handleCreate = async (values: any) => {
-    setCreating(true);
-    try {
-      const input = new CustomAgentInput({
-        id: values.id,
-        name: values.name,
-        description: values.description,
-        prompt: values.prompt,
-        tools: values.tools || [],
-        skills: values.skills || [],
-      });
-      await Service.CreateCustomAgent(input);
-      message.success(t('settings.agents.createSuccess'));
-      setCreateModalVisible(false);
-      form.resetFields();
-      await refreshList();
-      setActiveAgent(values.id);
-    } catch (e) {
-      console.error('Failed to create agent:', e);
-      message.error(t('settings.agents.createFailed'));
-    } finally {
-      setCreating(false);
-    }
+  const handleOpenCreateWindow = () => {
+    void Service.OpenAddAgentWindow();
   };
+
+  useEffect(() => {
+    const cancel = Events.On('settings:agents:changed', (event: any) => {
+      void (async () => {
+        await refreshList();
+        const newId = event?.data?.id as string | undefined;
+        if (newId) {
+          setActiveAgent(newId);
+        }
+      })();
+    });
+    return () => {
+      cancel?.();
+      Events.Off('settings:agents:changed');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeleteAgent = async () => {
     if (!detail || detail.agent_type !== 'custom') return;
@@ -357,7 +350,7 @@ const AgentSettingsPage: React.FC<AgentSettingsPageProps> = ({ className }) => {
             type="text"
             size="small"
             icon={<PlusOutlined />}
-            onClick={() => { loadFormOptions(); setCreateModalVisible(true); }}
+            onClick={handleOpenCreateWindow}
             className={styles.addButton}
           />
         </div>
@@ -515,59 +508,6 @@ const AgentSettingsPage: React.FC<AgentSettingsPageProps> = ({ className }) => {
       </div>
     );
   };
-
-  const renderCreateModal = () => (
-    <Modal
-      title={t('settings.agents.createTitle')}
-      open={createModalVisible}
-      onCancel={() => setCreateModalVisible(false)}
-      onOk={() => form.submit()}
-      confirmLoading={creating}
-      okText={t('settings.agents.actions.create')}
-      cancelText={t('common.cancel')}
-      destroyOnClose
-      width={600}
-    >
-      <Form form={form} layout="vertical" onFinish={handleCreate}>
-        <Form.Item name="name" label={t('settings.agents.form.name')} rules={[{ required: true }]}>
-          <Input placeholder={t('settings.agents.form.namePlaceholder')} />
-        </Form.Item>
-        <Form.Item
-          name="id"
-          label={t('settings.agents.form.id')}
-          rules={[
-            { required: true },
-            { pattern: /^[a-zA-Z0-9_-]+$/, message: t('settings.agents.form.idInvalid') },
-          ]}
-          extra={t('settings.agents.form.idHint')}
-        >
-          <Input placeholder={t('settings.agents.form.idPlaceholder')} />
-        </Form.Item>
-        <Form.Item name="description" label={t('settings.agents.form.description')} rules={[{ required: true }]}>
-          <Input placeholder={t('settings.agents.form.descriptionPlaceholder')} />
-        </Form.Item>
-        <Form.Item name="prompt" label={t('settings.agents.form.prompt')} rules={[{ required: true }]}>
-          <TextArea rows={4} placeholder={t('settings.agents.form.promptPlaceholder')} className={styles.formTextArea} />
-        </Form.Item>
-        <Form.Item name="tools" label={t('settings.agents.form.tools')}>
-          <Select
-            mode="multiple"
-            placeholder={t('settings.agents.form.toolsPlaceholder')}
-            options={tools.map(t => ({ label: t.name, value: t.id }))}
-            allowClear
-          />
-        </Form.Item>
-        <Form.Item name="skills" label={t('settings.agents.form.skills')}>
-          <Select
-            mode="multiple"
-            placeholder={t('settings.agents.form.skillsPlaceholder')}
-            options={skillsList.map(s => ({ label: `${s.name} - ${s.description}`, value: s.name }))}
-            allowClear
-          />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
 
   const renderEditorBody = () => {
     if (loadingDetail) {
@@ -733,7 +673,6 @@ const AgentSettingsPage: React.FC<AgentSettingsPageProps> = ({ className }) => {
           <div className={styles.editorColumn}>{renderEditor()}</div>
         </div>
       )}
-      {renderCreateModal()}
     </div>
   );
 };

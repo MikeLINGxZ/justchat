@@ -6,6 +6,7 @@ import '@/styles/index.scss';
 import App from '@/App.tsx';
 import { initializeFontSize } from '@/stores/fontSizeStore';
 import { hydrateLanguagePreferences, initializeLanguage } from '@/stores/languageStore';
+import { hydrateLabPreferences } from '@/stores/labStore';
 import { useAppLocale } from '@/hooks/useAppLocale';
 import '@/i18n';
 
@@ -81,6 +82,7 @@ function AppProviders() {
 
 async function bootstrap() {
   await hydrateLanguagePreferences();
+  await hydrateLabPreferences();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <AppProviders />

@@ -11,40 +11,12 @@ import (
 // ConfigureEmbedding 配置嵌入引擎。前端调用此方法传入嵌入配置后，
 // 重建 HybridSearcher 以启用向量搜索。
 func (s *Service) ConfigureEmbedding(provider string, baseURL string, apiKey string, model string) error {
-	if s.memoryStorage == nil {
-		return fmt.Errorf("memory system not initialized")
-	}
-
-	cfg := search.EmbeddingConfig{
+	return s.configureEmbeddingInternal(context.Background(), search.EmbeddingConfig{
 		Provider: search.EmbeddingProvider(provider),
 		BaseURL:  baseURL,
 		APIKey:   apiKey,
 		Model:    model,
-	}
-
-	ctx := context.Background()
-	embedder, err := search.NewEmbedder(ctx, cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create embedder: %w", err)
-	}
-
-	// 重建混合检索引擎
-	s.memorySearcher = search.NewHybridSearcher(s.memoryStorage, embedder)
-
-	logger.Warm("embedding engine configured:", provider, model)
-
-	// 异步补填存量记忆的嵌入
-	go func() {
-		bgCtx := context.Background()
-		count, backfillErr := s.memorySearcher.BackfillEmbeddings(bgCtx, model, 100)
-		if backfillErr != nil {
-			logger.Error("backfill embeddings error:", backfillErr)
-		} else if count > 0 {
-			logger.Warm("backfilled embeddings for", count, "memories")
-		}
-	}()
-
-	return nil
+	}, true)
 }
 
 // DisableEmbedding 禁用向量搜索，回退到纯 FTS5/LIKE。
@@ -52,8 +24,45 @@ func (s *Service) DisableEmbedding() {
 	if s.memoryStorage == nil {
 		return
 	}
-	s.memorySearcher = search.NewHybridSearcher(s.memoryStorage, nil)
+	s.memorySearcher = search.NewHybridSearcher(s.memoryStorage, nil, "")
 	logger.Warm("embedding engine disabled, falling back to FTS5/LIKE")
+}
+
+func (s *Service) configureEmbeddingInternal(ctx context.Context, cfg search.EmbeddingConfig, runBackfill bool) error {
+	if s.memoryStorage == nil {
+		return fmt.Errorf("memory system not initialized")
+	}
+	cfg.Provider = search.EmbeddingProvider(normalizeEmbeddingProvider(string(cfg.Provider)))
+	cfg.BaseURL = normalizeEmbeddingBaseURL(cfg.BaseURL, string(cfg.Provider))
+	cfg.Model = normalizeEmbeddingModel(cfg.Model, string(cfg.Provider))
+
+	embedder, err := search.NewEmbedder(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create embedder: %w", err)
+	}
+
+	s.memorySearcher = search.NewHybridSearcher(s.memoryStorage, embedder, cfg.Model)
+
+	logger.Warm("embedding engine configured:", cfg.Provider, cfg.Model)
+
+	if !runBackfill {
+		return nil
+	}
+
+	go func(searcher *search.HybridSearcher) {
+		bgCtx := context.Background()
+		count, backfillErr := searcher.BackfillEmbeddings(bgCtx, 100)
+		if backfillErr != nil {
+			logger.Error("backfill embeddings error:", backfillErr)
+		} else if count > 0 {
+			logger.Warm("backfilled embeddings for", count, "memories")
+		}
+		if repairErr := s.memoryStorage.RepairEmbeddingIDs(bgCtx); repairErr != nil {
+			logger.Error("repair embedding IDs error:", repairErr)
+		}
+	}(s.memorySearcher)
+
+	return nil
 }
 
 // GetEmbeddingProviders 返回支持的嵌入引擎列表。

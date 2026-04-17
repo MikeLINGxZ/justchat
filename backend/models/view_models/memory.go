@@ -16,8 +16,21 @@ type Memory struct {
 	TrustScore       float64    `json:"trust_score"`
 	IsForgotten      bool       `json:"is_forgotten"`
 	RecallCount      int        `json:"recall_count"`
+	HasEmbedding     bool       `json:"has_embedding"`
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
+}
+
+type MemoryUpdateInput struct {
+	Summary          string  `json:"summary"`
+	Content          string  `json:"content"`
+	Type             string  `json:"type"`
+	TimeRangeStart   *string `json:"time_range_start"`
+	TimeRangeEnd     *string `json:"time_range_end"`
+	Location         *string `json:"location"`
+	Characters       *string `json:"characters"`
+	Importance       float64 `json:"importance"`
+	EmotionalValence float64 `json:"emotional_valence"`
 }
 
 type MemoryListQuery struct {

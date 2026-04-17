@@ -16,9 +16,15 @@ func (s *Storage) GetAppPreferences(ctx context.Context) (*data_models.AppPrefer
 		First(&prefs).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return &data_models.AppPreferences{
-			SingletonID: data_models.AppPreferencesSingletonID,
-			Language:    data_models.AppLanguageZhCN,
-			Region:      data_models.AppRegionAsia,
+			SingletonID:         data_models.AppPreferencesSingletonID,
+			Language:            data_models.AppLanguageZhCN,
+			Region:              data_models.AppRegionAsia,
+			MemorySystemEnabled: false,
+			VectorSearchEnabled: false,
+			EmbeddingProvider:   "ollama",
+			EmbeddingBaseURL:    "http://localhost:11434",
+			EmbeddingAPIKey:     "",
+			EmbeddingModel:      "bge-m3",
 		}, nil
 	}
 	if err != nil {
@@ -43,5 +49,11 @@ func (s *Storage) SaveAppPreferences(ctx context.Context, prefs data_models.AppP
 
 	existing.Language = prefs.Language
 	existing.Region = prefs.Region
+	existing.MemorySystemEnabled = prefs.MemorySystemEnabled
+	existing.VectorSearchEnabled = prefs.VectorSearchEnabled
+	existing.EmbeddingProvider = prefs.EmbeddingProvider
+	existing.EmbeddingBaseURL = prefs.EmbeddingBaseURL
+	existing.EmbeddingAPIKey = prefs.EmbeddingAPIKey
+	existing.EmbeddingModel = prefs.EmbeddingModel
 	return s.sqliteDB.WithContext(ctx).Save(&existing).Error
 }

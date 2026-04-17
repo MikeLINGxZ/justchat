@@ -1549,6 +1549,7 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		memCtx, cached := r.svc.memoryCache.Get(r.chatUuid)
 		if !cached {
 			// 缓存未命中：同步检索（500ms 超时保护）
+			// 语义匹配由向量搜索处理，无结果时 TopImportantMemories 兜底
 			ctx, cancel := context.WithTimeout(runCtx, 500*time.Millisecond)
 			memCtx = r.svc.retrieveMemoryContext(ctx, userMsg)
 			cancel()

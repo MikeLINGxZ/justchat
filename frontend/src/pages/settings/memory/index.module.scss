@@ -58,6 +58,13 @@
   white-space: nowrap;
 }
 
+.embeddingIcon {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #52c41a;
+  vertical-align: middle;
+}
+
 .memoryDate {
   font-size: 12px;
   flex-shrink: 0;
@@ -86,10 +93,29 @@
 
 .memoryActions {
   margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .pagination {
   margin-top: 16px;
   display: flex;
   justify-content: center;
+}
+
+.editGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.editHint {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -16,9 +16,20 @@ import (
 )
 
 const (
-	WindowNameHome       = "window_home"
-	WindowNameOnboarding = "window_onboarding"
-	WindowNameSettings   = "window_settings"
+	WindowNameHome         = "window_home"
+	WindowNameOnboarding   = "window_onboarding"
+	WindowNameSettings     = "window_settings"
+	WindowNameFormProvider = "window_form_provider"
+	WindowNameFormAgent    = "window_form_agent"
+	WindowNameFormSkill    = "window_form_skill"
+	WindowNameFormMemory   = "window_form_memory"
+)
+
+const (
+	EventSettingsProvidersChanged = "settings:providers:changed"
+	EventSettingsAgentsChanged    = "settings:agents:changed"
+	EventSettingsSkillsChanged    = "settings:skills:changed"
+	EventSettingsMemoriesChanged  = "settings:memories:changed"
 )
 
 type Service struct {
@@ -56,8 +67,8 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 		if embErr := memStorage.AutoMigrateEmbeddings(); embErr != nil {
 			logger.Warm("memory embeddings migration failed:", embErr)
 		}
-		// 创建混合检索引擎（暂无 embedder，后续可通过 Ollama 注入）
-		s.memorySearcher = search.NewHybridSearcher(memStorage, nil)
+		// 创建混合检索引擎（默认无 embedder）
+		s.memorySearcher = search.NewHybridSearcher(memStorage, nil, "")
 		// 启动记忆生命周期管理（巩固/遗忘/矛盾检测）
 		s.memoryLifecycle = lifecycle.NewManager(memStorage)
 		s.memoryLifecycle.Start()
@@ -65,6 +76,17 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 	s.memoryCache = newMemoryPrefetchCache()
 	if prefs, prefsErr := s.loadAppPreferences(ctx); prefsErr == nil {
 		i18n.SetCurrentLocale(string(prefs.Language))
+		if s.memoryStorage != nil && prefs.MemorySystemEnabled && prefs.VectorSearchEnabled {
+			if err := s.configureEmbeddingInternal(ctx, search.EmbeddingConfig{
+				Provider: search.EmbeddingProvider(prefs.EmbeddingProvider),
+				BaseURL:  prefs.EmbeddingBaseURL,
+				APIKey:   prefs.EmbeddingAPIKey,
+				Model:    prefs.EmbeddingModel,
+			}, true); err != nil {
+				logger.Warm("restore embedding config failed, falling back to FTS5/LIKE:", err)
+				s.DisableEmbedding()
+			}
+		}
 	}
 	if err := s.reloadPromptSet(); err != nil {
 		logger.Warm("load prompt set fallback:", err)

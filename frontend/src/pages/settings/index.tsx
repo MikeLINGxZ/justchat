@@ -9,6 +9,7 @@ import {
   RobotOutlined,
   ThunderboltOutlined,
   AppstoreOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -105,7 +106,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
       const generalIdx = items.findIndex(i => i.key === 'general');
       items.splice(generalIdx + 1, 0, {
         key: 'memory',
-        icon: <SettingOutlined />,
+        icon: <BulbOutlined />,
         label: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
           {t('settings.menu.memory')}
           <span style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, background: 'rgba(250, 173, 20, 0.15)', color: '#faad14' }}>Lab</span>

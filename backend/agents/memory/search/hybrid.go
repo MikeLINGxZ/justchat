@@ -26,8 +26,9 @@ type ScoredMemory struct {
 
 // HybridSearcher 混合检索引擎（FTS5 + 向量 + 元数据）。
 type HybridSearcher struct {
-	storage  *storage.Storage
-	embedder embedding.Embedder // 可为 nil（向量搜索不可用时）
+	storage   *storage.Storage
+	embedder  embedding.Embedder // 可为 nil（向量搜索不可用时）
+	modelName string
 
 	// 嵌入缓存
 	cacheMu    sync.RWMutex
@@ -36,10 +37,11 @@ type HybridSearcher struct {
 }
 
 // NewHybridSearcher 创建混合检索引擎。embedder 为 nil 时仅用 FTS5/LIKE。
-func NewHybridSearcher(s *storage.Storage, embedder embedding.Embedder) *HybridSearcher {
+func NewHybridSearcher(s *storage.Storage, embedder embedding.Embedder, modelName string) *HybridSearcher {
 	hs := &HybridSearcher{
-		storage:  s,
-		embedder: embedder,
+		storage:   s,
+		embedder:  embedder,
+		modelName: modelName,
 	}
 	// 异步加载嵌入缓存
 	if embedder != nil {
@@ -135,6 +137,11 @@ func (hs *HybridSearcher) VectorEnabled() bool {
 	return hs.embedder != nil && hs.isCacheReady()
 }
 
+// HasEmbedder 返回搜索器是否配置了嵌入器。
+func (hs *HybridSearcher) HasEmbedder() bool {
+	return hs.embedder != nil
+}
+
 // RefreshCache 刷新嵌入缓存。
 func (hs *HybridSearcher) RefreshCache() {
 	hs.refreshCache()
@@ -210,7 +217,7 @@ func (hs *HybridSearcher) isCacheReady() bool {
 }
 
 // EmbedAndStore 为指定记忆生成嵌入并存储。
-func (hs *HybridSearcher) EmbedAndStore(ctx context.Context, memoryID uint, text string, modelName string) error {
+func (hs *HybridSearcher) EmbedAndStore(ctx context.Context, memoryID uint, text string) error {
 	if hs.embedder == nil {
 		return nil
 	}
@@ -227,11 +234,11 @@ func (hs *HybridSearcher) EmbedAndStore(ctx context.Context, memoryID uint, text
 		vec32[i] = float32(v)
 	}
 
-	return hs.storage.SaveEmbedding(ctx, memoryID, vec32, modelName)
+	return hs.storage.SaveEmbedding(ctx, memoryID, vec32, hs.modelName)
 }
 
 // BackfillEmbeddings 为缺少嵌入的记忆批量生成向量。
-func (hs *HybridSearcher) BackfillEmbeddings(ctx context.Context, modelName string, batchSize int) (int, error) {
+func (hs *HybridSearcher) BackfillEmbeddings(ctx context.Context, batchSize int) (int, error) {
 	if hs.embedder == nil {
 		return 0, nil
 	}
@@ -248,7 +255,7 @@ func (hs *HybridSearcher) BackfillEmbeddings(ctx context.Context, modelName stri
 			continue
 		}
 		text := m.Summary + " " + m.Content
-		if embedErr := hs.EmbedAndStore(ctx, id, text, modelName); embedErr != nil {
+		if embedErr := hs.EmbedAndStore(ctx, id, text); embedErr != nil {
 			logger.Error("backfill embedding error for memory", id, ":", embedErr)
 			continue
 		}

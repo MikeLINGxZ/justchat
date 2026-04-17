@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"time"
 
 	"fmt"
 	memory_models "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/utils/ierror"
 )
 
@@ -51,6 +55,67 @@ func (s *Service) GetMemoryDetail(id uint) (*view_models.Memory, error) {
 	}
 	vm := toMemoryViewModel(*m)
 	return &vm, nil
+}
+
+// UpdateMemory 编辑记忆并在可用时自动重建 embedding。
+func (s *Service) UpdateMemory(id uint, input view_models.MemoryUpdateInput) (*view_models.Memory, error) {
+	if s.memoryStorage == nil {
+		return nil, fmt.Errorf("memory system not initialized")
+	}
+
+	summary := strings.TrimSpace(input.Summary)
+	content := strings.TrimSpace(input.Content)
+	if content == "" {
+		return nil, ierror.NewError(errors.New("memory content cannot be empty"))
+	}
+	if input.Importance < 0 || input.Importance > 1 {
+		return nil, ierror.NewError(errors.New("importance must be between 0 and 1"))
+	}
+	if input.EmotionalValence < -1 || input.EmotionalValence > 1 {
+		return nil, ierror.NewError(errors.New("emotional valence must be between -1 and 1"))
+	}
+
+	startAt, err := parseMemoryDate(input.TimeRangeStart)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	endAt, err := parseMemoryDate(input.TimeRangeEnd)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+	if startAt != nil && endAt != nil && startAt.After(*endAt) {
+		return nil, ierror.NewError(errors.New("start time cannot be after end time"))
+	}
+
+	update := memory_models.Memory{
+		Summary:          summary,
+		Content:          content,
+		Type:             memory_models.MemoryType(strings.TrimSpace(input.Type)),
+		TimeRangStart:    startAt,
+		TimeRangeEnd:     endAt,
+		Location:         normalizeOptionalString(input.Location),
+		Characters:       normalizeOptionalString(input.Characters),
+		Importance:       input.Importance,
+		EmotionalValence: input.EmotionalValence,
+	}
+
+	if err := s.memoryStorage.ReplaceMemoryEditableFields(context.Background(), id, update); err != nil {
+		return nil, ierror.NewError(err)
+	}
+
+	if s.memorySearcher != nil && s.memorySearcher.HasEmbedder() {
+		go func(memoryID uint, text string) {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			if embedErr := s.memorySearcher.EmbedAndStore(bgCtx, memoryID, text); embedErr != nil {
+				logger.Error("re-embed memory error:", embedErr)
+				return
+			}
+			s.memorySearcher.RefreshCache()
+		}(id, strings.TrimSpace(summary+" "+content))
+	}
+
+	return s.GetMemoryDetail(id)
 }
 
 // DeleteMemory 软删除记忆。
@@ -100,7 +165,41 @@ func toMemoryViewModel(m memory_models.Memory) view_models.Memory {
 		TrustScore:       m.TrustScore,
 		IsForgotten:      m.IsForgotten,
 		RecallCount:      m.RecallCount,
+		HasEmbedding:     m.EmbeddingID != nil,
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
 	}
+}
+
+func parseMemoryDate(value *string) (*time.Time, error) {
+	if value == nil {
+		return nil, nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	layouts := []string{
+		time.DateOnly,
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, trimmed); err == nil {
+			return &parsed, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid date format: %s", trimmed)
+}
+
+func normalizeOptionalString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }

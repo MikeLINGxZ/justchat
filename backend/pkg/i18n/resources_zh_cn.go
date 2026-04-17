@@ -2,6 +2,10 @@ package i18n
 
 var zhCN = map[string]string{
 	"app.window.settings_title":                   "设置",
+	"app.window.form_provider_title":              "添加供应商",
+	"app.window.form_agent_title":                 "添加智能体",
+	"app.window.form_skill_title":                 "添加技能",
+	"app.window.form_memory_title":                "编辑记忆",
 	"app.dialog.select_mcp_folder":                "选择 MCP 服务目录",
 	"app.dialog.select_skill_folder":              "选择技能文件夹",
 	"prefs.language.invalid":                      "不支持的语言：{{value}}",

@@ -90,6 +90,19 @@ func (s *Storage) fallbackLIKESearch(ctx context.Context, keywords []string, lim
 	return memories, err
 }
 
+// TopImportantMemories 返回最重要的 N 条记忆（按 importance 降序）。
+// 用于关键词检索无结果时的兜底，确保身份/概况类查询仍能获取用户信息。
+func (s *Storage) TopImportantMemories(ctx context.Context, limit int) ([]models.Memory, error) {
+	var memories []models.Memory
+	err := s.sqliteDb.WithContext(ctx).
+		Model(&models.Memory{}).
+		Where("is_forgotten = ?", false).
+		Order("importance DESC, recall_count DESC, created_at DESC").
+		Limit(limit).
+		Find(&memories).Error
+	return memories, err
+}
+
 // IncrementRecallCount 更新记忆的召回计数和最后召回时间。
 func (s *Storage) IncrementRecallCount(ctx context.Context, ids []uint) error {
 	if len(ids) == 0 {
@@ -396,5 +409,36 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 	// 如果更新了 content 或 summary，不需要更新 FTS 索引（已移除FTS）
 	// 直接使用LIKE查询，无需FTS索引维护
 
+	return nil
+}
+
+// ReplaceMemoryEditableFields 覆盖更新记忆的可编辑字段，支持清空字符串/空值。
+func (s *Storage) ReplaceMemoryEditableFields(ctx context.Context, id uint, memory models.Memory) error {
+	var existingMemory models.Memory
+	result := s.sqliteDb.WithContext(ctx).First(&existingMemory, id)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return fmt.Errorf("记忆 ID %d 不存在", id)
+		}
+		return fmt.Errorf("查询记忆失败: %w", result.Error)
+	}
+
+	updateData := map[string]interface{}{
+		"summary":           memory.Summary,
+		"content":           memory.Content,
+		"type":              memory.Type,
+		"time_rang_start":   memory.TimeRangStart,
+		"time_range_end":    memory.TimeRangeEnd,
+		"location":          memory.Location,
+		"characters":        memory.Characters,
+		"importance":        memory.Importance,
+		"emotional_valence": memory.EmotionalValence,
+		"updated_at":        time.Now(),
+	}
+
+	result = s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).Updates(updateData)
+	if result.Error != nil {
+		return fmt.Errorf("更新记忆失败: %w", result.Error)
+	}
 	return nil
 }

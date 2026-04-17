@@ -10,18 +10,31 @@ const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
 const Settings = React.lazy(()=>import('@/pages/settings'));
 const Onboarding = React.lazy(() => import('@/pages/onboarding'));
 const PluginPage = React.lazy(() => import('@/pages/plugin'));
+const AddProviderPage = React.lazy(() => import('@/pages/forms/AddProviderPage'));
+const AddAgentPage = React.lazy(() => import('@/pages/forms/AddAgentPage'));
+const AddSkillPage = React.lazy(() => import('@/pages/forms/AddSkillPage'));
+const EditMemoryPage = React.lazy(() => import('@/pages/forms/EditMemoryPage'));
 
 function EntryRedirect() {
   const [searchParams] = useSearchParams();
   const entry = searchParams.get('entry');
 
   const tab = searchParams.get('tab');
+  const id = searchParams.get('id');
 
   switch (entry) {
     case 'settings':
       return <Navigate to={tab ? `/settings?tab=${tab}` : '/settings'} replace />;
     case 'onboarding':
       return <Navigate to="/onboarding" replace />;
+    case 'form_provider':
+      return <Navigate to="/forms/provider" replace />;
+    case 'form_agent':
+      return <Navigate to="/forms/agent" replace />;
+    case 'form_skill':
+      return <Navigate to="/forms/skill" replace />;
+    case 'form_memory':
+      return <Navigate to={id ? `/forms/memory?id=${id}` : '/forms/memory'} replace />;
     case 'home':
     case null:
       return <Navigate to="/home" replace />;
@@ -114,6 +127,24 @@ function App() {
         <Route
           path="/plugin/:pluginId/:pageId"
           element={<PluginPage />}
+        />
+
+        {/* 独立表单窗口 */}
+        <Route
+          path="/forms/provider"
+          element={<AddProviderPage />}
+        />
+        <Route
+          path="/forms/agent"
+          element={<AddAgentPage />}
+        />
+        <Route
+          path="/forms/skill"
+          element={<AddSkillPage />}
+        />
+        <Route
+          path="/forms/memory"
+          element={<EditMemoryPage />}
         />
 
         {/* 其他路由 - 使用Layout */}

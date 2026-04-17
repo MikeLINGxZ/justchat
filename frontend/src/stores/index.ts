@@ -17,6 +17,7 @@ export {
   hydrateLanguagePreferences,
   initializeLanguage,
 } from './languageStore';
+export { hydrateLabPreferences, useLabStore } from './labStore';
 
 // 导出OPC store
 export { useOPCStore, initializeOPC } from './opcStore';
@@ -26,6 +27,7 @@ import { initializeAuth } from './authStore';
 import { useAuthStore } from './authStore';
 import { initializeFontSize, useFontSizeStore } from './fontSizeStore';
 import { initializeLanguage, useLanguageStore } from './languageStore';
+import { useLabStore } from './labStore';
 import { initializeOPC } from './opcStore';
 
 // 初始化函数
@@ -56,4 +58,6 @@ export const resetAllStores = () => {
   useFontSizeStore.getState().resetFontSize();
   // 重置语言
   useLanguageStore.getState().setLanguage('zh-CN');
+  useLabStore.getState().setMemorySystemEnabled(false);
+  useLabStore.getState().setVectorSearchEnabled(false);
 };
