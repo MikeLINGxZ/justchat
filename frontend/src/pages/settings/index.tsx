@@ -8,6 +8,7 @@ import {
   FileTextOutlined,
   RobotOutlined,
   ThunderboltOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -17,8 +18,11 @@ import GeneralSettingsPage from './general';
 import PromptSettingsPage from './prompt';
 import AgentSettingsPage from './agents';
 import SkillSettingsPage from './skills';
+import PluginSettingsPage from './plugins';
+import MemorySettingsPage from './memory';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { initializeFontSize } from '@/stores/fontSizeStore';
+import { useLabStore } from '@/stores/labStore';
 import styles from './index.module.scss';
 
 const { Sider, Content } = Layout;
@@ -30,7 +34,7 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const validKeys = useMemo(() => ['general', 'provider', 'agents', 'skills', 'prompt', 'about'], []);
+  const validKeys = useMemo(() => ['general', 'memory', 'provider', 'agents', 'skills', 'plugins', 'prompt', 'about'], []);
   const initialTab = useMemo(() => {
     const tab = searchParams.get('tab');
     return tab && validKeys.includes(tab) ? tab : 'general';
@@ -38,6 +42,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
   const [selectedKey, setSelectedKey] = useState(initialTab);
   const [showContent, setShowContent] = useState(false); // 控制移动端内容显示
   const { isMobile } = useViewportHeight(); // 使用移动端检测
+  const pluginSystemEnabled = useLabStore(state => state.pluginSystemEnabled);
+  const memorySystemEnabled = useLabStore(state => state.memorySystemEnabled);
 
   // 监听设备切换，处理从桌面端切换到移动端的情况
   useEffect(() => {
@@ -61,38 +67,65 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
     document.title = t('app.settingsTitle');
   }, [t]);
 
-  const menuItems = useMemo(() => [
-    {
-      key: 'general',
-      icon: <SettingOutlined />,
-      label: t('settings.menu.general'),
-    },
-    {
-      key: 'provider',
-      icon: <ApiOutlined />,
-      label: t('settings.menu.provider'),
-    },
-    {
-      key: 'agents',
-      icon: <RobotOutlined />,
-      label: t('settings.menu.agents'),
-    },
-    {
-      key: 'skills',
-      icon: <ThunderboltOutlined />,
-      label: t('settings.menu.skills'),
-    },
-    {
-      key: 'prompt',
-      icon: <FileTextOutlined />,
-      label: t('settings.menu.prompt'),
-    },
-    {
-      key: 'about',
-      icon: <InfoCircleOutlined />,
-      label: t('settings.menu.about'),
-    },
-  ], [t]);
+  const menuItems = useMemo(() => {
+    const items = [
+      {
+        key: 'general',
+        icon: <SettingOutlined />,
+        label: t('settings.menu.general'),
+      },
+      {
+        key: 'provider',
+        icon: <ApiOutlined />,
+        label: t('settings.menu.provider'),
+      },
+      {
+        key: 'agents',
+        icon: <RobotOutlined />,
+        label: t('settings.menu.agents'),
+      },
+      {
+        key: 'skills',
+        icon: <ThunderboltOutlined />,
+        label: t('settings.menu.skills'),
+      },
+      {
+        key: 'prompt',
+        icon: <FileTextOutlined />,
+        label: t('settings.menu.prompt'),
+      },
+      {
+        key: 'about',
+        icon: <InfoCircleOutlined />,
+        label: t('settings.menu.about'),
+      },
+    ];
+    if (memorySystemEnabled) {
+      // Insert memory after general
+      const generalIdx = items.findIndex(i => i.key === 'general');
+      items.splice(generalIdx + 1, 0, {
+        key: 'memory',
+        icon: <SettingOutlined />,
+        label: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+          {t('settings.menu.memory')}
+          <span style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, background: 'rgba(250, 173, 20, 0.15)', color: '#faad14' }}>Lab</span>
+        </span>,
+      });
+    }
+    if (pluginSystemEnabled) {
+      // Insert plugins before prompt
+      const promptIdx = items.findIndex(i => i.key === 'prompt');
+      items.splice(promptIdx, 0, {
+        key: 'plugins',
+        icon: <AppstoreOutlined />,
+        label: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+          {t('settings.menu.plugins')}
+          <span style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, background: 'rgba(250, 173, 20, 0.15)', color: '#faad14' }}>Lab</span>
+        </span>,
+      });
+    }
+    return items;
+  }, [t, pluginSystemEnabled, memorySystemEnabled]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     setSelectedKey(key);
@@ -116,12 +149,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
           return <ProviderSettingPage />;
         case 'general':
           return <GeneralSettingsPage />;
+        case 'memory':
+          return <MemorySettingsPage />;
         case 'prompt':
           return <PromptSettingsPage />;
         case 'agents':
           return <AgentSettingsPage />;
         case 'skills':
           return <SkillSettingsPage />;
+        case 'plugins':
+          return <PluginSettingsPage />;
         case 'account':
           return <div className={styles.placeholder}>{t('settings.placeholders.account')}</div>;
         case 'security':
@@ -206,7 +243,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             />
           </Sider>
           <Layout className={styles.settingsContent}>
-            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider' || selectedKey === 'agents' || selectedKey === 'skills' || selectedKey === 'general' || selectedKey === 'about') ? styles.contentAreaLocked : ''}`}>
+            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider' || selectedKey === 'agents' || selectedKey === 'skills' || selectedKey === 'plugins' || selectedKey === 'general' || selectedKey === 'memory' || selectedKey === 'about') ? styles.contentAreaLocked : ''}`}>
               {renderContent()}
             </Content>
           </Layout>

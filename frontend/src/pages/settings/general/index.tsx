@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { Button, Card, message, Select, Slider, Typography } from 'antd';
+import { Button, Card, Input, message, Select, Slider, Switch, Typography } from 'antd';
 import {
   CheckOutlined,
+  ExperimentOutlined,
   FontSizeOutlined,
   GlobalOutlined,
   EnvironmentOutlined,
   ReloadOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { useTranslation } from 'react-i18next';
 import { useFontSizeStore, FONT_SIZE_OPTIONS, FONT_SIZE_OFFSETS } from '@/stores/fontSizeStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import { useLabStore } from '@/stores/labStore';
+import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
 import { translateError } from '@/utils/errorHandler';
 import { LANGUAGE_OPTIONS, REGION_OPTIONS } from '@/i18n/types';
 import type { AppLanguage, AppRegion } from '@/i18n/types';
@@ -18,7 +22,7 @@ import styles from './index.module.scss';
 
 const { Title, Text } = Typography;
 
-type SettingSection = 'display' | 'language-region';
+type SettingSection = 'display' | 'language-region' | 'lab';
 
 const GeneralSettingsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -35,6 +39,7 @@ const GeneralSettingsPage: React.FC = () => {
   const sections: { key: SettingSection; title: string; icon: React.ReactNode }[] = [
     { key: 'display', title: t('settings.general.menuDisplay'), icon: <FontSizeOutlined /> },
     { key: 'language-region', title: t('settings.general.menuLanguageRegion'), icon: <GlobalOutlined /> },
+    { key: 'lab', title: t('settings.general.menuLab'), icon: <ExperimentOutlined /> },
   ];
 
   const handleSelectSection = (key: SettingSection) => {
@@ -62,7 +67,9 @@ const GeneralSettingsPage: React.FC = () => {
 
   const renderDetail = () => (
     <Card className={styles.detailCard}>
-      {activeSection === 'display' ? <DisplaySettings /> : <LanguageRegionSettings />}
+      {activeSection === 'display' && <DisplaySettings />}
+      {activeSection === 'language-region' && <LanguageRegionSettings />}
+      {activeSection === 'lab' && <LabSettings />}
     </Card>
   );
 
@@ -275,6 +282,191 @@ const LanguageRegionSettings: React.FC = () => {
             {t('settings.languageRegion.regionHint')}
           </Text>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ---- Lab Settings ----
+
+const LabSettings: React.FC = () => {
+  const { t } = useTranslation();
+  const {
+    pluginSystemEnabled, setPluginSystemEnabled,
+    memorySystemEnabled, setMemorySystemEnabled,
+    vectorSearchEnabled, setVectorSearchEnabled,
+    embeddingConfig, setEmbeddingConfig,
+  } = useLabStore();
+  const [expandedSettings, setExpandedSettings] = useState<Record<string, boolean>>({});
+
+  const toggleSettings = (key: string) => {
+    setExpandedSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleVectorSearchToggle = async (enabled: boolean) => {
+    setVectorSearchEnabled(enabled);
+    if (enabled) {
+      setExpandedSettings(prev => ({ ...prev, vectorSearch: true }));
+      try {
+        await Service.ConfigureEmbedding(
+          embeddingConfig.provider,
+          embeddingConfig.baseUrl,
+          embeddingConfig.apiKey,
+          embeddingConfig.model,
+        );
+      } catch (e) {
+        console.error('ConfigureEmbedding failed:', e);
+        setVectorSearchEnabled(false);
+      }
+    } else {
+      Service.DisableEmbedding();
+    }
+  };
+
+  const handleEmbeddingConfigSave = async () => {
+    if (!vectorSearchEnabled) return;
+    try {
+      await Service.ConfigureEmbedding(
+        embeddingConfig.provider,
+        embeddingConfig.baseUrl,
+        embeddingConfig.apiKey,
+        embeddingConfig.model,
+      );
+      message.success(t('settings.saved'));
+    } catch (e) {
+      console.error('ConfigureEmbedding failed:', e);
+    }
+  };
+
+  return (
+    <div className={styles.settingContent}>
+      <div className={styles.settingHeader}>
+        <Title level={4}>{t('settings.general.labTitle')}</Title>
+        <Text type="secondary">{t('settings.general.labDescription')}</Text>
+      </div>
+
+      <div className={styles.formSection}>
+        {/* 插件系统 */}
+        <div className={styles.labCard}>
+          <div className={styles.labCardHeader}>
+            <div className={styles.labItemInfo}>
+              <div className={styles.formLabelIcon}>
+                <ExperimentOutlined />
+                <Text strong>{t('settings.general.labPluginSystem')}</Text>
+              </div>
+              <Text type="secondary" className={styles.labItemDesc}>
+                {t('settings.general.labPluginSystemDesc')}
+              </Text>
+            </div>
+            <Switch
+              checked={pluginSystemEnabled}
+              onChange={setPluginSystemEnabled}
+            />
+          </div>
+        </div>
+
+        {/* 记忆系统 */}
+        <div className={styles.labCard}>
+          <div className={styles.labCardHeader}>
+            <div className={styles.labItemInfo}>
+              <div className={styles.formLabelIcon}>
+                <ExperimentOutlined />
+                <Text strong>{t('settings.general.labMemorySystem')}</Text>
+              </div>
+              <Text type="secondary" className={styles.labItemDesc}>
+                {t('settings.general.labMemorySystemDesc')}
+              </Text>
+            </div>
+            <Switch
+              checked={memorySystemEnabled}
+              onChange={setMemorySystemEnabled}
+            />
+          </div>
+        </div>
+
+        {/* 向量搜索（记忆系统启用时显示） */}
+        {memorySystemEnabled && (
+          <div className={styles.labCard}>
+            <div className={styles.labCardHeader}>
+              <div className={styles.labItemInfo}>
+                <div className={styles.formLabelIcon}>
+                  <ExperimentOutlined />
+                  <Text strong>{t('settings.general.labVectorSearch')}</Text>
+                </div>
+                <Text type="secondary" className={styles.labItemDesc}>
+                  {t('settings.general.labVectorSearchDesc')}
+                </Text>
+              </div>
+              <div className={styles.labCardActions}>
+                {vectorSearchEnabled && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<SettingOutlined />}
+                    className={styles.labSettingsBtn}
+                    onClick={() => toggleSettings('vectorSearch')}
+                  />
+                )}
+                <Switch
+                  checked={vectorSearchEnabled}
+                  onChange={handleVectorSearchToggle}
+                />
+              </div>
+            </div>
+            {vectorSearchEnabled && expandedSettings['vectorSearch'] && (
+              <div className={styles.labCardBody}>
+                <div className={styles.embeddingGrid}>
+                  <div className={styles.embeddingField}>
+                    <Text type="secondary" className={styles.embeddingFieldLabel}>{t('settings.general.embeddingProvider')}</Text>
+                    <Select
+                      value={embeddingConfig.provider}
+                      onChange={(v) => setEmbeddingConfig({ provider: v })}
+                      size="small"
+                      options={[
+                        { value: 'ollama', label: 'Ollama' },
+                        { value: 'openai_compat', label: t('settings.general.embeddingOpenAICompat') },
+                      ]}
+                    />
+                  </div>
+                  <div className={styles.embeddingField}>
+                    <Text type="secondary" className={styles.embeddingFieldLabel}>{t('settings.general.embeddingModel')}</Text>
+                    <Input
+                      value={embeddingConfig.model}
+                      onChange={(e) => setEmbeddingConfig({ model: e.target.value })}
+                      placeholder={embeddingConfig.provider === 'ollama' ? 'bge-m3' : 'text-embedding-3-small'}
+                      size="small"
+                    />
+                  </div>
+                </div>
+                <div className={styles.embeddingField}>
+                  <Text type="secondary" className={styles.embeddingFieldLabel}>{t('settings.general.embeddingBaseURL')}</Text>
+                  <Input
+                    value={embeddingConfig.baseUrl}
+                    onChange={(e) => setEmbeddingConfig({ baseUrl: e.target.value })}
+                    placeholder={embeddingConfig.provider === 'ollama' ? 'http://localhost:11434' : 'https://api.example.com/v1'}
+                    size="small"
+                  />
+                </div>
+                {embeddingConfig.provider === 'openai_compat' && (
+                  <div className={styles.embeddingField}>
+                    <Text type="secondary" className={styles.embeddingFieldLabel}>API Key</Text>
+                    <Input.Password
+                      value={embeddingConfig.apiKey}
+                      onChange={(e) => setEmbeddingConfig({ apiKey: e.target.value })}
+                      placeholder="sk-..."
+                      size="small"
+                    />
+                  </div>
+                )}
+                <div className={styles.embeddingActions}>
+                  <Button type="primary" size="small" onClick={handleEmbeddingConfigSave}>
+                    {t('settings.general.embeddingSave')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

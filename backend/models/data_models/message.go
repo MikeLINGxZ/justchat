@@ -43,10 +43,6 @@ func (m *Message) ToSchemaMessage() (*schema.Message, error) {
 		}
 
 		for _, item := range m.UserMessageExtra.Files {
-			base64Data, err := utils.ReadFile2Base64Data(item.Path)
-			if err != nil {
-				return nil, err
-			}
 			// 通过mineType获取消息类型
 			chatMessagePartType, err := utils.MimeType2ChatMessagePartType(item.MineType)
 			if err != nil {
@@ -58,41 +54,53 @@ func (m *Message) ToSchemaMessage() (*schema.Message, error) {
 			var audio *schema.MessageInputAudio
 			var video *schema.MessageInputVideo
 			var file *schema.MessageInputFile
-			messagePartCommon := schema.MessagePartCommon{
-				Base64Data: &base64Data,
-				MIMEType:   item.MineType,
-				Extra: map[string]interface{}{
-					"name":                   item.Name,
-					"path":                   item.Path,
-					"mime_type":              item.MineType,
-					"chat_message_part_type": chatMessagePartType,
-					"size":                   item.Size,
-				},
-			}
 			switch chatMessagePartType {
 			case schema.ChatMessagePartTypeText:
-				continue
-			case schema.ChatMessagePartTypeFileURL:
-				file = &schema.MessageInputFile{
-					MessagePartCommon: messagePartCommon,
-					Name:              item.Name,
+				text, err = utils.ReadTextFileForChat(item.Path, item.Name, item.MineType)
+				if err != nil {
+					return nil, err
 				}
-			case schema.ChatMessagePartTypeImageURL:
-				img = &schema.MessageInputImage{
-					MessagePartCommon: messagePartCommon,
-					Detail:            schema.ImageURLDetailHigh,
+			default:
+				base64Data, err := utils.ReadFile2Base64Data(item.Path)
+				if err != nil {
+					return nil, err
 				}
-			case schema.ChatMessagePartTypeAudioURL:
-				audio = &schema.MessageInputAudio{
-					MessagePartCommon: messagePartCommon,
+				messagePartCommon := schema.MessagePartCommon{
+					Base64Data: &base64Data,
+					MIMEType:   item.MineType,
+					Extra: map[string]interface{}{
+						"name":                   item.Name,
+						"path":                   item.Path,
+						"mime_type":              item.MineType,
+						"chat_message_part_type": chatMessagePartType,
+						"size":                   item.Size,
+					},
 				}
-			case schema.ChatMessagePartTypeVideoURL:
-				video = &schema.MessageInputVideo{
-					MessagePartCommon: messagePartCommon,
+				switch chatMessagePartType {
+				case schema.ChatMessagePartTypeFileURL:
+					file = &schema.MessageInputFile{
+						MessagePartCommon: messagePartCommon,
+						Name:              item.Name,
+					}
+				case schema.ChatMessagePartTypeImageURL:
+					img = &schema.MessageInputImage{
+						MessagePartCommon: messagePartCommon,
+						Detail:            schema.ImageURLDetailHigh,
+					}
+				case schema.ChatMessagePartTypeAudioURL:
+					audio = &schema.MessageInputAudio{
+						MessagePartCommon: messagePartCommon,
+					}
+				case schema.ChatMessagePartTypeVideoURL:
+					video = &schema.MessageInputVideo{
+						MessagePartCommon: messagePartCommon,
+					}
 				}
 			}
 			if img == nil && audio == nil && video == nil && file == nil {
-				continue
+				if text == "" {
+					continue
+				}
 			}
 			userInputMultiContent = append(userInputMultiContent, schema.MessageInputPart{
 				Type:  chatMessagePartType,

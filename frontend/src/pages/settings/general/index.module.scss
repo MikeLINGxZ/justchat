@@ -283,6 +283,82 @@
   font-size: 12px;
 }
 
+// ---- Lab Card ----
+
+.labCard {
+  border-radius: 12px;
+  border: 1px solid var(--border-color-light);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(255, 255, 255, 0.96));
+  overflow: hidden;
+}
+
+.labCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.labCardActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.labSettingsBtn {
+  color: var(--text-color-secondary);
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.labCardBody {
+  padding: 0 var(--spacing-lg) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-color-light);
+  padding-top: var(--spacing-md);
+  margin: 0 var(--spacing-sm);
+}
+
+.labItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.labItemDesc {
+  font-size: 12px;
+}
+
+// ---- Embedding Config ----
+
+.embeddingGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.embeddingField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.embeddingFieldLabel {
+  font-size: 12px;
+}
+
+.embeddingActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .mobileDetail {
   display: flex;
   flex-direction: column;

@@ -27,10 +27,11 @@ type Memory struct {
 	Characters    *string    `gorm:"type:varchar(500)"`      // 相关人物（可选），多个人物使用","分割
 	Context       *string    `gorm:"type:json"`              // 上下文元数据（JSON 格式）
 
-	EmbeddingID      *uint      `gorm:"index"`               // 嵌入id
-	Importance       float64    `gorm:"default:0.5"`         // 重要性评分 [0.0 ~ 1.0]
-	EmotionalValence float64    `gorm:"default:0.0"`         // 情感极性 [-1.0 ~ +1.0] 负面到正面
-	IsForgotten      bool       `gorm:"default:false;index"` // 是否已遗忘（用于模拟遗忘）
-	RecallCount      int        `gorm:"default:0"`           // 被回忆的次数（影响强度）
-	LastRecalledAt   *time.Time `gorm:"-"`                   // 最后一次被回忆的时间
+	EmbeddingID      *uint      `gorm:"index"`                   // 嵌入id
+	Importance       float64    `gorm:"default:0.5"`             // 重要性评分 [0.0 ~ 1.0]
+	EmotionalValence float64    `gorm:"default:0.0"`             // 情感极性 [-1.0 ~ +1.0] 负面到正面
+	TrustScore       float64    `gorm:"default:0.5"`             // 信任分数 [0.0 ~ 1.0]，非对称反馈
+	IsForgotten      bool       `gorm:"default:false;index"`     // 是否已遗忘（用于模拟遗忘）
+	RecallCount      int        `gorm:"default:0"`               // 被回忆的次数（影响强度）
+	LastRecalledAt   *time.Time `gorm:"column:last_recalled_at"` // 最后一次被回忆的时间
 }

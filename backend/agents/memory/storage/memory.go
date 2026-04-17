@@ -11,8 +11,168 @@ import (
 )
 
 func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {
+	// 写入前去重：检查是否已有相同 summary 的记忆（精确匹配）
+	if memory.Summary != "" {
+		var count int64
+		s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).
+			Where("summary = ? AND is_forgotten = ?", memory.Summary, false).
+			Count(&count)
+		if count > 0 {
+			// 已存在相同标题的记忆，返回已有记录的 ID
+			var existing models.Memory
+			s.sqliteDb.WithContext(ctx).
+				Where("summary = ? AND is_forgotten = ?", memory.Summary, false).
+				First(&existing)
+			return existing.ID, nil
+		}
+	}
 	result := s.sqliteDb.WithContext(ctx).Create(&memory)
 	return memory.ID, result.Error
+}
+
+// FTSSearch 使用 FTS5 全文检索搜索记忆，返回按相关性排序的结果。
+// keywords 之间使用 OR 语义，limit 为返回上限。
+func (s *Storage) FTSSearch(ctx context.Context, keywords []string, limit int) ([]models.Memory, error) {
+	var cleaned []string
+	for _, kw := range keywords {
+		kw = strings.TrimSpace(kw)
+		if kw != "" {
+			// 转义 FTS5 特殊字符
+			kw = strings.ReplaceAll(kw, "\"", "\"\"")
+			cleaned = append(cleaned, "\""+kw+"\"")
+		}
+	}
+	if len(cleaned) == 0 {
+		return nil, nil
+	}
+
+	matchExpr := strings.Join(cleaned, " OR ")
+	var memories []models.Memory
+	err := s.sqliteDb.WithContext(ctx).
+		Raw(`SELECT m.* FROM memories m
+			 JOIN memories_fts ON memories_fts.rowid = m.id
+			 WHERE memories_fts MATCH ? AND m.is_forgotten = 0
+			 ORDER BY rank
+			 LIMIT ?`, matchExpr, limit).
+		Scan(&memories).Error
+	if err != nil {
+		// FTS5 不可用时降级为 LIKE
+		return s.fallbackLIKESearch(ctx, keywords, limit)
+	}
+	// FTS5 查询成功但无结果时，也尝试 LIKE 兜底
+	// （FTS5 的 unicode61 分词器对中文短词可能不够敏感）
+	if len(memories) == 0 {
+		return s.fallbackLIKESearch(ctx, keywords, limit)
+	}
+	return memories, nil
+}
+
+// fallbackLIKESearch FTS5 不可用时的降级检索。
+func (s *Storage) fallbackLIKESearch(ctx context.Context, keywords []string, limit int) ([]models.Memory, error) {
+	query := s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("is_forgotten = ?", false)
+
+	var conditions []string
+	var args []interface{}
+	for _, kw := range keywords {
+		kw = strings.TrimSpace(kw)
+		if kw != "" {
+			pattern := "%" + kw + "%"
+			conditions = append(conditions, "(summary LIKE ? OR content LIKE ?)")
+			args = append(args, pattern, pattern)
+		}
+	}
+	if len(conditions) > 0 {
+		query = query.Where(strings.Join(conditions, " OR "), args...)
+	}
+
+	var memories []models.Memory
+	err := query.Order("importance DESC").Limit(limit).Find(&memories).Error
+	return memories, err
+}
+
+// IncrementRecallCount 更新记忆的召回计数和最后召回时间。
+func (s *Storage) IncrementRecallCount(ctx context.Context, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now()
+	return s.sqliteDb.WithContext(ctx).
+		Model(&models.Memory{}).
+		Where("id IN ?", ids).
+		Updates(map[string]interface{}{
+			"recall_count":     gorm.Expr("recall_count + 1"),
+			"last_recalled_at": now,
+			"updated_at":       now,
+		}).Error
+}
+
+// AdjustTrustScore 非对称信任反馈。delta > 0 为正面反馈，delta < 0 为负面反馈。
+func (s *Storage) AdjustTrustScore(ctx context.Context, id uint, delta float64) error {
+	return s.sqliteDb.WithContext(ctx).
+		Model(&models.Memory{}).
+		Where("id = ?", id).
+		Update("trust_score",
+			gorm.Expr("MIN(1.0, MAX(0.0, trust_score + ?))", delta),
+		).Error
+}
+
+// ---- 前端 CRUD ----
+
+// ListMemories 分页查询记忆列表。
+func (s *Storage) ListMemories(ctx context.Context, offset, limit int, keyword string, memType string, isForgotten bool) ([]models.Memory, int64, error) {
+	query := s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("is_forgotten = ?", isForgotten)
+	if memType != "" {
+		query = query.Where("type = ?", memType)
+	}
+	if keyword != "" {
+		pattern := "%" + keyword + "%"
+		query = query.Where("summary LIKE ? OR content LIKE ?", pattern, pattern)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var memories []models.Memory
+	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&memories).Error
+	return memories, total, err
+}
+
+// GetMemoryByID 获取单条记忆详情。
+func (s *Storage) GetMemoryByID(ctx context.Context, id uint) (*models.Memory, error) {
+	var m models.Memory
+	err := s.sqliteDb.WithContext(ctx).First(&m, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+// SoftDeleteMemory 软删除（标记 IsForgotten）。
+func (s *Storage) SoftDeleteMemory(ctx context.Context, id uint) error {
+	return s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).
+		Update("is_forgotten", true).Error
+}
+
+// RestoreMemory 恢复已遗忘的记忆。
+func (s *Storage) RestoreMemory(ctx context.Context, id uint) error {
+	return s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).
+		Update("is_forgotten", false).Error
+}
+
+// GetMemoryStats 返回统计数据。
+func (s *Storage) GetMemoryStats(ctx context.Context) (total int64, weekNew int64, forgotten int64, err error) {
+	db := s.sqliteDb.WithContext(ctx)
+	if err = db.Model(&models.Memory{}).Where("is_forgotten = ?", false).Count(&total).Error; err != nil {
+		return
+	}
+	weekAgo := time.Now().AddDate(0, 0, -7)
+	if err = db.Model(&models.Memory{}).Where("is_forgotten = ? AND created_at >= ?", false, weekAgo).Count(&weekNew).Error; err != nil {
+		return
+	}
+	err = db.Model(&models.Memory{}).Where("is_forgotten = ?", true).Count(&forgotten).Error
+	return
 }
 
 func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt *time.Time) ([]models.Memory, error) {

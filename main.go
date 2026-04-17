@@ -37,7 +37,8 @@ func main() {
 	}
 
 	if initialized {
-		service.NewHomeWindow(app)
+		homeWindow := service.NewHomeWindow(app)
+		serviceInstance.RegisterFileDropHandler(homeWindow)
 	} else {
 		service.NewOnboardingWindow(app)
 	}

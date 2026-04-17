@@ -1,9 +1,7 @@
 package service
 
 import (
-	"mime"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
@@ -14,7 +12,7 @@ import (
 func (s *Service) SelectFiles() ([]view_models.FileInfo, error) {
 
 	// 调用系统接口选择文件
-	pattern := "*.txt;*.log;*.text;*.json;*.html;*.css;*.scss;*.jpg;*.png;*.jpeg;*.bmp"
+	pattern := "*.txt;*.log;*.text;*.json;*.html;*.css;*.scss;*.jpg;*.png;*.jpeg;*.bmp;*.md"
 	paths, err := s.app.Dialog.OpenFile().SetTitle("").AddFilter("选择文件", pattern).PromptForMultipleSelection()
 	if err != nil {
 		return nil, ierror.NewError(err)
@@ -23,6 +21,10 @@ func (s *Service) SelectFiles() ([]view_models.FileInfo, error) {
 		return []view_models.FileInfo{}, nil
 	}
 
+	return s.fileInfo(paths)
+}
+
+func (s *Service) GetFileInfoByPaths(paths []string) ([]view_models.FileInfo, error) {
 	return s.fileInfo(paths)
 }
 
@@ -39,9 +41,9 @@ func (s *Service) fileInfo(paths []string) ([]view_models.FileInfo, error) {
 			return nil, ierror.NewError(err)
 		}
 
-		mimeType := mime.TypeByExtension(filepath.Ext(p))
-		if mimeType == "" {
-			mimeType = "application/octet-stream"
+		mimeType, err := utils.DetectMimeType(p)
+		if err != nil {
+			return nil, ierror.NewError(err)
 		}
 
 		info := view_models.FileInfo{

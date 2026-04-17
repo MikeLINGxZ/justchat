@@ -77,5 +77,21 @@ func (s *Service) GetTools() []view_models.Tool {
 		}
 		res = append(res, s.customServerToViewTool(server))
 	}
+
+	// Plugin tools
+	if s.pluginManager != nil {
+		for _, pt := range s.pluginManager.GetPluginTools() {
+			res = append(res, view_models.Tool{
+				Id:          pt.Id(),
+				Name:        pt.Name(),
+				Description: pt.Description(),
+				SourceType:  "plugin",
+				Enabled:     true,
+				IsDeletable: false,
+				PluginName:  pt.PluginDisplayName(),
+			})
+		}
+	}
+
 	return res
 }

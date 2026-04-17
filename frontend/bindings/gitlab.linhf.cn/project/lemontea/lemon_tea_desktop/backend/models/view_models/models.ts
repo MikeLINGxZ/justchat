@@ -332,6 +332,178 @@ export class CustomAgentInput {
 export const FileInfo = data_models$0.File;
 export type FileInfo = data_models$0.File;
 
+export class Memory {
+    "id": number;
+    "summary": string;
+    "content": string;
+    "type": string;
+    "time_range_start": time$0.Time | null;
+    "time_range_end": time$0.Time | null;
+    "location": string | null;
+    "characters": string | null;
+    "importance": number;
+    "emotional_valence": number;
+    "trust_score": number;
+    "is_forgotten": boolean;
+    "recall_count": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+
+    /** Creates a new Memory instance. */
+    constructor($$source: Partial<Memory> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("summary" in $$source)) {
+            this["summary"] = "";
+        }
+        if (!("content" in $$source)) {
+            this["content"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = "";
+        }
+        if (!("time_range_start" in $$source)) {
+            this["time_range_start"] = null;
+        }
+        if (!("time_range_end" in $$source)) {
+            this["time_range_end"] = null;
+        }
+        if (!("location" in $$source)) {
+            this["location"] = null;
+        }
+        if (!("characters" in $$source)) {
+            this["characters"] = null;
+        }
+        if (!("importance" in $$source)) {
+            this["importance"] = 0;
+        }
+        if (!("emotional_valence" in $$source)) {
+            this["emotional_valence"] = 0;
+        }
+        if (!("trust_score" in $$source)) {
+            this["trust_score"] = 0;
+        }
+        if (!("is_forgotten" in $$source)) {
+            this["is_forgotten"] = false;
+        }
+        if (!("recall_count" in $$source)) {
+            this["recall_count"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Memory instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Memory {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Memory($$parsedSource as Partial<Memory>);
+    }
+}
+
+export class MemoryListQuery {
+    "offset": number;
+    "limit": number;
+    "keyword": string;
+    "type": string;
+    "is_forgotten": boolean;
+
+    /** Creates a new MemoryListQuery instance. */
+    constructor($$source: Partial<MemoryListQuery> = {}) {
+        if (!("offset" in $$source)) {
+            this["offset"] = 0;
+        }
+        if (!("limit" in $$source)) {
+            this["limit"] = 0;
+        }
+        if (!("keyword" in $$source)) {
+            this["keyword"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = "";
+        }
+        if (!("is_forgotten" in $$source)) {
+            this["is_forgotten"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MemoryListQuery instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MemoryListQuery {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MemoryListQuery($$parsedSource as Partial<MemoryListQuery>);
+    }
+}
+
+export class MemoryListResponse {
+    "memories": Memory[];
+    "total": number;
+
+    /** Creates a new MemoryListResponse instance. */
+    constructor($$source: Partial<MemoryListResponse> = {}) {
+        if (!("memories" in $$source)) {
+            this["memories"] = [];
+        }
+        if (!("total" in $$source)) {
+            this["total"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MemoryListResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MemoryListResponse {
+        const $$createField0_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("memories" in $$parsedSource) {
+            $$parsedSource["memories"] = $$createField0_0($$parsedSource["memories"]);
+        }
+        return new MemoryListResponse($$parsedSource as Partial<MemoryListResponse>);
+    }
+}
+
+export class MemoryStats {
+    "total": number;
+    "week_new": number;
+    "forgotten": number;
+
+    /** Creates a new MemoryStats instance. */
+    constructor($$source: Partial<MemoryStats> = {}) {
+        if (!("total" in $$source)) {
+            this["total"] = 0;
+        }
+        if (!("week_new" in $$source)) {
+            this["week_new"] = 0;
+        }
+        if (!("forgotten" in $$source)) {
+            this["forgotten"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MemoryStats instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MemoryStats {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MemoryStats($$parsedSource as Partial<MemoryStats>);
+    }
+}
+
 export const Message = data_models$0.Message;
 export type Message = data_models$0.Message;
 
@@ -355,7 +527,7 @@ export class MessageList {
      * Creates a new MessageList instance from a string or object.
      */
     static createFrom($$source: any = {}): MessageList {
-        const $$createField0_0 = $$createType6;
+        const $$createField0_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("messages" in $$parsedSource) {
             $$parsedSource["messages"] = $$createField0_0($$parsedSource["messages"]);
@@ -612,7 +784,7 @@ export class OPCGroupView {
      * Creates a new OPCGroupView instance from a string or object.
      */
     static createFrom($$source: any = {}): OPCGroupView {
-        const $$createField9_0 = $$createType8;
+        const $$createField9_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("members" in $$parsedSource) {
             $$parsedSource["members"] = $$createField9_0($$parsedSource["members"]);
@@ -746,6 +918,112 @@ export class OPCPersonView {
     static createFrom($$source: any = {}): OPCPersonView {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new OPCPersonView($$parsedSource as Partial<OPCPersonView>);
+    }
+}
+
+export class PluginContribItem {
+    "id": string;
+    "name": string;
+
+    /** Creates a new PluginContribItem instance. */
+    constructor($$source: Partial<PluginContribItem> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PluginContribItem instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PluginContribItem {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PluginContribItem($$parsedSource as Partial<PluginContribItem>);
+    }
+}
+
+export class PluginSummary {
+    "id": string;
+    "display_name": string;
+    "version": string;
+    "description": string;
+    "enabled": boolean;
+    "state": string;
+    "tool_count": number;
+    "view_count": number;
+    "hook_count": number;
+    "agent_count": number;
+    "tools": PluginContribItem[];
+    "agents": PluginContribItem[];
+    "hooks": string[];
+
+    /** Creates a new PluginSummary instance. */
+    constructor($$source: Partial<PluginSummary> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("display_name" in $$source)) {
+            this["display_name"] = "";
+        }
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+        if (!("state" in $$source)) {
+            this["state"] = "";
+        }
+        if (!("tool_count" in $$source)) {
+            this["tool_count"] = 0;
+        }
+        if (!("view_count" in $$source)) {
+            this["view_count"] = 0;
+        }
+        if (!("hook_count" in $$source)) {
+            this["hook_count"] = 0;
+        }
+        if (!("agent_count" in $$source)) {
+            this["agent_count"] = 0;
+        }
+        if (!("tools" in $$source)) {
+            this["tools"] = [];
+        }
+        if (!("agents" in $$source)) {
+            this["agents"] = [];
+        }
+        if (!("hooks" in $$source)) {
+            this["hooks"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PluginSummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PluginSummary {
+        const $$createField10_0 = $$createType12;
+        const $$createField11_0 = $$createType12;
+        const $$createField12_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField10_0($$parsedSource["tools"]);
+        }
+        if ("agents" in $$parsedSource) {
+            $$parsedSource["agents"] = $$createField11_0($$parsedSource["agents"]);
+        }
+        if ("hooks" in $$parsedSource) {
+            $$parsedSource["hooks"] = $$createField12_0($$parsedSource["hooks"]);
+        }
+        return new PluginSummary($$parsedSource as Partial<PluginSummary>);
     }
 }
 
@@ -911,8 +1189,8 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType10;
-        const $$createField11_0 = $$createType12;
+        const $$createField10_0 = $$createType14;
+        const $$createField11_0 = $$createType16;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
             $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
@@ -1070,7 +1348,7 @@ export class TaskList {
      * Creates a new TaskList instance from a string or object.
      */
     static createFrom($$source: any = {}): TaskList {
-        const $$createField0_0 = $$createType14;
+        const $$createField0_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tasks" in $$parsedSource) {
             $$parsedSource["tasks"] = $$createField0_0($$parsedSource["tasks"]);
@@ -1086,6 +1364,7 @@ export class Tool {
     "source_type": string;
     "enabled": boolean;
     "is_deletable": boolean;
+    "plugin_name"?: string;
 
     /** Creates a new Tool instance. */
     constructor($$source: Partial<Tool> = {}) {
@@ -1126,13 +1405,17 @@ const $$createType1 = AgentPrompt.createFrom;
 const $$createType2 = $Create.Array($$createType1);
 const $$createType3 = data_models$0.Chat.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = data_models$0.Message.createFrom;
+const $$createType5 = Memory.createFrom;
 const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = OPCPersonView.createFrom;
+const $$createType7 = data_models$0.Message.createFrom;
 const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = Model.createFrom;
+const $$createType9 = OPCPersonView.createFrom;
 const $$createType10 = $Create.Array($$createType9);
-const $$createType11 = data_models$0.Model.createFrom;
+const $$createType11 = PluginContribItem.createFrom;
 const $$createType12 = $Create.Array($$createType11);
-const $$createType13 = data_models$0.Task.createFrom;
+const $$createType13 = Model.createFrom;
 const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = data_models$0.Model.createFrom;
+const $$createType16 = $Create.Array($$createType15);
+const $$createType17 = data_models$0.Task.createFrom;
+const $$createType18 = $Create.Array($$createType17);

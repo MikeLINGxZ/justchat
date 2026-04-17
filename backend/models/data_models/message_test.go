@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/cloudwego/eino/schema"
@@ -117,6 +118,46 @@ func TestToSchemaMessage_PreservesLeadingTextWithAttachment(t *testing.T) {
 	}
 	if got.UserInputMultiContent[0].Text != "帮我看看这个文件" {
 		t.Fatalf("first part text = %q, want original content", got.UserInputMultiContent[0].Text)
+	}
+}
+
+func TestToSchemaMessage_TextFileBecomesTextPart(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(filePath, []byte("# Title\n\nhello markdown"), 0o644); err != nil {
+		t.Fatalf("write text fixture: %v", err)
+	}
+
+	msg := Message{
+		Role:    schema.User,
+		Content: "帮我总结这个文档",
+		UserMessageExtra: &UserMessageExtra{
+			Files: []File{{
+				Name:     "README.md",
+				Path:     filePath,
+				MineType: "text/markdown",
+			}},
+		},
+	}
+
+	got, err := msg.ToSchemaMessage()
+	if err != nil {
+		t.Fatalf("ToSchemaMessage() error = %v", err)
+	}
+	if len(got.UserInputMultiContent) != 2 {
+		t.Fatalf("parts len = %d, want 2", len(got.UserInputMultiContent))
+	}
+	if got.UserInputMultiContent[1].Type != schema.ChatMessagePartTypeText {
+		t.Fatalf("second part type = %q, want text", got.UserInputMultiContent[1].Type)
+	}
+	if got.UserInputMultiContent[1].Text == "" {
+		t.Fatal("second part text is empty")
+	}
+	if want := "README.md"; !strings.Contains(got.UserInputMultiContent[1].Text, want) {
+		t.Fatalf("second part text = %q, want to contain %q", got.UserInputMultiContent[1].Text, want)
+	}
+	if want := "hello markdown"; !strings.Contains(got.UserInputMultiContent[1].Text, want) {
+		t.Fatalf("second part text = %q, want to contain %q", got.UserInputMultiContent[1].Text, want)
 	}
 }
 

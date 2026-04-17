@@ -30,6 +30,22 @@ import {useNavigate} from "react-router-dom";
 import {notify} from "@/utils/notification.ts";
 import {useTranslation} from 'react-i18next';
 
+function readStoredSelectedToolIds(): { ids: string[]; hasStoredValue: boolean } {
+    try {
+        const raw = localStorage.getItem('chat_selected_tools');
+        if (!raw) {
+            return { ids: [], hasStoredValue: false };
+        }
+        const parsed = JSON.parse(raw) as string[];
+        return {
+            ids: Array.isArray(parsed) ? parsed : [],
+            hasStoredValue: true,
+        };
+    } catch {
+        return { ids: [], hasStoredValue: false };
+    }
+}
+
 interface ChatProps {
     // 对话uuid
     chatUuid?: string;
@@ -181,16 +197,8 @@ const Chat: React.FC<ChatProps> = ({
     // 可用工具
     const [availableTools,setAvailableTools] = useState<Tool[]>([]);
     // 用户选中的自定义 MCP 工具 id 列表（持久化到 localStorage）
-    const [selectedToolIds, setSelectedToolIds] = useState<string[]>(() => {
-        try {
-            const raw = localStorage.getItem('chat_selected_tools');
-            if (!raw) return [];
-            const parsed = JSON.parse(raw) as string[];
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
-        }
-    });
+    const initialStoredToolSelection = useMemo(() => readStoredSelectedToolIds(), []);
+    const [selectedToolIds, setSelectedToolIds] = useState<string[]>(initialStoredToolSelection.ids);
     // 后端已开始流式推送的会话 uuid（支持多会话后台生成）
     const [generatingUuids, setGeneratingUuids] = useState<string[]>([]);
     const [activeTasksByChat, setActiveTasksByChat] = useState<Record<string, Task>>({});
@@ -234,7 +242,7 @@ const Chat: React.FC<ChatProps> = ({
     ), [availableTools]);
 
     const customTools = useMemo(() => (
-        availableTools.filter((tool) => tool.source_type === 'mcp_custom')
+        availableTools.filter((tool) => tool.source_type === 'mcp_custom' || tool.source_type === 'plugin')
     ), [availableTools]);
 
     const effectiveSelectedToolIds = useMemo(() => (
@@ -243,6 +251,7 @@ const Chat: React.FC<ChatProps> = ({
             ...selectedToolIds,
         ])]
     ), [defaultBuiltinToolIds, selectedToolIds]);
+
 
     const propUuid = chatUuid ?? "";
     const activeTitleChatUuid = currentChatUuid || propUuid;
@@ -297,16 +306,24 @@ const Chat: React.FC<ChatProps> = ({
         });
     }, [refreshAvailableTools]);
 
+    // 监听插件变更事件，刷新工具列表
+    useEffect(() => {
+        const cancel = Events.On("plugin:changed", () => {
+            refreshAvailableTools().catch(() => {});
+        });
+        return () => { cancel(); };
+    }, [refreshAvailableTools]);
+
     // 当可用工具加载后，仅保留有效的自定义 MCP 工具，并自动纳入已启用项
     useEffect(() => {
         if (availableTools.length === 0) return;
         const validCustomIds = new Set(
             availableTools
-                .filter((tool) => tool.source_type === 'mcp_custom')
+                .filter((tool) => tool.source_type === 'mcp_custom' || tool.source_type === 'plugin')
                 .map((tool) => tool.id)
         );
         const enabledCustomIds = availableTools
-            .filter((tool) => tool.source_type === 'mcp_custom' && tool.enabled)
+            .filter((tool) => (tool.source_type === 'mcp_custom' || tool.source_type === 'plugin') && tool.enabled)
             .map((tool) => tool.id);
         setSelectedToolIds(prev => {
             const next = [...new Set([

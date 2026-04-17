@@ -81,7 +81,6 @@ function AppProviders() {
 
 async function bootstrap() {
   await hydrateLanguagePreferences();
-
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <AppProviders />

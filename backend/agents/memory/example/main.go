@@ -11,11 +11,17 @@ import (
 	agents "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/example/internal"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func main() {
 
-	is, err := storage.NewStorage()
+	db, err := gorm.Open(sqlite.Open("./agent_memory_example.db"), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	is, err := storage.NewStorage(db)
 	if err != nil {
 		panic(err)
 	}

@@ -61,6 +61,19 @@ func UnregisterAgentsByType(agentType AgentType) {
 	registry = filtered
 }
 
+// UnregisterAgentByName removes an agent by its name from the registry.
+func UnregisterAgentByName(name string) {
+	mu.Lock()
+	defer mu.Unlock()
+	filtered := make([]IAgent, 0, len(registry))
+	for _, a := range registry {
+		if a.Name() != name {
+			filtered = append(filtered, a)
+		}
+	}
+	registry = filtered
+}
+
 // AgentsByType 按类型过滤 Agent。
 func AgentsByType(agentType AgentType) []IAgent {
 	mu.RLock()

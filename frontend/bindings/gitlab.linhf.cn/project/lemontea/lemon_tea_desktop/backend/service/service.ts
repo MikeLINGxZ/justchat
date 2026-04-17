@@ -7,6 +7,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as application$0 from "../../../../../../github.com/wailsapp/wails/v3/pkg/application/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as data_models$0 from "../models/data_models/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -81,6 +84,14 @@ export function Completions(inputMessage: view_models$0.Message): $CancellablePr
 }
 
 /**
+ * ConfigureEmbedding 配置嵌入引擎。前端调用此方法传入嵌入配置后，
+ * 重建 HybridSearcher 以启用向量搜索。
+ */
+export function ConfigureEmbedding(provider: string, baseURL: string, apiKey: string, model: string): $CancellablePromise<void> {
+    return $Call.ByID(3314821975, provider, baseURL, apiKey, model);
+}
+
+/**
  * CreateCustomAgent creates a new custom agent.
  */
 export function CreateCustomAgent(input: view_models$0.CustomAgentInput): $CancellablePromise<view_models$0.AgentDetail | null> {
@@ -117,6 +128,13 @@ export function DeleteMCPTool(toolID: string): $CancellablePromise<void> {
 }
 
 /**
+ * DeleteMemory 软删除记忆。
+ */
+export function DeleteMemory(id: number): $CancellablePromise<void> {
+    return $Call.ByID(1846175366, id);
+}
+
+/**
  * DeleteProvider 删除供应商
  */
 export function DeleteProvider(providerId: number): $CancellablePromise<void> {
@@ -132,6 +150,21 @@ export function DeleteProviderCustomModel(providerId: number, modelName: string)
  */
 export function DeleteSkill(name: string): $CancellablePromise<void> {
     return $Call.ByID(1433770462, name);
+}
+
+/**
+ * DisableEmbedding 禁用向量搜索，回退到纯 FTS5/LIKE。
+ */
+export function DisableEmbedding(): $CancellablePromise<void> {
+    return $Call.ByID(3229847879);
+}
+
+export function DisablePlugin(pluginId: string): $CancellablePromise<void> {
+    return $Call.ByID(1207542597, pluginId);
+}
+
+export function EnablePlugin(pluginId: string): $CancellablePromise<void> {
+    return $Call.ByID(2410748310, pluginId);
 }
 
 export function ExitApp(): $CancellablePromise<void> {
@@ -167,17 +200,82 @@ export function GetChatActiveTask(chatUuid: string): $CancellablePromise<view_mo
 }
 
 /**
+ * GetEmbeddingProviders 返回支持的嵌入引擎列表。
+ */
+export function GetEmbeddingProviders(): $CancellablePromise<{ [_ in string]?: string }[]> {
+    return $Call.ByID(168490155).then(($result: any) => {
+        return $$createType19($result);
+    });
+}
+
+export function GetFileInfoByPaths(paths: string[]): $CancellablePromise<view_models$0.FileInfo[]> {
+    return $Call.ByID(3358092203, paths).then(($result: any) => {
+        return $$createType21($result);
+    });
+}
+
+export function GetInstalledPlugins(): $CancellablePromise<view_models$0.PluginSummary[]> {
+    return $Call.ByID(2106733876).then(($result: any) => {
+        return $$createType23($result);
+    });
+}
+
+/**
+ * GetMemories 分页查询记忆列表。
+ */
+export function GetMemories(query: view_models$0.MemoryListQuery): $CancellablePromise<view_models$0.MemoryListResponse | null> {
+    return $Call.ByID(3713705637, query).then(($result: any) => {
+        return $$createType25($result);
+    });
+}
+
+/**
+ * GetMemoryDetail 获取单条记忆详情。
+ */
+export function GetMemoryDetail(id: number): $CancellablePromise<view_models$0.Memory | null> {
+    return $Call.ByID(1484199416, id).then(($result: any) => {
+        return $$createType27($result);
+    });
+}
+
+/**
+ * GetMemoryStats 获取记忆统计。
+ */
+export function GetMemoryStats(): $CancellablePromise<view_models$0.MemoryStats | null> {
+    return $Call.ByID(3560819144).then(($result: any) => {
+        return $$createType29($result);
+    });
+}
+
+/**
  * GetModels 获取所有模型
  */
 export function GetModels(enableProvider: boolean | null, enableModel: boolean | null): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(2435611672, enableProvider, enableModel).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType31($result);
+    });
+}
+
+/**
+ * GetPluginAssetPath returns the absolute file path for a plugin UI asset.
+ * This allows the frontend to construct file:// URLs for plugin iframes.
+ */
+export function GetPluginAssetPath(pluginId: string, assetPath: string): $CancellablePromise<string> {
+    return $Call.ByID(2375533328, pluginId, assetPath);
+}
+
+/**
+ * GetPluginViews returns the view contributions for all active plugins.
+ */
+export function GetPluginViews(): $CancellablePromise<{ [_ in string]?: any }> {
+    return $Call.ByID(1351358069).then(($result: any) => {
+        return $$createType32($result);
     });
 }
 
 export function GetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(508910466, name).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType34($result);
     });
 }
 
@@ -186,7 +284,7 @@ export function GetPromptFile(name: string): $CancellablePromise<view_models$0.P
  */
 export function GetProviderModels(provider: view_models$0.Provider): $CancellablePromise<view_models$0.Model[]> {
     return $Call.ByID(1264152129, provider).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType31($result);
     });
 }
 
@@ -195,13 +293,13 @@ export function GetProviderModels(provider: view_models$0.Provider): $Cancellabl
  */
 export function GetProviders(): $CancellablePromise<view_models$0.Provider[]> {
     return $Call.ByID(3921712104).then(($result: any) => {
-        return $$createType23($result);
+        return $$createType36($result);
     });
 }
 
 export function GetRunningTasks(): $CancellablePromise<view_models$0.TaskList | null> {
     return $Call.ByID(2644190933).then(($result: any) => {
-        return $$createType25($result);
+        return $$createType38($result);
     });
 }
 
@@ -219,7 +317,7 @@ export function GetSkill(name: string): $CancellablePromise<view_models$0.SkillD
  */
 export function GetSupportProviders(): $CancellablePromise<view_models$0.SupportProvider[]> {
     return $Call.ByID(4035154853).then(($result: any) => {
-        return $$createType27($result);
+        return $$createType40($result);
     });
 }
 
@@ -231,7 +329,7 @@ export function GetTask(taskUuid: string): $CancellablePromise<view_models$0.Tas
 
 export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
     return $Call.ByID(432097153).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType41($result);
     });
 }
 
@@ -240,8 +338,12 @@ export function GetTools(): $CancellablePromise<view_models$0.Tool[]> {
  */
 export function ImportSkillsFromFolder(folderPath: string): $CancellablePromise<view_models$0.SkillSummary[]> {
     return $Call.ByID(376506509, folderPath).then(($result: any) => {
-        return $$createType30($result);
+        return $$createType43($result);
     });
+}
+
+export function InstallPlugin(): $CancellablePromise<void> {
+    return $Call.ByID(2993680758);
 }
 
 export function IsInitialized(): $CancellablePromise<boolean> {
@@ -253,13 +355,13 @@ export function IsInitialized(): $CancellablePromise<boolean> {
  */
 export function ListAgents(): $CancellablePromise<view_models$0.AgentSummary[]> {
     return $Call.ByID(1996549960).then(($result: any) => {
-        return $$createType32($result);
+        return $$createType45($result);
     });
 }
 
 export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileSummary[]> {
     return $Call.ByID(3509338483).then(($result: any) => {
-        return $$createType34($result);
+        return $$createType47($result);
     });
 }
 
@@ -268,7 +370,7 @@ export function ListPromptFiles(): $CancellablePromise<view_models$0.PromptFileS
  */
 export function ListSkills(): $CancellablePromise<view_models$0.SkillSummary[]> {
     return $Call.ByID(1487878748).then(($result: any) => {
-        return $$createType30($result);
+        return $$createType43($result);
     });
 }
 
@@ -281,13 +383,13 @@ export function OPCClearConversation(chatUuid: string): $CancellablePromise<void
 
 export function OPCCreateGroup(input: view_models$0.OPCGroupInput): $CancellablePromise<view_models$0.OPCGroupView | null> {
     return $Call.ByID(35429625, input).then(($result: any) => {
-        return $$createType36($result);
+        return $$createType49($result);
     });
 }
 
 export function OPCCreatePerson(input: view_models$0.OPCPersonInput): $CancellablePromise<view_models$0.OPCPersonView | null> {
     return $Call.ByID(217156171, input).then(($result: any) => {
-        return $$createType38($result);
+        return $$createType51($result);
     });
 }
 
@@ -301,13 +403,13 @@ export function OPCDeletePerson(personUuid: string): $CancellablePromise<void> {
 
 export function OPCGetGroup(groupUuid: string): $CancellablePromise<view_models$0.OPCGroupView | null> {
     return $Call.ByID(1215794833, groupUuid).then(($result: any) => {
-        return $$createType36($result);
+        return $$createType49($result);
     });
 }
 
 export function OPCGetPerson(personUuid: string): $CancellablePromise<view_models$0.OPCPersonView | null> {
     return $Call.ByID(3469665795, personUuid).then(($result: any) => {
-        return $$createType38($result);
+        return $$createType51($result);
     });
 }
 
@@ -322,13 +424,13 @@ export function OPCGroupChat(input: view_models$0.OPCGroupCompletionInput): $Can
 
 export function OPCListGroups(): $CancellablePromise<view_models$0.OPCGroupView[]> {
     return $Call.ByID(1818674966).then(($result: any) => {
-        return $$createType39($result);
+        return $$createType52($result);
     });
 }
 
 export function OPCListPersons(): $CancellablePromise<view_models$0.OPCPersonView[]> {
     return $Call.ByID(4240679872).then(($result: any) => {
-        return $$createType40($result);
+        return $$createType53($result);
     });
 }
 
@@ -343,8 +445,8 @@ export function OPCPersonChat(input: view_models$0.OPCCompletionInput): $Cancell
 
 export function OPCSearch(keyword: string): $CancellablePromise<[view_models$0.OPCPersonView[], view_models$0.OPCGroupView[]]> {
     return $Call.ByID(3725378810, keyword).then(($result: any) => {
-        $result[0] = $$createType40($result[0]);
-        $result[1] = $$createType39($result[1]);
+        $result[0] = $$createType53($result[0]);
+        $result[1] = $$createType52($result[1]);
         return $result;
     });
 }
@@ -363,13 +465,13 @@ export function OPCTogglePinPerson(personUuid: string, pinned: boolean): $Cancel
 
 export function OPCUpdateGroup(input: view_models$0.OPCGroupInput): $CancellablePromise<view_models$0.OPCGroupView | null> {
     return $Call.ByID(2536825506, input).then(($result: any) => {
-        return $$createType36($result);
+        return $$createType49($result);
     });
 }
 
 export function OPCUpdatePerson(input: view_models$0.OPCPersonInput): $CancellablePromise<view_models$0.OPCPersonView | null> {
     return $Call.ByID(3479873286, input).then(($result: any) => {
-        return $$createType38($result);
+        return $$createType51($result);
     });
 }
 
@@ -383,6 +485,10 @@ export function OpenSettingsAboutWindow(): $CancellablePromise<void> {
 
 export function OpenSettingsWindow(): $CancellablePromise<void> {
     return $Call.ByID(3479182543);
+}
+
+export function RegisterFileDropHandler(window: application$0.WebviewWindow | null): $CancellablePromise<void> {
+    return $Call.ByID(3107036160, window);
 }
 
 /**
@@ -403,7 +509,7 @@ export function ResetAgentPrompt(agentName: string, promptName: string): $Cancel
 
 export function ResetPromptFile(name: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(2827988805, name).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType34($result);
     });
 }
 
@@ -411,9 +517,16 @@ export function RespondToolApproval(input: data_models$0.ToolApprovalResponse): 
     return $Call.ByID(1866640078, input);
 }
 
+/**
+ * RestoreMemory 恢复已遗忘的记忆。
+ */
+export function RestoreMemory(id: number): $CancellablePromise<void> {
+    return $Call.ByID(1532690763, id);
+}
+
 export function SelectFiles(): $CancellablePromise<view_models$0.FileInfo[]> {
     return $Call.ByID(1220601789).then(($result: any) => {
-        return $$createType42($result);
+        return $$createType21($result);
     });
 }
 
@@ -434,6 +547,10 @@ export function StopCompletions(messageKey: string): $CancellablePromise<void> {
 
 export function StopTask(taskUuid: string): $CancellablePromise<void> {
     return $Call.ByID(2829427223, taskUuid);
+}
+
+export function UninstallPlugin(pluginId: string): $CancellablePromise<void> {
+    return $Call.ByID(2640628887, pluginId);
 }
 
 /**
@@ -466,7 +583,7 @@ export function UpdateMCPToolEnabled(toolID: string, enabled: boolean): $Cancell
 
 export function UpdatePromptFile(name: string, content: string): $CancellablePromise<view_models$0.PromptFileDetail | null> {
     return $Call.ByID(487143775, name, content).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType34($result);
     });
 }
 
@@ -512,28 +629,39 @@ const $$createType14 = view_models$0.AppPreferences.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
 const $$createType16 = data_models$0.Task.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = view_models$0.Model.createFrom;
+const $$createType18 = $Create.Map($Create.Any, $Create.Any);
 const $$createType19 = $Create.Array($$createType18);
-const $$createType20 = view_models$0.PromptFileDetail.createFrom;
-const $$createType21 = $Create.Nullable($$createType20);
-const $$createType22 = view_models$0.Provider.createFrom;
+const $$createType20 = data_models$0.File.createFrom;
+const $$createType21 = $Create.Array($$createType20);
+const $$createType22 = view_models$0.PluginSummary.createFrom;
 const $$createType23 = $Create.Array($$createType22);
-const $$createType24 = view_models$0.TaskList.createFrom;
+const $$createType24 = view_models$0.MemoryListResponse.createFrom;
 const $$createType25 = $Create.Nullable($$createType24);
-const $$createType26 = view_models$0.SupportProvider.createFrom;
-const $$createType27 = $Create.Array($$createType26);
-const $$createType28 = $Create.Array($$createType0);
-const $$createType29 = view_models$0.SkillSummary.createFrom;
-const $$createType30 = $Create.Array($$createType29);
-const $$createType31 = view_models$0.AgentSummary.createFrom;
-const $$createType32 = $Create.Array($$createType31);
-const $$createType33 = view_models$0.PromptFileSummary.createFrom;
-const $$createType34 = $Create.Array($$createType33);
-const $$createType35 = view_models$0.OPCGroupView.createFrom;
-const $$createType36 = $Create.Nullable($$createType35);
-const $$createType37 = view_models$0.OPCPersonView.createFrom;
+const $$createType26 = view_models$0.Memory.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = view_models$0.MemoryStats.createFrom;
+const $$createType29 = $Create.Nullable($$createType28);
+const $$createType30 = view_models$0.Model.createFrom;
+const $$createType31 = $Create.Array($$createType30);
+const $$createType32 = $Create.Map($Create.Any, $Create.Any);
+const $$createType33 = view_models$0.PromptFileDetail.createFrom;
+const $$createType34 = $Create.Nullable($$createType33);
+const $$createType35 = view_models$0.Provider.createFrom;
+const $$createType36 = $Create.Array($$createType35);
+const $$createType37 = view_models$0.TaskList.createFrom;
 const $$createType38 = $Create.Nullable($$createType37);
-const $$createType39 = $Create.Array($$createType35);
-const $$createType40 = $Create.Array($$createType37);
-const $$createType41 = data_models$0.File.createFrom;
-const $$createType42 = $Create.Array($$createType41);
+const $$createType39 = view_models$0.SupportProvider.createFrom;
+const $$createType40 = $Create.Array($$createType39);
+const $$createType41 = $Create.Array($$createType0);
+const $$createType42 = view_models$0.SkillSummary.createFrom;
+const $$createType43 = $Create.Array($$createType42);
+const $$createType44 = view_models$0.AgentSummary.createFrom;
+const $$createType45 = $Create.Array($$createType44);
+const $$createType46 = view_models$0.PromptFileSummary.createFrom;
+const $$createType47 = $Create.Array($$createType46);
+const $$createType48 = view_models$0.OPCGroupView.createFrom;
+const $$createType49 = $Create.Nullable($$createType48);
+const $$createType50 = view_models$0.OPCPersonView.createFrom;
+const $$createType51 = $Create.Nullable($$createType50);
+const $$createType52 = $Create.Array($$createType48);
+const $$createType53 = $Create.Array($$createType50);

@@ -28,4 +28,5 @@ type Tool struct {
 	SourceType  string `json:"source_type"`
 	Enabled     bool   `json:"enabled"`
 	IsDeletable bool   `json:"is_deletable"`
+	PluginName  string `json:"plugin_name,omitempty"`
 }

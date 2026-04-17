@@ -9,7 +9,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
+	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
@@ -22,7 +24,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/tool_approval"
-	"github.com/cloudwego/eino/components/tool"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/plugin"
 )
 
 // =============================================================================
@@ -36,14 +38,14 @@ import (
 // completionRunner 封装一次 Completions 调用的全部运行时状态。
 type completionRunner struct {
 	// ---- 外部依赖（创建后只读） ----
-	svc              *Service                     // 服务实例，用于访问 storage 和事件系统
+	svc              *Service                      // 服务实例，用于访问 storage 和事件系统
 	provider         *llm_provider.Provider        // LLM 供应商，执行 AI 推理
 	localizedPrompts prompts.PromptSet             // 本地化的系统提示词集合
 	inputMessage     view_models.Message           // 用户输入消息
 	providerModel    *wrapper_models.ProviderModel // 选中的模型配置
 	agentTools       []tool.BaseTool               // 用户选择的工具集
 	toolMetaByID     map[string]toolMeta           // 工具元数据索引（toolID → meta）
-	customAgentIDs   map[string]string              // 自定义 agent ID → 显示名（用于识别子 agent 工具调用）
+	customAgentIDs   map[string]string             // 自定义 agent ID → 显示名（用于识别子 agent 工具调用）
 	cleanupTools     func()                        // 工具资源清理回调
 	schemaMessages   []schema.Message              // 转换后的历史消息（含当前用户消息）
 	isNewChat        bool                          // 是否为新建对话
@@ -57,11 +59,11 @@ type completionRunner struct {
 	// ---- 受 mu 保护的可变状态 ----
 	// 所有以 Locked 结尾的方法都假设调用者已持有 mu 锁
 	mu                            sync.Mutex
-	assistantMessage              data_models.Message    // 当前助手消息（持续更新）
-	task                          data_models.Task       // 当前任务状态
+	assistantMessage              data_models.Message     // 当前助手消息（持续更新）
+	task                          data_models.Task        // 当前任务状态
 	pendingTraceDelta             []data_models.TraceStep // 待发送的追踪步骤增量
-	lastSnapshotPersistAt         time.Time              // 上次持久化时间（用于节流）
-	lastSnapshotPersistContentLen int                    // 上次持久化时的内容长度（用于节流）
+	lastSnapshotPersistAt         time.Time               // 上次持久化时间（用于节流）
+	lastSnapshotPersistContentLen int                     // 上次持久化时的内容长度（用于节流）
 
 	// ---- 工作流切换状态（受 handoffMu 保护） ----
 	handoffMu               sync.Mutex
@@ -1035,6 +1037,7 @@ func (r *completionRunner) finalizeTaskTerminal(finishReason, finishError string
 			}
 		}()
 	}
+
 }
 
 // failWithError 处理执行错误：区分用户主动取消和真正的错误。
@@ -1522,6 +1525,47 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		logger.Error("save task running status error", saveErr)
 	}
 
+	// Plugin before-chat hooks
+	if r.svc.pluginManager != nil && r.svc.pluginManager.HookChain() != nil {
+		hookCtx := &plugin.ChatContext{
+			Messages: schemaMessagesToHookMessages(r.schemaMessages),
+			AgentID:  "",
+		}
+		if r.inputMessage.UserMessageExtra != nil && len(r.inputMessage.UserMessageExtra.Agents) > 0 {
+			hookCtx.AgentID = r.inputMessage.UserMessageExtra.Agents[0]
+		}
+		if modified, hookErr := r.svc.pluginManager.HookChain().RunBeforeChat(hookCtx); hookErr == nil && modified != nil {
+			r.schemaMessages = hookMessagesToSchemaMessages(modified.Messages)
+		}
+	}
+
+	// ---- 记忆系统：预取缓存 / 同步回退 + 围栏注入 ----
+	r.safeMemoryOp("retrieve", func() {
+		userMsg := r.extractLastUserMessage()
+		if userMsg == "" {
+			return
+		}
+		// 优先从预取缓存获取
+		memCtx, cached := r.svc.memoryCache.Get(r.chatUuid)
+		if !cached {
+			// 缓存未命中：同步检索（500ms 超时保护）
+			ctx, cancel := context.WithTimeout(runCtx, 500*time.Millisecond)
+			memCtx = r.svc.retrieveMemoryContext(ctx, userMsg)
+			cancel()
+		}
+		fenced := buildFencedMemoryContext(memCtx)
+		if fenced == "" {
+			return
+		}
+		// 注入到最后一条用户消息：同时处理 Content 和 MultiContent/UserInputMultiContent
+		for i := len(r.schemaMessages) - 1; i >= 0; i-- {
+			if r.schemaMessages[i].Role == schema.User {
+				injectMemoryIntoMessage(&r.schemaMessages[i], fenced)
+				break
+			}
+		}
+	})
+
 	// defer 兜底：确保任务一定会发射终结事件（即使发生 panic 恢复后）
 	defer func() {
 		if r.cleanupTools != nil {
@@ -1597,6 +1641,45 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 				return
 			}
 		}
+	}
+
+	// Plugin after-chat hooks
+	if r.svc.pluginManager != nil && r.svc.pluginManager.HookChain() != nil {
+		r.mu.Lock()
+		content := r.assistantMessage.Content
+		r.mu.Unlock()
+		hookCtx := &plugin.ChatContext{
+			Response: content,
+		}
+		r.svc.pluginManager.HookChain().RunAfterChat(hookCtx)
+	}
+
+	// ---- 记忆系统：异步编码 + 异步预取（工作流路径不触发） ----
+	if r.getWorkflowHandoff() == nil {
+		chatUuid := r.chatUuid
+		msgsCopy := make([]schema.Message, len(r.schemaMessages))
+		copy(msgsCopy, r.schemaMessages)
+		providerModel := r.providerModel
+
+		// 异步编码
+		go r.safeMemoryOp("encode", func() {
+			r.svc.encodeMemoriesAsync(providerModel, msgsCopy)
+		})
+		// 异步预取下一轮上下文
+		go r.safeMemoryOp("prefetch", func() {
+			r.mu.Lock()
+			assistantContent := r.assistantMessage.Content
+			r.mu.Unlock()
+			// 基于助手回复和用户消息预测下一轮可能的查询方向
+			prefetchQuery := assistantContent
+			if utf8.RuneCountInString(prefetchQuery) > 200 {
+				prefetchQuery = string([]rune(prefetchQuery)[:200])
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			nextCtx := r.svc.retrieveMemoryContext(ctx, prefetchQuery)
+			r.svc.memoryCache.Set(chatUuid, nextCtx)
+		})
 	}
 
 	r.finalizeTaskTerminal("done", "")

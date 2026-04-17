@@ -19,6 +19,10 @@ func (s *Service) ListAgents() ([]view_models.AgentSummary, error) {
 	allAgents := agents.AllAgents()
 	result := make([]view_models.AgentSummary, 0, len(allAgents))
 	for _, a := range allAgents {
+		// Skip plugin agents - they are managed in plugin settings
+		if a.Type() == agents.AgentTypePlugin {
+			continue
+		}
 		promptNames := a.PromptNames()
 		if promptNames == nil {
 			promptNames = []string{}
@@ -33,6 +37,7 @@ func (s *Service) ListAgents() ([]view_models.AgentSummary, error) {
 		}
 		if cad, ok := a.(*agents.CustomAgentDef); ok {
 			summary.DisplayName = cad.DisplayName
+			summary.Description = cad.Description
 			summary.Tools = cad.ToolIDs
 			summary.Skills = cad.SkillIDs
 		} else {
@@ -88,6 +93,7 @@ func (s *Service) GetAgent(name string) (*view_models.AgentDetail, error) {
 	}
 	if cad, ok := agentDef.(*agents.CustomAgentDef); ok {
 		summary.DisplayName = cad.DisplayName
+		summary.Description = cad.Description
 		summary.Tools = cad.ToolIDs
 		summary.Skills = cad.SkillIDs
 	} else {
@@ -185,6 +191,9 @@ func (s *Service) CreateCustomAgent(input view_models.CustomAgentInput) (*view_m
 	if err := agents.SaveCustomAgent(def); err != nil {
 		return nil, ierror.NewError(err)
 	}
+	if err := agents.SaveAgentPrompt(def.Name(), def.PromptNames()[0], def.PromptText); err != nil {
+		return nil, ierror.NewError(err)
+	}
 	agents.SyncCustomAgentsToRegistry()
 
 	return s.GetAgent(input.ID)
@@ -230,6 +239,9 @@ func (s *Service) UpdateCustomAgent(input view_models.CustomAgentInput) (*view_m
 	}
 
 	if err := agents.SaveCustomAgent(def); err != nil {
+		return nil, ierror.NewError(err)
+	}
+	if err := agents.SaveAgentPrompt(def.Name(), def.PromptNames()[0], def.PromptText); err != nil {
 		return nil, ierror.NewError(err)
 	}
 	agents.SyncCustomAgentsToRegistry()

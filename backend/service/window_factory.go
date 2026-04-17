@@ -2,7 +2,10 @@ package service
 
 import (
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
+
+const EventFilesDropped = "files-dropped"
 
 func NewHomeWindow(app *application.App) *application.WebviewWindow {
 	return app.Window.NewWithOptions(application.WebviewWindowOptions{
@@ -14,6 +17,7 @@ func NewHomeWindow(app *application.App) *application.WebviewWindow {
 			TitleBar:                application.MacTitleBarDefault,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
+		EnableFileDrop:   true,
 		URL:              "/",
 		Width:            1300,
 		Height:           860,
@@ -41,6 +45,20 @@ func NewOnboardingWindow(app *application.App) *application.WebviewWindow {
 	})
 }
 
+func (s *Service) RegisterFileDropHandler(window *application.WebviewWindow) {
+	window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
+		paths := event.Context().DroppedFiles()
+		if len(paths) == 0 {
+			return
+		}
+		fileInfos, err := s.fileInfo(paths)
+		if err != nil {
+			return
+		}
+		s.app.Event.Emit(EventFilesDropped, fileInfos)
+	})
+}
+
 func (s *Service) ensureHomeWindow() *application.WebviewWindow {
 	if s.app == nil {
 		return nil
@@ -51,7 +69,9 @@ func (s *Service) ensureHomeWindow() *application.WebviewWindow {
 		}
 		return nil
 	}
-	return NewHomeWindow(s.app)
+	window := NewHomeWindow(s.app)
+	s.RegisterFileDropHandler(window)
+	return window
 }
 
 func (s *Service) showHomeWindow() {

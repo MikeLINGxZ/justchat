@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import { useTranslation } from 'react-i18next';
+import { Events } from '@wailsio/runtime';
 import styles from "./index.module.scss";
 import {useIsMobile} from "@/hooks/useViewportHeight.ts";
 import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service";
@@ -94,6 +95,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const toolMenuRef = useRef<HTMLDivElement>(null);
     const isMobile =  useIsMobile();
     const [selectFiles, setSelectFiles] = useState<FileInfo[]>([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    // 监听文件拖拽事件
+    useEffect(() => {
+        const cancel = Events.On("files-dropped", (event: any) => {
+            const raw = event.data;
+            const files: FileInfo[] = Array.isArray(raw) ? raw : [];
+            if (files.length === 0) return;
+            setSelectFiles(prevFiles => {
+                const mergedFiles = [...prevFiles];
+                files.forEach((file: FileInfo) => {
+                    if (!mergedFiles.some(item => item.path === file.path)) {
+                        mergedFiles.push(file);
+                    }
+                });
+                onSelectFileChange(mergedFiles);
+                return mergedFiles;
+            });
+        });
+        return () => {
+            if (cancel) cancel();
+        };
+    }, [onSelectFileChange]);
 
     // 清空输入框
     const clearInput = useCallback(() => {
@@ -314,7 +338,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
             {!hasSelectedModel && (
                 <div className={styles.modelWarning}>{t('chat.input.selectModelFirst')}</div>
             )}
-            <div className={styles.inputContainer}>
+            <div
+                className={`${styles.inputContainer} ${isDragOver ? styles.dragOver : ''}`}
+                data-file-drop-target="true"
+                onDragEnter={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                }}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                }}
+                onDragLeave={(e) => {
+                    // Only set false when leaving the container itself
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        setIsDragOver(false);
+                    }
+                }}
+                onDrop={() => {
+                    setIsDragOver(false);
+                }}
+            >
                  {/* 文件列表显示区域 */}
                 {selectFiles.length > 0 && (
                     <div className={styles.filesContainer}>
@@ -418,6 +462,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         ) : (
                                             availableTools.map((tool) => {
                                                 const isCustomMCP = tool.source_type === 'mcp_custom';
+                                                const isPlugin = tool.source_type === 'plugin';
                                                 const isEnabled = isCustomMCP ? tool.enabled : selectedToolIds.includes(tool.id);
                                                 return (
                                                     <div
@@ -429,6 +474,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                                 <span className={styles.toolItemName}>{tool.name}</span>
                                                                 {isCustomMCP && (
                                                                     <span className={styles.toolSourceTag}>MCP</span>
+                                                                )}
+                                                                {isPlugin && (
+                                                                    <span className={styles.toolSourceTag} title={tool.plugin_name || tool.id}>
+                                                                        {t('chat.input.pluginTag', '插件')}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                             {tool.description && (

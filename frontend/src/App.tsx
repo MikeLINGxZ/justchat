@@ -9,6 +9,7 @@ const Chat = React.lazy(() => import('@/pages/home'));
 const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
 const Settings = React.lazy(()=>import('@/pages/settings'));
 const Onboarding = React.lazy(() => import('@/pages/onboarding'));
+const PluginPage = React.lazy(() => import('@/pages/plugin'));
 
 function EntryRedirect() {
   const [searchParams] = useSearchParams();
@@ -107,6 +108,12 @@ function App() {
         <Route
           path="/onboarding"
           element={<Onboarding />}
+        />
+
+        {/* 插件页面 */}
+        <Route
+          path="/plugin/:pluginId/:pageId"
+          element={<PluginPage />}
         />
 
         {/* 其他路由 - 使用Layout */}
