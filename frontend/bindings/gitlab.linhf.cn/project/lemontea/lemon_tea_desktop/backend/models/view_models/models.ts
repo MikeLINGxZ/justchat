@@ -361,13 +361,6 @@ export class Memory {
     "summary": string;
     "content": string;
     "type": string;
-    "time_range_start": time$0.Time | null;
-    "time_range_end": time$0.Time | null;
-    "location": string | null;
-    "characters": string | null;
-    "importance": number;
-    "emotional_valence": number;
-    "trust_score": number;
     "is_forgotten": boolean;
     "recall_count": number;
     "has_embedding": boolean;
@@ -387,27 +380,6 @@ export class Memory {
         }
         if (!("type" in $$source)) {
             this["type"] = "";
-        }
-        if (!("time_range_start" in $$source)) {
-            this["time_range_start"] = null;
-        }
-        if (!("time_range_end" in $$source)) {
-            this["time_range_end"] = null;
-        }
-        if (!("location" in $$source)) {
-            this["location"] = null;
-        }
-        if (!("characters" in $$source)) {
-            this["characters"] = null;
-        }
-        if (!("importance" in $$source)) {
-            this["importance"] = 0;
-        }
-        if (!("emotional_valence" in $$source)) {
-            this["emotional_valence"] = 0;
-        }
-        if (!("trust_score" in $$source)) {
-            this["trust_score"] = 0;
         }
         if (!("is_forgotten" in $$source)) {
             this["is_forgotten"] = false;
@@ -536,12 +508,6 @@ export class MemoryUpdateInput {
     "summary": string;
     "content": string;
     "type": string;
-    "time_range_start": string | null;
-    "time_range_end": string | null;
-    "location": string | null;
-    "characters": string | null;
-    "importance": number;
-    "emotional_valence": number;
 
     /** Creates a new MemoryUpdateInput instance. */
     constructor($$source: Partial<MemoryUpdateInput> = {}) {
@@ -553,24 +519,6 @@ export class MemoryUpdateInput {
         }
         if (!("type" in $$source)) {
             this["type"] = "";
-        }
-        if (!("time_range_start" in $$source)) {
-            this["time_range_start"] = null;
-        }
-        if (!("time_range_end" in $$source)) {
-            this["time_range_end"] = null;
-        }
-        if (!("location" in $$source)) {
-            this["location"] = null;
-        }
-        if (!("characters" in $$source)) {
-            this["characters"] = null;
-        }
-        if (!("importance" in $$source)) {
-            this["importance"] = 0;
-        }
-        if (!("emotional_valence" in $$source)) {
-            this["emotional_valence"] = 0;
         }
 
         Object.assign(this, $$source);

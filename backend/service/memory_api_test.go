@@ -36,25 +36,17 @@ func TestUpdateMemoryPersistsEditsAndReembeds(t *testing.T) {
 	svc.memorySearcher = memory_search.NewHybridSearcher(memStorage, fakeMemoryEmbedder{}, "memory-edit-model")
 
 	id, err := memStorage.WriterMemory(context.Background(), memory_models.Memory{
-		Summary:    "旧标题",
-		Content:    "旧内容",
-		TrustScore: 0.8,
-		Importance: 0.5,
+		Summary: "旧标题",
+		Content: "旧内容",
 	})
 	if err != nil {
 		t.Fatalf("WriterMemory() error = %v", err)
 	}
 
 	updated, err := svc.UpdateMemory(id, view_models.MemoryUpdateInput{
-		Summary:          "新标题",
-		Content:          "新的记忆内容",
-		Type:             "event",
-		TimeRangeStart:   stringPtr("2026-04-18"),
-		TimeRangeEnd:     nil,
-		Location:         stringPtr("上海"),
-		Characters:       stringPtr("小林"),
-		Importance:       0.9,
-		EmotionalValence: 0.6,
+		Summary: "新标题",
+		Content: "新的记忆内容",
+		Type:    "event",
 	})
 	if err != nil {
 		t.Fatalf("UpdateMemory() error = %v", err)
@@ -89,8 +81,4 @@ func TestUpdateMemoryPersistsEditsAndReembeds(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-}
-
-func stringPtr(value string) *string {
-	return &value
 }

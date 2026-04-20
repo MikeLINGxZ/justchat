@@ -25,6 +25,8 @@ interface ChatInputProps {
     onRefreshTools: () => Promise<Tool[]>;
     // 是否正在生成消息
     isGenerating: boolean;
+    // 初始输入内容（用于欢迎页建议卡片预填）
+    initialValue?: string;
     // 模型变更事件
     onSelectModelChange: (modelId: number, modelName: string) => void;
     // 输入内容变更事件
@@ -71,6 +73,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onSelectedToolsChange,
     onRefreshTools,
     isGenerating = false,
+    initialValue = '',
     onMessageChange,
     onSendButtonClick,
     onSelectFileChange,
@@ -84,7 +87,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [showAddMenu, setShowAddMenu] = useState(false);
     const [showModelMenu, setShowModelMenu] = useState(false);
     const [showToolMenu, setShowToolMenu] = useState(false);
-    const [inputValue, setInputValue] = useState('');
+    const [inputValue, setInputValue] = useState(initialValue);
     const [modelSearchValue, setModelSearchValue] = useState('');
     const [isAddingMCPTool, setIsAddingMCPTool] = useState(false);
     const [defaultModelId, setDefaultModelId] = useState<number | null>(() => {
@@ -445,10 +448,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
                                 </svg>
-                                <span className={styles.toolButtonText}>Tool</span>
-                                {selectedToolIds.length > 0 && (
-                                    <span className={styles.toolBadge}>{selectedToolIds.length}</span>
-                                )}
+                                <span className={styles.toolButtonText}>
+                                    {selectedToolIds.length === 0
+                                        ? t('chat.input.selectTool')
+                                        : t('chat.input.toolsSelected', { count: selectedToolIds.length })}
+                                </span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M7 10l5 5 5-5z"/>
                                 </svg>

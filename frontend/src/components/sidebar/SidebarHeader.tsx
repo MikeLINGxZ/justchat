@@ -1,51 +1,34 @@
-import React, { useState } from 'react';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import React from 'react';
+import { CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '@/hooks/useViewportHeight';
 
 interface SidebarHeaderProps {
     logoText: string;
-    isSidebarCollapsed: boolean;
-    onToggleSidebar: () => void;
+    // 仅在移动端展开遮罩时用于关闭侧边栏；桌面端不显示关闭按钮
+    onCloseMobileSidebar?: () => void;
 }
 
 const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     logoText,
-    isSidebarCollapsed,
-    onToggleSidebar,
+    onCloseMobileSidebar,
 }) => {
     const { t } = useTranslation();
-    const [isHovered, setIsHovered] = useState(false);
-
-    const handleToggle = () => {
-        onToggleSidebar();
-        setIsHovered(false);
-    };
+    const isMobile = useIsMobile();
 
     return (
-        <div
-            className="sidebar-header"
-            onMouseOver={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            {!isSidebarCollapsed && (
-                <div className="sidebar-logo">
-                    <div className="logo-icon">🍋</div>
-                    <span className="logo-text">{logoText}</span>
-                </div>
-            )}
-            {isSidebarCollapsed && (
-                <div className="sidebar-logo collapsed">
-                    <div className="logo-icon" style={{ opacity: isHovered ? 0 : 1 }}>🍋</div>
-                    {isHovered && (
-                        <div className="expand-icon collapse-btn" onClick={handleToggle}>
-                            <MenuUnfoldOutlined />
-                        </div>
-                    )}
-                </div>
-            )}
-            {!isSidebarCollapsed && (
-                <button className="collapse-btn" onClick={handleToggle} title={t('home.sidebar.collapse')}>
-                    <MenuFoldOutlined />
+        <div className="sidebar-header">
+            <div className="sidebar-logo">
+                <div className="logo-icon">🍋</div>
+                <span className="logo-text">{logoText}</span>
+            </div>
+            {isMobile && onCloseMobileSidebar && (
+                <button
+                    className="collapse-btn"
+                    onClick={onCloseMobileSidebar}
+                    title={t('home.sidebar.collapse')}
+                >
+                    <CloseOutlined />
                 </button>
             )}
         </div>

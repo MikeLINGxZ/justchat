@@ -22,6 +22,7 @@ interface OPCSidebarProps {
     className?: string;
     isSidebarCollapsed: boolean;
     onToggleSidebar: () => void;
+    onResizeStart?: (event: React.MouseEvent<HTMLDivElement>) => void;
     onOpenAddPerson: () => void;
     onOpenCreateGroup: () => void;
     onEditPerson?: (uuid: string) => void;
@@ -32,6 +33,7 @@ const OPCSidebar: React.FC<OPCSidebarProps> = ({
     className,
     isSidebarCollapsed,
     onToggleSidebar,
+    onResizeStart,
     onOpenAddPerson,
     onOpenCreateGroup,
     onEditPerson,
@@ -130,86 +132,84 @@ const OPCSidebar: React.FC<OPCSidebarProps> = ({
         <div className={`opc-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${className || ''}`}>
             <SidebarHeader
                 logoText="OPC"
-                isSidebarCollapsed={isSidebarCollapsed}
-                onToggleSidebar={onToggleSidebar}
+                onCloseMobileSidebar={onToggleSidebar}
             />
 
             {/* 功能按钮区域 */}
-            {!isSidebarCollapsed && (
-                <div className="sidebar-actions">
-                    <Dropdown menu={{ items: addMenuItems }} trigger={['click']} placement="bottomRight">
-                        <button className="action-btn">
-                            <PlusOutlined className="action-icon" />
-                            <span className="action-text">{t('opc.sidebar.addNew')}</span>
-                        </button>
-                    </Dropdown>
-                </div>
-            )}
+            <div className="sidebar-actions">
+                <Dropdown menu={{ items: addMenuItems }} trigger={['click']} placement="bottomRight">
+                    <button className="action-btn">
+                        <PlusOutlined className="action-icon" />
+                        <span className="action-text">{t('opc.sidebar.addNew')}</span>
+                    </button>
+                </Dropdown>
+            </div>
 
             {/* Tab 切换 */}
-            {!isSidebarCollapsed && (
-                <div className="sidebar-tabs">
-                    <div className="tab-switch">
-                        <div
-                            className={`tab-option ${sidebarTab === 'conversations' ? 'active' : ''}`}
-                            onClick={() => setSidebarTab('conversations')}
-                        >
-                            {t('opc.sidebar.tabConversations')}
-                        </div>
-                        <div
-                            className={`tab-option ${sidebarTab === 'contacts' ? 'active' : ''}`}
-                            onClick={() => setSidebarTab('contacts')}
-                        >
-                            {t('opc.sidebar.tabContacts')}
-                        </div>
-                        <div className="tab-slider" data-active={sidebarTab}></div>
+            <div className="sidebar-tabs">
+                <div className="tab-switch">
+                    <div
+                        className={`tab-option ${sidebarTab === 'conversations' ? 'active' : ''}`}
+                        onClick={() => setSidebarTab('conversations')}
+                    >
+                        {t('opc.sidebar.tabConversations')}
                     </div>
+                    <div
+                        className={`tab-option ${sidebarTab === 'contacts' ? 'active' : ''}`}
+                        onClick={() => setSidebarTab('contacts')}
+                    >
+                        {t('opc.sidebar.tabContacts')}
+                    </div>
+                    <div className="tab-slider" data-active={sidebarTab}></div>
                 </div>
-            )}
+            </div>
 
             {/* 搜索区域 */}
-            {!isSidebarCollapsed && (
-                <div className="opc-search-area">
-                    <Search
-                        prefix={<SearchOutlined />}
-                        placeholder={
-                            sidebarTab === 'conversations'
-                                ? t('opc.sidebar.searchConversations')
-                                : t('opc.sidebar.searchContacts')
-                        }
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        allowClear
-                    />
-                </div>
-            )}
+            <div className="opc-search-area">
+                <Search
+                    prefix={<SearchOutlined />}
+                    placeholder={
+                        sidebarTab === 'conversations'
+                            ? t('opc.sidebar.searchConversations')
+                            : t('opc.sidebar.searchContacts')
+                    }
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    allowClear
+                />
+            </div>
 
             {/* 联系人列表 */}
-            {!isSidebarCollapsed && (
-                <div className="opc-contact-area">
-                    <ContactList
-                        persons={persons}
-                        groups={groups}
-                        searchQuery={searchQuery}
-                        selectedUuid={selectedUuid}
-                        activeTab={sidebarTab}
-                        onSelect={handleSelectContact}
-                        onDeletePerson={handleDeletePerson}
-                        onDeleteGroup={handleDeleteGroup}
-                        onTogglePin={handleTogglePin}
-                        onEditPerson={onEditPerson}
-                        onEditGroup={onEditGroup}
-                        onClearConversation={handleClearConversation}
-                    />
-                </div>
-            )}
+            <div className="opc-contact-area">
+                <ContactList
+                    persons={persons}
+                    groups={groups}
+                    searchQuery={searchQuery}
+                    selectedUuid={selectedUuid}
+                    activeTab={sidebarTab}
+                    onSelect={handleSelectContact}
+                    onDeletePerson={handleDeletePerson}
+                    onDeleteGroup={handleDeleteGroup}
+                    onTogglePin={handleTogglePin}
+                    onEditPerson={onEditPerson}
+                    onEditGroup={onEditGroup}
+                    onClearConversation={handleClearConversation}
+                />
+            </div>
 
             <div className="sidebar-spacer"></div>
 
-            <SidebarUserMenu
-                isSidebarCollapsed={isSidebarCollapsed}
-                currentMode={mode}
-            />
+            <SidebarUserMenu currentMode={mode} />
+
+            {onResizeStart && (
+                <div
+                    className="sidebar-resize-handle"
+                    onMouseDown={onResizeStart}
+                    title={t('home.sidebar.resizeHandle', 'Drag to resize')}
+                    role="separator"
+                    aria-orientation="vertical"
+                />
+            )}
         </div>
     );
 };

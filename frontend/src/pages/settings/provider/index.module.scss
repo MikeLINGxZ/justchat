@@ -34,7 +34,7 @@
   transition: all var(--transition-normal);
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--brand-shadow-card-hover);
   }
 
   :global(.ant-card-head) {
@@ -104,18 +104,18 @@
   }
 
   &:hover {
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
+    background: var(--brand-list-hover-bg);
 
     &::before {
-      background: var(--primary-color);
+      background: var(--brand-teal);
     }
   }
 
   &.selected {
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.12), rgba(24, 144, 255, 0.04));
+    background: var(--brand-list-selected-bg);
 
     &::before {
-      background: var(--primary-color);
+      background: var(--brand-teal);
     }
   }
 }
@@ -188,8 +188,8 @@
 
   .securityAlert {
     border-radius: 12px;
-    border: 1px solid var(--border-color-light);
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(24, 144, 255, 0.02));
+    border: 1px solid var(--brand-border-soft);
+    background: var(--brand-gradient-soft);
     margin-bottom: var(--spacing-lg);
   }
 
@@ -259,7 +259,7 @@
         color: var(--text-color);
 
         .customModelIcon {
-          color: var(--primary-color);
+          color: var(--brand-teal);
           font-size: 14px;
         }
       }
@@ -299,8 +299,8 @@
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: var(--primary-color);
-        background: var(--primary-color-light);
+        border-color: var(--brand-teal);
+        background: var(--brand-soft-teal);
 
         .customModelDeleteBtn {
           opacity: 1;
@@ -378,8 +378,8 @@
   transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(24, 144, 255, 0.02));
-    border-color: var(--primary-color);
+    background: var(--brand-list-hover-bg);
+    border-color: var(--brand-teal);
   }
 }
 
@@ -420,8 +420,8 @@
 .modalAlert {
   margin-bottom: var(--spacing-lg);
   border-radius: 12px;
-  border: 1px solid var(--border-color-light);
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(24, 144, 255, 0.02));
+  border: 1px solid var(--brand-border-soft);
+  background: var(--brand-gradient-soft);
 }
 
 // ── Mobile ─────────────────────────────────────────────────────────────

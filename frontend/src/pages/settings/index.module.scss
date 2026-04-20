@@ -36,15 +36,15 @@
     line-height: 40px;
     
     &:hover {
-      background-color: var(--primary-color-light) !important;
+      background-color: var(--brand-soft-teal) !important;
     }
-    
+
     &.ant-menu-item-selected {
-      background-color: var(--primary-color-light) !important;
-      color: var(--primary-color) !important;
-      
+      background-color: var(--brand-soft-teal) !important;
+      color: var(--brand-teal) !important;
+
       .anticon {
-        color: var(--primary-color) !important;
+        color: var(--brand-teal) !important;
       }
     }
     
@@ -141,11 +141,11 @@
   
   .backButton {
     margin-right: var(--spacing-md);
-    color: var(--primary-color);
+    color: var(--brand-teal);
     font-weight: var(--font-weight-medium);
-    
+
     &:hover {
-      background: var(--primary-color-light);
+      background: var(--brand-soft-teal);
     }
   }
   
@@ -179,7 +179,7 @@
     .siderHeader {
       padding: var(--spacing-sm);
       text-align: center;
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      background: var(--brand-gradient-soft);
       border-bottom: 1px solid var(--border-color-light);
       
       h3 {
@@ -205,29 +205,29 @@
         color: var(--text-color) !important;
         
         &:hover {
-          background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05)) !important;
-          color: var(--primary-color) !important;
-          
+          background: var(--brand-list-hover-bg) !important;
+          color: var(--brand-teal-hover) !important;
+
           .anticon {
-            color: var(--primary-color) !important;
+            color: var(--brand-teal-hover) !important;
           }
         }
-        
+
         // 移动端不显示选中状态，但保持点击效果
         &.ant-menu-item-selected {
           background: var(--background-color) !important;
           color: var(--text-color) !important;
-          
+
           .anticon {
             color: inherit !important;
           }
-          
+
           &:hover {
-            background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(114, 46, 209, 0.05)) !important;
-            color: var(--primary-color) !important;
-            
+            background: var(--brand-list-hover-bg) !important;
+            color: var(--brand-teal-hover) !important;
+
             .anticon {
-              color: var(--primary-color) !important;
+              color: var(--brand-teal-hover) !important;
             }
           }
         }

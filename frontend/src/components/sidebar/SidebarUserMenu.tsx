@@ -11,23 +11,18 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
 import { useOPCStore } from '@/stores/opcStore';
 import type { AppMode } from '@/stores/opcStore';
 import { OpenSettingsWindow, OpenSettingsAboutWindow } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service/service.ts';
 
 interface SidebarUserMenuProps {
-    isSidebarCollapsed: boolean;
     currentMode: AppMode;
 }
 
 const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
-    isSidebarCollapsed,
     currentMode,
 }) => {
     const { t } = useTranslation();
-    // @ts-ignore
-    const { user } = useAuthStore();
     const { setMode } = useOPCStore();
 
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -143,26 +138,13 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
 
     return (
         <div className="sidebar-footer" ref={userMenuRef}>
-            {!isSidebarCollapsed && (
-                <>
-                    <div
-                        className={`user-section ${isUserMenuOpen ? 'active' : ''}`}
+            <>
+                <div
+                        className={`user-section settings-trigger ${isUserMenuOpen ? 'active' : ''}`}
                         onClick={handleUserMenuToggle}
                     >
-                        <div className="user-avatar">
-                            {user?.avatar ? (
-                                <img src={user.avatar} alt={t('home.sidebar.userAvatar')} className="avatar-img" />
-                            ) : (
-                                <UserOutlined className="avatar-icon" />
-                            )}
-                        </div>
-                        <div className="user-info">
-                            <div className="user-name">{user?.username || t('home.sidebar.guestUser')}</div>
-                            {user?.email && <div className="user-email">{user.email}</div>}
-                        </div>
-                        <div className="user-menu-icon">
-                            <SettingOutlined />
-                        </div>
+                        <SettingOutlined className="settings-trigger-icon" />
+                        <span className="settings-trigger-label">{t('home.sidebar.settings')}</span>
                     </div>
 
                     {/* 用户菜单 */}
@@ -261,17 +243,7 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                             </div>
                         </div>
                     )}
-                </>
-            )}
-            {isSidebarCollapsed && (
-                <div className="user-avatar collapsed" onClick={handleUserMenuToggle}>
-                    {user?.avatar ? (
-                        <img src={user.avatar} alt={t('home.sidebar.userAvatar')} className="avatar-img" />
-                    ) : (
-                        <UserOutlined className="avatar-icon" />
-                    )}
-                </div>
-            )}
+            </>
         </div>
     );
 };

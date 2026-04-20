@@ -4,6 +4,7 @@ import styles from "@/pages/home/chat/index.module.scss";
 import MessageList, {type MessageListRef} from "@/components/chat/message_list";
 import ChatTitle from "@/components/chat/title";
 import ChatInput from "@/components/chat/input";
+import WelcomeEmpty from "@/components/chat/welcome";
 import {
     type Chat as ChatType,
     FileInfo,
@@ -218,6 +219,8 @@ const Chat: React.FC<ChatProps> = ({
     const skipNextFetchRef = useRef<string | null>(null);
     // 用于重置 ChatInput 内部状态（切换对话/新建对话时递增）
     const [inputResetKey, setInputResetKey] = useState<number>(0);
+    // 欢迎页建议预填到输入框的草稿文本
+    const [pendingInitialInput, setPendingInitialInput] = useState<string>("");
     // 子Agent面板是否打开
 
     // 当前路由可见会话，用于将流式事件路由到正确会话
@@ -536,11 +539,13 @@ const Chat: React.FC<ChatProps> = ({
             setMessages([]);
             setInputMessage("");
             setInputFiles([]);
+            setPendingInitialInput("");
             setInputResetKey(prev => prev + 1);
             return;
         }
         const fetchSeq = ++chatFetchSeqRef.current;
         setLoading(true);
+        setPendingInitialInput("");
         setInputResetKey(prev => prev + 1);
         Promise.all([
             Service.ChatInfo(v)
@@ -814,15 +819,25 @@ const Chat: React.FC<ChatProps> = ({
                 onToggleSidebar={onToggleSidebar}
             />
             <div className={`${styles.chatMessagesContent}`}>
-                <MessageList
-                    key={currentChatUuid || 'new'}
-                    ref={messageListRef}
-                    messages={messages}
-                    isGenerating={isGenerating}
-                    useInstantScrollOnFirstLoad
-                    onApprovalDecision={handleApprovalDecision}
-                    onSendApprovalComment={handleSendApprovalComment}
-                />
+                {!currentChatUuid && messages.length === 0 && !isGenerating ? (
+                    <WelcomeEmpty
+                        onSuggestionClick={(prompt) => {
+                            setPendingInitialInput(prompt);
+                            setInputMessage(prompt);
+                            setInputResetKey(prev => prev + 1);
+                        }}
+                    />
+                ) : (
+                    <MessageList
+                        key={currentChatUuid || 'new'}
+                        ref={messageListRef}
+                        messages={messages}
+                        isGenerating={isGenerating}
+                        useInstantScrollOnFirstLoad
+                        onApprovalDecision={handleApprovalDecision}
+                        onSendApprovalComment={handleSendApprovalComment}
+                    />
+                )}
             </div>
             <div className={`${styles.chatInput}`}>
                 <ChatInput
@@ -835,6 +850,7 @@ const Chat: React.FC<ChatProps> = ({
                     onSelectedToolsChange={setSelectedToolIds}
                     onRefreshTools={refreshAvailableTools}
                     isGenerating={isGenerating}
+                    initialValue={pendingInitialInput}
                     onMessageChange={onMessageChange}
                     onSendButtonClick={onSendButtonClick}
                     onSelectModelChange={onSelectModelChange}

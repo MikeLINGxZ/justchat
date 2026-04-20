@@ -1666,19 +1666,22 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		go r.safeMemoryOp("encode", func() {
 			r.svc.encodeMemoriesAsync(providerModel, msgsCopy)
 		})
-		// 异步预取下一轮上下文
+		// 异步预取下一轮上下文（由 Memory Agent 自主使用工具做更智能的检索）
 		go r.safeMemoryOp("prefetch", func() {
 			r.mu.Lock()
 			assistantContent := r.assistantMessage.Content
 			r.mu.Unlock()
-			// 基于助手回复和用户消息预测下一轮可能的查询方向
 			prefetchQuery := assistantContent
 			if utf8.RuneCountInString(prefetchQuery) > 200 {
 				prefetchQuery = string([]rune(prefetchQuery)[:200])
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			nextCtx := r.svc.retrieveMemoryContext(ctx, prefetchQuery)
+			nextCtx := r.svc.retrieveViaMemoryAgent(ctx, providerModel, prefetchQuery)
+			if nextCtx == "" {
+				// Agent 失败或未检索到，退回快速检索作兜底
+				nextCtx = r.svc.retrieveMemoryContext(ctx, prefetchQuery)
+			}
 			r.svc.memoryCache.Set(chatUuid, nextCtx)
 		})
 	}

@@ -178,7 +178,7 @@ const AboutPage: React.FC = () => {
             <Text type="secondary" className={styles.contactHint}>{t('settings.about.contact.clickToCopy')}</Text>
           </div>
           <div className={styles.contactItem} onClick={() => void Browser.OpenURL('mailto:lpxqu@qq.com')}>
-            <div className={styles.contactIcon} style={{ background: 'rgba(24, 144, 255, 0.1)', color: '#1890ff' }}>
+            <div className={styles.contactIcon} style={{ background: 'rgba(20, 184, 166, 0.10)', color: 'var(--brand-teal-hover)' }}>
               <MailOutlined />
             </div>
             <div className={styles.contactInfo}>

@@ -2,11 +2,14 @@
 
 .chatTitlePage {
   width: 100%;
-  height: 46px;
-  padding: 10px 20px;
+  height: 60px;
+  padding: 12px 24px;
   display: flex;
   flex-direction: row;
   align-items: center;
+  border-bottom: 1px solid var(--border-color-light);
+  background: var(--background-color);
+  flex-shrink: 0;
 }
 
 .titleHeader {
@@ -53,8 +56,8 @@
 }
 
 .title {
-  font-size: var(--font-size-xxl);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-color);
   flex: 0 1 auto; // 不占据剩余空间，只占据内容所需空间
   min-width: 0; // 允许收缩到内容以下
@@ -62,6 +65,7 @@
   text-overflow: ellipsis;
   white-space: nowrap; // 长标题时显示省略号
   max-width: calc(100vw - 200px); // 限制最大宽度，为其他元素留出空间
+  letter-spacing: -0.005em;
 }
 
 .defaultTitle {

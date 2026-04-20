@@ -14,6 +14,23 @@ import OPCChatArea from './opc/chat';
 import AddPersonDialog from './opc/dialogs/AddPersonDialog';
 import CreateGroupDialog from './opc/dialogs/CreateGroupDialog';
 
+const SIDEBAR_WIDTH_KEY = 'home_sidebar_width';
+const SIDEBAR_DEFAULT_WIDTH = 280;
+const SIDEBAR_MIN_WIDTH = 220;
+const SIDEBAR_MAX_WIDTH = 480;
+
+function readStoredSidebarWidth(): number {
+    try {
+        const raw = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+        if (!raw) return SIDEBAR_DEFAULT_WIDTH;
+        const parsed = parseInt(raw, 10);
+        if (Number.isNaN(parsed)) return SIDEBAR_DEFAULT_WIDTH;
+        return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, parsed));
+    } catch {
+        return SIDEBAR_DEFAULT_WIDTH;
+    }
+}
+
 const {Content, Sider} = Layout;
 
 interface ChatPageProps {
@@ -27,7 +44,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
     const navigate = useNavigate();
     // 本地状态管理
     const [currentChatUuid, setCurrentChatUuid] = useState<string>(urlChatUuid ?? '');
+    // 移动端侧边栏遮罩显示状态（桌面端永远显示）
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState<number>(() => readStoredSidebarWidth());
     const [refreshChatList, setRefreshChatList] = useState<(() => void) | null>(
         null
     );
@@ -81,21 +100,52 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         }
     };
 
-    // 移动端默认隐藏侧边栏
+    // 移动端默认隐藏侧边栏；桌面端强制展开（使用拖拽调整宽度）
     useEffect(() => {
         if (isMobile) {
             setIsSidebarCollapsed(true);
         } else {
-            // Safari内核兼容性：从移动端切换回桌面端时，需要强制重置transform属性
-            // 添加延迟重新渲染机制，确保Safari正确应用新的CSS规则
-            const timer = setTimeout(() => {
-                // 强制触发组件重新渲染
-                setIsSidebarCollapsed(prev => prev);
-            }, 100);
-
-            return () => clearTimeout(timer);
+            setIsSidebarCollapsed(false);
         }
     }, [isMobile]);
+
+    // 侧边栏拖拽调整宽度（仅在结束时持久化，过程中用 rAF 同步更新）
+    const handleSidebarResizeStart = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        if (isMobile) return;
+        event.preventDefault();
+        const startX = event.clientX;
+        const startWidth = sidebarWidth;
+        let latestWidth = startWidth;
+        let rafId = 0;
+        const onMove = (e: MouseEvent) => {
+            latestWidth = Math.min(
+                SIDEBAR_MAX_WIDTH,
+                Math.max(SIDEBAR_MIN_WIDTH, startWidth + (e.clientX - startX))
+            );
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = 0;
+                setSidebarWidth(latestWidth);
+            });
+        };
+        const onUp = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            setSidebarWidth(latestWidth);
+            try {
+                localStorage.setItem(SIDEBAR_WIDTH_KEY, String(latestWidth));
+            } catch {
+                // ignore storage errors
+            }
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+    }, [isMobile, sidebarWidth]);
 
     // 设置页面标题
     useEffect(() => {
@@ -193,15 +243,16 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             <Layout className={`${className || ''} ${styles.chatLayout}`}>
                 <Sider
                     className={`${styles.sidebar} ${isSidebarCollapsed ? styles.collapsed : ''}`}
-                    width={280}
-                    collapsedWidth={isMobile ? 0 : 50}
-                    collapsed={isSidebarCollapsed}
+                    width={sidebarWidth}
+                    collapsedWidth={0}
+                    collapsed={isMobile ? isSidebarCollapsed : false}
                     trigger={null}
                     collapsible
                 >
                     <OPCSidebar
                         isSidebarCollapsed={isSidebarCollapsed}
                         onToggleSidebar={handleToggleSidebar}
+                        onResizeStart={handleSidebarResizeStart}
                         onOpenAddPerson={() => { setEditPersonData(null); setAddPersonOpen(true); }}
                         onOpenCreateGroup={() => { setEditGroupData(null); setCreateGroupOpen(true); }}
                         onEditPerson={handleEditPerson}
@@ -239,9 +290,9 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                 className={`${styles.sidebar} ${
                     isSidebarCollapsed ? styles.collapsed : ''
                 }`}
-                width={280}
-                collapsedWidth={isMobile ? 0 : 50}
-                collapsed={isSidebarCollapsed}
+                width={sidebarWidth}
+                collapsedWidth={0}
+                collapsed={isMobile ? isSidebarCollapsed : false}
                 trigger={null}
                 collapsible
             >
@@ -253,6 +304,7 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
                     currentChatUuid={currentChatUuid}
                     isSidebarCollapsed={isSidebarCollapsed}
                     onToggleSidebar={handleToggleSidebar}
+                    onResizeStart={handleSidebarResizeStart}
                     generatingChatUuids={generatingChatUuids}
                     onStopGenerationForChat={(uuid) =>
                         stopGenerationForChatRef.current(uuid)

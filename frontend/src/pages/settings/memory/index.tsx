@@ -29,10 +29,15 @@ const { Text, Title } = Typography;
 
 const MEMORY_TYPES = [
   { value: '', labelKey: 'settings.memory.filterAll' },
+  { value: 'fact', labelKey: 'settings.memory.typeFact' },
+  { value: 'information', labelKey: 'settings.memory.typeInformation' },
   { value: 'event', labelKey: 'settings.memory.typeEvent' },
-  { value: 'skill', labelKey: 'settings.memory.typeSkill' },
-  { value: 'plan', labelKey: 'settings.memory.typePlan' },
 ];
+
+const TYPE_LABEL_KEY: Record<string, string> = MEMORY_TYPES.reduce((acc, mt) => {
+  if (mt.value) acc[mt.value] = mt.labelKey;
+  return acc;
+}, {} as Record<string, string>);
 
 const MemorySettingsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -150,7 +155,7 @@ const MemorySettingsPage: React.FC = () => {
                     )}
                   </Text>
                   <Text type="secondary" className={styles.memoryDate}>
-                    {formatDate(m.time_range_start as unknown as string) || formatDate(m.created_at as unknown as string)}
+                    {formatDate(m.created_at as unknown as string)}
                   </Text>
                 </div>
                 <Text className={styles.memoryContent}>
@@ -159,16 +164,13 @@ const MemorySettingsPage: React.FC = () => {
                     : m.content}
                 </Text>
                 <div className={styles.memoryMeta}>
-                  {m.type && <Tag>{m.type}</Tag>}
-                  {m.location && <Tag color="cyan">{m.location}</Tag>}
-                  {m.characters && <Tag color="purple">{m.characters}</Tag>}
-                  <Text type="secondary" className={styles.memoryScore}>
-                    {t('settings.memory.trust')}: {(m.trust_score * 100).toFixed(0)}
-                    %
-                    {' · '}
-                    {t('settings.memory.importance')}: {(m.importance * 100).toFixed(0)}
-                    %
-                  </Text>
+                  {m.type && (
+                    <Tag>
+                      {TYPE_LABEL_KEY[m.type.trim()]
+                        ? t(TYPE_LABEL_KEY[m.type.trim()])
+                        : m.type}
+                    </Tag>
+                  )}
                   <div className={styles.memoryActions}>
                     <Button
                       type="link"

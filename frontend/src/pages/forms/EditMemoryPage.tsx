@@ -4,7 +4,6 @@ import {
   Button,
   Form,
   Input,
-  InputNumber,
   message,
   Select,
   Spin,
@@ -30,29 +29,16 @@ const { Text } = Typography;
 const { TextArea } = Input;
 
 const MEMORY_TYPES = [
+  { value: 'fact', labelKey: 'settings.memory.typeFact' },
+  { value: 'information', labelKey: 'settings.memory.typeInformation' },
   { value: 'event', labelKey: 'settings.memory.typeEvent' },
-  { value: 'skill', labelKey: 'settings.memory.typeSkill' },
-  { value: 'plan', labelKey: 'settings.memory.typePlan' },
 ];
 
 interface MemoryEditFormValues {
   summary: string;
   content: string;
   type: string;
-  time_range_start: string;
-  time_range_end: string;
-  location: string;
-  characters: string;
-  importance: number;
-  emotional_valence: number;
 }
-
-const toDateInputValue = (dateValue: unknown) => {
-  if (!dateValue) return '';
-  const raw = String(dateValue);
-  const dateOnly = raw.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(dateOnly) ? dateOnly : '';
-};
 
 const EditMemoryPage: React.FC = () => {
   const { t } = useTranslation();
@@ -92,13 +78,7 @@ const EditMemoryPage: React.FC = () => {
         form.setFieldsValue({
           summary: m.summary ?? '',
           content: m.content ?? '',
-          type: m.type ?? '',
-          time_range_start: toDateInputValue(m.time_range_start),
-          time_range_end: toDateInputValue(m.time_range_end),
-          location: m.location ?? '',
-          characters: m.characters ?? '',
-          importance: typeof m.importance === 'number' ? m.importance : 0.5,
-          emotional_valence: typeof m.emotional_valence === 'number' ? m.emotional_valence : 0,
+          type: (m.type ?? '').trim(),
         });
       } catch (err) {
         setLoadError(translateError(err, t('settings.memory.loadFailed', { defaultValue: 'Load failed' })));
@@ -121,12 +101,6 @@ const EditMemoryPage: React.FC = () => {
         summary: values.summary.trim(),
         content: values.content.trim(),
         type: values.type ?? '',
-        time_range_start: values.time_range_start || null,
-        time_range_end: values.time_range_end || null,
-        location: values.location.trim() || null,
-        characters: values.characters.trim() || null,
-        importance: values.importance,
-        emotional_valence: values.emotional_valence,
       });
       await Service.UpdateMemory(memory.id, payload);
       void Events.Emit(EVENT_KEY, { id: memory.id });
@@ -166,7 +140,7 @@ const EditMemoryPage: React.FC = () => {
               label={t('settings.memory.fieldContent')}
               rules={[{ required: true, message: t('settings.memory.contentRequired') }]}
             >
-              <TextArea rows={6} maxLength={2000} showCount />
+              <TextArea rows={10} maxLength={4000} showCount />
             </Form.Item>
             <Form.Item name="type" label={t('settings.memory.fieldType')}>
               <Select
@@ -174,38 +148,6 @@ const EditMemoryPage: React.FC = () => {
                 allowClear
               />
             </Form.Item>
-            <div className={styles.editGrid}>
-              <Form.Item name="time_range_start" label={t('settings.memory.fieldStartDate')}>
-                <Input type="date" />
-              </Form.Item>
-              <Form.Item name="time_range_end" label={t('settings.memory.fieldEndDate')}>
-                <Input type="date" />
-              </Form.Item>
-            </div>
-            <div className={styles.editGrid}>
-              <Form.Item name="location" label={t('settings.memory.fieldLocation')}>
-                <Input maxLength={120} />
-              </Form.Item>
-              <Form.Item name="characters" label={t('settings.memory.fieldCharacters')}>
-                <Input maxLength={120} />
-              </Form.Item>
-            </div>
-            <div className={styles.editGrid}>
-              <Form.Item
-                name="importance"
-                label={t('settings.memory.fieldImportance')}
-                rules={[{ required: true, message: t('settings.memory.importanceRequired') }]}
-              >
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item
-                name="emotional_valence"
-                label={t('settings.memory.fieldEmotion')}
-                rules={[{ required: true, message: t('settings.memory.emotionRequired') }]}
-              >
-                <InputNumber min={-1} max={1} step={0.1} style={{ width: '100%' }} />
-              </Form.Item>
-            </div>
             {vectorSearchEnabled && (
               <Text type="secondary" className={styles.hintText}>
                 {t('settings.memory.reembedHint')}

@@ -580,7 +580,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           <Avatar
             size={size}
             src={iconSrc}
-            style={{ backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)' }}
+            style={{ backgroundColor: enabled ? 'var(--brand-soft-teal)' : 'var(--background-color-dark)' }}
           >
             {fallbackText}
           </Avatar>
@@ -590,7 +590,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         <Avatar
           size={size}
           style={{
-            backgroundColor: enabled ? 'var(--primary-color-light)' : 'var(--background-color-dark)',
+            backgroundColor: enabled ? 'var(--brand-soft-teal)' : 'var(--background-color-dark)',
             fontSize: `${Math.round(size * 0.57)}px`,
             display: 'flex',
             alignItems: 'center',
@@ -605,7 +605,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       <Avatar
         size={size}
         icon={<ApiOutlined />}
-        style={{ backgroundColor: enabled ? 'var(--primary-color)' : 'var(--text-color-disabled)' }}
+        style={{ backgroundColor: enabled ? 'var(--brand-teal)' : 'var(--text-color-disabled)' }}
       />
     );
   };

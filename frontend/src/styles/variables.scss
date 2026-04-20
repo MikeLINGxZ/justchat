@@ -10,7 +10,23 @@ $mobile-max-width: 768px;
   --primary-color-hover: #40a9ff;
   --primary-color-active: #096dd9;
   --primary-color-light: #e6f7ff;
-  
+
+  // 品牌色（Home 页面 Figma 设计参考）
+  --brand-teal: #14b8a6;
+  --brand-teal-hover: #0d9488;
+  --brand-cyan: #06b6d4;
+  --brand-cyan-hover: #0891b2;
+  --brand-soft-teal: #f0fdfa;
+  --brand-soft-cyan: #ecfeff;
+  --brand-gradient: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-cyan) 100%);
+  --brand-gradient-hover: linear-gradient(135deg, var(--brand-teal-hover) 0%, var(--brand-cyan-hover) 100%);
+  --brand-gradient-soft: linear-gradient(135deg, var(--brand-soft-teal) 0%, var(--brand-soft-cyan) 100%);
+  --brand-border-soft: #99f6e4;
+  --brand-list-hover-bg: linear-gradient(135deg, rgba(20, 184, 166, 0.08), rgba(6, 182, 212, 0.02));
+  --brand-list-selected-bg: linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(6, 182, 212, 0.05));
+  --brand-shadow-card-hover: 0 4px 16px rgba(20, 184, 166, 0.14), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --brand-focus-ring: 0 0 0 3px rgba(20, 184, 166, 0.10);
+
   // 辅助色
   --success-color: #52c41a;
   --warning-color: #faad14;
@@ -94,7 +110,20 @@ $mobile-max-width: 768px;
   --primary-color-hover: #3c9ae8;
   --primary-color-active: #0958d9;
   --primary-color-light: #111b26;
-  
+
+  // 品牌色（暗色模式调整）
+  --brand-teal: #2dd4bf;
+  --brand-teal-hover: #5eead4;
+  --brand-cyan: #22d3ee;
+  --brand-cyan-hover: #67e8f9;
+  --brand-soft-teal: rgba(45, 212, 191, 0.12);
+  --brand-soft-cyan: rgba(34, 211, 238, 0.12);
+  --brand-border-soft: rgba(94, 234, 212, 0.35);
+  --brand-list-hover-bg: linear-gradient(135deg, rgba(45, 212, 191, 0.10), rgba(34, 211, 238, 0.04));
+  --brand-list-selected-bg: linear-gradient(135deg, rgba(45, 212, 191, 0.18), rgba(34, 211, 238, 0.08));
+  --brand-shadow-card-hover: 0 4px 16px rgba(45, 212, 191, 0.22), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --brand-focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.18);
+
   // 辅助色（暗色模式下调整）
   --success-color: #49aa19;
   --warning-color: #d89614;

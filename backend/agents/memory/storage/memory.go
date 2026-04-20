@@ -11,23 +11,30 @@ import (
 )
 
 func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {
-	// 写入前去重：检查是否已有相同 summary 的记忆（精确匹配）
+	// 精确 summary 匹配：标题完全相同的视为重复，不新建。
+	// 更细粒度的语义去重交由 Memory Agent（在写入前已拿到相关记忆列表并自行决定 write/edit）。
 	if memory.Summary != "" {
-		var count int64
-		s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).
+		var existing models.Memory
+		if err := s.sqliteDb.WithContext(ctx).
 			Where("summary = ? AND is_forgotten = ?", memory.Summary, false).
-			Count(&count)
-		if count > 0 {
-			// 已存在相同标题的记忆，返回已有记录的 ID
-			var existing models.Memory
-			s.sqliteDb.WithContext(ctx).
-				Where("summary = ? AND is_forgotten = ?", memory.Summary, false).
-				First(&existing)
+			First(&existing).Error; err == nil {
 			return existing.ID, nil
 		}
 	}
 	result := s.sqliteDb.WithContext(ctx).Create(&memory)
 	return memory.ID, result.Error
+}
+
+// RecentMemoriesByType 返回最近 N 条活跃记忆，用于在 Memory Agent 编码前注入上下文。
+// typeFilter 为空则不按类型过滤。
+func (s *Storage) RecentMemoriesByType(ctx context.Context, typeFilter string, limit int) ([]models.Memory, error) {
+	query := s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("is_forgotten = ?", false)
+	if typeFilter != "" {
+		query = query.Where("type = ?", typeFilter)
+	}
+	var memories []models.Memory
+	err := query.Order("created_at DESC").Limit(limit).Find(&memories).Error
+	return memories, err
 }
 
 // FTSSearch 使用 FTS5 全文检索搜索记忆，返回按相关性排序的结果。
@@ -228,13 +235,15 @@ func (s *Storage) ReadMemory(ctx context.Context, keyword string, startAt, endAt
 }
 
 type MemoryQuery struct {
-	Keyword        []string
+	Keyword []string
+	Type    *string
+	Limit   int
+	// 以下字段为历史兼容字段（三字段精简后新路径已不再使用），保留以支撑旧代码。
 	Location       *string
 	Characters     *string
 	EmotionalMin   *float64
 	EmotionalMax   *float64
 	ImportanceMin  *float64
-	Type           *string
 	TimeRangeStart *time.Time
 	TimeRangeEnd   *time.Time
 }
@@ -338,9 +347,12 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 
 	// 8. 排序：优先级顺序
 	query = query.
-		Order("importance DESC").                           // 首要：按重要性降序
-		Order("recall_count DESC").                         // 其次：常被回忆的优先
-		Order("COALESCE(time_rang_start, created_at) DESC") // 最近发生的靠前
+		Order("recall_count DESC").
+		Order("COALESCE(time_rang_start, created_at) DESC")
+
+	if q.Limit > 0 {
+		query = query.Limit(q.Limit)
+	}
 
 	// 执行最终查询
 	err := query.Find(&memories).Error
@@ -349,6 +361,111 @@ func (s *Storage) QueryMemories(ctx context.Context, q MemoryQuery) ([]models.Me
 	}
 
 	return memories, nil
+}
+
+// migrationLog 记录一次性数据迁移执行记录（确保迁移幂等）。
+type migrationLog struct {
+	Name       string    `gorm:"primaryKey;type:varchar(128)"`
+	ExecutedAt time.Time `gorm:"autoCreateTime"`
+}
+
+func (migrationLog) TableName() string { return "memory_migration_log" }
+
+const migrationLegacyFieldsToContent = "legacy_fields_to_content_v1"
+
+// MigrateLegacyFieldsToContent 把旧的结构化字段（时间、地点、人物）拼到 content 末尾，
+// 并把旧类型值映射到新类型（skill→information，plan/event→event，flow→event）。
+// 幂等：通过 memory_migration_log 表记录已执行。
+func (s *Storage) MigrateLegacyFieldsToContent(ctx context.Context) error {
+	db := s.sqliteDb.WithContext(ctx)
+	if err := db.AutoMigrate(&migrationLog{}); err != nil {
+		return fmt.Errorf("auto migrate log table: %w", err)
+	}
+
+	var log migrationLog
+	if err := db.Where("name = ?", migrationLegacyFieldsToContent).First(&log).Error; err == nil {
+		return nil // 已迁移
+	} else if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("check migration log: %w", err)
+	}
+
+	var memories []models.Memory
+	if err := db.Find(&memories).Error; err != nil {
+		return fmt.Errorf("load memories for migration: %w", err)
+	}
+
+	for _, m := range memories {
+		newType := mapLegacyType(string(m.Type))
+		extras := buildLegacyExtras(m)
+		newContent := m.Content
+		if extras != "" {
+			newContent = strings.TrimRight(m.Content, "\n")
+			if newContent != "" {
+				newContent += "\n\n"
+			}
+			newContent += extras
+		}
+
+		updates := map[string]any{}
+		if newType != string(m.Type) {
+			updates["type"] = newType
+		}
+		if newContent != m.Content {
+			updates["content"] = newContent
+		}
+		if len(updates) == 0 {
+			continue
+		}
+		if err := db.Model(&models.Memory{}).Where("id = ?", m.ID).Updates(updates).Error; err != nil {
+			return fmt.Errorf("update memory %d: %w", m.ID, err)
+		}
+	}
+
+	if err := db.Create(&migrationLog{Name: migrationLegacyFieldsToContent}).Error; err != nil {
+		return fmt.Errorf("record migration log: %w", err)
+	}
+	return nil
+}
+
+// mapLegacyType 映射旧类型值到新的 fact/information/event 语义。
+func mapLegacyType(old string) string {
+	switch strings.TrimSpace(old) {
+	case "skill":
+		return "information"
+	case "event", "plan", "plan ", "flow":
+		return "event"
+	default:
+		return old
+	}
+}
+
+// buildLegacyExtras 把旧结构化字段渲染成要追加到 content 末尾的自然语言片段。
+func buildLegacyExtras(m models.Memory) string {
+	var parts []string
+	if m.TimeRangStart != nil || m.TimeRangeEnd != nil {
+		var timeStr string
+		if m.TimeRangStart != nil && m.TimeRangeEnd != nil {
+			s := m.TimeRangStart.Format("2006-01-02")
+			e := m.TimeRangeEnd.Format("2006-01-02")
+			if s == e {
+				timeStr = s
+			} else {
+				timeStr = s + " 至 " + e
+			}
+		} else if m.TimeRangStart != nil {
+			timeStr = m.TimeRangStart.Format("2006-01-02")
+		} else {
+			timeStr = m.TimeRangeEnd.Format("2006-01-02")
+		}
+		parts = append(parts, "[时间] "+timeStr)
+	}
+	if m.Location != nil && strings.TrimSpace(*m.Location) != "" {
+		parts = append(parts, "[地点] "+strings.TrimSpace(*m.Location))
+	}
+	if m.Characters != nil && strings.TrimSpace(*m.Characters) != "" {
+		parts = append(parts, "[人物] "+strings.TrimSpace(*m.Characters))
+	}
+	return strings.Join(parts, "\n")
 }
 
 // UpdateMemory 更新指定的记忆
@@ -363,8 +480,8 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 		return fmt.Errorf("查询记忆失败: %w", result.Error)
 	}
 
-	// 更新记忆，只更新非零值字段
-	updateData := make(map[string]interface{})
+	// 仅更新三字段中非零值的部分（保持 Agent 增量补全语义）
+	updateData := make(map[string]any)
 
 	if memory.Summary != "" {
 		updateData["summary"] = memory.Summary
@@ -375,29 +492,7 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 	if memory.Type != "" {
 		updateData["type"] = memory.Type
 	}
-	if memory.TimeRangStart != nil {
-		updateData["time_rang_start"] = memory.TimeRangStart
-	}
-	if memory.TimeRangeEnd != nil {
-		updateData["time_range_end"] = memory.TimeRangeEnd
-	}
-	if memory.Location != nil {
-		updateData["location"] = memory.Location
-	}
-	if memory.Characters != nil {
-		updateData["characters"] = memory.Characters
-	}
-	if memory.Context != nil {
-		updateData["context"] = memory.Context
-	}
-	if memory.Importance != 0 {
-		updateData["importance"] = memory.Importance
-	}
-	if memory.EmotionalValence != 0 {
-		updateData["emotional_valence"] = memory.EmotionalValence
-	}
 
-	// 更新修改时间
 	updateData["updated_at"] = time.Now()
 
 	// 执行更新
@@ -412,7 +507,7 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 	return nil
 }
 
-// ReplaceMemoryEditableFields 覆盖更新记忆的可编辑字段，支持清空字符串/空值。
+// ReplaceMemoryEditableFields 覆盖更新记忆三字段（summary/content/type）。
 func (s *Storage) ReplaceMemoryEditableFields(ctx context.Context, id uint, memory models.Memory) error {
 	var existingMemory models.Memory
 	result := s.sqliteDb.WithContext(ctx).First(&existingMemory, id)
@@ -423,17 +518,11 @@ func (s *Storage) ReplaceMemoryEditableFields(ctx context.Context, id uint, memo
 		return fmt.Errorf("查询记忆失败: %w", result.Error)
 	}
 
-	updateData := map[string]interface{}{
-		"summary":           memory.Summary,
-		"content":           memory.Content,
-		"type":              memory.Type,
-		"time_rang_start":   memory.TimeRangStart,
-		"time_range_end":    memory.TimeRangeEnd,
-		"location":          memory.Location,
-		"characters":        memory.Characters,
-		"importance":        memory.Importance,
-		"emotional_valence": memory.EmotionalValence,
-		"updated_at":        time.Now(),
+	updateData := map[string]any{
+		"summary":    memory.Summary,
+		"content":    memory.Content,
+		"type":       memory.Type,
+		"updated_at": time.Now(),
 	}
 
 	result = s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).Updates(updateData)

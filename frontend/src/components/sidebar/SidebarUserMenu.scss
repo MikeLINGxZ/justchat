@@ -32,6 +32,22 @@
       background-color: var(--background-color-dark);
     }
 
+    &.settings-trigger {
+      gap: 10px;
+      padding: 10px 12px;
+
+      .settings-trigger-icon {
+        font-size: 16px;
+        color: var(--text-color-secondary);
+      }
+
+      .settings-trigger-label {
+        font-size: var(--font-size);
+        color: var(--text-color);
+        font-weight: var(--font-weight-medium);
+      }
+    }
+
     .user-menu-icon {
       margin-left: auto;
       color: var(--text-color-secondary);
@@ -107,10 +123,11 @@
 
   // 用户菜单
   .user-menu {
-    position: fixed;
-    bottom: 88px;
+    position: absolute;
     left: 16px;
+    bottom: calc(100% - 12px);
     width: 248px;
+    max-width: calc(100% - 32px);
     background-color: var(--background-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg);
@@ -123,7 +140,7 @@
       left: 16px;
       right: 16px;
       width: auto;
-      bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+      max-width: none;
     }
 
     .menu-item {

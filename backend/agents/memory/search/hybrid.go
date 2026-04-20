@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +13,36 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
 )
+
+// BuildEmbedText 根据记忆三字段拼接用于向量化的文本。
+// 所有时间/地点/人物等信息已要求写入 content；此处把 title 和 type 中文标签也并入，
+// 提升按类型/主题的语义检索命中率。
+func BuildEmbedText(m models.Memory) string {
+	var parts []string
+	if title := strings.TrimSpace(m.Summary); title != "" {
+		parts = append(parts, title)
+	}
+	if content := strings.TrimSpace(m.Content); content != "" {
+		parts = append(parts, content)
+	}
+	if label := typeLabel(m.Type); label != "" {
+		parts = append(parts, "类型："+label)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func typeLabel(t models.MemoryType) string {
+	switch t {
+	case models.MemoryTypeFact:
+		return "事实"
+	case models.MemoryTypeInfo:
+		return "信息"
+	case models.MemoryTypeEvent:
+		return "事件"
+	default:
+		return ""
+	}
+}
 
 const minTrustThreshold = 0.3
 
@@ -254,7 +285,7 @@ func (hs *HybridSearcher) BackfillEmbeddings(ctx context.Context, batchSize int)
 		if loadErr != nil || m == nil {
 			continue
 		}
-		text := m.Summary + " " + m.Content
+		text := BuildEmbedText(*m)
 		if embedErr := hs.EmbedAndStore(ctx, id, text); embedErr != nil {
 			logger.Error("backfill embedding error for memory", id, ":", embedErr)
 			continue

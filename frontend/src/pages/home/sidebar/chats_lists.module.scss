@@ -89,22 +89,25 @@
 
 .chatContent {
   flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--border-radius);
+  padding: 10px 12px;
+  border-radius: 10px;
   margin: 0 6px;
   min-width: 0; // 确保flex子元素能正确收缩
   overflow: hidden; // 防止内容溢出
-  
+  border: 1px solid transparent;
+  transition: background 0.18s ease, border-color 0.18s ease;
+
 
   &:hover {
     background-color: var(--background-color-dark);
   }
 
   &.active {
-    background-color: var(--primary-color-light);
+    background: var(--brand-gradient-soft);
+    border-color: var(--brand-border-soft);
 
     .chatTitle {
-      color: var(--primary-color);
+      color: var(--brand-teal-hover);
     }
   }
 

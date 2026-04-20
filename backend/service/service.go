@@ -67,6 +67,10 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 		if embErr := memStorage.AutoMigrateEmbeddings(); embErr != nil {
 			logger.Warm("memory embeddings migration failed:", embErr)
 		}
+		// 一次性迁移历史记忆：把旧结构化字段拼入 content，并映射旧类型
+		if migErr := memStorage.MigrateLegacyFieldsToContent(ctx); migErr != nil {
+			logger.Warm("memory legacy-fields migration failed:", migErr)
+		}
 		// 创建混合检索引擎（默认无 embedder）
 		s.memorySearcher = search.NewHybridSearcher(memStorage, nil, "")
 		// 启动记忆生命周期管理（巩固/遗忘/矛盾检测）

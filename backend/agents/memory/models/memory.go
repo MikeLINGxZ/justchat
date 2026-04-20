@@ -8,30 +8,37 @@ import (
 
 type MemoryType string
 
+// 新版三类型语义：
+//
+//	fact         不变的客观事实（用户出生地、家庭成员、过敏源等）
+//	information  可变的偏好/状态/习惯（当前住所、常用设备、最近兴趣等）
+//	event        带时间锚点的具体事件或计划
 const (
-	MemoryTypeNone  MemoryType = ""      // 无分类记忆
-	MemoryTypeSkill MemoryType = "skill" // 技能类记忆
-	MemoryTypeEvent MemoryType = "event" // 事件类记忆
-	MemoryTypeFlow  MemoryType = "flow"  // 流程类记忆
-	MemoryTypePlan  MemoryType = "plan " // 流程类记忆
+	MemoryTypeNone  MemoryType = ""
+	MemoryTypeFact  MemoryType = "fact"
+	MemoryTypeInfo  MemoryType = "information"
+	MemoryTypeEvent MemoryType = "event"
 )
 
 type Memory struct {
 	data_models.OrmModel
-	Summary       string     `gorm:"type:varchar(500)"`      // 自动摘要（便于检索）
-	Content       string     `gorm:"type:text;not null"`     // 记忆内容（原始文本）
-	Type          MemoryType `gorm:"type:varchar(50);index"` // 记忆类型
-	TimeRangStart *time.Time `gorm:"index"`                  // 发生时间（可选）
-	TimeRangeEnd  *time.Time `gorm:"index"`                  // 结束时间（可选）
-	Location      *string    `gorm:"type:varchar(500)"`      // 发生地点（可选），多个地点使用","分割
-	Characters    *string    `gorm:"type:varchar(500)"`      // 相关人物（可选），多个人物使用","分割
-	Context       *string    `gorm:"type:json"`              // 上下文元数据（JSON 格式）
+	Summary string     `gorm:"type:varchar(500)"`      // 标题
+	Content string     `gorm:"type:text;not null"`     // 内容（含时间/地点/人物等所有信息）
+	Type    MemoryType `gorm:"type:varchar(50);index"` // 类型：fact / information / event
 
-	EmbeddingID      *uint      `gorm:"index"`                   // 嵌入id
-	Importance       float64    `gorm:"default:0.5"`             // 重要性评分 [0.0 ~ 1.0]
-	EmotionalValence float64    `gorm:"default:0.0"`             // 情感极性 [-1.0 ~ +1.0] 负面到正面
-	TrustScore       float64    `gorm:"default:0.5"`             // 信任分数 [0.0 ~ 1.0]，非对称反馈
-	IsForgotten      bool       `gorm:"default:false;index"`     // 是否已遗忘（用于模拟遗忘）
-	RecallCount      int        `gorm:"default:0"`               // 被回忆的次数（影响强度）
-	LastRecalledAt   *time.Time `gorm:"column:last_recalled_at"` // 最后一次被回忆的时间
+	EmbeddingID *uint `gorm:"index"`               // 嵌入 id
+	IsForgotten bool  `gorm:"default:false;index"` // 是否已遗忘
+	RecallCount int   `gorm:"default:0"`           // 召回次数
+
+	LastRecalledAt *time.Time `gorm:"column:last_recalled_at"`
+
+	// === 已废弃字段（保留为 nullable，仅供历史迁移读取，不再写入新数据）===
+	TimeRangStart    *time.Time `gorm:"index"`
+	TimeRangeEnd     *time.Time `gorm:"index"`
+	Location         *string    `gorm:"type:varchar(500)"`
+	Characters       *string    `gorm:"type:varchar(500)"`
+	Context          *string    `gorm:"type:json"`
+	Importance       float64    `gorm:"default:0.5"`
+	EmotionalValence float64    `gorm:"default:0.0"`
+	TrustScore       float64    `gorm:"default:0.5"`
 }

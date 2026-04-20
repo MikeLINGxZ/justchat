@@ -150,6 +150,69 @@ func (s *Service) retrieveMemoryContext(ctx context.Context, userMessage string)
 	return formatMemoryContext(memories)
 }
 
+// retrieveViaMemoryAgent 让 Memory Agent 对用户消息进行"代理驱动检索"：
+// 由 Agent 自主调用 read_memory / get_current_time 等工具，并返回已经格式化好的记忆列表文本。
+// 失败或超时返回空字符串（由外层决定是否走 HybridSearcher 兜底）。
+func (s *Service) retrieveViaMemoryAgent(ctx context.Context, providerModel *wrapper_models.ProviderModel, userMessage string) string {
+	if s.memoryStorage == nil || providerModel == nil {
+		return ""
+	}
+	userMessage = sanitizeMemoryContext(userMessage)
+	if !shouldRetrieveMemories(userMessage) {
+		return ""
+	}
+
+	memAgent, err := memory_agents.NewMemoryAgent(
+		ctx,
+		providerModel.BaseUrl,
+		providerModel.ApiKey,
+		providerModel.Model,
+		s.memoryStorage,
+	)
+	if err != nil {
+		logger.Error("retrieve via memory agent: create agent error:", err)
+		return ""
+	}
+
+	instruction := `[记忆检索模式 - 内部指令，不要向用户暴露]
+使用 read_memory 查找与本用户消息相关的长期记忆；若涉及时间表达，先调用 get_current_time 推算绝对日期再查询。
+完成后仅输出精简记忆列表，格式为每行一条：
+- [YYYY-MM-DD] 标题：内容要点
+不要添加任何问候/解释/总结。若没有任何相关记忆，仅输出：NO_MEMORY
+用户消息如下：`
+
+	agentInput := []*schema.Message{
+		{Role: schema.User, Content: instruction + "\n\n" + userMessage},
+	}
+
+	stream, err := memAgent.Streamable(ctx, agentInput)
+	if err != nil {
+		logger.Error("retrieve via memory agent: stream error:", err)
+		return ""
+	}
+	if stream == nil {
+		return ""
+	}
+	defer stream.Close()
+
+	var builder strings.Builder
+	for {
+		chunk, recvErr := stream.Recv()
+		if recvErr != nil {
+			break
+		}
+		if chunk != nil {
+			builder.WriteString(chunk.Content)
+		}
+	}
+
+	result := strings.TrimSpace(builder.String())
+	if result == "" || strings.EqualFold(result, "NO_MEMORY") {
+		return ""
+	}
+	return sanitizeMemoryContext(result)
+}
+
 // extractKeywords 从用户消息中提取检索关键词。
 // 语言无关：按标点/空格分割 + 短消息滑窗拆分，不使用硬编码词表。
 func extractKeywords(message string) []string {
@@ -274,10 +337,70 @@ func sanitizeMemoryContext(content string) string {
 	return strings.TrimSpace(content)
 }
 
+// buildExistingMemoriesSnapshot 把当前库中最近活跃的记忆渲染成一段"已存在记忆清单"，
+// 作为编码前的上下文注入到 Memory Agent，让它自行判断是否与已有记忆重复。
+//
+// 注意：这是"去重的唯一机制"——不做算法去重，完全依赖 LLM 对语义的判断。
+// 为控制 prompt 体积，按类型各取最近若干条，content 做截断。
+func (s *Service) buildExistingMemoriesSnapshot(ctx context.Context) string {
+	if s.memoryStorage == nil {
+		return ""
+	}
+
+	const perType = 20
+	const contentLimit = 200
+
+	var all []memory_models.Memory
+	for _, t := range []string{"fact", "information", "event", ""} {
+		items, err := s.memoryStorage.RecentMemoriesByType(ctx, t, perType)
+		if err != nil {
+			logger.Error("memory snapshot: load recent error:", err)
+			continue
+		}
+		all = append(all, items...)
+	}
+	if len(all) == 0 {
+		return ""
+	}
+
+	seen := make(map[uint]bool, len(all))
+	var lines []string
+	for _, m := range all {
+		if seen[m.ID] {
+			continue
+		}
+		seen[m.ID] = true
+		content := strings.TrimSpace(m.Content)
+		runes := []rune(content)
+		if len(runes) > contentLimit {
+			content = string(runes[:contentLimit]) + "…"
+		}
+		typeLabel := string(m.Type)
+		if typeLabel == "" {
+			typeLabel = "-"
+		}
+		lines = append(lines, fmt.Sprintf("  [id=%d | type=%s] %s :: %s",
+			m.ID, typeLabel, strings.TrimSpace(m.Summary), content))
+	}
+
+	return fmt.Sprintf(`[系统上下文：当前已存在的记忆列表，共 %d 条]
+每条格式：[id=ID | type=类型] 标题 :: 内容摘要
+%s
+
+[操作指令]
+接下来我会给出最近一轮对话。请严格按以下流程处理：
+1. 判断本轮对话是否包含值得长期记住的新信息；若无，什么都不做。
+2. 如果有新信息，先与上方清单逐条比对：
+   - 若新信息描述的是同一主题/同一事件（即便措辞不同），必须调用 edit_memory 在对应 id 上补全，禁止新建。
+   - 只有确认上方清单里没有任何一条覆盖此主题，才调用 write_memory。
+3. 若需要新建，记得遵循 content 包含所有时间/地点/人物/原因等信息（时间要写成绝对日期）。
+绝不允许为同一主题产生两条并存记忆。`, len(lines), strings.Join(lines, "\n"))
+}
+
 // ---- 异步编码 ----
 
 // encodeMemoriesAsync 异步调用 Memory Agent 对本轮对话进行记忆编码。
-// 编码前先检查是否已有高度相似的记忆，避免重复存储。
+// 去重策略：把"最近活跃记忆"作为上下文块拼进 Agent 输入，让 LLM 自行判断是 edit 已有还是 write 新建。
 func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderModel, messages []schema.Message) {
 	if s.memoryStorage == nil || providerModel == nil {
 		return
@@ -304,11 +427,6 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 		return
 	}
 
-	// ---- 编码前去重：检查是否已有高度相似的记忆 ----
-	if s.hasSimilarMemory(userMessage) {
-		return
-	}
-
 	// 全局限流：同时只有 1 个编码任务
 	if !memoryEncodeMu.TryLock() {
 		return
@@ -331,9 +449,17 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 	}
 
 	// 只发送最近 2 轮对话（最新用户消息 + 最新助手回复），而非全部历史
-	// 避免 Memory Agent 看到旧消息重复编码
 	recentMessages := extractRecentTurn(messages)
 	var msgPtrs []*schema.Message
+
+	// ---- 去重关键：把最近活跃记忆作为上下文快照注入，让 LLM 自行判断 write vs edit ----
+	if snapshot := s.buildExistingMemoriesSnapshot(ctx); snapshot != "" {
+		msgPtrs = append(msgPtrs, &schema.Message{
+			Role:    schema.User,
+			Content: snapshot,
+		})
+	}
+
 	for i := range recentMessages {
 		msgPtrs = append(msgPtrs, &recentMessages[i])
 	}
@@ -364,59 +490,6 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 			logger.Warm("post-encode: embedded", count, "new memories")
 		}
 	}
-}
-
-// hasSimilarMemory 检查是否已有与用户消息高度相似的记忆。
-// 只做精确度高的比较（summary 包含检查），避免误拦新记忆。
-func (s *Service) hasSimilarMemory(userMessage string) bool {
-	userMessage = sanitizeMemoryContext(userMessage)
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-
-	// 直接用用户消息的前 20 字做 LIKE 搜索，检查是否已有几乎相同的记忆
-	runes := []rune(strings.TrimSpace(userMessage))
-	if len(runes) < 5 {
-		return false
-	}
-	searchText := string(runes)
-	if len(runes) > 20 {
-		searchText = string(runes[:20])
-	}
-
-	var count int64
-	s.memoryStorage.DB().WithContext(ctx).
-		Model(&memory_models.Memory{}).
-		Where("is_forgotten = ? AND (summary LIKE ? OR content LIKE ?)", false,
-			"%"+searchText+"%", "%"+searchText+"%").
-		Count(&count)
-
-	return count > 0
-}
-
-// jaccardSimilarity 计算两个文本的字符 bigram Jaccard 相似度。
-func jaccardSimilarity(a, b []rune) float64 {
-	if len(a) < 2 || len(b) < 2 {
-		return 0
-	}
-	setA := make(map[string]bool)
-	for i := 0; i+2 <= len(a); i++ {
-		setA[string(a[i:i+2])] = true
-	}
-	setB := make(map[string]bool)
-	for i := 0; i+2 <= len(b); i++ {
-		setB[string(b[i:i+2])] = true
-	}
-	intersection := 0
-	for k := range setA {
-		if setB[k] {
-			intersection++
-		}
-	}
-	union := len(setA) + len(setB) - intersection
-	if union == 0 {
-		return 0
-	}
-	return float64(intersection) / float64(union)
 }
 
 // extractRecentTurn 从完整消息历史中提取最近一轮对话。

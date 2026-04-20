@@ -9,15 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// CurrentEmbeddingSchemaVersion 当前 embedding 文本拼接规则版本。
+// 每次修改 buildEmbedText 规则都要递增该常量，以触发后台重新生成旧向量。
+const CurrentEmbeddingSchemaVersion = 2
+
 // MemoryEmbedding 存储记忆的嵌入向量。
 type MemoryEmbedding struct {
-	ID         uint      `gorm:"primarykey"`
-	MemoryID   uint      `gorm:"uniqueIndex;not null"`
-	Vector     []byte    `gorm:"type:blob;not null"` // float32 数组序列化
-	ModelName  string    `gorm:"type:varchar(100);not null"`
-	Dimensions int       `gorm:"not null"`
-	CreatedAt  time.Time `gorm:"autoCreateTime"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
+	ID            uint      `gorm:"primarykey"`
+	MemoryID      uint      `gorm:"uniqueIndex;not null"`
+	Vector        []byte    `gorm:"type:blob;not null"` // float32 数组序列化
+	ModelName     string    `gorm:"type:varchar(100);not null"`
+	Dimensions    int       `gorm:"not null"`
+	SchemaVersion int       `gorm:"default:1"` // 拼接规则版本
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
 }
 
 // AutoMigrateEmbeddings 创建嵌入表。
@@ -29,10 +34,11 @@ func (s *Storage) AutoMigrateEmbeddings() error {
 func (s *Storage) SaveEmbedding(ctx context.Context, memoryID uint, vector []float32, modelName string) error {
 	blob := float32sToBytes(vector)
 	emb := MemoryEmbedding{
-		MemoryID:   memoryID,
-		Vector:     blob,
-		ModelName:  modelName,
-		Dimensions: len(vector),
+		MemoryID:      memoryID,
+		Vector:        blob,
+		ModelName:     modelName,
+		Dimensions:    len(vector),
+		SchemaVersion: CurrentEmbeddingSchemaVersion,
 	}
 	if err := s.sqliteDb.WithContext(ctx).
 		Where("memory_id = ?", memoryID).
@@ -86,14 +92,16 @@ func (s *Storage) CountEmbeddings(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-// GetMemoryIDsWithoutEmbedding 返回没有嵌入的活跃记忆 ID 列表。
+// GetMemoryIDsWithoutEmbedding 返回需要生成/更新嵌入的活跃记忆 ID 列表。
+// 触发条件：无嵌入 OR 嵌入的 schema 版本落后于 CurrentEmbeddingSchemaVersion。
 func (s *Storage) GetMemoryIDsWithoutEmbedding(ctx context.Context, limit int) ([]uint, error) {
 	var ids []uint
 	err := s.sqliteDb.WithContext(ctx).
 		Raw(`SELECT m.id FROM memories m
 			 LEFT JOIN memory_embeddings e ON e.memory_id = m.id
-			 WHERE e.id IS NULL AND m.is_forgotten = 0
-			 LIMIT ?`, limit).
+			 WHERE m.is_forgotten = 0
+			   AND (e.id IS NULL OR COALESCE(e.schema_version, 1) < ?)
+			 LIMIT ?`, CurrentEmbeddingSchemaVersion, limit).
 		Scan(&ids).Error
 	return ids, err
 }

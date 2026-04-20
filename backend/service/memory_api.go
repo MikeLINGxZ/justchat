@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
-	"fmt"
 	memory_models "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
+	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/search"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
@@ -68,35 +69,16 @@ func (s *Service) UpdateMemory(id uint, input view_models.MemoryUpdateInput) (*v
 	if content == "" {
 		return nil, ierror.NewError(errors.New("memory content cannot be empty"))
 	}
-	if input.Importance < 0 || input.Importance > 1 {
-		return nil, ierror.NewError(errors.New("importance must be between 0 and 1"))
-	}
-	if input.EmotionalValence < -1 || input.EmotionalValence > 1 {
-		return nil, ierror.NewError(errors.New("emotional valence must be between -1 and 1"))
-	}
 
-	startAt, err := parseMemoryDate(input.TimeRangeStart)
+	memType, err := normalizeMemoryTypeInput(input.Type)
 	if err != nil {
 		return nil, ierror.NewError(err)
-	}
-	endAt, err := parseMemoryDate(input.TimeRangeEnd)
-	if err != nil {
-		return nil, ierror.NewError(err)
-	}
-	if startAt != nil && endAt != nil && startAt.After(*endAt) {
-		return nil, ierror.NewError(errors.New("start time cannot be after end time"))
 	}
 
 	update := memory_models.Memory{
-		Summary:          summary,
-		Content:          content,
-		Type:             memory_models.MemoryType(strings.TrimSpace(input.Type)),
-		TimeRangStart:    startAt,
-		TimeRangeEnd:     endAt,
-		Location:         normalizeOptionalString(input.Location),
-		Characters:       normalizeOptionalString(input.Characters),
-		Importance:       input.Importance,
-		EmotionalValence: input.EmotionalValence,
+		Summary: summary,
+		Content: content,
+		Type:    memType,
 	}
 
 	if err := s.memoryStorage.ReplaceMemoryEditableFields(context.Background(), id, update); err != nil {
@@ -104,15 +86,15 @@ func (s *Service) UpdateMemory(id uint, input view_models.MemoryUpdateInput) (*v
 	}
 
 	if s.memorySearcher != nil && s.memorySearcher.HasEmbedder() {
-		go func(memoryID uint, text string) {
+		go func(memoryID uint, embedText string) {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			if embedErr := s.memorySearcher.EmbedAndStore(bgCtx, memoryID, text); embedErr != nil {
+			if embedErr := s.memorySearcher.EmbedAndStore(bgCtx, memoryID, embedText); embedErr != nil {
 				logger.Error("re-embed memory error:", embedErr)
 				return
 			}
 			s.memorySearcher.RefreshCache()
-		}(id, strings.TrimSpace(summary+" "+content))
+		}(id, search.BuildEmbedText(update))
 	}
 
 	return s.GetMemoryDetail(id)
@@ -152,54 +134,31 @@ func (s *Service) GetMemoryStats() (*view_models.MemoryStats, error) {
 
 func toMemoryViewModel(m memory_models.Memory) view_models.Memory {
 	return view_models.Memory{
-		ID:               m.ID,
-		Summary:          m.Summary,
-		Content:          m.Content,
-		Type:             string(m.Type),
-		TimeRangeStart:   m.TimeRangStart,
-		TimeRangeEnd:     m.TimeRangeEnd,
-		Location:         m.Location,
-		Characters:       m.Characters,
-		Importance:       m.Importance,
-		EmotionalValence: m.EmotionalValence,
-		TrustScore:       m.TrustScore,
-		IsForgotten:      m.IsForgotten,
-		RecallCount:      m.RecallCount,
-		HasEmbedding:     m.EmbeddingID != nil,
-		CreatedAt:        m.CreatedAt,
-		UpdatedAt:        m.UpdatedAt,
+		ID:           m.ID,
+		Summary:      m.Summary,
+		Content:      m.Content,
+		Type:         string(m.Type),
+		IsForgotten:  m.IsForgotten,
+		RecallCount:  m.RecallCount,
+		HasEmbedding: m.EmbeddingID != nil,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
 	}
 }
 
-func parseMemoryDate(value *string) (*time.Time, error) {
-	if value == nil {
-		return nil, nil
+// normalizeMemoryTypeInput 校验前端传入的类型值，保持与 Memory Agent 工具同样的语义。
+func normalizeMemoryTypeInput(raw string) (memory_models.MemoryType, error) {
+	t := strings.ToLower(strings.TrimSpace(raw))
+	switch t {
+	case "":
+		return memory_models.MemoryTypeNone, nil
+	case "fact":
+		return memory_models.MemoryTypeFact, nil
+	case "information", "info":
+		return memory_models.MemoryTypeInfo, nil
+	case "event":
+		return memory_models.MemoryTypeEvent, nil
+	default:
+		return memory_models.MemoryTypeNone, fmt.Errorf("invalid memory type: %q", raw)
 	}
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil, nil
-	}
-
-	layouts := []string{
-		time.DateOnly,
-		"2006-01-02 15:04:05",
-		time.RFC3339,
-	}
-	for _, layout := range layouts {
-		if parsed, err := time.Parse(layout, trimmed); err == nil {
-			return &parsed, nil
-		}
-	}
-	return nil, fmt.Errorf("invalid date format: %s", trimmed)
-}
-
-func normalizeOptionalString(value *string) *string {
-	if value == nil {
-		return nil
-	}
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil
-	}
-	return &trimmed
 }
