@@ -345,6 +345,9 @@ const disposable = api.hooks.onBeforeChat(async (ctx) => {
   // ctx.messages: 消息列表
   // ctx.agentId: 当前 Agent ID
   // ctx.tools: 当前工具列表
+  // 带附件或多模态输入时，消息里还会包含 reasoning_content、
+  // user_input_multi_content、multi_content、tool_calls 等字段。
+  // 如果你复制/改写消息对象，请保留这些字段，不要只返回 role/content。
 
   // 示例：在消息前注入日期信息
   ctx.messages.unshift({
@@ -375,6 +378,7 @@ disposable.dispose();
 - 多个插件的同类 Hook 按激活顺序执行（管道模式），前一个的输出是后一个的输入
 - Hook 执行有超时限制，超时或出错会被跳过（不会阻塞对话）
 - `onBeforeChat` 可以修改消息内容；`onAfterChat` 适合做日志/统计
+- 对于带文件、图片、音频等多模态消息，务必保留 `user_input_multi_content` 等原始字段
 
 ### UI API
 

@@ -1,6 +1,21 @@
 export interface Disposable {
     dispose(): void;
 }
+export interface HookChatMessage {
+    role: string;
+    content?: string;
+    reasoning_content?: string;
+    user_input_multi_content?: any[];
+    multi_content?: any[];
+    tool_calls?: any[];
+    [key: string]: any;
+}
+export interface HookChatContext {
+    messages: HookChatMessage[];
+    agentId?: string;
+    tools?: string[];
+    response?: string;
+}
 export interface ToolDefinition {
     id: string;
     description: string;
@@ -17,8 +32,8 @@ export interface AgentDefinition {
     tools?: string[];
     role?: string;
     hooks?: {
-        onBeforeChat?: (ctx: any) => Promise<any>;
-        onAfterChat?: (ctx: any) => Promise<any>;
+        onBeforeChat?: (ctx: HookChatContext) => Promise<HookChatContext>;
+        onAfterChat?: (ctx: HookChatContext) => Promise<HookChatContext>;
     };
 }
 export interface LemonTeaAPI {
@@ -29,8 +44,8 @@ export interface LemonTeaAPI {
         register(agent: AgentDefinition): void;
     };
     hooks: {
-        onBeforeChat(handler: (ctx: any) => Promise<any>): Disposable;
-        onAfterChat(handler: (ctx: any) => Promise<any>): Disposable;
+        onBeforeChat(handler: (ctx: HookChatContext) => Promise<HookChatContext>): Disposable;
+        onAfterChat(handler: (ctx: HookChatContext) => Promise<HookChatContext>): Disposable;
     };
     ui: {
         postMessage(viewId: string, data: any): void;
@@ -52,7 +67,7 @@ export interface PluginInstance {
     dir: string;
     module: PluginModule;
     tools: Map<string, ToolDefinition>;
-    beforeChatHooks: Array<(ctx: any) => Promise<any>>;
-    afterChatHooks: Array<(ctx: any) => Promise<any>>;
+    beforeChatHooks: Array<(ctx: HookChatContext) => Promise<HookChatContext>>;
+    afterChatHooks: Array<(ctx: HookChatContext) => Promise<HookChatContext>>;
     messageHandlers: Map<string, Array<(msg: any) => void>>;
 }

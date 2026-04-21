@@ -269,6 +269,10 @@ api.hooks.onAfterChat(async (ctx) => {
 })
 ```
 
+说明：`ctx.messages` 中的消息除 `role/content` 外，还可能带有
+`reasoning_content`、`user_input_multi_content`、`multi_content`、`tool_calls`
+等字段。插件如果改写消息对象，必须保留这些字段，避免附件和多模态上下文丢失。
+
 多个插件注册同一 Hook 时，按插件激活顺序依次执行（管道模式），前一个的输出是后一个的输入。
 
 ### 3.4 UI API

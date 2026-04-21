@@ -1,5 +1,5 @@
 import { JsonRpcConnection } from './rpc';
-import { LemonTeaAPI, ToolDefinition, AgentDefinition, Disposable, PluginInstance } from './types';
+import { LemonTeaAPI, ToolDefinition, AgentDefinition, Disposable, PluginInstance, HookChatContext } from './types';
 
 export function createPluginAPI(plugin: PluginInstance, rpc: JsonRpcConnection): LemonTeaAPI {
   return {
@@ -29,7 +29,7 @@ export function createPluginAPI(plugin: PluginInstance, rpc: JsonRpcConnection):
       },
     },
     hooks: {
-      onBeforeChat(handler: (ctx: any) => Promise<any>): Disposable {
+      onBeforeChat(handler: (ctx: HookChatContext) => Promise<HookChatContext>): Disposable {
         plugin.beforeChatHooks.push(handler);
         return {
           dispose() {
@@ -38,7 +38,7 @@ export function createPluginAPI(plugin: PluginInstance, rpc: JsonRpcConnection):
           },
         };
       },
-      onAfterChat(handler: (ctx: any) => Promise<any>): Disposable {
+      onAfterChat(handler: (ctx: HookChatContext) => Promise<HookChatContext>): Disposable {
         plugin.afterChatHooks.push(handler);
         return {
           dispose() {

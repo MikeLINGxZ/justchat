@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './SidebarUserMenu.scss';
 import {
     BulbOutlined,
@@ -33,24 +34,34 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
     const userMenuRef = useRef<HTMLDivElement>(null);
     const themeMenuRef = useRef<HTMLDivElement>(null);
     const modeMenuRef = useRef<HTMLDivElement>(null);
+    const themeSubmenuPortalRef = useRef<HTMLDivElement>(null);
+    const modeSubmenuPortalRef = useRef<HTMLDivElement>(null);
     const themeCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const modeCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const [themeSubmenuPos, setThemeSubmenuPos] = useState<{ top: number; left: number } | null>(null);
+    const [modeSubmenuPos, setModeSubmenuPos] = useState<{ top: number; left: number } | null>(null);
 
     // 点击外部关闭菜单
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-                setIsUserMenuOpen(false);
-            }
-            if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
-                setIsThemeMenuOpen(false);
-            }
+            const target = event.target as Node;
+            const inTheme =
+                themeMenuRef.current?.contains(target) ||
+                themeSubmenuPortalRef.current?.contains(target);
+            const inMode =
+                modeMenuRef.current?.contains(target) ||
+                modeSubmenuPortalRef.current?.contains(target);
+            const inUser = userMenuRef.current?.contains(target) || inTheme || inMode;
+            if (!inUser) setIsUserMenuOpen(false);
+            if (!inTheme) setIsThemeMenuOpen(false);
+            if (!inMode) setIsModeMenuOpen(false);
         };
-        if (isUserMenuOpen || isThemeMenuOpen) {
+        if (isUserMenuOpen || isThemeMenuOpen || isModeMenuOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isUserMenuOpen, isThemeMenuOpen]);
+    }, [isUserMenuOpen, isThemeMenuOpen, isModeMenuOpen]);
 
     // 从 localStorage 读取主题设置
     useEffect(() => {
@@ -121,8 +132,23 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
         }
     };
 
+    // 计算子菜单相对视口的锚点坐标：默认贴在触发项右侧，空间不够则翻到左侧。
+    const computeSubmenuPosition = (trigger: HTMLElement | null) => {
+        if (!trigger) return null;
+        const rect = trigger.getBoundingClientRect();
+        const gap = 8;
+        const estimatedWidth = 160; // min-width 140 + 内边距
+        const viewportWidth = window.innerWidth;
+        let left = rect.right + gap;
+        if (left + estimatedWidth > viewportWidth - 8) {
+            left = Math.max(8, rect.left - estimatedWidth - gap);
+        }
+        return { top: rect.top, left };
+    };
+
     const handleThemeMenuEnter = () => {
         if (themeCloseTimeoutRef.current) { clearTimeout(themeCloseTimeoutRef.current); themeCloseTimeoutRef.current = null; }
+        setThemeSubmenuPos(computeSubmenuPosition(themeMenuRef.current));
         setIsThemeMenuOpen(true);
     };
     const handleThemeMenuLeave = () => {
@@ -130,6 +156,7 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
     };
     const handleModeMenuEnter = () => {
         if (modeCloseTimeoutRef.current) { clearTimeout(modeCloseTimeoutRef.current); modeCloseTimeoutRef.current = null; }
+        setModeSubmenuPos(computeSubmenuPosition(modeMenuRef.current));
         setIsModeMenuOpen(true);
     };
     const handleModeMenuLeave = () => {
@@ -162,9 +189,11 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                                     <span>{t('opc.sidebar.mode')}</span>
                                 </div>
                                 <div className="menu-arrow">›</div>
-                                {isModeMenuOpen && (
+                                {isModeMenuOpen && modeSubmenuPos && createPortal(
                                     <div
-                                        className="theme-submenu"
+                                        ref={modeSubmenuPortalRef}
+                                        className="sidebar-user-submenu"
+                                        style={{ top: modeSubmenuPos.top, left: modeSubmenuPos.left }}
                                         onMouseEnter={handleModeMenuEnter}
                                         onMouseLeave={handleModeMenuLeave}
                                     >
@@ -189,7 +218,8 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                                             </div>
                                             {currentMode === 'opc' && <CheckOutlined className="check-icon" />}
                                         </div>
-                                    </div>
+                                    </div>,
+                                    document.body
                                 )}
                             </div>
 
@@ -205,9 +235,11 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                                     <span>{t('home.sidebar.theme')}</span>
                                 </div>
                                 <div className="menu-arrow">›</div>
-                                {isThemeMenuOpen && (
+                                {isThemeMenuOpen && themeSubmenuPos && createPortal(
                                     <div
-                                        className="theme-submenu"
+                                        ref={themeSubmenuPortalRef}
+                                        className="sidebar-user-submenu"
+                                        style={{ top: themeSubmenuPos.top, left: themeSubmenuPos.left }}
                                         onMouseEnter={handleThemeMenuEnter}
                                         onMouseLeave={handleThemeMenuLeave}
                                     >
@@ -224,7 +256,8 @@ const SidebarUserMenu: React.FC<SidebarUserMenuProps> = ({
                                                 {currentTheme === theme && <CheckOutlined className="check-icon" />}
                                             </div>
                                         ))}
-                                    </div>
+                                    </div>,
+                                    document.body
                                 )}
                             </div>
 
