@@ -244,7 +244,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ className }) => {
             />
           </Sider>
           <Layout className={styles.settingsContent}>
-            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider' || selectedKey === 'agents' || selectedKey === 'skills' || selectedKey === 'plugins' || selectedKey === 'general' || selectedKey === 'memory' || selectedKey === 'about') ? styles.contentAreaLocked : ''}`}>
+            <Content className={`${styles.contentArea} ${(selectedKey === 'prompt' || selectedKey === 'provider' || selectedKey === 'agents' || selectedKey === 'skills' || selectedKey === 'plugins' || selectedKey === 'general' || selectedKey === 'about') ? styles.contentAreaLocked : ''}`}>
               {renderContent()}
             </Content>
           </Layout>

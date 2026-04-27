@@ -74,8 +74,18 @@ type PromptMetadata struct {
 // PromptFiles 返回通用提示词列表（不包含 Agent 拥有的提示词）。
 func PromptFiles() []PromptMetadata {
 	return []PromptMetadata{
+		{Name: "system.entry.md", Title: "主对话入口", Description: "控制主聊天入口如何判断直接回答、追问或转入 workflow。", IsSystem: true},
+		{Name: "system.planner.md", Title: "规划 Agent 提示词", Description: "控制工作流规划。", IsSystem: true},
+		{Name: "user.planning.md", Title: "规划用户模板", Description: "控制规划请求模板。", IsSystem: false},
+		{Name: "system.worker.general.md", Title: "通用 Worker 提示词", Description: "控制通用工作子代理。", IsSystem: true},
+		{Name: "system.worker.tool.md", Title: "工具 Worker 提示词", Description: "控制工具型工作子代理。", IsSystem: true},
+		{Name: "system.synthesizer.md", Title: "汇总 Agent 提示词", Description: "控制工作流结果汇总。", IsSystem: true},
+		{Name: "user.synthesis.md", Title: "汇总用户模板", Description: "控制汇总请求模板。", IsSystem: false},
+		{Name: "system.reviewer.md", Title: "评审 Agent 提示词", Description: "控制工作流评审。", IsSystem: true},
+		{Name: "user.review.md", Title: "评审用户模板", Description: "控制评审请求模板。", IsSystem: false},
 		{Name: "system.title.md", Title: "标题生成", Description: "控制聊天标题生成的摘要风格与限制。", IsSystem: true},
 		{Name: "system.memory.md", Title: "记忆代理", Description: "控制长期记忆代理的回忆、写入和编辑策略。", IsSystem: true},
+		{Name: "system.main_agent.md", Title: "主 Agent 默认提示词", Description: "控制 Provider 主 Agent 的基础角色设定。", IsSystem: true},
 	}
 }
 
@@ -92,6 +102,26 @@ func FindPromptMetadata(name string) (PromptMetadata, bool) {
 func DefaultPromptContent(name string) (string, bool) {
 	defaults := defaultPromptSet()
 	switch name {
+	case "system.main_agent.md":
+		return agentDefaultPrompt("main_agent", name)
+	case "system.entry.md":
+		return agentDefaultPrompt("main_agent", name)
+	case "system.planner.md":
+		return agentDefaultPrompt("planner_agent", name)
+	case "user.planning.md":
+		return agentDefaultPrompt("planner_agent", name)
+	case "system.worker.general.md":
+		return agentDefaultPrompt("general_worker_agent", name)
+	case "system.worker.tool.md":
+		return agentDefaultPrompt("tool_worker_agent", name)
+	case "system.synthesizer.md":
+		return agentDefaultPrompt("synthesizer_agent", name)
+	case "user.synthesis.md":
+		return agentDefaultPrompt("synthesizer_agent", name)
+	case "system.reviewer.md":
+		return agentDefaultPrompt("reviewer_agent", name)
+	case "user.review.md":
+		return agentDefaultPrompt("reviewer_agent", name)
 	case "system.title.md":
 		return defaults.TitleSystem, true
 	case "system.memory.md":
@@ -101,9 +131,20 @@ func DefaultPromptContent(name string) (string, bool) {
 	}
 }
 
+func agentDefaultPrompt(agentName string, promptName string) (string, bool) {
+	return agents.DefaultAgentPromptContent(agentName, promptName)
+}
+
 func PromptPath(name string) (string, error) {
 	if _, ok := FindPromptMetadata(name); !ok {
 		return "", fmt.Errorf("unsupported prompt file: %s", name)
+	}
+	if agentName := agentOwnerForPrompt(name); agentName != "" {
+		dir, err := agents.AgentPromptDir(agentName)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(dir, name), nil
 	}
 	dir, err := PromptDir()
 	if err != nil {
@@ -121,6 +162,9 @@ func SavePromptContent(name string, content string) error {
 	if err != nil {
 		return err
 	}
+	if agentName := agentOwnerForPrompt(name); agentName != "" {
+		return agents.SaveAgentPrompt(agentName, name, content)
+	}
 	return writeFallbackPrompt(path, content)
 }
 
@@ -137,6 +181,9 @@ func PromptDir() (string, error) {
 }
 
 func LoadPrompt(name string, fallback string) (string, error) {
+	if agentName := agentOwnerForPrompt(name); agentName != "" {
+		return agents.LoadAgentPrompt(agentName, name, fallback)
+	}
 	dir, err := PromptDir()
 	if err != nil {
 		return fallbackWithWriteError(name, fallback, err)
@@ -160,6 +207,25 @@ func LoadPrompt(name string, fallback string) (string, error) {
 
 	writeErr := writeFallbackPrompt(path, fallback)
 	return fallback, errors.Join(fmt.Errorf("read prompt %s: %w", name, readErr), writeErr)
+}
+
+func agentOwnerForPrompt(name string) string {
+	switch name {
+	case "system.main_agent.md", "system.entry.md":
+		return "main_agent"
+	case "system.planner.md", "user.planning.md":
+		return "planner_agent"
+	case "system.worker.general.md":
+		return "general_worker_agent"
+	case "system.worker.tool.md":
+		return "tool_worker_agent"
+	case "system.synthesizer.md", "user.synthesis.md":
+		return "synthesizer_agent"
+	case "system.reviewer.md", "user.review.md":
+		return "reviewer_agent"
+	default:
+		return ""
+	}
 }
 
 // LoadPromptSet 加载完整的 PromptSet。
@@ -266,81 +332,42 @@ func defaultPromptSet() PromptSet {
 ✅ 直接输出标题，不需要其他内容；
 ❌ 不要解释、不要复述对话、不要添加额外信息、不要输出任何说明文字，只输出标题本身，且仅一行。
 请严格遵循以上规则。现在，我的聊天记录如下：`,
-		MemorySystem: `你是一个具备长期记忆能力的认知型 AI 伙伴。
+		MemorySystem: `你是 LemonTea 的核心记忆策展代理，采用 Hermes 风格的有界长期记忆。
 
-你的目标是像真正关心用户的朋友一样，持续学习、温柔记住、智能联想，构建动态演化的个性化记忆网络。
+你的职责是维护少量、高价值、可长期复用的核心记忆，而不是记录聊天流水。
 
-## 数据模型（极简三字段）
+## 存储目标
 
-每条记忆只有三个字段：
-- title：标题，简短概括
-- content：完整内容，必须用自然语言包含所有相关信息（时间、地点、人物、情绪、原因、后果等）
-- memory_type：类型，仅支持以下三类
-  - fact（事实）：长期不变的客观属性。例：用户是数据科学家、父亲叫张三、对花生过敏
-  - information（信息）：可变的偏好、习惯、状态。例：用户当前住在杭州、喜欢美式咖啡、最近在学西班牙语
-  - event（事件）：带具体时间锚点的事件或计划。例：2026-04-21 上午在京东换货、2026-03-10 去了大理
+memory 工具只有三个动作：add、replace、remove；目标只有两个：
+- target=user：用户画像。保存用户身份、偏好、沟通风格、长期约束、重要计划和稳定个人事实。
+- target=memory：助手/环境笔记。保存项目约定、工作环境、工具使用经验、用户明确要求长期遵守的工作方式、重要完成事项。
 
-## 过滤铁律（最先判断，优先级高于一切）
+没有 read 动作。核心记忆已经注入系统提示词；如果要修改旧条目，使用 replace/remove，并用 old_text 提供能唯一定位旧条目的短子串。
 
-在决定是否调用 write_memory / edit_memory 之前，先判断本轮用户消息的**意图类别**：
+## 保存标准
 
-### 不要保存（工具性/查询性/外部数据）
-- 用户让你执行任务：写代码、改文件、翻译、总结、搜索、运行命令、解释名词、分析数据
-- 用户在问外部信息：「这文件里有什么」「XX API 怎么用」「这段代码做什么的」「某某词什么意思」
-- 用户贴了素材让你处理：代码片段、日志、截图、示例数据、网页内容
-- 单纯的指令或寒暄：「好的」「继续」「再来一次」「谢谢」
-- 来自外部系统的数据本身：文件内容、工具返回、搜索结果——这些不是用户的个人信息
+可以保存：
+- 用户明确要求“记住”的长期有用信息。
+- 用户稳定偏好、身份、过敏、家庭/工作背景、沟通偏好。
+- 用户自己的重要计划、决定或会反复影响后续对话的状态。
+- 项目环境、约定、工具坑点、已验证的工作流经验。
 
-对这类消息：**不要调用 write_memory / edit_memory**。如果需要回答用户可以 read_memory 查既有内容，但不写入新记忆。
+不要保存：
+- 图片内容本身，以及文件、PDF、网页、代码、日志、表格本身的内容。
+- 工具输出、搜索结果、引用材料、外部资料摘要。
+- 助手自己的解释、总结、推断。
+- 临时任务请求、一次性问答、寒暄、确认、普通命令。
+- “这个文件讲了什么”“这张图里有什么”“这段代码什么意思”这类外部素材问答。
 
-### 可以保存（披露性/陈述性）
-只有当用户在**主动向你披露自己**时，才评估是否写入：
-- 身份事实：职业、家人、住地、过敏、重要属性
-- 偏好习惯：喜欢什么、讨厌什么、日常习惯、作息、饮食
-- 计划决策：要做什么、已决定什么、目标、承诺
-- 个人经历：自己经历的事件（带时间/地点/情绪）
-- 状态情绪：当前心情、身体状况、处境
-- 对已有记忆的补充或更正
+混合消息中只保存真正长期有用的披露。例如“帮我写请假消息，我明天去医院复查”只可保存用户将于绝对日期复查，不保存写请假消息这个任务。
 
-### 边界判断
-- **混合消息**（既有任务也有披露）：只抽取"披露部分"写入，任务本身不记。
-  例：用户说"帮我写个请假邮件，我明天去医院复查" → 只记"用户明天去医院复查"（时间用 get_current_time 推算成绝对日期），不记"用户请 AI 写邮件"。
-- **用户问自己的过去**（"我上次说要做什么？"）：只调用 read_memory 检索后回答，不要写入。
-- **演示中提及自己**（"举我自己的例子，我是北京人"）：记披露的事实（用户是北京人）。
+## 写入方式
 
-## 写入规范（强约束）
+- 记忆内容必须短、密、自然，可直接放进系统提示词。
+- 相对时间必须先调用 get_current_time 转为绝对日期。
+- 当信息修正或补充已有条目时，优先 replace 合并，不要新增重复条目。
+- memory 工具返回超容量错误时，先 replace 合并或 remove 过时条目，再 add。
 
-写 content 时必须遵守：
-1. 任何相对时间（今天/明天/昨天/下周三/这个月/去年冬天）必须先调用 get_current_time 推算成绝对日期（YYYY-MM-DD），再写入 content 文本。
-   例：错"用户约了明天上午换货" → 对"用户约了 2026-04-21 上午换货"
-2. 地点、人物、情绪、数量、原因等细节也要直接写进 content，不要依赖任何结构化字段——content 是唯一的信息源。
-3. title 保持简短（≤30 字），content 可较长但保持条理清晰。
-
-## 去重铁律（最重要）
-
-系统可能会在用户消息前先给你一段"[系统上下文：当前已存在的记忆列表]"的快照，每条带 id / type / 标题 / 内容摘要。遇到这段上下文时：
-1. 把它作为你做 write/edit 决策的唯一真相来源。
-2. 对本轮需要记录的新信息，逐条与清单比对"是否描述同一主题/同一事件/同一人物偏好"——即便措辞完全不同。
-3. 只要有任何一条已覆盖此主题，必须 edit_memory（传入对应 id）把新信息合并到原记录的 content 中，**严禁** write_memory 新建。
-4. 只有当确认清单里没有任何一条覆盖该主题，才可以 write_memory。
-
-即使系统没给快照，也要先主动 read_memory（用多角度关键词）确认没有已有记忆，再考虑 write。
-
-目的：避免同一主题在库中出现两条并存记忆。记忆应被不断补全完善，而不是堆积重复条目。
-
-## 检索规范
-
-用户提问涉及过去、时间、经历、计划时必须先调用 read_memory：
-- 带时间线索的查询（"昨天/21号/上周末/下个月"）先调 get_current_time 推算目标日期，再以该日期作为关键词之一传给 read_memory。
-- 一般语义查询直接用关键词即可（所有时间信息已在 content 文本中，普通关键词能命中）。
-
-## 沟通风格
-
-- 静默使用工具，不提工具名、不说"我查一下"。
-- 禁止向用户暴露：memory / 读取 / 写入 / 工具 / HandOff / ID / 字段 / 数据库 等术语。
-- 回答自然、温柔、像陪伴者；查无结果时优雅降级，引导用户补充。
-- 不要编造记忆。
-
-你是有温度的记忆守护者，不只是知道，更是记得。`,
+静默工作，不向用户暴露工具、字段、ID 或内部机制。`,
 	}
 }

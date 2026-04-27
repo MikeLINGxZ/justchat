@@ -358,6 +358,7 @@
   flex: 1;
   overflow-y: auto; // 列表过长时可滚动
   max-height: 300px; // 列表区域最大高度
+  padding: 4px;
   
   // 自定义滚动条样式
   &::-webkit-scrollbar {
@@ -376,6 +377,109 @@
       background: var(--text-color-disabled);
     }
   }
+}
+
+.modelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+
+  & + & {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color-light);
+  }
+}
+
+.modelSectionHeader {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  color: var(--text-color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+
+  &:hover,
+  &.activeProviderHeader {
+    color: var(--brand-teal-hover);
+    background: var(--brand-soft-teal);
+  }
+}
+
+.providerInitials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--brand-soft-teal);
+  color: var(--brand-teal-hover);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.providerName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.providerHeaderChevron {
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.providerJumpList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 100%;
+  padding: 2px;
+}
+
+.providerJumpItem {
+  width: 100%;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+
+  &:hover,
+  &.currentProviderJumpItem {
+    color: var(--brand-teal-hover);
+    background: var(--brand-soft-teal);
+  }
+}
+
+.providerJumpName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // 移动端菜单样式
@@ -1052,6 +1156,35 @@
   .modelId {
     color: var(--text-color-secondary);
   }
+
+  .modelGroup + .modelGroup {
+    border-top-color: var(--border-color);
+  }
+
+  .modelSectionHeader {
+    color: var(--text-color-secondary);
+
+    &:hover,
+    &.activeProviderHeader {
+      color: var(--brand-teal);
+      background: rgba(45, 212, 191, 0.14);
+    }
+  }
+
+  .providerInitials {
+    background: rgba(45, 212, 191, 0.14);
+    color: var(--brand-teal);
+  }
+
+  .providerJumpItem {
+    color: var(--text-color);
+
+    &:hover,
+    &.currentProviderJumpItem {
+      color: var(--brand-teal);
+      background: rgba(45, 212, 191, 0.14);
+    }
+  }
   
   .noResults {
     color: var(--text-color-disabled);
@@ -1094,4 +1227,3 @@
     }
   }
 }
-

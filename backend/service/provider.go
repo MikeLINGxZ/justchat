@@ -63,6 +63,7 @@ func (s *Service) GetProviders(ctx context.Context) ([]view_models.Provider, err
 			BaseUrl:           provider.BaseUrl,
 			FileUploadBaseUrl: provider.FileUploadBaseUrl,
 			Enable:            provider.Enable,
+			IsDefault:         provider.IsDefault,
 			ProviderName:      provider.ProviderName,
 			ProviderType:      provider.ProviderType,
 			Models:            providerIds2ModelsVD[provider.ID],
@@ -81,6 +82,7 @@ func (s *Service) AddProvider(ctx context.Context, provider view_models.Provider
 		FileUploadBaseUrl: provider.FileUploadBaseUrl,
 		ApiKey:            provider.ApiKey,
 		Enable:            provider.Enable,
+		IsDefault:         provider.IsDefault,
 	})
 	if err != nil {
 		return ierror.NewError(err)
@@ -104,7 +106,15 @@ func (s *Service) UpdateProvider(ctx context.Context, id uint, provider *view_mo
 
 	provider.ID = id
 	err := s.storage.NewFnTransaction(ctx, func(ctx context.Context, tx *storage.Storage) error {
-		err := tx.UpdateProvider(ctx, data_models.Provider{
+		existingProvider, err := tx.GetProviderByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		if existingProvider == nil {
+			return ierror.New(ierror.ErrCodeProviderNotFound)
+		}
+
+		err = tx.UpdateProvider(ctx, data_models.Provider{
 			OrmModel: data_models.OrmModel{
 				ID: id,
 			},
@@ -114,6 +124,7 @@ func (s *Service) UpdateProvider(ctx context.Context, id uint, provider *view_mo
 			FileUploadBaseUrl: provider.FileUploadBaseUrl,
 			ApiKey:            provider.ApiKey,
 			Enable:            provider.Enable,
+			IsDefault:         existingProvider.IsDefault,
 		})
 		if err != nil {
 			return err
@@ -133,6 +144,71 @@ func (s *Service) UpdateProvider(ctx context.Context, id uint, provider *view_mo
 	}
 
 	return nil
+}
+
+// SetDefaultProvider 设置默认供应商，并返回用于聊天默认选择的模型
+func (s *Service) SetDefaultProvider(ctx context.Context, providerId uint) (*view_models.Model, error) {
+	var defaultModel *data_models.Model
+	err := s.storage.NewFnTransaction(ctx, func(ctx context.Context, tx *storage.Storage) error {
+		provider, err := tx.GetProviderByID(ctx, providerId)
+		if err != nil {
+			return err
+		}
+		if provider == nil {
+			return ierror.New(ierror.ErrCodeProviderNotFound)
+		}
+
+		if err := tx.ClearDefaultProviders(ctx); err != nil {
+			return err
+		}
+		if err := tx.SetProviderDefault(ctx, providerId); err != nil {
+			return err
+		}
+
+		model, err := tx.GetProviderDefaultModel(ctx, providerId)
+		if err != nil {
+			return err
+		}
+		if model != nil {
+			defaultModel = model
+			return nil
+		}
+
+		models, err := tx.GetModelsByProviderIdSorted(ctx, providerId)
+		if err != nil {
+			return err
+		}
+		if len(models) == 0 {
+			return nil
+		}
+
+		firstModel := models[0]
+		if err := tx.UpdateProviderDefaultModel(ctx, providerId, firstModel.ID); err != nil {
+			return err
+		}
+		defaultModel = &firstModel
+		return nil
+	})
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
+
+	if defaultModel == nil {
+		return nil, nil
+	}
+	return &view_models.Model{
+		ID:         defaultModel.ID,
+		CreatedAt:  defaultModel.CreatedAt,
+		UpdatedAt:  defaultModel.UpdatedAt,
+		DeletedAt:  defaultModel.DeletedAt,
+		ProviderId: defaultModel.ProviderId,
+		Model:      defaultModel.Model,
+		OwnedBy:    defaultModel.OwnedBy,
+		Object:     defaultModel.Object,
+		Enable:     defaultModel.Enable,
+		Alias:      defaultModel.Alias,
+		IsCustom:   defaultModel.IsCustom,
+	}, nil
 }
 
 // UpdateProviderModels 更新供应商

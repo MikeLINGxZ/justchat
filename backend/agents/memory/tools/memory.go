@@ -11,6 +11,64 @@ import (
 	istorage "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 )
 
+type CoreMemoryToolRequest struct {
+	Action  string `json:"action" jsonschema:"title=操作,description=add / replace / remove 之一。required=true"`
+	Target  string `json:"target" jsonschema:"title=目标,description=user 表示用户画像；memory 表示助手/环境笔记。required=true"`
+	Content string `json:"content,omitempty" jsonschema:"title=内容,description=add/replace 时的新记忆内容，要求精炼、信息密度高"`
+	OldText string `json:"old_text,omitempty" jsonschema:"title=旧文本片段,description=replace/remove 时用于唯一定位旧条目的短子串"`
+}
+
+type CoreMemoryToolResponse struct {
+	Success        bool     `json:"success"`
+	Message        string   `json:"message,omitempty"`
+	MemoryID       uint     `json:"memory_id,omitempty"`
+	Usage          string   `json:"usage,omitempty"`
+	CurrentEntries []string `json:"current_entries,omitempty"`
+}
+
+func NewCoreMemoryTool(storage *istorage.Storage) (tool.InvokableTool, error) {
+	return utils.InferTool(
+		"memory",
+		"Hermes-style bounded core memory tool. Use add/replace/remove on target=user or target=memory. There is no read action: core memory is already injected into the system prompt.",
+		func(ctx context.Context, in CoreMemoryToolRequest) (CoreMemoryToolResponse, error) {
+			response := CoreMemoryToolResponse{Success: false}
+			target, err := istorage.NormalizeMemoryTarget(in.Target)
+			if err != nil {
+				response.Message = err.Error()
+				return response, nil
+			}
+
+			var result *istorage.CoreMemoryMutationResult
+			switch strings.ToLower(strings.TrimSpace(in.Action)) {
+			case "add":
+				result, err = storage.AddCoreMemory(ctx, target, in.Content, "agent")
+			case "replace":
+				result, err = storage.ReplaceCoreMemory(ctx, target, in.OldText, in.Content)
+			case "remove":
+				result, err = storage.RemoveCoreMemory(ctx, target, in.OldText)
+			default:
+				response.Message = "unsupported action: use add, replace, or remove"
+				return response, nil
+			}
+			if err != nil {
+				response.Message = err.Error()
+				return response, nil
+			}
+			if result == nil {
+				response.Message = "memory operation returned no result"
+				return response, nil
+			}
+			response.MemoryID = result.MemoryID
+			response.Message = result.Message
+			response.Usage = result.Usage
+			response.CurrentEntries = result.CurrentEntries
+			response.Success = !strings.Contains(strings.ToLower(result.Message), "exceed") &&
+				!strings.Contains(strings.ToLower(result.Message), "matched") &&
+				!strings.Contains(strings.ToLower(result.Message), "no matching")
+			return response, nil
+		})
+}
+
 const memoryTypeDesc = "记忆类型，必须是以下之一：" +
 	"fact（事实，长期不变的客观属性）、" +
 	"information（信息，可变的偏好/状态/习惯）、" +

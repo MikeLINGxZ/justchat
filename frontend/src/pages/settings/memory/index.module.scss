@@ -27,10 +27,21 @@
   flex-wrap: wrap;
 }
 
+.listShell {
+  min-height: 0;
+}
+
 .memoryList {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.emptyState {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .memoryCard {

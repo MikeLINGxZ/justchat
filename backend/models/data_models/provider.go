@@ -8,6 +8,7 @@ type Provider struct {
 	FileUploadBaseUrl *string      `gorm:"type:varchar(255)" json:"file_upload_base_url"` // 文件上传地址
 	ApiKey            string       `gorm:"type:varchar(255)" json:"api_key"`              // api key
 	Enable            bool         `gorm:"index;type:bool;default:1" json:"enable"`       // 启用
+	IsDefault         bool         `gorm:"index;type:bool;default:0" json:"is_default"`   // 默认供应商
 }
 
 type ProviderDefaultModel struct {

@@ -145,13 +145,23 @@
   }
 }
 
+.defaultProviderTag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+  border: none;
+  color: var(--brand-teal);
+  background: var(--brand-soft-teal);
+  font-size: 11px;
+  line-height: 18px;
+}
+
 .providerItemActions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   flex-shrink: 0;
 
-  .deleteBtn {
+  .moreBtn {
     color: var(--text-color-disabled);
     border-radius: 6px;
     transition: all 0.2s ease;
@@ -162,8 +172,8 @@
     justify-content: center;
 
     &:hover {
-      color: var(--error-color);
-      background: rgba(255, 77, 79, 0.08);
+      color: var(--text-color);
+      background: var(--brand-list-hover-bg);
     }
   }
 }
@@ -203,6 +213,8 @@
   .formScrollArea {
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
@@ -231,6 +243,174 @@
         font-size: var(--font-size);
         color: var(--text-color);
       }
+    }
+  }
+
+  .modelSection {
+    flex: 1;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--border-color-light);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--background-color);
+  }
+
+  .modelSectionHeader {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
+  }
+
+  .modelSectionTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    min-width: 0;
+    font-size: var(--font-size);
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .modelCountTag,
+  .defaultModelTag,
+  .customModelTag {
+    margin-inline-end: 0;
+    border: none;
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  .modelCountTag {
+    color: var(--text-color-secondary);
+    background: var(--background-color-light);
+  }
+
+  .customModelTag {
+    flex-shrink: 0;
+    color: var(--brand-teal);
+    background: var(--brand-soft-teal);
+  }
+
+  .defaultModelTag {
+    flex-shrink: 0;
+    color: var(--warning-color);
+    background: rgba(250, 173, 20, 0.12);
+  }
+
+  .customModelInlineInput {
+    flex-shrink: 0;
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: 0 var(--spacing-md) var(--spacing-sm);
+  }
+
+  .modelList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color-light);
+  }
+
+  .modelItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-xs);
+    padding: 7px var(--spacing-sm) 7px var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-light);
+    min-height: 42px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--brand-list-hover-bg);
+
+      .setDefaultModelBtn {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .customModelDeleteBtn {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modelInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .modelNameRow {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .modelName {
+    min-width: 0;
+    color: var(--text-color);
+    font-weight: 500;
+    @include text-ellipsis;
+  }
+
+  .modelId {
+    color: var(--text-color-secondary);
+    font-size: 12px;
+    @include text-ellipsis;
+  }
+
+  .modelActions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .setDefaultModelBtn {
+    opacity: 0;
+    pointer-events: none;
+    color: var(--brand-teal);
+    font-size: 12px;
+    padding: 0 6px;
+    height: 24px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--brand-teal);
+      background: var(--brand-soft-teal);
+    }
+  }
+
+  .customModelDeleteBtn {
+    flex-shrink: 0;
+    color: var(--text-color-disabled);
+    opacity: 0;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    @include flex-center;
+    padding: 0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      opacity: 1;
+      color: var(--error-color) !important;
+      background: rgba(255, 77, 79, 0.08);
     }
   }
 
@@ -454,6 +634,23 @@
 
     .formFooter {
       padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .modelSection {
+      min-height: 260px;
+      border-radius: 8px;
+    }
+
+    .customModelInlineInput {
+      flex-direction: column;
+    }
+
+    .modelItem {
+      align-items: flex-start;
+    }
+
+    .customModelDeleteBtn {
+      opacity: 1;
     }
 
     .customModelSection {

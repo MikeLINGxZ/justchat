@@ -18,6 +18,12 @@ import (
 // memoryEncodeMu 全局限制同时只有 1 个记忆编码任务运行。
 var memoryEncodeMu sync.Mutex
 
+type memoryEncodingInput struct {
+	UserMessage      string
+	HasNonTextPart   bool
+	ExternalQuestion bool
+}
+
 // ---- 预取缓存 ----
 
 // memoryPrefetchCache 按 chatUuid 缓存异步预取的记忆上下文。
@@ -84,6 +90,64 @@ func shouldRetrieveMemories(userMessage string) bool {
 func shouldEncodeMemories(userMessage string) bool {
 	userMessage = sanitizeMemoryContext(userMessage)
 	return utf8.RuneCountInString(strings.TrimSpace(userMessage)) > 4
+}
+
+func shouldEncodeMemoryInput(input memoryEncodingInput) bool {
+	if input.HasNonTextPart && input.ExternalQuestion {
+		return false
+	}
+	return shouldEncodeMemories(input.UserMessage)
+}
+
+func isExternalContentQuestion(message string) bool {
+	message = strings.TrimSpace(strings.ToLower(sanitizeMemoryContext(message)))
+	if message == "" {
+		return false
+	}
+
+	objects := []string{
+		"这张图", "这个图", "图里", "图片里", "照片里", "截图里",
+		"这个文件", "这份文件", "这个pdf", "这份pdf", "这个文档",
+		"这段代码", "这份代码", "这个网页", "这篇文章", "这段日志",
+		"this image", "this picture", "the image", "the picture", "in the image",
+		"this file", "this pdf", "this document", "this code", "this webpage",
+	}
+	questions := []string{
+		"有什么", "是什么", "讲了什么", "什么意思", "做什么", "内容", "说了什么",
+		"what is", "what's", "what does", "what do", "what can you see", "tell me about",
+	}
+
+	hasObject := false
+	for _, object := range objects {
+		if strings.Contains(message, object) {
+			hasObject = true
+			break
+		}
+	}
+	if !hasObject {
+		return false
+	}
+
+	for _, question := range questions {
+		if strings.Contains(message, question) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasNonTextAttachment(msg schema.Message) bool {
+	for _, part := range msg.UserInputMultiContent {
+		if part.Type != schema.ChatMessagePartTypeText {
+			return true
+		}
+	}
+	for _, part := range msg.MultiContent {
+		if part.Type != schema.ChatMessagePartTypeText {
+			return true
+		}
+	}
+	return false
 }
 
 // ---- 记忆检索 ----
@@ -346,55 +410,22 @@ func (s *Service) buildExistingMemoriesSnapshot(ctx context.Context) string {
 	if s.memoryStorage == nil {
 		return ""
 	}
+	snapshot := s.RenderCoreMemorySnapshot(ctx)
+	if snapshot == "" {
+		return `[系统上下文：当前核心记忆为空]
 
-	const perType = 20
-	const contentLimit = 200
-
-	var all []memory_models.Memory
-	for _, t := range []string{"fact", "information", "event", ""} {
-		items, err := s.memoryStorage.RecentMemoriesByType(ctx, t, perType)
-		if err != nil {
-			logger.Error("memory snapshot: load recent error:", err)
-			continue
-		}
-		all = append(all, items...)
+[操作指令]
+接下来我会给出最近一轮用户消息。只有出现长期有用的信息时才调用 memory(action="add")。`
 	}
-	if len(all) == 0 {
-		return ""
-	}
-
-	seen := make(map[uint]bool, len(all))
-	var lines []string
-	for _, m := range all {
-		if seen[m.ID] {
-			continue
-		}
-		seen[m.ID] = true
-		content := strings.TrimSpace(m.Content)
-		runes := []rune(content)
-		if len(runes) > contentLimit {
-			content = string(runes[:contentLimit]) + "…"
-		}
-		typeLabel := string(m.Type)
-		if typeLabel == "" {
-			typeLabel = "-"
-		}
-		lines = append(lines, fmt.Sprintf("  [id=%d | type=%s] %s :: %s",
-			m.ID, typeLabel, strings.TrimSpace(m.Summary), content))
-	}
-
-	return fmt.Sprintf(`[系统上下文：当前已存在的记忆列表，共 %d 条]
-每条格式：[id=ID | type=类型] 标题 :: 内容摘要
+	return fmt.Sprintf(`[系统上下文：当前核心记忆快照]
 %s
 
 [操作指令]
-接下来我会给出最近一轮对话。请严格按以下流程处理：
-1. 判断本轮对话是否包含值得长期记住的新信息；若无，什么都不做。
-2. 如果有新信息，先与上方清单逐条比对：
-   - 若新信息描述的是同一主题/同一事件（即便措辞不同），必须调用 edit_memory 在对应 id 上补全，禁止新建。
-   - 只有确认上方清单里没有任何一条覆盖此主题，才调用 write_memory。
-3. 若需要新建，记得遵循 content 包含所有时间/地点/人物/原因等信息（时间要写成绝对日期）。
-绝不允许为同一主题产生两条并存记忆。`, len(lines), strings.Join(lines, "\n"))
+接下来我会给出最近一轮用户消息。请严格按以下流程处理：
+1. 判断是否包含值得长期保存的用户画像或助手/环境笔记；若无，什么都不做。
+2. 若与现有条目同主题，必须调用 memory(action="replace") 合并更新，old_text 使用能唯一定位旧条目的短子串。
+3. 只有确认没有对应条目时，才调用 memory(action="add")。
+4. 不要保存文件、图片、PDF、网页、代码、日志、工具输出或助手解释本身。`, snapshot)
 }
 
 // ---- 异步编码 ----
@@ -405,25 +436,12 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 	if s.memoryStorage == nil || providerModel == nil {
 		return
 	}
-
-	// 提取用户最新消息（同时处理 Content 和 MultiContent，清理围栏标签）
-	userMessage := ""
-	for i := len(messages) - 1; i >= 0; i-- {
-		if messages[i].Role == schema.User {
-			userMessage = messages[i].Content
-			if userMessage == "" {
-				for _, part := range messages[i].UserInputMultiContent {
-					if part.Type == schema.ChatMessagePartTypeText && part.Text != "" {
-						userMessage = part.Text
-						break
-					}
-				}
-			}
-			break
-		}
+	if prefs, err := s.loadAppPreferences(context.Background()); err != nil || !prefs.MemorySystemEnabled {
+		return
 	}
-	userMessage = sanitizeMemoryContext(userMessage)
-	if !shouldEncodeMemories(userMessage) {
+
+	input := extractMemoryEncodingInput(messages)
+	if !shouldEncodeMemoryInput(input) {
 		return
 	}
 
@@ -448,8 +466,6 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 		return
 	}
 
-	// 只发送最近 2 轮对话（最新用户消息 + 最新助手回复），而非全部历史
-	recentMessages := extractRecentTurn(messages)
 	var msgPtrs []*schema.Message
 
 	// ---- 去重关键：把最近活跃记忆作为上下文快照注入，让 LLM 自行判断 write vs edit ----
@@ -460,9 +476,10 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 		})
 	}
 
-	for i := range recentMessages {
-		msgPtrs = append(msgPtrs, &recentMessages[i])
-	}
+	msgPtrs = append(msgPtrs, &schema.Message{
+		Role:    schema.User,
+		Content: input.UserMessage,
+	})
 
 	stream, err := memAgent.Streamable(ctx, msgPtrs)
 	if err != nil {
@@ -492,32 +509,41 @@ func (s *Service) encodeMemoriesAsync(providerModel *wrapper_models.ProviderMode
 	}
 }
 
-// extractRecentTurn 从完整消息历史中提取最近一轮对话。
-// 返回最后的用户消息 + 最后的助手回复（如有）。
-// 用户消息中的围栏标签会被清理。
-func extractRecentTurn(messages []schema.Message) []schema.Message {
-	var userMsg, assistantMsg *schema.Message
-
+// extractMemoryEncodingInput 从完整消息历史中提取最近用户消息的记忆编码输入。
+// 默认仅保留用户消息文本，不把助手对图片/文件/网页等外部素材的解释再送入记忆编码。
+func extractMemoryEncodingInput(messages []schema.Message) memoryEncodingInput {
 	for i := len(messages) - 1; i >= 0; i-- {
-		if messages[i].Role == schema.Assistant && assistantMsg == nil {
-			msg := messages[i]
-			assistantMsg = &msg
+		if messages[i].Role != schema.User {
+			continue
 		}
-		if messages[i].Role == schema.User && userMsg == nil {
-			msg := messages[i]
-			// 清理围栏标签
-			msg.Content = sanitizeMemoryContext(msg.Content)
-			userMsg = &msg
-			break
+
+		msg := messages[i]
+		input := memoryEncodingInput{
+			HasNonTextPart: hasNonTextAttachment(msg),
 		}
+
+		if msg.Content != "" {
+			input.UserMessage = sanitizeMemoryContext(msg.Content)
+		}
+		if input.UserMessage == "" {
+			for _, part := range msg.UserInputMultiContent {
+				if part.Type == schema.ChatMessagePartTypeText && strings.TrimSpace(part.Text) != "" {
+					input.UserMessage = sanitizeMemoryContext(part.Text)
+					break
+				}
+			}
+		}
+		if input.UserMessage == "" {
+			for _, part := range msg.MultiContent {
+				if part.Type == schema.ChatMessagePartTypeText && strings.TrimSpace(part.Text) != "" {
+					input.UserMessage = sanitizeMemoryContext(part.Text)
+					break
+				}
+			}
+		}
+		input.ExternalQuestion = isExternalContentQuestion(input.UserMessage)
+		return input
 	}
 
-	var result []schema.Message
-	if userMsg != nil {
-		result = append(result, *userMsg)
-	}
-	if assistantMsg != nil {
-		result = append(result, *assistantMsg)
-	}
-	return result
+	return memoryEncodingInput{}
 }

@@ -15,8 +15,10 @@ type MainAgentDef struct{}
 
 func init() { RegisterAgent(&MainAgentDef{}) }
 
-func (a *MainAgentDef) Name() string    { return "main_agent" }
-func (a *MainAgentDef) Desc() string    { return "主对话助手，负责直接回答用户问题或决定转入工作流" }
+func (a *MainAgentDef) Name() string { return "main_agent" }
+func (a *MainAgentDef) Desc() string {
+	return "主对话助手，负责直接回答用户问题或决定转入工作流"
+}
 func (a *MainAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *MainAgentDef) Role() AgentRole { return AgentRoleMain }
 func (a *MainAgentDef) PromptNames() []string {
@@ -37,6 +39,9 @@ func (a *MainAgentDef) DefaultPrompts() map[string]string {
 - 如果用户的问题你可以直接回答，就直接回答用户
 - 如果用户带了附件，也先结合附件内容判断能否直接回答或先追问，不要仅因为有附件就默认交付 workflow
 - 如果用户请求可以通过当前已选中的一个或少量工具直接完成，优先直接调用工具处理，并基于工具结果回答用户
+- 如果系统提示词中包含 USER PROFILE 或 MEMORY 块，直接把它们当作可靠背景使用，不要再要求用户重复说明
+- 如果用户询问过去某次聊天、上次讨论过的文件/PDF/代码/网页内容，优先调用 session_search 搜索历史会话；不要把这类外部素材内容写入长期记忆
+- 只有当用户主动披露长期有用的偏好、身份、计划、项目约定或明确要求“记住”时，才使用 memory 工具维护核心记忆
 - 如果用户明确要求使用工作流（如"使用任务流"、"用工作流"、"use workflow"等），必须立即调用 create_workflow_task 工具，不要自行判断是否需要
 - 如果用户请求需要任务拆解、工作流执行、文件分析、结构化整理、多步骤处理或复杂协调，不要先输出最终答案，必须先调用 create_workflow_task 工具
 - 如果信息不足但可以通过追问澄清解决，直接向用户追问，不要调用 create_workflow_task
@@ -73,6 +78,11 @@ func (a *MainAgentDef) Prompt() string {
 func NewMainAgent(ctx context.Context, chatModel model.ToolCallingChatModel, subAgents []adk.Agent, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware, instruction string) (adk.Agent, error) {
 	for _, agent := range subAgents {
 		tools = append(tools, adk.NewAgentTool(ctx, agent))
+	}
+	var err error
+	tools, err = uniqueToolsByInfoName(ctx, tools)
+	if err != nil {
+		return nil, err
 	}
 
 	return adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{

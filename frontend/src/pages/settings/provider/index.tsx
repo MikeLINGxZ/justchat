@@ -4,17 +4,19 @@ import {
   Form,
   Input,
   Button,
-  Select,
   Switch,
   Space,
-  Divider,
   Alert,
   message,
-  Typography,
   Popconfirm,
   Avatar,
   Tooltip,
+  Dropdown,
+  Tag,
+  Empty,
+  Modal,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   ApiOutlined,
   SaveOutlined,
@@ -24,23 +26,21 @@ import {
   PlusOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
-  SettingOutlined,
   ArrowLeftOutlined,
   QuestionCircleOutlined,
   CloseOutlined,
+  EllipsisOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Events } from '@wailsio/runtime';
-import { useModels } from '@/hooks/useModels';
 import { useModelStore } from '@/stores/modelStore';
 import { isMobileDevice } from '@/hooks/useViewportHeight';
 import { useTranslation } from 'react-i18next';
 import { Service } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/service';
-import { Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
+import { Model, Provider, SupportProvider } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models';
 import { ProviderType } from '@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models';
+import { setDefaultModelConfig } from '@/utils/defaultModel';
 import styles from './index.module.scss';
-
-const { Text } = Typography;
-const { Option } = Select;
 
 const toAssetUrl = (path: string) => {
   const base = import.meta.env.BASE_URL || '/';
@@ -124,8 +124,9 @@ interface ProviderConfig {
   base_url: string;
   file_upload_base_url?: string | null;
   enable: boolean;
+  is_default?: boolean;
   default_model_id: number | null;
-  models: any[];
+  models: Model[];
   icon?: string;
   description?: string;
   status?: 'connected' | 'disconnected' | 'testing';
@@ -144,8 +145,10 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   const [loadingSupportProviders, setLoadingSupportProviders] = useState(false); // 加载支持的供应商状态
   const [customModelName, setCustomModelName] = useState(''); // 自定义模型名称输入
   const [addingCustomModel, setAddingCustomModel] = useState(false); // 添加自定义模型loading
+  const [showCustomModelInput, setShowCustomModelInput] = useState(false);
+  const [settingDefaultProviderId, setSettingDefaultProviderId] = useState<number | null>(null);
+  const [settingDefaultModelId, setSettingDefaultModelId] = useState<number | null>(null);
 
-  const { models: availableModels, isLoading: isLoadingModels } = useModels();
   const { refetch: refetchModels } = useModelStore();
   const [isMobile, setIsMobile] = useState(() => isMobileDevice());
   const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
@@ -183,23 +186,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   useEffect(() => {
     const provider = providers.find(p => p.id === selectedProvider);
     if (provider && !isCreatingNew) { // 在创建新供应商时不自动更新表单
-      // 转换字段名以适配表单
-      // 只有当default_model_id存在且大于0时才设置，否则传递undefined以确保不被选中
-      const defaultModelValue = (provider.default_model_id && provider.default_model_id > 0) ? provider.default_model_id : undefined;
-      
       form.setFieldsValue({
         enabled: provider.enable,
         apiKey: provider.api_key,
         baseUrl: provider.base_url,
         fileUploadBaseUrl: provider.file_upload_base_url || '',
         providerName: provider.provider_name,
-        defaultModel: defaultModelValue,
       });
-      
-      // 如果默认模型值为undefined，显式重置表单字段以确保清空选中状态
-      if (defaultModelValue === undefined) {
-        form.setFieldValue('defaultModel', undefined);
-      }
+      setCustomModelName('');
+      setShowCustomModelInput(false);
     }
   }, [selectedProvider, providers, form, isCreatingNew]);
 
@@ -282,7 +277,6 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       if (!currentProvider) return;
       
       // 构造后端需要的Provider对象
-      const defaultModelId = values.defaultModel || 0; // 如果没有选择默认模型，传递0
       const providerData = new Provider({
         provider_name: values.providerName || currentProvider.provider_name,
         provider_type: currentProvider.provider_type,
@@ -290,7 +284,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey || '',
         enable: values.enabled,
-        default_model_id: defaultModelId,
+        is_default: currentProvider.is_default || false,
+        default_model_id: currentProvider.default_model_id || null,
       });
       
       await Service.UpdateProvider(selectedProvider, providerData);
@@ -304,7 +299,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           base_url: values.baseUrl,
           file_upload_base_url: values.fileUploadBaseUrl || null,
           enable: values.enabled,
-          default_model_id: defaultModelId,
+          is_default: p.is_default,
         } : p
       );
       setProviders(updatedProviders);
@@ -341,6 +336,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         file_upload_base_url: values.fileUploadBaseUrl || null,
         api_key: values.apiKey,
         enable: values.enabled,
+        is_default: currentProvider.is_default || false,
         default_model_id: currentProvider.default_model_id,
       });
       
@@ -413,6 +409,8 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       // 如果删除的是当前选中的供应商，切换到第一个
       if (selectedProvider === providerId && updatedProviders.length > 0) {
         setSelectedProvider(updatedProviders[0].id);
+      } else if (selectedProvider === providerId) {
+        setSelectedProvider(null);
       }
 
       message.success(t('settings.provider.messages.deleteSuccess'));
@@ -510,6 +508,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
         base_url: values.baseUrl,
         api_key: values.apiKey,
         enable: values.enabled,
+        is_default: false,
         default_model_id: values.defaultModel || 0,
       });
       
@@ -611,8 +610,110 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
   };
 
   const currentProvider = providers.find(p => p.id === selectedProvider);
-  // 使用供应商的模型列表，而不是过滤所有模型
-  const availableModelsForProvider = currentProvider?.models || [];
+  const getModelDisplayName = (model: Model) => model.alias || model.model;
+  const availableModelsForProvider = [...(currentProvider?.models || [])].sort((a, b) => {
+    const nameA = getModelDisplayName(a).toLocaleLowerCase();
+    const nameB = getModelDisplayName(b).toLocaleLowerCase();
+    if (nameA !== nameB) {
+      return nameA.localeCompare(nameB);
+    }
+    return a.model.localeCompare(b.model);
+  });
+
+  const handleSetDefaultProvider = async (providerId: number) => {
+    setSettingDefaultProviderId(providerId);
+    try {
+      const defaultModel = await Service.SetDefaultProvider(providerId);
+      setProviders(prev => prev.map(provider => ({
+        ...provider,
+        is_default: provider.id === providerId,
+        default_model_id: provider.id === providerId ? (defaultModel?.id ?? null) : provider.default_model_id,
+      })));
+
+      if (defaultModel) {
+        setDefaultModelConfig({ modelId: defaultModel.id, modelName: defaultModel.model });
+        await refetchModels();
+        message.success(t('settings.provider.messages.setDefaultProviderSuccess'));
+      } else {
+        message.warning(t('settings.provider.messages.setDefaultProviderNoModel'));
+      }
+    } catch (error) {
+      console.error('设置默认供应商失败:', error);
+      message.error(t('settings.provider.messages.setDefaultProviderFailed'));
+    } finally {
+      setSettingDefaultProviderId(null);
+    }
+  };
+
+  const handleSetDefaultModel = async (model: Model) => {
+    if (!currentProvider) return;
+
+    setSettingDefaultModelId(model.id);
+    try {
+      const providerData = new Provider({
+        provider_name: currentProvider.provider_name,
+        provider_type: currentProvider.provider_type,
+        base_url: currentProvider.base_url,
+        file_upload_base_url: currentProvider.file_upload_base_url || null,
+        api_key: currentProvider.api_key,
+        enable: currentProvider.enable,
+        is_default: currentProvider.is_default || false,
+        default_model_id: model.id,
+      });
+
+      await Service.UpdateProvider(currentProvider.id, providerData);
+      setProviders(prev => prev.map(provider => (
+        provider.id === currentProvider.id
+          ? { ...provider, default_model_id: model.id }
+          : provider
+      )));
+
+      if (currentProvider.is_default) {
+        setDefaultModelConfig({ modelId: model.id, modelName: model.model });
+        await refetchModels();
+      }
+
+      message.success(t('settings.provider.messages.setDefaultModelSuccess'));
+    } catch (error) {
+      console.error('设置默认模型失败:', error);
+      message.error(t('settings.provider.messages.setDefaultModelFailed'));
+    } finally {
+      setSettingDefaultModelId(null);
+    }
+  };
+
+  const getProviderMenuItems = (provider: ProviderConfig): MenuProps['items'] => [
+    {
+      key: 'default',
+      icon: <StarOutlined />,
+      label: t('settings.provider.actions.setDefault'),
+      disabled: provider.is_default || settingDefaultProviderId !== null,
+    },
+    {
+      key: 'delete',
+      danger: true,
+      icon: <DeleteOutlined />,
+      label: t('settings.provider.actions.delete'),
+    },
+  ];
+
+  const handleProviderMenuClick = (provider: ProviderConfig): MenuProps['onClick'] => ({ key, domEvent }) => {
+    domEvent.stopPropagation();
+    if (key === 'default') {
+      void handleSetDefaultProvider(provider.id);
+      return;
+    }
+    if (key === 'delete') {
+      Modal.confirm({
+        title: t('settings.provider.confirm.deleteTitle'),
+        content: t('settings.provider.confirm.deleteDescription'),
+        okText: t('settings.provider.confirm.okDelete'),
+        cancelText: t('common.cancel'),
+        okButtonProps: { danger: true },
+        onOk: () => handleDeleteProvider(provider.id),
+      });
+    }
+  };
 
   const renderProviderList = () => (
     <Card
@@ -646,6 +747,11 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
               <div className={styles.providerItemTitle}>
                 {renderProviderAvatar(provider.icon, provider.provider_name, 22, provider.enable)}
                 <span className={styles.providerName}>{provider.provider_name}</span>
+                {provider.is_default && (
+                  <Tag className={styles.defaultProviderTag}>
+                    {t('settings.provider.tags.default')}
+                  </Tag>
+                )}
               </div>
               <div className={styles.providerItemActions}>
                 <Switch
@@ -665,6 +771,7 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                         file_upload_base_url: provider.file_upload_base_url || null,
                         api_key: provider.api_key,
                         enable: checked,
+                        is_default: provider.is_default || false,
                         default_model_id: provider.default_model_id,
                       });
                       await Service.UpdateProvider(provider.id, providerData);
@@ -678,21 +785,21 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     }
                   }}
                 />
-                <Popconfirm
-                  title={t('settings.provider.confirm.deleteTitle')}
-                  description={t('settings.provider.confirm.deleteDescription')}
-                  onConfirm={() => handleDeleteProvider(provider.id)}
-                  okText={t('common.confirm')}
-                  cancelText={t('common.cancel')}
+                <Dropdown
+                  trigger={['click']}
+                  menu={{
+                    items: getProviderMenuItems(provider),
+                    onClick: handleProviderMenuClick(provider),
+                  }}
                 >
                   <Button
                     type="text"
                     size="small"
-                    icon={<DeleteOutlined />}
-                    className={styles.deleteBtn}
+                    icon={<EllipsisOutlined />}
+                    className={styles.moreBtn}
                     onClick={(e) => e.stopPropagation()}
                   />
-                </Popconfirm>
+                </Dropdown>
               </div>
             </div>
             <div className={styles.providerItemMeta}>
@@ -787,129 +894,120 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
                     <Input placeholder={t('settings.provider.placeholders.fileUploadUrl')} />
                   </Form.Item>
 
-                  <Form.Item
-                    label={t('settings.provider.fields.defaultModel')}
-                    name="defaultModel"
-                    help={t('settings.provider.helper.modelCount', { count: availableModelsForProvider.length })}
-                  >
-                    <Input.Group compact>
-                      <Form.Item 
-                        name="defaultModel" 
-                        noStyle
-                      >
-                        <Select 
-                          key={`defaultModel-${selectedProvider}`} // 添加key以在供应商切换时重置组件
-                          placeholder={t('settings.provider.placeholders.selectDefaultModel')}
-                          allowClear
-                          showSearch
-                          notFoundContent={t('settings.provider.helper.noModels')}
-                          style={{ width: 'calc(100% - 40px)' }} // 为刷新按钮留出空间
-                          filterOption={(input, option) => {
-                            if (!input) return true;
-                            const searchValue = input.toLowerCase();
-                            // 从 option 中获取模型数据
-                            const modelId = option?.value;
-                            const model = availableModelsForProvider.find(m => m.id === modelId);
-                            if (!model) return false;
-                            
-                            // 搜索模型名称、别名和模型 ID
-                            const modelName = (model.model || '').toLowerCase();
-                            const modelAlias = (model.alias || '').toLowerCase();
-                            const modelIdStr = String(model.id || '').toLowerCase();
-                            
-                            return modelName.includes(searchValue) || 
-                                   modelAlias.includes(searchValue) || 
-                                   modelIdStr.includes(searchValue);
-                          }}
-                        >
-                          {availableModelsForProvider.filter(m => !m.is_custom).map(model => (
-                            <Option key={model.id} value={model.id}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>{model.alias || model.model}</span>
-                                <span style={{ color: 'var(--text-color-secondary)', fontSize: '12px' }}>
-                                  {model.model}
-                                </span>
-                              </div>
-                            </Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                      <Tooltip title={t('settings.provider.helper.refreshModels')}>
-                        <Button 
-                          icon={<ReloadOutlined />}
-                          onClick={handleRefreshModels}
-                          loading={loading}
-                          disabled={isCreatingNew}
-                          style={{ width: '40px' }}
-                        />
-                      </Tooltip>
-                    </Input.Group>
-                  </Form.Item>
-
                   {!isCreatingNew && currentProvider && (
-                    <div className={styles.customModelSection}>
-                      <div className={styles.customModelHeader}>
-                        <div className={styles.customModelTitle}>
-                          <SettingOutlined className={styles.customModelIcon} />
-                          <span>{t('settings.provider.helper.customModels')}</span>
+                    <div className={styles.modelSection}>
+                      <div className={styles.modelSectionHeader}>
+                        <div className={styles.modelSectionTitle}>
+                          <span>{t('settings.provider.fields.modelList')}</span>
+                          <Tag className={styles.modelCountTag}>
+                            {t('settings.provider.helper.modelCountShort', { count: availableModelsForProvider.length })}
+                          </Tag>
                         </div>
-                        <Text type="secondary" className={styles.customModelDesc}>
-                          {t('settings.provider.helper.customModelsDesc')}
-                        </Text>
+                        <Space size={8}>
+                          <Tooltip title={t('settings.provider.helper.refreshModels')}>
+                            <Button
+                              type="text"
+                              icon={<ReloadOutlined />}
+                              onClick={handleRefreshModels}
+                              loading={loading}
+                              disabled={isCreatingNew}
+                            />
+                          </Tooltip>
+                          <Tooltip title={t('settings.provider.actions.addCustomModel')}>
+                            <Button
+                              type="text"
+                              icon={<PlusOutlined />}
+                              onClick={() => setShowCustomModelInput(value => !value)}
+                            />
+                          </Tooltip>
+                        </Space>
                       </div>
-                      <div className={styles.customModelInput}>
-                        <Input
-                          placeholder={t('settings.provider.placeholders.customModel')}
-                          value={customModelName}
-                          onChange={(e) => setCustomModelName(e.target.value)}
-                          onPressEnter={handleAddCustomModel}
-                          className={styles.customModelInputField}
-                        />
-                        <Button
-                          type="primary"
-                          icon={<PlusOutlined />}
-                          onClick={handleAddCustomModel}
-                          loading={addingCustomModel}
-                          disabled={!customModelName.trim()}
-                          className={styles.customModelAddBtn}
-                        >
-                          {t('common.add')}
-                        </Button>
-                      </div>
-                      {availableModelsForProvider.filter(m => m.is_custom).length > 0 && (
-                        <div className={styles.customModelList}>
-                          {availableModelsForProvider
-                            .filter(m => m.is_custom)
-                            .map(model => (
-                              <div key={model.id} className={styles.customModelItem}>
-                                <span className={styles.customModelName}>
-                                  {model.alias || model.model}
-                                </span>
-                                <Tooltip title={t('settings.provider.helper.deleteCustomModel')}>
-                                  <Popconfirm
-                                    title={t('settings.provider.confirm.deleteCustomModelTitle')}
-                                    description={t('settings.provider.confirm.deleteCustomModelDescription', { name: model.model })}
-                                    onConfirm={() => handleDeleteCustomModel(model.model)}
-                                    okText={t('common.confirm')}
-                                    cancelText={t('common.cancel')}
-                                    okButtonProps={{ danger: true }}
-                                  >
-                                    <Button
-                                      type="text"
-                                      size="small"
-                                      icon={<CloseOutlined />}
-                                      className={styles.customModelDeleteBtn}
-                                    />
-                                  </Popconfirm>
-                                </Tooltip>
-                              </div>
-                            ))}
+
+                      {showCustomModelInput && (
+                        <div className={styles.customModelInlineInput}>
+                          <Input
+                            placeholder={t('settings.provider.placeholders.customModel')}
+                            value={customModelName}
+                            onChange={(e) => setCustomModelName(e.target.value)}
+                            onPressEnter={handleAddCustomModel}
+                          />
+                          <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAddCustomModel}
+                            loading={addingCustomModel}
+                            disabled={!customModelName.trim()}
+                          >
+                            {t('common.add')}
+                          </Button>
                         </div>
                       )}
+
+                      <div className={styles.modelList}>
+                        {availableModelsForProvider.length === 0 ? (
+                          <Empty
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description={t('settings.provider.helper.noModels')}
+                          />
+                        ) : (
+                          availableModelsForProvider.map(model => (
+                            <div key={model.id} className={styles.modelItem}>
+                              <div className={styles.modelInfo}>
+                                <div className={styles.modelNameRow}>
+                                  <span className={styles.modelName}>{getModelDisplayName(model)}</span>
+                                  {currentProvider.default_model_id === model.id && (
+                                    <Tag className={styles.defaultModelTag}>
+                                      {t('settings.provider.tags.default')}
+                                    </Tag>
+                                  )}
+                                  {model.is_custom && (
+                                    <Tag className={styles.customModelTag}>
+                                      {t('settings.provider.tags.custom')}
+                                    </Tag>
+                                  )}
+                                </div>
+                                {model.alias && model.alias !== model.model && (
+                                  <span className={styles.modelId}>{model.model}</span>
+                                )}
+                              </div>
+                              <div className={styles.modelActions}>
+                                {currentProvider.default_model_id !== model.id && (
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    loading={settingDefaultModelId === model.id}
+                                    className={styles.setDefaultModelBtn}
+                                    onClick={() => handleSetDefaultModel(model)}
+                                  >
+                                    {t('settings.provider.actions.setDefaultModel')}
+                                  </Button>
+                                )}
+                                {model.is_custom && (
+                                  <Tooltip title={t('settings.provider.helper.deleteCustomModel')}>
+                                    <Popconfirm
+                                      title={t('settings.provider.confirm.deleteCustomModelTitle')}
+                                      description={t('settings.provider.confirm.deleteCustomModelDescription', { name: model.model })}
+                                      onConfirm={() => handleDeleteCustomModel(model.model)}
+                                      okText={t('common.confirm')}
+                                      cancelText={t('common.cancel')}
+                                      okButtonProps={{ danger: true }}
+                                    >
+                                      <Button
+                                        type="text"
+                                        size="small"
+                                        icon={<CloseOutlined />}
+                                        className={styles.customModelDeleteBtn}
+                                      />
+                                    </Popconfirm>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
-
-                  <Divider className={styles.formDivider} />
                 </div>
 
                 <div className={styles.formFooter}>

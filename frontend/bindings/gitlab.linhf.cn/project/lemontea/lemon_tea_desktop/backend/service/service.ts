@@ -525,6 +525,10 @@ export function RenameChat(chatUuid: string, title: string): $CancellablePromise
     return $Call.ByID(2654224378, chatUuid, title);
 }
 
+export function RenderCoreMemorySnapshot(): $CancellablePromise<string> {
+    return $Call.ByID(4250668926);
+}
+
 /**
  * ResetAgentPrompt 将指定 Agent 的某个提示词恢复为默认内容。
  */
@@ -566,6 +570,15 @@ export function SelectMCPFolder(): $CancellablePromise<string> {
  */
 export function SelectSkillFolder(): $CancellablePromise<string> {
     return $Call.ByID(2018289455);
+}
+
+/**
+ * SetDefaultProvider 设置默认供应商，并返回用于聊天默认选择的模型
+ */
+export function SetDefaultProvider(providerId: number): $CancellablePromise<view_models$0.Model | null> {
+    return $Call.ByID(290801006, providerId).then(($result: any) => {
+        return $$createType54($result);
+    });
 }
 
 export function StopCompletions(messageKey: string): $CancellablePromise<void> {
@@ -701,3 +714,4 @@ const $$createType50 = view_models$0.OPCPersonView.createFrom;
 const $$createType51 = $Create.Nullable($$createType50);
 const $$createType52 = $Create.Array($$createType48);
 const $$createType53 = $Create.Array($$createType50);
+const $$createType54 = $Create.Nullable($$createType30);

@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
 	"gorm.io/gorm"
 )
 
+const (
+	UserMemoryCharLimit  = 1375
+	AgentMemoryCharLimit = 2200
+)
+
 func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint, error) {
+	memory = normalizeMemory(memory)
 	// 精确 summary 匹配：标题完全相同的视为重复，不新建。
 	// 更细粒度的语义去重交由 Memory Agent（在写入前已拿到相关记忆列表并自行决定 write/edit）。
 	if memory.Summary != "" {
@@ -23,6 +30,250 @@ func (s *Storage) WriterMemory(ctx context.Context, memory models.Memory) (uint,
 	}
 	result := s.sqliteDb.WithContext(ctx).Create(&memory)
 	return memory.ID, result.Error
+}
+
+func normalizeMemory(memory models.Memory) models.Memory {
+	memory.Summary = strings.TrimSpace(memory.Summary)
+	memory.Content = strings.TrimSpace(memory.Content)
+	if memory.Target == "" {
+		memory.Target = models.MemoryTargetUser
+	}
+	if memory.Source == "" {
+		memory.Source = "agent"
+	}
+	memory.CharCount = utf8.RuneCountInString(memory.Content)
+	return memory
+}
+
+func NormalizeMemoryTarget(raw string) (models.MemoryTarget, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "user", "profile":
+		return models.MemoryTargetUser, nil
+	case "memory", "agent":
+		return models.MemoryTargetAgent, nil
+	default:
+		return "", fmt.Errorf("unsupported memory target: %q (use user or memory)", raw)
+	}
+}
+
+func TargetCharLimit(target models.MemoryTarget) int {
+	if target == models.MemoryTargetAgent {
+		return AgentMemoryCharLimit
+	}
+	return UserMemoryCharLimit
+}
+
+func targetTitle(target models.MemoryTarget) string {
+	if target == models.MemoryTargetAgent {
+		return "MEMORY (assistant notes)"
+	}
+	return "USER PROFILE"
+}
+
+// RenderCoreMemorySnapshot renders bounded Hermes-style memory blocks for prompt injection.
+func (s *Storage) RenderCoreMemorySnapshot(ctx context.Context) (string, error) {
+	userBlock, err := s.renderTargetSnapshot(ctx, models.MemoryTargetUser)
+	if err != nil {
+		return "", err
+	}
+	agentBlock, err := s.renderTargetSnapshot(ctx, models.MemoryTargetAgent)
+	if err != nil {
+		return "", err
+	}
+	blocks := make([]string, 0, 2)
+	if userBlock != "" {
+		blocks = append(blocks, userBlock)
+	}
+	if agentBlock != "" {
+		blocks = append(blocks, agentBlock)
+	}
+	return strings.Join(blocks, "\n\n"), nil
+}
+
+func (s *Storage) renderTargetSnapshot(ctx context.Context, target models.MemoryTarget) (string, error) {
+	entries, used, err := s.ActiveCoreMemories(ctx, target)
+	if err != nil {
+		return "", err
+	}
+	if len(entries) == 0 {
+		return "", nil
+	}
+	limit := TargetCharLimit(target)
+	percent := 0
+	if limit > 0 {
+		percent = int(float64(used) / float64(limit) * 100)
+	}
+	var lines []string
+	for _, entry := range entries {
+		content := strings.TrimSpace(entry.Content)
+		if content != "" {
+			lines = append(lines, content)
+		}
+	}
+	if len(lines) == 0 {
+		return "", nil
+	}
+	return fmt.Sprintf("══════════════════════════════════════════════\n%s [%d%% — %d/%d chars]\n══════════════════════════════════════════════\n%s",
+		targetTitle(target), percent, used, limit, strings.Join(lines, "\n§\n")), nil
+}
+
+func (s *Storage) ActiveCoreMemories(ctx context.Context, target models.MemoryTarget) ([]models.Memory, int, error) {
+	var memories []models.Memory
+	if err := s.sqliteDb.WithContext(ctx).
+		Where("is_forgotten = ? AND target = ?", false, target).
+		Order("created_at ASC").
+		Find(&memories).Error; err != nil {
+		return nil, 0, err
+	}
+	used := 0
+	for _, m := range memories {
+		used += utf8.RuneCountInString(strings.TrimSpace(m.Content))
+	}
+	return memories, used, nil
+}
+
+type CoreMemoryMutationResult struct {
+	MemoryID       uint
+	Message        string
+	Usage          string
+	CurrentEntries []string
+}
+
+func (s *Storage) AddCoreMemory(ctx context.Context, target models.MemoryTarget, content, source string) (*CoreMemoryMutationResult, error) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil, fmt.Errorf("memory content cannot be empty")
+	}
+	if source == "" {
+		source = "agent"
+	}
+	entries, used, err := s.ActiveCoreMemories(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if strings.TrimSpace(entry.Content) == content {
+			return &CoreMemoryMutationResult{
+				MemoryID: entry.ID,
+				Message:  "duplicate memory already exists; no new entry added",
+				Usage:    fmt.Sprintf("%d/%d", used, TargetCharLimit(target)),
+			}, nil
+		}
+	}
+	added := utf8.RuneCountInString(content)
+	limit := TargetCharLimit(target)
+	if used+added > limit {
+		return &CoreMemoryMutationResult{
+			Message:        fmt.Sprintf("Memory at %d/%d chars. Adding this entry (%d chars) would exceed the limit. Replace or remove existing entries first.", used, limit, added),
+			Usage:          fmt.Sprintf("%d/%d", used, limit),
+			CurrentEntries: memoryEntryTexts(entries),
+		}, nil
+	}
+	memory := normalizeMemory(models.Memory{
+		Summary: makeCoreMemorySummary(content),
+		Content: content,
+		Target:  target,
+		Source:  source,
+	})
+	id, err := s.WriterMemory(ctx, memory)
+	if err != nil {
+		return nil, err
+	}
+	return &CoreMemoryMutationResult{
+		MemoryID: id,
+		Message:  "memory entry added",
+		Usage:    fmt.Sprintf("%d/%d", used+added, limit),
+	}, nil
+}
+
+func (s *Storage) ReplaceCoreMemory(ctx context.Context, target models.MemoryTarget, oldText, content string) (*CoreMemoryMutationResult, error) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil, fmt.Errorf("replacement content cannot be empty")
+	}
+	matches, entries, used, err := s.findCoreMemoryMatches(ctx, target, oldText)
+	if err != nil {
+		return nil, err
+	}
+	limit := TargetCharLimit(target)
+	if len(matches) != 1 {
+		return ambiguousMatchResult(matches, entries, used, limit, "replace"), nil
+	}
+	nextUsed := used - utf8.RuneCountInString(strings.TrimSpace(matches[0].Content)) + utf8.RuneCountInString(content)
+	if nextUsed > limit {
+		return &CoreMemoryMutationResult{
+			Message:        fmt.Sprintf("Memory at %d/%d chars. Replacement would use %d chars. Shorten or remove entries first.", used, limit, nextUsed),
+			Usage:          fmt.Sprintf("%d/%d", used, limit),
+			CurrentEntries: memoryEntryTexts(entries),
+		}, nil
+	}
+	update := normalizeMemory(models.Memory{
+		Summary: makeCoreMemorySummary(content),
+		Content: content,
+		Target:  target,
+		Source:  matches[0].Source,
+	})
+	if err := s.ReplaceMemoryEditableFields(ctx, matches[0].ID, update); err != nil {
+		return nil, err
+	}
+	return &CoreMemoryMutationResult{MemoryID: matches[0].ID, Message: "memory entry replaced", Usage: fmt.Sprintf("%d/%d", nextUsed, limit)}, nil
+}
+
+func (s *Storage) RemoveCoreMemory(ctx context.Context, target models.MemoryTarget, oldText string) (*CoreMemoryMutationResult, error) {
+	matches, entries, used, err := s.findCoreMemoryMatches(ctx, target, oldText)
+	if err != nil {
+		return nil, err
+	}
+	limit := TargetCharLimit(target)
+	if len(matches) != 1 {
+		return ambiguousMatchResult(matches, entries, used, limit, "remove"), nil
+	}
+	if err := s.SoftDeleteMemory(ctx, matches[0].ID); err != nil {
+		return nil, err
+	}
+	nextUsed := used - utf8.RuneCountInString(strings.TrimSpace(matches[0].Content))
+	return &CoreMemoryMutationResult{MemoryID: matches[0].ID, Message: "memory entry removed", Usage: fmt.Sprintf("%d/%d", nextUsed, limit)}, nil
+}
+
+func (s *Storage) findCoreMemoryMatches(ctx context.Context, target models.MemoryTarget, oldText string) ([]models.Memory, []models.Memory, int, error) {
+	oldText = strings.TrimSpace(oldText)
+	if oldText == "" {
+		return nil, nil, 0, fmt.Errorf("old_text is required")
+	}
+	entries, used, err := s.ActiveCoreMemories(ctx, target)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	var matches []models.Memory
+	for _, entry := range entries {
+		if strings.Contains(entry.Content, oldText) {
+			matches = append(matches, entry)
+		}
+	}
+	return matches, entries, used, nil
+}
+
+func ambiguousMatchResult(matches, entries []models.Memory, used, limit int, action string) *CoreMemoryMutationResult {
+	if len(matches) == 0 {
+		return &CoreMemoryMutationResult{Message: "no matching memory entry found for " + action, Usage: fmt.Sprintf("%d/%d", used, limit), CurrentEntries: memoryEntryTexts(entries)}
+	}
+	return &CoreMemoryMutationResult{Message: fmt.Sprintf("old_text matched %d entries; provide a more specific substring", len(matches)), Usage: fmt.Sprintf("%d/%d", used, limit), CurrentEntries: memoryEntryTexts(matches)}
+}
+
+func memoryEntryTexts(entries []models.Memory) []string {
+	texts := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		texts = append(texts, strings.TrimSpace(entry.Content))
+	}
+	return texts
+}
+
+func makeCoreMemorySummary(content string) string {
+	runes := []rune(strings.TrimSpace(content))
+	if len(runes) <= 40 {
+		return string(runes)
+	}
+	return string(runes[:40])
 }
 
 // RecentMemoriesByType 返回最近 N 条活跃记忆，用于在 Memory Agent 编码前注入上下文。
@@ -143,6 +394,30 @@ func (s *Storage) ListMemories(ctx context.Context, offset, limit int, keyword s
 	query := s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("is_forgotten = ?", isForgotten)
 	if memType != "" {
 		query = query.Where("type = ?", memType)
+	}
+	if keyword != "" {
+		pattern := "%" + keyword + "%"
+		query = query.Where("summary LIKE ? OR content LIKE ?", pattern, pattern)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var memories []models.Memory
+	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&memories).Error
+	return memories, total, err
+}
+
+// ListMemoriesByTarget paginates memories with optional type and target filters.
+func (s *Storage) ListMemoriesByTarget(ctx context.Context, offset, limit int, keyword string, memType string, target string, isForgotten bool) ([]models.Memory, int64, error) {
+	query := s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("is_forgotten = ?", isForgotten)
+	if memType != "" {
+		query = query.Where("type = ?", memType)
+	}
+	if target != "" {
+		query = query.Where("target = ?", target)
 	}
 	if keyword != "" {
 		pattern := "%" + keyword + "%"
@@ -372,6 +647,7 @@ type migrationLog struct {
 func (migrationLog) TableName() string { return "memory_migration_log" }
 
 const migrationLegacyFieldsToContent = "legacy_fields_to_content_v1"
+const migrationCoreMemoryMetadata = "core_memory_metadata_v1"
 
 // MigrateLegacyFieldsToContent 把旧的结构化字段（时间、地点、人物）拼到 content 末尾，
 // 并把旧类型值映射到新类型（skill→information，plan/event→event，flow→event）。
@@ -407,6 +683,15 @@ func (s *Storage) MigrateLegacyFieldsToContent(ctx context.Context) error {
 		}
 
 		updates := map[string]any{}
+		if m.Target == "" {
+			updates["target"] = string(models.MemoryTargetUser)
+		}
+		if strings.TrimSpace(m.Source) == "" {
+			updates["source"] = "legacy"
+		}
+		if m.CharCount == 0 && strings.TrimSpace(newContent) != "" {
+			updates["char_count"] = utf8.RuneCountInString(strings.TrimSpace(newContent))
+		}
 		if newType != string(m.Type) {
 			updates["type"] = newType
 		}
@@ -422,6 +707,42 @@ func (s *Storage) MigrateLegacyFieldsToContent(ctx context.Context) error {
 	}
 
 	if err := db.Create(&migrationLog{Name: migrationLegacyFieldsToContent}).Error; err != nil {
+		return fmt.Errorf("record migration log: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) MigrateCoreMemoryMetadata(ctx context.Context) error {
+	db := s.sqliteDb.WithContext(ctx)
+	if err := db.AutoMigrate(&migrationLog{}); err != nil {
+		return fmt.Errorf("auto migrate log table: %w", err)
+	}
+	var log migrationLog
+	if err := db.Where("name = ?", migrationCoreMemoryMetadata).First(&log).Error; err == nil {
+		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("check migration log: %w", err)
+	}
+	if err := db.Model(&models.Memory{}).Where("target = '' OR target IS NULL").Update("target", string(models.MemoryTargetUser)).Error; err != nil {
+		return fmt.Errorf("backfill target: %w", err)
+	}
+	if err := db.Model(&models.Memory{}).Where("source = '' OR source IS NULL").Update("source", "legacy").Error; err != nil {
+		return fmt.Errorf("backfill source: %w", err)
+	}
+	var memories []models.Memory
+	if err := db.Find(&memories).Error; err != nil {
+		return fmt.Errorf("load memories for metadata migration: %w", err)
+	}
+	for _, m := range memories {
+		count := utf8.RuneCountInString(strings.TrimSpace(m.Content))
+		if m.CharCount == count {
+			continue
+		}
+		if err := db.Model(&models.Memory{}).Where("id = ?", m.ID).Update("char_count", count).Error; err != nil {
+			return fmt.Errorf("update char_count for memory %d: %w", m.ID, err)
+		}
+	}
+	if err := db.Create(&migrationLog{Name: migrationCoreMemoryMetadata}).Error; err != nil {
 		return fmt.Errorf("record migration log: %w", err)
 	}
 	return nil
@@ -492,6 +813,15 @@ func (s *Storage) UpdateMemory(ctx context.Context, id uint, memory models.Memor
 	if memory.Type != "" {
 		updateData["type"] = memory.Type
 	}
+	if memory.Target != "" {
+		updateData["target"] = memory.Target
+	}
+	if memory.Source != "" {
+		updateData["source"] = memory.Source
+	}
+	if memory.Content != "" {
+		updateData["char_count"] = utf8.RuneCountInString(memory.Content)
+	}
 
 	updateData["updated_at"] = time.Now()
 
@@ -522,7 +852,16 @@ func (s *Storage) ReplaceMemoryEditableFields(ctx context.Context, id uint, memo
 		"summary":    memory.Summary,
 		"content":    memory.Content,
 		"type":       memory.Type,
+		"target":     memory.Target,
+		"source":     memory.Source,
+		"char_count": utf8.RuneCountInString(strings.TrimSpace(memory.Content)),
 		"updated_at": time.Now(),
+	}
+	if updateData["target"] == "" {
+		updateData["target"] = existingMemory.Target
+	}
+	if updateData["source"] == "" {
+		updateData["source"] = existingMemory.Source
 	}
 
 	result = s.sqliteDb.WithContext(ctx).Model(&models.Memory{}).Where("id = ?", id).Updates(updateData)

@@ -26,6 +26,7 @@ type Provider struct {
 	FileUploadBaseUrl *string                  `json:"file_upload_base_url"` // 文件上传url
 	ApiKey            string                   `json:"api_key"`              // api key
 	Enable            bool                     `json:"enable"`               // 启用
+	IsDefault         bool                     `json:"is_default"`           // 默认供应商
 	DefaultModelId    *uint                    `json:"default_model_id"`
 	Models            []Model                  `json:"models"`
 	CustomModels      []data_models.Model      `json:"custom_models"`

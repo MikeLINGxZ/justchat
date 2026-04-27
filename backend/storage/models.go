@@ -33,6 +33,21 @@ func (s *Storage) GetModelsByProviderIds(ctx context.Context, providerIds []uint
 	return resMap, nil
 }
 
+// GetModelsByProviderIdSorted 获取指定供应商按名称稳定排序的模型列表
+func (s *Storage) GetModelsByProviderIdSorted(ctx context.Context, providerId uint) ([]data_models.Model, error) {
+	var res []data_models.Model
+	err := s.sqliteDB.Model(&data_models.Model{}).
+		Where("provider_id = ?", providerId).
+		Order("LOWER(COALESCE(alias, model)) ASC").
+		Order("LOWER(model) ASC").
+		Order("id ASC").
+		Find(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // GetProviderDefaultModelByProviderIds 通过供应商ids获取供应商默认模型
 func (s *Storage) GetProviderDefaultModelByProviderIds(ctx context.Context, providerIds []uint) (map[uint]data_models.Model, error) {
 	var providerModels []data_models.ProviderDefaultModel
@@ -59,6 +74,28 @@ func (s *Storage) GetProviderDefaultModelByProviderIds(ctx context.Context, prov
 	}
 
 	return resMap, nil
+}
+
+// GetProviderDefaultModel 获取指定供应商的默认模型
+func (s *Storage) GetProviderDefaultModel(ctx context.Context, providerId uint) (*data_models.Model, error) {
+	var providerModel data_models.ProviderDefaultModel
+	err := s.sqliteDB.Model(&data_models.ProviderDefaultModel{}).Where("provider_id = ?", providerId).First(&providerModel).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var model data_models.Model
+	err = s.sqliteDB.Model(&data_models.Model{}).Where("id = ?", providerModel.ModelId).First(&model).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &model, nil
 }
 
 func (s *Storage) GetModel(ctx context.Context, model string) (*data_models.Model, error) {

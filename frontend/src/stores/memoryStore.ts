@@ -27,6 +27,7 @@ export const useMemoryStore = create<MemoryState>()((set, get) => ({
     limit: 20,
     keyword: '',
     type: '',
+    target: '',
     is_forgotten: false,
   },
 

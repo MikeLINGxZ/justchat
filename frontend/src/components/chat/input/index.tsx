@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import { useTranslation } from 'react-i18next';
 import { Events } from '@wailsio/runtime';
 import styles from "./index.module.scss";
@@ -7,6 +7,11 @@ import {Service} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desk
 import {FileInfo, Model, Tool} from "@bindings/gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models";
 import {notify} from "@/utils/notification.ts";
 import RichMarkdownEditor from "@/components/chat/input/rich_markdown_editor";
+import {
+    clearDefaultModelConfig,
+    getDefaultModelConfig,
+    setDefaultModelConfig,
+} from "@/utils/defaultModel";
 
 interface ChatInputProps {
     // 所选模型
@@ -43,26 +48,32 @@ interface ChatInputProps {
     onModelSelectorClick?: () => void;
 }
 
-const DEFAULT_MODEL_KEY = 'chat_default_model';
-
-interface DefaultModelConfig {
-    modelId: number;
-    modelName: string;
+interface ModelGroup {
+    providerId: number;
+    providerName: string;
+    providerInitials: string;
+    models: Model[];
 }
 
-function getDefaultModelConfig(): DefaultModelConfig | null {
-    try {
-        const raw = localStorage.getItem(DEFAULT_MODEL_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw) as DefaultModelConfig;
-    } catch {
-        return null;
+const getProviderDisplayName = (model: Model) => {
+    const providerName = model.provider_name?.trim();
+    if (providerName) {
+        return providerName;
     }
-}
+    return `Provider #${model.provider_id}`;
+};
 
-function setDefaultModelConfig(config: DefaultModelConfig) {
-    localStorage.setItem(DEFAULT_MODEL_KEY, JSON.stringify(config));
-}
+const getProviderInitials = (providerName: string) => {
+    const parts = providerName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+        return parts.slice(0, 2).map(part => Array.from(part)[0]).join('').toUpperCase();
+    }
+    return Array.from(providerName.trim()).slice(0, 2).join('').toUpperCase() || 'P';
+};
+
+const compareModelName = (a: Model, b: Model) => (
+    a.model.localeCompare(b.model, undefined, { sensitivity: 'base', numeric: true })
+);
 
 const ChatInput: React.FC<ChatInputProps> = ({
     selectedModelId,
@@ -90,15 +101,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [inputValue, setInputValue] = useState(initialValue);
     const [modelSearchValue, setModelSearchValue] = useState('');
     const [isAddingMCPTool, setIsAddingMCPTool] = useState(false);
+    const [activeProviderJumpId, setActiveProviderJumpId] = useState<number | null>(null);
+    const [lockedModelListHeight, setLockedModelListHeight] = useState<number | null>(null);
     const [defaultModelId, setDefaultModelId] = useState<number | null>(() => {
         return getDefaultModelConfig()?.modelId ?? null;
     });
     const addMenuRef = useRef<HTMLDivElement>(null);
     const modelMenuRef = useRef<HTMLDivElement>(null);
+    const modelListRef = useRef<HTMLDivElement>(null);
+    const providerGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const toolMenuRef = useRef<HTMLDivElement>(null);
     const isMobile =  useIsMobile();
     const [selectFiles, setSelectFiles] = useState<FileInfo[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
+
+    useEffect(() => {
+        const handleDefaultModelChanged = () => {
+            setDefaultModelId(getDefaultModelConfig()?.modelId ?? null);
+        };
+        const cancelDefaultModelEvent = Events.On('chat-default-model-changed', handleDefaultModelChanged);
+        window.addEventListener('chat-default-model-changed', handleDefaultModelChanged);
+        return () => {
+            cancelDefaultModelEvent?.();
+            window.removeEventListener('chat-default-model-changed', handleDefaultModelChanged);
+        };
+    }, []);
 
     // 监听文件拖拽事件
     useEffect(() => {
@@ -142,8 +169,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         // 打开菜单时清空搜索值并刷新模型数据
         if (willOpen) {
             setModelSearchValue('');
+            setActiveProviderJumpId(null);
+            setLockedModelListHeight(null);
             // 调用回调刷新模型数据
             onModelSelectorClick?.();
+        } else {
+            setActiveProviderJumpId(null);
+            setLockedModelListHeight(null);
         }
     }, [showModelMenu, onModelSelectorClick]);
 
@@ -260,13 +292,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
         onSelectModelChange(modelId,modelName);
         setShowModelMenu(false);
         setModelSearchValue('');
+        setActiveProviderJumpId(null);
+        setLockedModelListHeight(null);
     }, [onSelectModelChange]);
 
     // 设为/取消默认模型
     const handleSetDefaultModel = useCallback((e: React.MouseEvent, modelId: number, modelName: string) => {
         e.stopPropagation();
         if (defaultModelId === modelId) {
-            localStorage.removeItem(DEFAULT_MODEL_KEY);
+            clearDefaultModelConfig();
             setDefaultModelId(null);
         } else {
             setDefaultModelConfig({ modelId, modelName });
@@ -277,18 +311,81 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 处理模型搜索
     const handleModelSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setModelSearchValue(e.target.value);
+        setActiveProviderJumpId(null);
+        setLockedModelListHeight(null);
     }, []);
 
-    // 过滤模型列表
-    const filteredModels = useCallback(() => {
-        if (!modelSearchValue.trim()) {
-            return availableModels;
-        }
-        return availableModels.filter(model => 
-            model.model.toLowerCase().includes(modelSearchValue.toLowerCase()) ||
-            model.alias?.toLowerCase().includes(modelSearchValue.toLowerCase())
-        );
+    // 按供应商分组并排序模型列表
+    const filteredModelGroups = useMemo<ModelGroup[]>(() => {
+        const searchValue = modelSearchValue.trim().toLowerCase();
+        const matchedModels = searchValue
+            ? availableModels.filter(model =>
+                model.model.toLowerCase().includes(searchValue) ||
+                (model.alias?.toLowerCase().includes(searchValue) ?? false)
+            )
+            : availableModels;
+
+        const groupMap = new Map<number, ModelGroup>();
+        matchedModels.forEach((model) => {
+            const providerId = model.provider_id;
+            const providerName = getProviderDisplayName(model);
+            const existingGroup = groupMap.get(providerId);
+            if (existingGroup) {
+                existingGroup.models.push(model);
+                return;
+            }
+            groupMap.set(providerId, {
+                providerId,
+                providerName,
+                providerInitials: getProviderInitials(providerName),
+                models: [model],
+            });
+        });
+
+        return Array.from(groupMap.values())
+            .map(group => ({
+                ...group,
+                models: [...group.models].sort(compareModelName),
+            }))
+            .sort((a, b) => {
+                const nameCompare = a.providerName.localeCompare(
+                    b.providerName,
+                    undefined,
+                    { sensitivity: 'base', numeric: true },
+                );
+                return nameCompare || a.providerId - b.providerId;
+            });
     }, [availableModels, modelSearchValue]);
+
+    const registerProviderGroupRef = useCallback((providerId: number, node: HTMLDivElement | null) => {
+        if (node) {
+            providerGroupRefs.current.set(providerId, node);
+        } else {
+            providerGroupRefs.current.delete(providerId);
+        }
+    }, []);
+
+    const handleProviderHeaderClick = useCallback((providerId: number) => {
+        setActiveProviderJumpId(current => {
+            if (current === providerId) {
+                setLockedModelListHeight(null);
+                return null;
+            }
+            setLockedModelListHeight(modelListRef.current?.clientHeight ?? null);
+            return providerId;
+        });
+    }, []);
+
+    const handleProviderJump = useCallback((providerId: number) => {
+        setActiveProviderJumpId(null);
+        setLockedModelListHeight(null);
+        requestAnimationFrame(() => {
+            providerGroupRefs.current.get(providerId)?.scrollIntoView({
+                block: 'start',
+                behavior: 'smooth',
+            });
+        });
+    }, []);
 
     // 消息发送事件
     const handleSend = useCallback(async () => {
@@ -319,6 +416,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
             if (modelMenuRef.current && !modelMenuRef.current.contains(event.target as Node)) {
                 setShowModelMenu(false);
                 setModelSearchValue(''); // 关闭菜单时清空搜索值
+                setActiveProviderJumpId(null);
+                setLockedModelListHeight(null);
             }
             if (toolMenuRef.current && !toolMenuRef.current.contains(event.target as Node)) {
                 setShowToolMenu(false);
@@ -574,35 +673,77 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             {showModelMenu && (
                                 <div className={`${styles.modelMenu} ${isMobile ? styles.mobileMenu : ''}`}>
                                     {/* 模型列表 */}
-                                    <div className={styles.modelList}>
-                                        {filteredModels().map((model) => (
-                                            <button
-                                                key={model.id}
-                                                className={`${styles.menuItem} ${model.id === selectedModelId ? styles.selected : ''}`}
-                                                onClick={() => handleModelSelect(model.id,model.model)}
-                                                type="button"
-                                            >
-                                                <span className={styles.modelName}>
-                                                    {model.model}
-                                                    {model.id === defaultModelId && (
-                                                        <span className={styles.defaultBadge}>{t('chat.input.default')}</span>
-                                                    )}
-                                                </span>
-                                                <span className={styles.modelItemRight}>
-                                                    {model.alias != null && (
-                                                        <span className={styles.modelId}>{model.alias}</span>
-                                                    )}
-                                                    <span
-                                                        className={styles.setDefaultBtn}
-                                                        onClick={(e) => handleSetDefaultModel(e, model.id, model.model)}
+                                    <div
+                                        className={styles.modelList}
+                                        ref={modelListRef}
+                                        style={lockedModelListHeight != null ? { height: lockedModelListHeight } : undefined}
+                                    >
+                                        {activeProviderJumpId != null ? (
+                                            <div className={styles.providerJumpList}>
+                                                {filteredModelGroups.map((providerGroup) => (
+                                                    <button
+                                                        key={providerGroup.providerId}
+                                                        className={`${styles.providerJumpItem} ${providerGroup.providerId === activeProviderJumpId ? styles.currentProviderJumpItem : ''}`}
+                                                        type="button"
+                                                        onClick={() => handleProviderJump(providerGroup.providerId)}
                                                     >
-                                                        {model.id === defaultModelId ? t('chat.input.unsetDefault') : t('chat.input.setDefault')}
-                                                    </span>
-                                                </span>
-                                            </button>
-                                        ))}
+                                                        <span className={styles.providerInitials}>{providerGroup.providerInitials}</span>
+                                                        <span className={styles.providerJumpName}>{providerGroup.providerName}</span>
+                                                        <svg className={styles.providerHeaderChevron} width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M9 18l6-6-6-6v12z"/>
+                                                        </svg>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            filteredModelGroups.map((group) => (
+                                                <div
+                                                    key={group.providerId}
+                                                    className={styles.modelGroup}
+                                                    ref={(node) => registerProviderGroupRef(group.providerId, node)}
+                                                >
+                                                    <button
+                                                        className={styles.modelSectionHeader}
+                                                        type="button"
+                                                        onClick={() => handleProviderHeaderClick(group.providerId)}
+                                                    >
+                                                        <span className={styles.providerInitials}>{group.providerInitials}</span>
+                                                        <span className={styles.providerName}>{group.providerName}</span>
+                                                        <svg className={styles.providerHeaderChevron} width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M7 10l5 5 5-5z"/>
+                                                        </svg>
+                                                    </button>
+                                                    {group.models.map((model) => (
+                                                        <button
+                                                            key={model.id}
+                                                            className={`${styles.menuItem} ${model.id === selectedModelId ? styles.selected : ''}`}
+                                                            onClick={() => handleModelSelect(model.id,model.model)}
+                                                            type="button"
+                                                        >
+                                                            <span className={styles.modelName}>
+                                                                {model.model}
+                                                                {model.id === defaultModelId && (
+                                                                    <span className={styles.defaultBadge}>{t('chat.input.default')}</span>
+                                                                )}
+                                                            </span>
+                                                            <span className={styles.modelItemRight}>
+                                                                {model.alias != null && (
+                                                                    <span className={styles.modelId}>{model.alias}</span>
+                                                                )}
+                                                                <span
+                                                                    className={styles.setDefaultBtn}
+                                                                    onClick={(e) => handleSetDefaultModel(e, model.id, model.model)}
+                                                                >
+                                                                    {model.id === defaultModelId ? t('chat.input.unsetDefault') : t('chat.input.setDefault')}
+                                                                </span>
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ))
+                                        )}
                                         {/* 无结果提示 */}
-                                        {filteredModels().length === 0 && (
+                                        {filteredModelGroups.length === 0 && (
                                             <div className={styles.noResults}>
                                                 {t('chat.input.noMatchingModels')}
                                             </div>

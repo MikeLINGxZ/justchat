@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -59,6 +60,12 @@ func (s *Service) GetPromptFile(name string) (*view_models.PromptFileDetail, err
 	content, err := prompts.LoadPrompt(name, fallback)
 	if err != nil {
 		// Preserve fallback content while surfacing the error to the caller only as a warning-level log via caller handling.
+	}
+	if promptDir, dirErr := prompts.PromptDir(); dirErr == nil {
+		compatPath := filepath.Join(promptDir, name)
+		if _, statErr := os.Stat(compatPath); os.IsNotExist(statErr) {
+			_ = os.WriteFile(compatPath, []byte(strings.TrimSpace(content)+"\n"), 0o644)
+		}
 	}
 	path, pathErr := prompts.PromptPath(name)
 	if pathErr != nil {

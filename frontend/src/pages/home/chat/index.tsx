@@ -30,6 +30,7 @@ import {
 import {useNavigate} from "react-router-dom";
 import {notify} from "@/utils/notification.ts";
 import {useTranslation} from 'react-i18next';
+import {getDefaultModelConfig} from "@/utils/defaultModel";
 
 function readStoredSelectedToolIds(): { ids: string[]; hasStoredValue: boolean } {
     try {
@@ -195,6 +196,7 @@ const Chat: React.FC<ChatProps> = ({
     const [selectModelName,setSelectModelName] = useState<string>("");
     // 可用模型
     const [availableModels,setAvailableModels] = useState<Model[]>([]);
+    const availableModelsRef = useRef<Model[]>([]);
     // 可用工具
     const [availableTools,setAvailableTools] = useState<Tool[]>([]);
     // 用户选中的自定义 MCP 工具 id 列表（持久化到 localStorage）
@@ -255,6 +257,19 @@ const Chat: React.FC<ChatProps> = ({
         ])]
     ), [defaultBuiltinToolIds, selectedToolIds]);
 
+    const applyDefaultModel = useCallback((models: Model[]) => {
+        const config = getDefaultModelConfig();
+        if (!config) {
+            return false;
+        }
+        const defaultModel = models.find(model => model.id === config.modelId);
+        if (!defaultModel) {
+            return false;
+        }
+        setSelectModelId(defaultModel.id);
+        setSelectModelName(defaultModel.model);
+        return true;
+    }, []);
 
     const propUuid = chatUuid ?? "";
     const activeTitleChatUuid = currentChatUuid || propUuid;
@@ -301,13 +316,41 @@ const Chat: React.FC<ChatProps> = ({
     }, [currentChatUuid]);
 
     useEffect(() => {
+        availableModelsRef.current = availableModels;
+    }, [availableModels]);
+
+    useEffect(() => {
         Service.GetModels(true,true)
             .then((models: Model[])=>{
                 setAvailableModels(models);
+                if (!currentChatUuidRef.current) {
+                    applyDefaultModel(models);
+                }
             })
         refreshAvailableTools().catch(() => {
         });
-    }, [refreshAvailableTools]);
+    }, [applyDefaultModel, refreshAvailableTools]);
+
+    useEffect(() => {
+        const handleDefaultModelChanged = () => {
+            Service.GetModels(true, true)
+                .then((models: Model[]) => {
+                    setAvailableModels(models);
+                    if (!currentChatUuidRef.current) {
+                        applyDefaultModel(models);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Failed to refresh models after default model changed:", err);
+                });
+        };
+        const cancelDefaultModelEvent = Events.On('chat-default-model-changed', handleDefaultModelChanged);
+        window.addEventListener('chat-default-model-changed', handleDefaultModelChanged);
+        return () => {
+            cancelDefaultModelEvent?.();
+            window.removeEventListener('chat-default-model-changed', handleDefaultModelChanged);
+        };
+    }, [applyDefaultModel]);
 
     // 监听插件变更事件，刷新工具列表
     useEffect(() => {
@@ -541,6 +584,7 @@ const Chat: React.FC<ChatProps> = ({
             setInputFiles([]);
             setPendingInitialInput("");
             setInputResetKey(prev => prev + 1);
+            applyDefaultModel(availableModelsRef.current);
             return;
         }
         const fetchSeq = ++chatFetchSeqRef.current;
@@ -587,7 +631,7 @@ const Chat: React.FC<ChatProps> = ({
                 setLoading(false);
             }, 300);
         });
-    }, [chatUuid]);
+    }, [applyDefaultModel, chatUuid]);
 
     // onModelSelectorClick 模型选择框点击事件
     const onModelSelectorClick = () => {

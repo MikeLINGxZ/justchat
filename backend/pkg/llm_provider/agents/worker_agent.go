@@ -19,8 +19,10 @@ func init() {
 	RegisterAgent(&ToolWorkerAgentDef{})
 }
 
-func (a *GeneralWorkerAgentDef) Name() string    { return "general_worker_agent" }
-func (a *GeneralWorkerAgentDef) Desc() string    { return "通用 Worker Agent，负责执行子任务并产出结果" }
+func (a *GeneralWorkerAgentDef) Name() string { return "general_worker_agent" }
+func (a *GeneralWorkerAgentDef) Desc() string {
+	return "通用 Worker Agent，负责执行子任务并产出结果"
+}
 func (a *GeneralWorkerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *GeneralWorkerAgentDef) Role() AgentRole { return AgentRoleWorker }
 func (a *GeneralWorkerAgentDef) PromptNames() []string {
@@ -48,8 +50,10 @@ func (a *GeneralWorkerAgentDef) Prompt() string {
 // ToolWorkerAgentDef 工具专家 Agent
 type ToolWorkerAgentDef struct{}
 
-func (a *ToolWorkerAgentDef) Name() string    { return "tool_worker_agent" }
-func (a *ToolWorkerAgentDef) Desc() string    { return "工具 Worker Agent，以工具调用为主的子任务执行" }
+func (a *ToolWorkerAgentDef) Name() string { return "tool_worker_agent" }
+func (a *ToolWorkerAgentDef) Desc() string {
+	return "工具 Worker Agent，以工具调用为主的子任务执行"
+}
 func (a *ToolWorkerAgentDef) Type() AgentType { return AgentTypeSystem }
 func (a *ToolWorkerAgentDef) Role() AgentRole { return AgentRoleWorker }
 func (a *ToolWorkerAgentDef) PromptNames() []string {
@@ -77,6 +81,12 @@ func (a *ToolWorkerAgentDef) Prompt() string {
 
 // NewRoleAgent 创建角色 Agent（用于工作流子任务执行）。
 func NewRoleAgent(ctx context.Context, chatModel model.ToolCallingChatModel, name, description, instruction string, tools []tool.BaseTool, toolMiddleware compose.ToolMiddleware) (adk.Agent, error) {
+	var err error
+	tools, err = uniqueToolsByInfoName(ctx, tools)
+	if err != nil {
+		return nil, err
+	}
+
 	return adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        name,
 		Description: description,

@@ -9,7 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unicode/utf8"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
@@ -1539,34 +1538,6 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		}
 	}
 
-	// ---- 记忆系统：预取缓存 / 同步回退 + 围栏注入 ----
-	r.safeMemoryOp("retrieve", func() {
-		userMsg := r.extractLastUserMessage()
-		if userMsg == "" {
-			return
-		}
-		// 优先从预取缓存获取
-		memCtx, cached := r.svc.memoryCache.Get(r.chatUuid)
-		if !cached {
-			// 缓存未命中：同步检索（500ms 超时保护）
-			// 语义匹配由向量搜索处理，无结果时 TopImportantMemories 兜底
-			ctx, cancel := context.WithTimeout(runCtx, 500*time.Millisecond)
-			memCtx = r.svc.retrieveMemoryContext(ctx, userMsg)
-			cancel()
-		}
-		fenced := buildFencedMemoryContext(memCtx)
-		if fenced == "" {
-			return
-		}
-		// 注入到最后一条用户消息：同时处理 Content 和 MultiContent/UserInputMultiContent
-		for i := len(r.schemaMessages) - 1; i >= 0; i-- {
-			if r.schemaMessages[i].Role == schema.User {
-				injectMemoryIntoMessage(&r.schemaMessages[i], fenced)
-				break
-			}
-		}
-	})
-
 	// defer 兜底：确保任务一定会发射终结事件（即使发生 panic 恢复后）
 	defer func() {
 		if r.cleanupTools != nil {
@@ -1655,9 +1626,8 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		r.svc.pluginManager.HookChain().RunAfterChat(hookCtx)
 	}
 
-	// ---- 记忆系统：异步编码 + 异步预取（工作流路径不触发） ----
+	// ---- 记忆系统：异步策展（工作流路径不触发） ----
 	if r.getWorkflowHandoff() == nil {
-		chatUuid := r.chatUuid
 		msgsCopy := make([]schema.Message, len(r.schemaMessages))
 		copy(msgsCopy, r.schemaMessages)
 		providerModel := r.providerModel
@@ -1665,24 +1635,6 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		// 异步编码
 		go r.safeMemoryOp("encode", func() {
 			r.svc.encodeMemoriesAsync(providerModel, msgsCopy)
-		})
-		// 异步预取下一轮上下文（由 Memory Agent 自主使用工具做更智能的检索）
-		go r.safeMemoryOp("prefetch", func() {
-			r.mu.Lock()
-			assistantContent := r.assistantMessage.Content
-			r.mu.Unlock()
-			prefetchQuery := assistantContent
-			if utf8.RuneCountInString(prefetchQuery) > 200 {
-				prefetchQuery = string([]rune(prefetchQuery)[:200])
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-			defer cancel()
-			nextCtx := r.svc.retrieveViaMemoryAgent(ctx, providerModel, prefetchQuery)
-			if nextCtx == "" {
-				// Agent 失败或未检索到，退回快速检索作兜底
-				nextCtx = r.svc.retrieveMemoryContext(ctx, prefetchQuery)
-			}
-			r.svc.memoryCache.Set(chatUuid, nextCtx)
 		})
 	}
 

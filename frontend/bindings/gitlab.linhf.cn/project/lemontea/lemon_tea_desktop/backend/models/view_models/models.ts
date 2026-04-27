@@ -361,6 +361,9 @@ export class Memory {
     "summary": string;
     "content": string;
     "type": string;
+    "target": string;
+    "source": string;
+    "char_count": number;
     "is_forgotten": boolean;
     "recall_count": number;
     "has_embedding": boolean;
@@ -380,6 +383,15 @@ export class Memory {
         }
         if (!("type" in $$source)) {
             this["type"] = "";
+        }
+        if (!("target" in $$source)) {
+            this["target"] = "";
+        }
+        if (!("source" in $$source)) {
+            this["source"] = "";
+        }
+        if (!("char_count" in $$source)) {
+            this["char_count"] = 0;
         }
         if (!("is_forgotten" in $$source)) {
             this["is_forgotten"] = false;
@@ -414,6 +426,7 @@ export class MemoryListQuery {
     "limit": number;
     "keyword": string;
     "type": string;
+    "target": string;
     "is_forgotten": boolean;
 
     /** Creates a new MemoryListQuery instance. */
@@ -429,6 +442,9 @@ export class MemoryListQuery {
         }
         if (!("type" in $$source)) {
             this["type"] = "";
+        }
+        if (!("target" in $$source)) {
+            this["target"] = "";
         }
         if (!("is_forgotten" in $$source)) {
             this["is_forgotten"] = false;
@@ -508,6 +524,7 @@ export class MemoryUpdateInput {
     "summary": string;
     "content": string;
     "type": string;
+    "target": string;
 
     /** Creates a new MemoryUpdateInput instance. */
     constructor($$source: Partial<MemoryUpdateInput> = {}) {
@@ -519,6 +536,9 @@ export class MemoryUpdateInput {
         }
         if (!("type" in $$source)) {
             this["type"] = "";
+        }
+        if (!("target" in $$source)) {
+            this["target"] = "";
         }
 
         Object.assign(this, $$source);
@@ -575,6 +595,8 @@ export class Model {
      * 提供方id
      */
     "provider_id": number;
+    "provider_name": string;
+    "provider_type": data_models$0.ProviderType;
     "model": string;
     "owned_by": string;
     "object": string;
@@ -598,6 +620,12 @@ export class Model {
         }
         if (!("provider_id" in $$source)) {
             this["provider_id"] = 0;
+        }
+        if (!("provider_name" in $$source)) {
+            this["provider_name"] = "";
+        }
+        if (!("provider_type" in $$source)) {
+            this["provider_type"] = data_models$0.ProviderType.$zero;
         }
         if (!("model" in $$source)) {
             this["model"] = "";
@@ -1164,6 +1192,11 @@ export class Provider {
      * 启用
      */
     "enable": boolean;
+
+    /**
+     * 默认供应商
+     */
+    "is_default": boolean;
     "default_model_id": number | null;
     "models": Model[];
     "custom_models": data_models$0.Model[];
@@ -1198,6 +1231,9 @@ export class Provider {
         if (!("enable" in $$source)) {
             this["enable"] = false;
         }
+        if (!("is_default" in $$source)) {
+            this["is_default"] = false;
+        }
         if (!("default_model_id" in $$source)) {
             this["default_model_id"] = null;
         }
@@ -1218,14 +1254,14 @@ export class Provider {
      * Creates a new Provider instance from a string or object.
      */
     static createFrom($$source: any = {}): Provider {
-        const $$createField10_0 = $$createType14;
-        const $$createField11_0 = $$createType16;
+        const $$createField11_0 = $$createType14;
+        const $$createField12_0 = $$createType16;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("models" in $$parsedSource) {
-            $$parsedSource["models"] = $$createField10_0($$parsedSource["models"]);
+            $$parsedSource["models"] = $$createField11_0($$parsedSource["models"]);
         }
         if ("custom_models" in $$parsedSource) {
-            $$parsedSource["custom_models"] = $$createField11_0($$parsedSource["custom_models"]);
+            $$parsedSource["custom_models"] = $$createField12_0($$parsedSource["custom_models"]);
         }
         return new Provider($$parsedSource as Partial<Provider>);
     }

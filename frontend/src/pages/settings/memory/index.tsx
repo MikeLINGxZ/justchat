@@ -39,6 +39,17 @@ const TYPE_LABEL_KEY: Record<string, string> = MEMORY_TYPES.reduce((acc, mt) => 
   return acc;
 }, {} as Record<string, string>);
 
+const MEMORY_TARGETS = [
+  { value: '', labelKey: 'settings.memory.targetAll' },
+  { value: 'user', labelKey: 'settings.memory.targetUser' },
+  { value: 'memory', labelKey: 'settings.memory.targetMemory' },
+];
+
+const TARGET_LABEL_KEY: Record<string, string> = {
+  user: 'settings.memory.targetUser',
+  memory: 'settings.memory.targetMemory',
+};
+
 const MemorySettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const {
@@ -72,6 +83,11 @@ const MemorySettingsPage: React.FC = () => {
 
   const handleTypeChange = useCallback((value: string) => {
     setQuery({ type: value });
+    fetchMemories();
+  }, [setQuery, fetchMemories]);
+
+  const handleTargetChange = useCallback((value: string) => {
+    setQuery({ target: value });
     fetchMemories();
   }, [setQuery, fetchMemories]);
 
@@ -129,6 +145,12 @@ const MemorySettingsPage: React.FC = () => {
           style={{ width: 120 }}
           options={MEMORY_TYPES.map(mt => ({ value: mt.value, label: t(mt.labelKey) }))}
         />
+        <Select
+          value={query.target}
+          onChange={handleTargetChange}
+          style={{ width: 150 }}
+          options={MEMORY_TARGETS.map(mt => ({ value: mt.value, label: t(mt.labelKey) }))}
+        />
         <Button
           type={query.is_forgotten ? 'primary' : 'default'}
           onClick={() => handleToggleForgotten(!query.is_forgotten)}
@@ -138,74 +160,84 @@ const MemorySettingsPage: React.FC = () => {
         </Button>
       </div>
 
-      <Spin spinning={isLoading}>
-        {memories.length === 0 ? (
-          <Empty description={t('settings.memory.empty')} />
-        ) : (
-          <div className={styles.memoryList}>
-            {memories.map((m) => (
-              <div key={m.id} className={styles.memoryCard}>
-                <div className={styles.memoryHeader}>
-                  <Text strong className={styles.memoryTitle}>
-                    {m.summary || t('settings.memory.noTitle')}
-                    {vectorSearchEnabled && m.has_embedding && (
-                      <Tooltip title={t('settings.memory.embedded')}>
-                        <DeploymentUnitOutlined className={styles.embeddingIcon} />
-                      </Tooltip>
+      <div className={styles.listShell}>
+        <Spin spinning={isLoading}>
+          {memories.length === 0 ? (
+            <Empty className={styles.emptyState} description={t('settings.memory.empty')} />
+          ) : (
+            <div className={styles.memoryList}>
+              {memories.map((m) => (
+                <div key={m.id} className={styles.memoryCard}>
+                  <div className={styles.memoryHeader}>
+                    <Text strong className={styles.memoryTitle}>
+                      {m.summary || t('settings.memory.noTitle')}
+                      {vectorSearchEnabled && m.has_embedding && (
+                        <Tooltip title={t('settings.memory.embedded')}>
+                          <DeploymentUnitOutlined className={styles.embeddingIcon} />
+                        </Tooltip>
+                      )}
+                    </Text>
+                    <Text type="secondary" className={styles.memoryDate}>
+                      {formatDate(m.created_at as unknown as string)}
+                    </Text>
+                  </div>
+                  <Text className={styles.memoryContent}>
+                    {m.content && m.content.length > 150
+                      ? m.content.slice(0, 150) + '...'
+                      : m.content}
+                  </Text>
+                  <div className={styles.memoryMeta}>
+                    {m.type && (
+                      <Tag>
+                        {TYPE_LABEL_KEY[m.type.trim()]
+                          ? t(TYPE_LABEL_KEY[m.type.trim()])
+                          : m.type}
+                      </Tag>
                     )}
-                  </Text>
-                  <Text type="secondary" className={styles.memoryDate}>
-                    {formatDate(m.created_at as unknown as string)}
-                  </Text>
-                </div>
-                <Text className={styles.memoryContent}>
-                  {m.content && m.content.length > 150
-                    ? m.content.slice(0, 150) + '...'
-                    : m.content}
-                </Text>
-                <div className={styles.memoryMeta}>
-                  {m.type && (
-                    <Tag>
-                      {TYPE_LABEL_KEY[m.type.trim()]
-                        ? t(TYPE_LABEL_KEY[m.type.trim()])
-                        : m.type}
-                    </Tag>
-                  )}
-                  <div className={styles.memoryActions}>
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEdit(m.id)}
-                    >
-                      {t('settings.memory.edit')}
-                    </Button>
-                    {m.is_forgotten ? (
+                    {m.target && (
+                      <Tag color={m.target === 'memory' ? 'purple' : 'green'}>
+                        {TARGET_LABEL_KEY[m.target.trim()]
+                          ? t(TARGET_LABEL_KEY[m.target.trim()])
+                          : m.target}
+                      </Tag>
+                    )}
+                    <Tag>{m.char_count ?? 0} chars</Tag>
+                    <div className={styles.memoryActions}>
                       <Button
                         type="link"
                         size="small"
-                        icon={<UndoOutlined />}
-                        onClick={() => restoreMemory(m.id)}
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(m.id)}
                       >
-                        {t('settings.memory.restore')}
+                        {t('settings.memory.edit')}
                       </Button>
-                    ) : (
-                      <Popconfirm
-                        title={t('settings.memory.deleteConfirm')}
-                        onConfirm={() => deleteMemory(m.id)}
-                      >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                          {t('settings.memory.delete')}
+                      {m.is_forgotten ? (
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<UndoOutlined />}
+                          onClick={() => restoreMemory(m.id)}
+                        >
+                          {t('settings.memory.restore')}
                         </Button>
-                      </Popconfirm>
-                    )}
+                      ) : (
+                        <Popconfirm
+                          title={t('settings.memory.deleteConfirm')}
+                          onConfirm={() => deleteMemory(m.id)}
+                        >
+                          <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                            {t('settings.memory.delete')}
+                          </Button>
+                        </Popconfirm>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Spin>
+              ))}
+            </div>
+          )}
+        </Spin>
+      </div>
 
       {total > query.limit && (
         <div className={styles.pagination}>

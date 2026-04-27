@@ -34,10 +34,16 @@ const MEMORY_TYPES = [
   { value: 'event', labelKey: 'settings.memory.typeEvent' },
 ];
 
+const MEMORY_TARGETS = [
+  { value: 'user', labelKey: 'settings.memory.targetUser' },
+  { value: 'memory', labelKey: 'settings.memory.targetMemory' },
+];
+
 interface MemoryEditFormValues {
   summary: string;
   content: string;
   type: string;
+  target: string;
 }
 
 const EditMemoryPage: React.FC = () => {
@@ -79,6 +85,7 @@ const EditMemoryPage: React.FC = () => {
           summary: m.summary ?? '',
           content: m.content ?? '',
           type: (m.type ?? '').trim(),
+          target: (m.target ?? 'user').trim() || 'user',
         });
       } catch (err) {
         setLoadError(translateError(err, t('settings.memory.loadFailed', { defaultValue: 'Load failed' })));
@@ -101,6 +108,7 @@ const EditMemoryPage: React.FC = () => {
         summary: values.summary.trim(),
         content: values.content.trim(),
         type: values.type ?? '',
+        target: values.target || 'user',
       });
       await Service.UpdateMemory(memory.id, payload);
       void Events.Emit(EVENT_KEY, { id: memory.id });
@@ -148,6 +156,17 @@ const EditMemoryPage: React.FC = () => {
                 allowClear
               />
             </Form.Item>
+            <Form.Item name="target" label={t('settings.memory.fieldTarget')}>
+              <Select
+                options={MEMORY_TARGETS.map(mt => ({ value: mt.value, label: t(mt.labelKey) }))}
+              />
+            </Form.Item>
+            <Text type="secondary" className={styles.hintText}>
+              {t('settings.memory.capacityHint', {
+                count: memory?.char_count ?? 0,
+                defaultValue: `${memory?.char_count ?? 0} chars in this entry`,
+              })}
+            </Text>
             {vectorSearchEnabled && (
               <Text type="secondary" className={styles.hintText}>
                 {t('settings.memory.reembedHint')}

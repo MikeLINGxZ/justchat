@@ -7,6 +7,9 @@ type Memory struct {
 	Summary      string    `json:"summary"`
 	Content      string    `json:"content"`
 	Type         string    `json:"type"`
+	Target       string    `json:"target"`
+	Source       string    `json:"source"`
+	CharCount    int       `json:"char_count"`
 	IsForgotten  bool      `json:"is_forgotten"`
 	RecallCount  int       `json:"recall_count"`
 	HasEmbedding bool      `json:"has_embedding"`
@@ -18,6 +21,7 @@ type MemoryUpdateInput struct {
 	Summary string `json:"summary"`
 	Content string `json:"content"`
 	Type    string `json:"type"`
+	Target  string `json:"target"`
 }
 
 type MemoryListQuery struct {
@@ -25,6 +29,7 @@ type MemoryListQuery struct {
 	Limit       int    `json:"limit"`
 	Keyword     string `json:"keyword"`
 	Type        string `json:"type"`
+	Target      string `json:"target"`
 	IsForgotten bool   `json:"is_forgotten"`
 }
 

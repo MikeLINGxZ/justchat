@@ -9,6 +9,7 @@ import (
 
 	memory_models "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/search"
+	memory_storage "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/agents/memory/storage"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/view_models"
 
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/logger"
@@ -28,7 +29,7 @@ func (s *Service) GetMemories(query view_models.MemoryListQuery) (*view_models.M
 	}
 
 	ctx := context.Background()
-	memories, total, err := s.memoryStorage.ListMemories(ctx, query.Offset, query.Limit, query.Keyword, query.Type, query.IsForgotten)
+	memories, total, err := s.memoryStorage.ListMemoriesByTarget(ctx, query.Offset, query.Limit, query.Keyword, query.Type, query.Target, query.IsForgotten)
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
@@ -74,11 +75,17 @@ func (s *Service) UpdateMemory(id uint, input view_models.MemoryUpdateInput) (*v
 	if err != nil {
 		return nil, ierror.NewError(err)
 	}
+	target, err := memory_storage.NormalizeMemoryTarget(input.Target)
+	if err != nil {
+		return nil, ierror.NewError(err)
+	}
 
 	update := memory_models.Memory{
 		Summary: summary,
 		Content: content,
 		Type:    memType,
+		Target:  target,
+		Source:  "manual",
 	}
 
 	if err := s.memoryStorage.ReplaceMemoryEditableFields(context.Background(), id, update); err != nil {
@@ -138,6 +145,9 @@ func toMemoryViewModel(m memory_models.Memory) view_models.Memory {
 		Summary:      m.Summary,
 		Content:      m.Content,
 		Type:         string(m.Type),
+		Target:       string(m.Target),
+		Source:       m.Source,
+		CharCount:    m.CharCount,
 		IsForgotten:  m.IsForgotten,
 		RecallCount:  m.RecallCount,
 		HasEmbedding: m.EmbeddingID != nil,

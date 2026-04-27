@@ -286,7 +286,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	}
 
 	// 创建运行器，封装所有运行时状态
-	localizedPrompts := s.localizedPromptSet()
+	localizedPrompts := s.promptSetWithCoreMemory(ctx, s.localizedPromptSet())
 	runner := newCompletionRunner(
 		s, localizedPrompts, inputMessage, providerModel,
 		agentTools, toolMetaByID, customAgentIDs, cleanupTools, schemaMessages, isNewChat,
@@ -319,6 +319,9 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 	mainSkillSummary := skills.ResolveAllSkillSummaries()
 
 	directTools := append([]tool.BaseTool{newWorkflowHandoffTool(runner.setWorkflowHandoff)}, agentTools...)
+	if prefs, prefErr := s.loadAppPreferences(ctx); prefErr == nil && prefs.MemorySystemEnabled {
+		directTools = append(directTools, s.buildMemoryRuntimeTools()...)
+	}
 
 	// 始终添加 load_skill 工具以支持渐进式技能注入
 	if loadSkillTool, ok := llmtools.ToolRouter.GetToolByID("load_skill"); ok {

@@ -6,6 +6,13 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 )
 
+type MemoryTarget string
+
+const (
+	MemoryTargetUser  MemoryTarget = "user"
+	MemoryTargetAgent MemoryTarget = "memory"
+)
+
 type MemoryType string
 
 // 新版三类型语义：
@@ -26,11 +33,16 @@ type Memory struct {
 	Content string     `gorm:"type:text;not null"`     // 内容（含时间/地点/人物等所有信息）
 	Type    MemoryType `gorm:"type:varchar(50);index"` // 类型：fact / information / event
 
+	Target    MemoryTarget `gorm:"type:varchar(32);default:user;index"` // user / memory
+	Source    string       `gorm:"type:varchar(64);default:agent"`      // agent / manual / legacy
+	CharCount int          `gorm:"default:0"`
+
 	EmbeddingID *uint `gorm:"index"`               // 嵌入 id
 	IsForgotten bool  `gorm:"default:false;index"` // 是否已遗忘
 	RecallCount int   `gorm:"default:0"`           // 召回次数
 
 	LastRecalledAt *time.Time `gorm:"column:last_recalled_at"`
+	LastUsedAt     *time.Time `gorm:"column:last_used_at"`
 
 	// === 已废弃字段（保留为 nullable，仅供历史迁移读取，不再写入新数据）===
 	TimeRangStart    *time.Time `gorm:"index"`

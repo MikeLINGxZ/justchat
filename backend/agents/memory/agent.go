@@ -35,15 +35,7 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 		return nil, err
 	}
 
-	writeMemoryTool, err := tools.NewWriteMemoryTool(storage)
-	if err != nil {
-		return nil, err
-	}
-	readMemoryTool, err := tools.NewReadMemoryTool(storage)
-	if err != nil {
-		return nil, err
-	}
-	editMemoryTool, err := tools.NewEditMemoryTool(storage)
+	coreMemoryTool, err := tools.NewCoreMemoryTool(storage)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +47,7 @@ func NewMemoryAgent(ctx context.Context, baseURL, apiKey, model string, storage 
 	ragent, err := react.NewAgent(ctx, &react.AgentConfig{
 		ToolCallingModel: arkModel,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools: []tool.BaseTool{writeMemoryTool, readMemoryTool, editMemoryTool, getCurrentTimeTool},
+			Tools: []tool.BaseTool{coreMemoryTool, getCurrentTimeTool},
 		},
 	})
 	if err != nil {
