@@ -103,6 +103,58 @@
   --md-table-border: rgba(95, 115, 133, 0.12);
   --md-table-head-bg: rgba(255, 255, 255, 0.72);
   --md-table-row-hover: rgba(255, 255, 255, 0.52);
+
+  .paragraph {
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .heading {
+    margin: 10px 0 6px;
+    line-height: 1.25;
+  }
+
+  .h1 {
+    font-size: 1.28rem;
+    padding-bottom: 5px;
+  }
+
+  .h2 {
+    font-size: 1.12rem;
+    padding-bottom: 4px;
+  }
+
+  .h3 {
+    font-size: 1rem;
+  }
+
+  .h4,
+  .h5,
+  .h6 {
+    font-size: 0.95rem;
+  }
+
+  .markdownList {
+    margin: 4px 0 8px;
+    line-height: 1.48;
+  }
+
+  .markdownListItem {
+    margin: 2px 0;
+
+    > .paragraph {
+      margin-bottom: 4px;
+      line-height: inherit;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .divider {
+    margin: 10px 0;
+  }
 }
 
 .paragraph {

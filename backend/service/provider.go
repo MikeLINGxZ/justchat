@@ -296,7 +296,6 @@ func (s *Service) DeleteProviderCustomModel(ctx context.Context, providerId uint
 
 // updateProviderModel 更新供应商模型列表
 func (s *Service) updateProviderModel(ctx context.Context, providerId uint) error {
-
 	// 获取供应商信息
 	provider, err := s.storage.GetProviderByID(ctx, providerId)
 	if err != nil {
@@ -304,6 +303,17 @@ func (s *Service) updateProviderModel(ctx context.Context, providerId uint) erro
 	}
 	if provider == nil {
 		return nil
+	}
+
+	previousDefaultModel, err := s.storage.GetProviderDefaultModel(ctx, providerId)
+	if err != nil {
+		return err
+	}
+	previousDefaultModelName := ""
+	hadDefaultModel := false
+	if previousDefaultModel != nil {
+		previousDefaultModelName = previousDefaultModel.Model
+		hadDefaultModel = true
 	}
 
 	// 获取模型信息
@@ -337,7 +347,28 @@ func (s *Service) updateProviderModel(ctx context.Context, providerId uint) erro
 				return err
 			}
 		}
-		return nil
+
+		if !hadDefaultModel {
+			return nil
+		}
+
+		models, err := s.GetModelsByProviderIdSorted(ctx, providerId)
+		if err != nil {
+			return err
+		}
+		if len(models) == 0 {
+			return nil
+		}
+
+		targetModelID := models[0].ID
+		for _, model := range models {
+			if model.Model == previousDefaultModelName {
+				targetModelID = model.ID
+				break
+			}
+		}
+
+		return s.UpdateProviderDefaultModel(ctx, providerId, targetModelID)
 	})
 	if err != nil {
 		return err

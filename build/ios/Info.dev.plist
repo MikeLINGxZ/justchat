@@ -7,9 +7,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.example.rxintelligencecli.dev</string>
     <key>CFBundleName</key>
-    <string>My Product (Dev)</string>
+    <string>Lemontea Desktop (Dev)</string>
     <key>CFBundleDisplayName</key>
-    <string>My Product (Dev)</string>
+    <string>Lemontea Desktop (Dev)</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

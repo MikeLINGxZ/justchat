@@ -54,7 +54,7 @@ var enUS = map[string]string{
 	"tool.file.approval.preview":                  "\n\nWrite preview:\n{{content}}",
 	"tool.approval.actions":                       "1. Allow 2. Reject 3. Tell the AI what to do",
 	"tool.shell.approval.title":                   "Shell tool requests to run a command",
-	"tool.shell.approval.message":                 "The tool wants to run the following command:\n`{{command}}`\nWorking directory: `{{directory}}`\nScope: {{scope}}\n",
+	"tool.shell.approval.message":                 "The tool wants to run the following command with {{shell}}:\n`{{command}}`\nWorking directory: `{{directory}}`\nScope: {{scope}}\n",
 	"tool.approval.scope.workspace":               "Inside workspace",
 	"tool.approval.scope.outside_workspace":       "Outside workspace",
 	"chat.stage.pending":                          "Waiting",

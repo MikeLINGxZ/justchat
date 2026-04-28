@@ -152,13 +152,8 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
         document.title = t('app.chatTitle');
     }, [t]);
 
-    useEffect(() => {
-        console.log('监听页面参数 chatUuid 变化:', urlChatUuid);
-    }, [urlChatUuid]); // 👈 关键依赖：仅当 chatUuid 改变时执行
-
     // 同步URL参数与当前聊天UUID
     useEffect(() => {
-        console.log("xxx",urlChatUuid, currentChatUuid)
         const newChatUuid = urlChatUuid || '';
         if (newChatUuid !== currentChatUuid) {
             setCurrentChatUuid(newChatUuid);
@@ -314,14 +309,12 @@ const ChatPage: React.FC<ChatPageProps> = ({className}) => {
             <Layout className={styles.mainLayout}>
                 <Content className={styles.mainContent} hidden={isMobile && !isSidebarCollapsed}>
                     <Chat
+                        key={currentChatUuid || 'new-chat'}
                         chatUuid={currentChatUuid}
                         isSidebarCollapsed={isSidebarCollapsed}
                         onToggleSidebar={handleToggleSidebar}
                         refreshChatList={refreshChatList}
-                        onChatChange={(chatUuid)=>{
-                            console.log("setCurrentChatUuid",chatUuid)
-                            setCurrentChatUuid(chatUuid)
-                        }}
+                        onChatChange={setCurrentChatUuid}
                         onGeneratingUuidsChange={setGeneratingChatUuids}
                         onRegisterStopGenerationForChat={handleRegisterStopGenerationForChat}
                     />

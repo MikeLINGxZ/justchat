@@ -83,3 +83,42 @@ func (s *Service) showHomeWindow() {
 	homeWindow.Show()
 	homeWindow.Focus()
 }
+
+func (s *Service) centerWindowOnHomeScreen(window application.Window) {
+	if window == nil {
+		return
+	}
+
+	screen := s.homeWindowScreen()
+	if screen == nil {
+		if currentScreen, err := window.GetScreen(); err == nil {
+			screen = currentScreen
+		}
+	}
+	if screen == nil && s.app != nil {
+		screen = s.app.Screen.GetPrimary()
+	}
+	if screen == nil {
+		window.Center()
+		return
+	}
+
+	if !centerWindowOnScreen(window, screen) {
+		window.Center()
+	}
+}
+
+func (s *Service) homeWindowScreen() *application.Screen {
+	if s.app == nil {
+		return nil
+	}
+	homeWindow, ok := s.app.Window.GetByName(WindowNameHome)
+	if !ok {
+		return nil
+	}
+	screen, err := homeWindow.GetScreen()
+	if err != nil {
+		return nil
+	}
+	return screen
+}

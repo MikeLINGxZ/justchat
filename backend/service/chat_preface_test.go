@@ -80,3 +80,69 @@ func TestResetDirectAssistantStatePreservesPrefaceFields(t *testing.T) {
 		t.Fatalf("FinishError = %q, want empty", message.AssistantMessageExtra.FinishError)
 	}
 }
+
+func TestShouldAppendStreamChunkPreservesWhitespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		content   string
+		reasoning string
+		want      bool
+	}{
+		{
+			name:    "empty content and reasoning skipped",
+			content: "",
+			want:    false,
+		},
+		{
+			name:    "newline content preserved",
+			content: "\n",
+			want:    true,
+		},
+		{
+			name:    "multiple newlines preserved",
+			content: "\n\n",
+			want:    true,
+		},
+		{
+			name:    "spaces preserved",
+			content: "  ",
+			want:    true,
+		},
+		{
+			name:    "tab preserved",
+			content: "\t",
+			want:    true,
+		},
+		{
+			name:      "reasoning whitespace preserved",
+			reasoning: "\n",
+			want:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldAppendStreamChunk(tt.content, tt.reasoning)
+			if got != tt.want {
+				t.Fatalf("shouldAppendStreamChunk(%q, %q) = %t, want %t", tt.content, tt.reasoning, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStreamChunkFilteringPreservesMarkdownListNewlineChunks(t *testing.T) {
+	runner := &completionRunner{}
+	chunks := []string{"- 这是第一条", "\n", "- 这是第二条"}
+
+	for _, chunk := range chunks {
+		if !shouldAppendStreamChunk(chunk, "") {
+			continue
+		}
+		runner.assistantMessage.Content += chunk
+	}
+
+	want := "- 这是第一条\n- 这是第二条"
+	if runner.assistantMessage.Content != want {
+		t.Fatalf("Content = %q, want %q", runner.assistantMessage.Content, want)
+	}
+}

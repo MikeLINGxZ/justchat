@@ -139,6 +139,7 @@ func (f *FileTool) BuildApprovalPrompt(ctx context.Context, argumentsJSON string
 		}
 		message += i18n.TCurrent("tool.file.approval.preview", map[string]string{"content": preview})
 	}
+	message = strings.TrimRight(message, "\n") + "\n\n" + i18n.TCurrent("tool.approval.actions", nil)
 
 	return &tool_approval.ApprovalPrompt{
 		Title:   title,

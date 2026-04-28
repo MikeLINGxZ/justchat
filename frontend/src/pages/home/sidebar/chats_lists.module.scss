@@ -88,10 +88,13 @@
 }
 
 .chatContent {
+  display: flex;
+  align-items: center;
   flex: 1;
   padding: 10px 12px;
   border-radius: 10px;
   margin: 0 6px;
+  min-height: 46px;
   min-width: 0; // 确保flex子元素能正确收缩
   overflow: hidden; // 防止内容溢出
   border: 1px solid transparent;
@@ -123,7 +126,8 @@
 .chatHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
   min-width: 0; // 确保flex子元素能正确收缩
   width: 100%; // 确保占满父容器宽度
 }
@@ -198,7 +202,7 @@
   font-size: var(--font-size);
   font-weight: var(--font-weight-medium);
   color: var(--text-color);
-  line-height: 1.4;
+  line-height: 24px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

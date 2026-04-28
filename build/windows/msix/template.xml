@@ -10,13 +10,13 @@
     <Installer
         Path="lemontea-desktop"
         Arguments=""
-        InstallLocation="C:\Program Files\My Company\My Product">
+        InstallLocation="C:\Program Files\LemonteaDesktop\LemonteaDesktop">
     </Installer>
     <PackageInformation
-        PackageName="My Product"
-        PackageDisplayName="My Product"
-        PublisherName="CN=My Company"
-        PublisherDisplayName="My Company"
+        PackageName="Lemontea Desktop"
+        PackageDisplayName="Lemontea Desktop"
+        PublisherName="CN=MikeLinGxZ"
+        PublisherDisplayName="MikeLinGxZ"
         Version="0.1.0.0"
         PackageDescription="A lemontea-desktop application">
         <Capabilities>
@@ -27,7 +27,7 @@
             <Application
                 Id="com.example.rxintelligencecli"
                 Description="A lemontea-desktop application"
-                DisplayName="My Product"
+                DisplayName="Lemontea Desktop"
                 ExecutableName="lemontea-desktop"
                 EntryPoint="Windows.FullTrustApplication">
                 
@@ -41,8 +41,8 @@
         </Dependencies>
         <Properties>
             <Framework>false</Framework>
-            <DisplayName>My Product</DisplayName>
-            <PublisherDisplayName>My Company</PublisherDisplayName>
+            <DisplayName>Lemontea Desktop</DisplayName>
+            <PublisherDisplayName>MikeLinGxZ</PublisherDisplayName>
             <Description>A lemontea-desktop application</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>

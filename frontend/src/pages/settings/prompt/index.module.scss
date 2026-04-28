@@ -166,13 +166,14 @@
 }
 
 .promptItemFile {
+  display: block;
   color: var(--text-color-secondary);
   font-size: 12px;
   line-height: 1.4;
   font-family: 'SFMono-Regular', 'Consolas', 'Monaco', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .promptItemDesc {
@@ -212,9 +213,13 @@
 
 .fileName {
   display: inline-block;
+  max-width: 100%;
   margin-bottom: var(--spacing-sm);
   color: var(--text-color-secondary);
   font-family: 'SFMono-Regular', 'Consolas', 'Monaco', monospace;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .editorDescription {

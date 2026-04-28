@@ -14,7 +14,7 @@ func (s *Service) openFormWindow(name, title, url string, width, height int) {
 	if existing, ok := s.app.Window.GetByName(name); ok {
 		existing.SetURL(url)
 		existing.Focus()
-		existing.Center()
+		s.centerWindowOnHomeScreen(existing)
 		existing.Show()
 		return
 	}
@@ -34,7 +34,7 @@ func (s *Service) openFormWindow(name, title, url string, width, height int) {
 		MinHeight:        520,
 	})
 	window.Focus()
-	window.Center()
+	s.centerWindowOnHomeScreen(window)
 	window.Show()
 }
 

@@ -203,6 +203,16 @@ function buildFriendlyFinishError(rawError: string): string {
     return finalizeCandidate(trimmed.replace(/\{.*\}/g, " "));
 }
 
+function getVisibleReasoningContent(reasoningContent: string, prefaceReasoningContent: string): string {
+    if (!reasoningContent) {
+        return "";
+    }
+    if (prefaceReasoningContent && reasoningContent === prefaceReasoningContent) {
+        return "";
+    }
+    return reasoningContent;
+}
+
 const TOOLTIP_OFFSET = 8;
 const TOOLTIP_VIEWPORT_GAP = 12;
 
@@ -490,6 +500,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     const reasoningContent = message.reasoning_content?.trim() ?? "";
     const prefaceContent = message.assistant_message_extra?.preface_content?.trim() ?? "";
     const prefaceReasoningContent = message.assistant_message_extra?.preface_reasoning_content?.trim() ?? "";
+    const visibleReasoningContent = getVisibleReasoningContent(reasoningContent, prefaceReasoningContent);
     const finishReason = message.assistant_message_extra?.finish_reason?.trim() ?? "";
     const finishError = message.assistant_message_extra?.finish_error?.trim() ?? "";
     const currentStage = message.assistant_message_extra?.current_stage?.trim() ?? "";
@@ -497,14 +508,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     const isReasoningStreaming = !isUser && isLoading && !finishReason && messageContent.length === 0;
     const isEmptyAssistant = !isUser &&
         !messageContent &&
-        !reasoningContent &&
+        !visibleReasoningContent &&
         !prefaceContent &&
         !prefaceReasoningContent &&
         traceSteps.length === 0 &&
         toolUses.length === 0 &&
         (message.assistant_message_extra?.finish_error == "");
     const hasTrace = traceSteps.length > 0;
-    const hasVisibleProgress = hasTrace || currentStage.length > 0 || reasoningContent.length > 0 || prefaceContent.length > 0 || prefaceReasoningContent.length > 0;
+    const hasVisibleProgress = hasTrace || currentStage.length > 0 || visibleReasoningContent.length > 0 || prefaceContent.length > 0 || prefaceReasoningContent.length > 0;
     const shouldShowHeadLoading = isLoading && isEmptyAssistant && !hasVisibleProgress;
     const shouldShowTailLoading = !isUser && isLoading && !finishReason && hasVisibleProgress;
     const useInterleaved = useMemo(() => {
@@ -593,9 +604,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
                             {useInterleaved ? (
                                 <>
-                                    {message.reasoning_content && (
+                                    {visibleReasoningContent && (
                                         <ReasoningContent
-                                            content={message.reasoning_content}
+                                            content={visibleReasoningContent}
                                             isStreaming={isReasoningStreaming}
                                         />
                                     )}
@@ -619,9 +630,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                         onSendApprovalComment={onSendApprovalComment}
                                     />
 
-                                    {message.reasoning_content && (
+                                    {visibleReasoningContent && (
                                         <ReasoningContent
-                                            content={message.reasoning_content}
+                                            content={visibleReasoningContent}
                                             isStreaming={isReasoningStreaming}
                                         />
                                     )}

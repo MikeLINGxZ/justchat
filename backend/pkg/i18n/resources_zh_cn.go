@@ -54,7 +54,7 @@ var zhCN = map[string]string{
 	"tool.file.approval.preview":                  "\n\n写入预览：\n{{content}}",
 	"tool.approval.actions":                       "1. 允许 2. 拒绝 3. 告诉ai应该怎么做",
 	"tool.shell.approval.title":                   "Shell 工具请求执行命令",
-	"tool.shell.approval.message":                 "工具想要执行以下命令：\n`{{command}}`\n工作目录：`{{directory}}`\n范围：{{scope}}\n",
+	"tool.shell.approval.message":                 "工具想要通过 {{shell}} 执行以下命令：\n`{{command}}`\n工作目录：`{{directory}}`\n范围：{{scope}}\n",
 	"tool.approval.scope.workspace":               "工作区内",
 	"tool.approval.scope.outside_workspace":       "工作区外",
 	"chat.stage.pending":                          "等待执行",

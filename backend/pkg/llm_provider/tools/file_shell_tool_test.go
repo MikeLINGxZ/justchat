@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -65,7 +66,22 @@ func TestShellToolRunsCommand(t *testing.T) {
 		t.Fatal("shell tool is not invokable")
 	}
 
-	result, err := invokable.InvokableRun(context.Background(), `{"command":"printf 'hello-shell'","timeout_seconds":5}`)
+	command := "printf 'hello-shell'"
+	wantShell := "zsh"
+	if runtime.GOOS == "windows" {
+		command = "Write-Output 'hello-shell'"
+		wantShell = "powershell"
+	}
+
+	args, err := json.Marshal(map[string]interface{}{
+		"command":         command,
+		"timeout_seconds": 5,
+	})
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	result, err := invokable.InvokableRun(context.Background(), string(args))
 	if err != nil {
 		t.Fatalf("InvokableRun() error = %v", err)
 	}
@@ -74,11 +90,41 @@ func TestShellToolRunsCommand(t *testing.T) {
 	if err := json.Unmarshal([]byte(result), &payload); err != nil {
 		t.Fatalf("json.Unmarshal() error = %v", err)
 	}
-	if payload["stdout"] != "hello-shell" {
+	if strings.TrimSpace(payload["stdout"].(string)) != "hello-shell" {
 		t.Fatalf("stdout = %#v, want hello-shell", payload["stdout"])
+	}
+	if payload["shell"] != wantShell {
+		t.Fatalf("shell = %#v, want %s", payload["shell"], wantShell)
 	}
 	if int(payload["exit_code"].(float64)) != 0 {
 		t.Fatalf("exit_code = %#v, want 0", payload["exit_code"])
+	}
+}
+
+func TestShellToolInfoDescribesCurrentShellSyntax(t *testing.T) {
+	shellTool := &ShellTool{}
+	info, err := shellTool.Tool().Info(context.Background())
+	if err != nil {
+		t.Fatalf("Info() error = %v", err)
+	}
+	schemaPayload, err := info.ParamsOneOf.ToJSONSchema()
+	if err != nil {
+		t.Fatalf("ToJSONSchema() error = %v", err)
+	}
+	schemaJSON, err := json.Marshal(schemaPayload)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	want := "POSIX/zsh"
+	if runtime.GOOS == "windows" {
+		want = "PowerShell"
+	}
+	if !strings.Contains(info.Desc, want) {
+		t.Fatalf("tool desc = %q, want %q", info.Desc, want)
+	}
+	if !strings.Contains(string(schemaJSON), want) {
+		t.Fatalf("params schema = %s, want %q", string(schemaJSON), want)
 	}
 }
 
@@ -90,6 +136,13 @@ func TestShellToolApprovalPromptIncludesCommand(t *testing.T) {
 	}
 	if !strings.Contains(prompt.Message, "`pwd`") {
 		t.Fatalf("prompt message = %q, want command preview", prompt.Message)
+	}
+	want := "zsh"
+	if runtime.GOOS == "windows" {
+		want = "PowerShell"
+	}
+	if !strings.Contains(prompt.Title, want) && !strings.Contains(prompt.Message, want) {
+		t.Fatalf("approval prompt title = %q message = %q, want shell %q", prompt.Title, prompt.Message, want)
 	}
 	if !strings.Contains(prompt.Message, "1. 允许 2. 拒绝 3. 告诉ai应该怎么做") {
 		t.Fatalf("prompt message = %q, want action choices", prompt.Message)

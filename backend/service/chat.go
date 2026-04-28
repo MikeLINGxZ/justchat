@@ -195,6 +195,7 @@ func (s *Service) Completions(ctx context.Context, inputMessage view_models.Mess
 				break
 			}
 		}
+		instruction = instruction + "\n\n" + llmtools.ShellRuntimeInstruction()
 
 		customAgentPreps = append(customAgentPreps, customAgentPrep{
 			def:         customDef,

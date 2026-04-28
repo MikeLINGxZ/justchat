@@ -14,8 +14,8 @@
     ProcessorArchitecture="x64" />
   
   <Properties>
-    <DisplayName>My Product</DisplayName>
-    <PublisherDisplayName>My Company</PublisherDisplayName>
+    <DisplayName>Lemontea Desktop</DisplayName>
+    <PublisherDisplayName>MikeLinGxZ</PublisherDisplayName>
     <Description>A lemontea-desktop application</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -31,7 +31,7 @@
   <Applications>
     <Application Id="com.example.rxintelligencecli" Executable="lemontea-desktop" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="My Product"
+        DisplayName="Lemontea Desktop"
         Description="A lemontea-desktop application"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"

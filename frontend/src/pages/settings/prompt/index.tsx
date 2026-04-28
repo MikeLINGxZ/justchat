@@ -254,7 +254,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
                     {item.is_system ? t('settings.prompt.tags.system') : t('settings.prompt.tags.user')}
                   </Tag>
                 </div>
-                <div className={styles.promptItemFile}>{item.name}</div>
+                <div className={styles.promptItemFile} title={item.name}>{item.name}</div>
                 <div className={styles.promptItemDesc}>{item.description}</div>
               </button>
             );
@@ -316,7 +316,7 @@ const PromptSettingsPage: React.FC<PromptSettingsPageProps> = ({ className }) =>
                 </Tag>
               )}
             </div>
-            <Text className={styles.fileName}>{detail.name}</Text>
+            <Text className={styles.fileName} title={detail.name}>{detail.name}</Text>
             <Paragraph className={styles.editorDescription}>{detail.description}</Paragraph>
           </div>
           <Alert

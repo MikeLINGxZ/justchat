@@ -15,6 +15,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/agents"
+	llmtools "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 )
 
@@ -217,6 +218,7 @@ func executePlanTask(ctx context.Context, provider *llm_provider.Provider, task 
 	if agentName == "ToolSpecialistAgent" {
 		instruction = provider.Prompts().WorkerToolSystem
 	}
+	instruction = instruction + "\n\n" + llmtools.ShellRuntimeInstruction()
 	agent, err := agents.NewRoleAgent(ctx, provider.ToolCallingModel(), agentName, "工作子代理", instruction, tools, toolMiddleware)
 	if err != nil {
 		return workflowTaskResult{}, err

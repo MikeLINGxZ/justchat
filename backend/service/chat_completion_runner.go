@@ -1060,6 +1060,10 @@ func (r *completionRunner) appendContentLocked(content, reasoning string) error 
 	return r.persistSnapshotThrottledLocked(true)
 }
 
+func shouldAppendStreamChunk(content, reasoning string) bool {
+	return content != "" || reasoning != ""
+}
+
 // resetStateLocked 重置助手消息状态（用于从直答模式切换到工作流模式前）。
 func (r *completionRunner) resetStateLocked() {
 	resetDirectAssistantState(&r.assistantMessage)
@@ -1120,7 +1124,7 @@ func (r *completionRunner) runSinglePassEntry(runCtx context.Context) error {
 			if msg == nil {
 				return nil
 			}
-			if strings.TrimSpace(msg.Content) == "" && strings.TrimSpace(msg.ReasoningContent) == "" {
+			if !shouldAppendStreamChunk(msg.Content, msg.ReasoningContent) {
 				return nil
 			}
 			r.mu.Lock()

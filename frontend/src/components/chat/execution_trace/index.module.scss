@@ -511,6 +511,8 @@
 }
 
 .detailMarkdown {
+  white-space: normal;
+
   :global(*) {
     box-sizing: border-box;
   }

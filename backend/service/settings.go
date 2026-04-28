@@ -10,7 +10,7 @@ func (s *Service) OpenSettingsAboutWindow() {
 	if ok {
 		settingsWindow.SetURL("/?entry=settings&tab=about")
 		settingsWindow.Focus()
-		settingsWindow.Center()
+		s.centerWindowOnHomeScreen(settingsWindow)
 		settingsWindow.Show()
 		return
 	}
@@ -30,7 +30,7 @@ func (s *Service) OpenSettingsAboutWindow() {
 		MinHeight:        550,
 	})
 	settingsWindow.Focus()
-	settingsWindow.Center()
+	s.centerWindowOnHomeScreen(settingsWindow)
 	settingsWindow.Show()
 }
 
@@ -38,7 +38,7 @@ func (s *Service) OpenSettingsWindow() {
 	settingsWindow, ok := s.app.Window.GetByName(WindowNameSettings)
 	if ok {
 		settingsWindow.Focus()
-		settingsWindow.Center()
+		s.centerWindowOnHomeScreen(settingsWindow)
 		settingsWindow.Show()
 		return
 	}
@@ -58,6 +58,6 @@ func (s *Service) OpenSettingsWindow() {
 		MinHeight:        550,
 	})
 	settingsWindow.Focus()
-	settingsWindow.Center()
+	s.centerWindowOnHomeScreen(settingsWindow)
 	settingsWindow.Show()
 }

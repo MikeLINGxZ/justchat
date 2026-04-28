@@ -132,6 +132,13 @@ interface ProviderConfig {
   status?: 'connected' | 'disconnected' | 'testing';
 }
 
+const findDefaultModelForProvider = (provider?: ProviderConfig | null) => {
+  if (!provider?.default_model_id) {
+    return null;
+  }
+  return provider.models.find(model => model.id === provider.default_model_id) || null;
+};
+
 const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
@@ -231,6 +238,15 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
     return undefined;
   };
 
+  const syncStoredDefaultModel = (providerList: ProviderConfig[]) => {
+    const defaultProvider = providerList.find(provider => provider.is_default);
+    const defaultModel = findDefaultModelForProvider(defaultProvider);
+    if (!defaultProvider || !defaultModel) {
+      return;
+    }
+    setDefaultModelConfig({ modelId: defaultModel.id, modelName: defaultModel.model });
+  };
+
   const loadProviderConfigs = async () => {
     setLoading(true);
     try {
@@ -254,15 +270,20 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
           };
         });
         setProviders(formattedProviders);
+        syncStoredDefaultModel(formattedProviders);
         
         // 设置默认选中第一个供应商
         if (selectedProvider === null && formattedProviders.length > 0) {
           setSelectedProvider(formattedProviders[0].id);
         }
+        return formattedProviders;
       }
+      setProviders([]);
+      return [];
     } catch (error) {
       console.error('加载供应商配置失败:', error);
       message.error(t('settings.provider.messages.loadProvidersFailed'));
+      return [];
     } finally {
       setLoading(false);
     }
@@ -436,7 +457,13 @@ const ProviderSettingPage: React.FC<ProviderSettingPageProps> = ({ className }) 
       await Service.UpdateProviderModels(selectedProvider);
       
       // 重新加载供应商列表以获取最新的模型数据
-      await loadProviderConfigs();
+      const updatedProviders = await loadProviderConfigs();
+      const refreshedProvider = updatedProviders.find(provider => provider.id === selectedProvider);
+      const refreshedDefaultModel = findDefaultModelForProvider(refreshedProvider);
+      if (refreshedProvider?.is_default && refreshedDefaultModel) {
+        setDefaultModelConfig({ modelId: refreshedDefaultModel.id, modelName: refreshedDefaultModel.model });
+        await refetchModels();
+      }
 
       message.success(t('settings.provider.messages.refreshModelsSuccess'));
     } catch (error) {

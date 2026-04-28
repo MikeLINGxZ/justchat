@@ -15,6 +15,7 @@ import (
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/data_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/models/wrapper_models"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/agents"
+	llmtools "gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/llm_provider/tools"
 	"gitlab.linhf.cn/project/lemontea/lemon_tea_desktop/backend/pkg/prompts"
 )
 
@@ -72,6 +73,7 @@ func NewLlmProvider(ctx context.Context, providerModel wrapper_models.ProviderMo
 	if skillSummary != "" {
 		instruction = instruction + "\n\n" + skillSummary
 	}
+	instruction = instruction + "\n\n" + llmtools.ShellRuntimeInstruction()
 
 	mainAgent, err := agents.NewMainAgent(ctx, chatModel, subAgents, tools, toolMiddleware, instruction)
 	if err != nil {
