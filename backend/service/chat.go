@@ -445,6 +445,15 @@ func (s *Service) RenameChat(chatUuid, title string) error {
 	if err != nil {
 		return ierror.NewError(err)
 	}
+	payload := struct {
+		ChatUuid string `json:"chat_uuid"`
+		Title    string `json:"title"`
+	}{
+		ChatUuid: chatUuid,
+		Title:    title,
+	}
+	s.app.Event.Emit(event.GenEventsKey(event.EventTypeChatTitle, chatUuid), payload)
+	s.app.Event.Emit(event.GenEventsKey(event.EventTypeChatTitle, "all"), payload)
 	return nil
 }
 

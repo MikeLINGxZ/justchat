@@ -71,6 +71,27 @@ type completionRunner struct {
 	// ---- 运行时原子状态（仅在 run 方法体内使用） ----
 	userStopped          atomic.Bool // 用户是否主动停止
 	terminalEventEmitted atomic.Bool // 终结事件是否已发射（保证仅执行一次）
+
+	// ---- 优化组件 ----
+	fsm            *TaskFSM
+	persistWriter  *PersistWriter
+	eventBus       *AgentEventBus
+	ctxManager     *ContextManager
+	workflowConfig WorkflowConfig
+}
+
+type WorkflowConfig struct {
+	MaxRetries             int
+	AllowPartialSuccess    bool
+	MaxConsecutiveFailures int
+}
+
+func DefaultWorkflowConfig() WorkflowConfig {
+	return WorkflowConfig{
+		MaxRetries:             2,
+		AllowPartialSuccess:    true,
+		MaxConsecutiveFailures: 2,
+	}
 }
 
 // newCompletionRunner 创建一个新的 completionRunner 实例。
@@ -89,7 +110,7 @@ func newCompletionRunner(
 	assistantMessage data_models.Message,
 	task data_models.Task,
 ) *completionRunner {
-	return &completionRunner{
+	r := &completionRunner{
 		svc:                  svc,
 		localizedPrompts:     localizedPrompts,
 		inputMessage:         inputMessage,
@@ -106,7 +127,24 @@ func newCompletionRunner(
 		eventKey:             eventKey,
 		assistantMessage:     assistantMessage,
 		task:                 task,
+		fsm:                  NewTaskFSM(StateIdle),
+		eventBus:             NewAgentEventBus(),
+		ctxManager:           NewContextManager(DefaultContextConfig()),
+		workflowConfig:       DefaultWorkflowConfig(),
 	}
+	r.persistWriter = NewPersistWriter(svc, r)
+	r.fsm.SetOnTransition(func(from, to TaskState, meta *transitionMetadata) {
+		r.eventBus.Publish(AgentEvent{
+			Type: EventTaskStateChanged,
+			Metadata: map[string]interface{}{
+				"from":   string(from),
+				"to":     string(to),
+				"reason": meta.Reason,
+				"error":  meta.Error,
+			},
+		})
+	})
+	return r
 }
 
 // =============================================================================
@@ -973,6 +1011,108 @@ func (r *completionRunner) buildToolMiddleware() compose.ToolMiddleware {
 	}
 }
 
+func (r *completionRunner) createToolApproval(ctx context.Context, callID, toolName, toolArgs string) (*ApprovalHandle, error) {
+	registeredTool, ok := tools.ToolRouter.GetToolByID(toolName)
+	if !ok {
+		return nil, fmt.Errorf("tool %s not found in registry", toolName)
+	}
+	approvalTool, ok := registeredTool.(tool_approval.ApprovalAwareTool)
+	if !ok {
+		return nil, fmt.Errorf("tool %s does not implement BuildApprovalPrompt", toolName)
+	}
+
+	prompt, err := approvalTool.BuildApprovalPrompt(ctx, toolArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	requestedAt := time.Now()
+	approval := data_models.ToolApproval{
+		ApprovalID:           uuid.NewString(),
+		TaskUuid:             r.task.TaskUuid,
+		ChatUuid:             r.task.ChatUuid,
+		AssistantMessageUuid: r.task.AssistantMessageUuid,
+		ToolCallID:           callID,
+		ToolID:               registeredTool.Id(),
+		ToolName:             registeredTool.Name(),
+		Status:               data_models.ToolApprovalStatusPending,
+		Title:                prompt.Title,
+		Message:              prompt.Message,
+		Scope:                prompt.Scope,
+		ArgumentsJSON:        toolArgs,
+		RequestedAt:          &requestedAt,
+	}
+
+	if err := tool_approval.Manager.Register(approval.ApprovalID); err != nil {
+		return nil, err
+	}
+	if err := r.svc.storage.CreateToolApproval(context.Background(), approval); err != nil {
+		tool_approval.Manager.Cancel(approval.ApprovalID)
+		return nil, err
+	}
+
+	r.mu.Lock()
+	err = r.setToolApprovalPendingLocked(ctx, callID, approval)
+	r.mu.Unlock()
+	if err != nil {
+		tool_approval.Manager.Cancel(approval.ApprovalID)
+		return nil, err
+	}
+
+	return &ApprovalHandle{
+		ApprovalID: approval.ApprovalID,
+		ToolCallID: callID,
+		ToolName:   toolName,
+	}, nil
+}
+
+func (r *completionRunner) handleApprovalDecision(ctx context.Context, callID, toolName string, waitResult tool_approval.WaitResult) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	approval := data_models.ToolApproval{
+		ApprovalID:      waitResult.ApprovalID,
+		Status:          data_models.ToolApprovalStatusResolved,
+		Decision:        waitResult.Decision,
+		ResponseComment: waitResult.Comment,
+	}
+	respondedAt := waitResult.RespondedAt
+	approval.RespondedAt = &respondedAt
+
+	switch waitResult.Decision {
+	case data_models.ToolApprovalDecisionAllow:
+		err := r.resumeApprovedToolLocked(ctx, callID, approval)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+
+	case data_models.ToolApprovalDecisionReject, data_models.ToolApprovalDecisionCustom:
+		result := buildApprovalDecisionToolResult(toolName, waitResult.Decision, waitResult.Comment)
+		r.removePendingApprovalLocked(approval.ApprovalID)
+		r.collapseApprovalDetailBlocksLocked(callID)
+		r.task.Status = data_models.TaskStatusRunning
+		agentName, _ := ctx.Value(traceAgentNameContextKey).(string)
+		r.updateCurrentStageLocked("chat.stage.running_tasks", agentName)
+		err := r.finishToolUseWithStatusLocked(
+			ctx,
+			callID,
+			toolName,
+			result,
+			data_models.ToolUseStatusRejected,
+			data_models.TraceStepStatusRejected,
+			nil,
+		)
+		if err != nil {
+			return "", err
+		}
+		return result, nil
+
+	default:
+		return "", fmt.Errorf("unknown approval decision: %s", waitResult.Decision)
+	}
+}
+
 // =============================================================================
 // 任务执行 —— 完整的任务生命周期管理
 // =============================================================================
@@ -1026,6 +1166,14 @@ func (r *completionRunner) finalizeTaskTerminal(finishReason, finishError string
 		logger.Error("finalizeTaskTerminal persist error: ", persistErr)
 	}
 	r.svc.emitTaskEvent(finalTaskSnapshot, finalAssistantSnapshot, nil)
+
+	_ = r.fsm.TransitionToTerminal(StateCompleted, finishReason, finishError)
+	if r.eventBus != nil {
+		r.eventBus.Publish(AgentEvent{
+			Type:    EventTerminal,
+			Payload: map[string]string{"finish_reason": finishReason, "finish_error": finishError},
+		})
+	}
 
 	// 新对话且无错误时，异步生成对话标题
 	if shouldGenTitle {
@@ -1260,11 +1408,15 @@ func (r *completionRunner) executeWorkflow(runCtx context.Context, handoff *work
 		return err
 	}
 
-	// ---- 阶段 4-6：综合、审核、重试循环（最多 2 次迭代） ----
+	// ---- 阶段 4-6：综合、审核、重试循环 ----
+	maxRetries := r.workflowConfig.MaxRetries
+	if maxRetries <= 0 {
+		maxRetries = 2
+	}
 	reviewFeedback := ""
 	draft := ""
 	review := reviewDecision{}
-	for attempt := 0; attempt < 2; attempt++ {
+	for attempt := 0; attempt < maxRetries; attempt++ {
 		// 综合阶段
 		r.mu.Lock()
 		err := r.startTraceStepLocked(fmt.Sprintf("synthesize_%d", attempt), "", data_models.TraceStepTypeSynthesize, i18n.TCurrent("chat.trace.synthesize_title", nil), synthesisSummary, userRequest, "chat.stage.synthesize", "SynthesizerAgent", []data_models.TraceDetailBlock{
@@ -1327,7 +1479,7 @@ func (r *completionRunner) executeWorkflow(runCtx context.Context, handoff *work
 		if review.Approved {
 			break
 		}
-		if attempt == 1 {
+		if attempt == maxRetries-1 {
 			break
 		}
 
@@ -1493,11 +1645,30 @@ func (r *completionRunner) executeBatches(runCtx context.Context, plan workflowP
 
 		wg.Wait()
 		close(resultCh)
+		var multiErr error
+		var consecutiveFailures int
 		for item := range resultCh {
 			if item.err != nil {
-				return item.err
+				consecutiveFailures++
+				if !r.workflowConfig.AllowPartialSuccess {
+					return item.err
+				}
+				if r.workflowConfig.MaxConsecutiveFailures > 0 && consecutiveFailures > r.workflowConfig.MaxConsecutiveFailures {
+					return fmt.Errorf("too many consecutive failures in batch: %w", item.err)
+				}
+				results[item.task.ID] = workflowTaskResult{
+					TaskID: item.task.ID,
+					Title:  item.task.Title + " (执行失败)",
+					Output: fmt.Sprintf("任务执行失败: %s", item.err.Error()),
+				}
+				multiErr = errors.Join(multiErr, item.err)
+				consecutiveFailures = 0
+				continue
 			}
 			results[item.task.ID] = item.result
+		}
+		if multiErr != nil && !r.workflowConfig.AllowPartialSuccess {
+			return multiErr
 		}
 	}
 	return nil
@@ -1507,15 +1678,28 @@ func (r *completionRunner) executeBatches(runCtx context.Context, plan workflowP
 // 包含完整的任务执行生命周期：初始化 → 直答/工作流执行 → 终结。
 func (r *completionRunner) run(userStop <-chan struct{}) {
 	now := time.Now()
-	runCtx, cancel := context.WithCancel(context.Background())
+
+	// 使用 ContextManager 创建带超时的任务上下文
+	if r.ctxManager == nil {
+		r.ctxManager = NewContextManager(DefaultContextConfig())
+	}
+	runCtx, cancel := r.ctxManager.NewTaskContext(context.Background())
 	defer cancel()
+
+	// 启动独立 I/O 写入协程（可选，当前默认不启用）
+	// r.persistWriter.Start(runCtx)
+	// defer r.persistWriter.Stop()
 
 	// 监听用户主动停止信号
 	go func() {
 		<-userStop
 		r.userStopped.Store(true)
+		r.fsm.TransitionToTerminal(StateStopped, "user stop", "")
 		cancel()
 	}()
+
+	// FSM: idle → preparing
+	_ = r.fsm.Transition(StatePreparing, "task start", "")
 
 	// 标记任务为运行中
 	r.mu.Lock()
@@ -1527,6 +1711,9 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 	if saveErr != nil {
 		logger.Error("save task running status error", saveErr)
 	}
+
+	// FSM: preparing → running
+	_ = r.fsm.Transition(StateRunning, "task running", "")
 
 	// Plugin before-chat hooks
 	if r.svc.pluginManager != nil && r.svc.pluginManager.HookChain() != nil {
@@ -1547,7 +1734,7 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		if r.cleanupTools != nil {
 			r.cleanupTools()
 		}
-		if r.terminalEventEmitted.Load() {
+		if r.fsm.IsTerminal() && r.terminalEventEmitted.Load() {
 			return
 		}
 
@@ -1571,12 +1758,14 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 	// ---- 主执行流程 ----
 	// 检查是否强制进入工作流模式（例如用户选择了 agent）
 	if guard := shouldForceWorkflow(r.inputMessage); guard.Force {
+		_ = r.fsm.Transition(StateWorkflowPlanning, "guard rule forced workflow", "")
 		if err := r.executeWorkflow(runCtx, &workflowHandoff{
 			Reason:   guard.Reason,
 			Summary:  guard.Reason,
 			Source:   routeSourceGuardRule,
 			RuleName: guard.RuleName,
 		}); err != nil {
+			r.fsm.TransitionToTerminal(StateFailed, "workflow error", err.Error())
 			r.failWithError(err, runCtx)
 			return
 		}
@@ -1587,10 +1776,12 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		saveErr := r.persistSnapshotLocked(true)
 		r.mu.Unlock()
 		if saveErr != nil {
+			r.fsm.TransitionToTerminal(StateFailed, "persist error", saveErr.Error())
 			r.failWithError(saveErr, runCtx)
 			return
 		}
 
+		_ = r.fsm.Transition(StateStreaming, "entry direct answer", "")
 		if err := r.runSinglePassEntry(runCtx); err != nil {
 			r.failWithError(err, runCtx)
 			return
@@ -1599,7 +1790,9 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		// 检查直答过程中是否触发了工作流切换
 		handoff := r.getWorkflowHandoff()
 		if handoff != nil {
+			_ = r.fsm.Transition(StateWorkflowPlanning, "workflow handoff", "")
 			if err := r.executeWorkflow(runCtx, handoff); err != nil {
+				r.fsm.TransitionToTerminal(StateFailed, "workflow error", err.Error())
 				r.failWithError(err, runCtx)
 				return
 			}
@@ -1613,6 +1806,7 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 			saveErr = r.persistSnapshotLocked(true)
 			r.mu.Unlock()
 			if saveErr != nil {
+				r.fsm.TransitionToTerminal(StateFailed, "final persist error", saveErr.Error())
 				r.failWithError(saveErr, runCtx)
 				return
 			}
@@ -1636,11 +1830,11 @@ func (r *completionRunner) run(userStop <-chan struct{}) {
 		copy(msgsCopy, r.schemaMessages)
 		providerModel := r.providerModel
 
-		// 异步编码
 		go r.safeMemoryOp("encode", func() {
 			r.svc.encodeMemoriesAsync(providerModel, msgsCopy)
 		})
 	}
 
+	_ = r.fsm.TransitionToTerminal(StateCompleted, "done", "")
 	r.finalizeTaskTerminal("done", "")
 }
