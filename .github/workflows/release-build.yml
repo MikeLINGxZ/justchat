@@ -65,7 +65,7 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         shell: pwsh
-        run: npm ci
+        run: npm install
 
       - name: Build Windows installer
         shell: pwsh
@@ -115,7 +115,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm install
 
       - name: Build universal macOS app
         run: wails3 task darwin:package:universal
@@ -163,7 +163,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm install
 
       - name: Build Linux AppImage
         run: wails3 task linux:create:appimage
