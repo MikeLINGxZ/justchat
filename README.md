@@ -1,183 +1,59 @@
-# Lemon Tea Desktop
+# Welcome to Your New Wails3 Project!
 
-English | [简体中文](./README_CN.md)
+Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
 
-Lemon Tea Desktop is a cross-platform AI desktop client built with Wails v3, Go, React, and TypeScript. It focuses on chat, tool calling, multi-agent workflow execution, and local desktop integration.
+## Getting Started
 
-<p align="center"><img src="docs/imgs/app_home.png" alt="Lemon Tea Desktop Home" width="80%" height="auto" /></p>
+1. Navigate to your project directory in the terminal.
 
-## Features
+2. To run your application in development mode, use the following command:
 
-### Chat
+   ```
+   wails3 dev
+   ```
 
-- Multi-turn conversations with streaming output and manual stop.
-- Conversation management: create, rename, delete, and favorite chats.
-- Automatic chat title generation.
-- File attachments in chat input with local image preview.
-- Markdown rendering with syntax highlighting.
-- Reasoning message display.
+   This will start your application and enable hot-reloading for both frontend and backend changes.
 
-### Model Providers
+3. To build your application for production, use:
 
-- DeepSeek
-- Alibaba Cloud Bailian / Qwen compatible endpoint
-- OpenRouter
-- Ollama
-- Any OpenAI-compatible API
+   ```
+   wails3 build
+   ```
 
-### Model Management
+   This will create a production-ready executable in the `build` directory.
 
-- Load model lists from provider endpoints.
-- Set provider default model.
-- Add and remove custom models per provider.
-- Remember a local default chat model.
+## Exploring Wails3 Features
 
-### Agent System
+Now that you have your project set up, it's time to explore the features that Wails3 offers:
 
-- **Multi-agent architecture** with 7 system agents: Main, Workflow, Planner, Worker, Synthesizer, Reviewer, and custom user-defined agents.
-- **Dual-path execution**: direct answer for simple queries, workflow orchestration for complex tasks, with smart routing and user override.
-- **Sub-agent delegation**: main agent can delegate to custom agents with their own tools and skills.
-- **Custom agents**: create agents with custom prompts, tool bindings, and skill bindings.
+1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
 
-### Workflow Orchestration
+2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
 
-- 7-stage pipeline: Classify → Plan → Dispatch → Synthesize → Review → Retry → Finalize.
-- Task dependency graph with topological sorting and parallel batch execution.
-- Review feedback-driven retry logic (max 2 retries).
-- Task recovery for interrupted running tasks after restart.
+   ```
+   go run .
+   ```
 
-### Execution Tracing
+   Note: Some examples may be under development during the alpha phase.
 
-- Real-time trace visualization for plan steps, tool calls, stage transitions, and elapsed time.
-- Nested step tracking with status indicators (pending, running, awaiting approval, done, error, skipped).
-- Collapsible detail blocks for inputs, outputs, and approval decisions.
+3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
 
-### Tool System
-
-- Tool calling based on CloudWeGo Eino / ADK.
-- Built-in tools: current date, current time, block/wait, file operations, shell command execution, workflow escalation.
-- **Tool approval system**: real-time approval UI with Allow / Reject / Custom decisions, timeout handling, and approval history.
-
-### MCP Tool Integration
-
-- Import MCP servers from a local folder.
-- Enable/disable MCP tools.
-- Remove imported MCP tools.
-- MCP server process management.
-
-### Memory System
-
-- Automatic memory encoding from conversations, driven by LLM decisions.
-- Multi-phase lifecycle: encoding → consolidation → forgetting → contradiction detection.
-- Hybrid search combining keyword and semantic retrieval.
-- Configurable embedding model engine.
-
-### Skill System
-
-- Create, edit, and delete custom skills (Markdown with YAML frontmatter).
-- Skill tagging for organization.
-- Bind skills to custom agents.
-- Import skills from a local folder.
-
-### Prompt Management
-
-- View built-in and user prompt files.
-- Edit and save prompt files.
-- Reset prompt files to defaults.
-
-### Internationalization
-
-- Full-stack i18n with Chinese (zh_CN) and English (en_US).
-- Language-specific model prompts.
-- Dynamic language switching.
-
-### Settings
-
-- Provider configuration: API keys, base URLs, enable/disable.
-- Agent management: view system agents, create/edit custom agents.
-- Skill management: browse, create, edit, delete.
-- Prompt management: view, edit, reset.
-- Memory settings: toggle memory, configure embedding engine.
-- General: font size, language.
-- Experimental features lab.
-- First-launch onboarding wizard.
-
-### Cross-Platform
-
-- macOS
-- Windows
-- Linux
-- Server mode with Docker support
-- Experimental iOS / Android build scaffolding
-
-## Tech Stack
-
-- Backend: Go
-- Desktop shell: Wails v3
-- Frontend: React 19 + TypeScript + Vite
-- UI: Ant Design + Ant Design X
-- Rich editor: TipTap
-- State management: Zustand
-- Agent / tool orchestration: CloudWeGo Eino
-- Local storage: SQLite via GORM
-
-## Quick Start
-
-### 1. Clone
-
-```bash
-git clone <repo>
-cd lemon_tea_desktop
-```
-
-### 2. Install dependencies
-
-Install Wails v3:
-
-```bash
-go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-wails3 doctor
-```
-
-Install frontend dependencies:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### 3. Run development mode
-
-Using Wails directly:
-
-```bash
-wails3 dev -config ./build/config.yml
-```
-
-Or with dev:
-
-```bash
-wails3 dev
-```
+4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
 
 ## Project Structure
 
-```text
-.
-├── backend/          Go services, storage, provider adapters, agent workflow logic
-│   ├── agents/       Memory system (encoding, search, lifecycle)
-│   ├── models/       Data models, view models, wrapper models
-│   ├── pkg/          LLM providers, agents, tools, skills, i18n, task execution
-│   ├── service/      Core service layer (chat, orchestration, MCP, memory)
-│   ├── storage/      GORM/SQLite persistence
-│   └── utils/        Event system, error handling
-├── frontend/         React UI, chat pages, settings pages, components
-├── build/            Wails build and packaging configuration
-├── docs/             README assets
-└── main.go           Desktop app entry
-```
+Take a moment to familiarize yourself with your project structure:
 
-## License
+- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
+- `main.go`: The entry point of your Go backend
+- `app.go`: Define your application structure and methods here
+- `wails.json`: Configuration file for your Wails project
 
-MIT
+## Next Steps
+
+1. Modify the frontend in the `frontend/` directory to create your desired UI.
+2. Add backend functionality in `main.go`.
+3. Use `wails3 dev` to see your changes in real-time.
+4. When ready, build your application with `wails3 build`.
+
+Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.

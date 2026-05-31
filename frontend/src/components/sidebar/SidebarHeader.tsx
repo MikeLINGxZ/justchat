@@ -1,38 +1,41 @@
-import React from 'react';
-import { CloseOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
-import { useIsMobile } from '@/hooks/useViewportHeight';
+import { PanelLeftClose } from 'lucide-react'
+import { isMac } from '@/lib/utils'
 
 interface SidebarHeaderProps {
-    logoText: string;
-    // 仅在移动端展开遮罩时用于关闭侧边栏；桌面端不显示关闭按钮
-    onCloseMobileSidebar?: () => void;
+  onCollapse: () => void
 }
 
-const SidebarHeader: React.FC<SidebarHeaderProps> = ({
-    logoText,
-    onCloseMobileSidebar,
-}) => {
-    const { t } = useTranslation();
-    const isMobile = useIsMobile();
-
-    return (
-        <div className="sidebar-header">
-            <div className="sidebar-logo">
-                <div className="logo-icon">🍋</div>
-                <span className="logo-text">{logoText}</span>
-            </div>
-            {isMobile && onCloseMobileSidebar && (
-                <button
-                    className="collapse-btn"
-                    onClick={onCloseMobileSidebar}
-                    title={t('home.sidebar.collapse')}
-                >
-                    <CloseOutlined />
-                </button>
-            )}
-        </div>
-    );
-};
-
-export default SidebarHeader;
+export function SidebarHeader({ onCollapse }: SidebarHeaderProps) {
+  return (
+    <div className="flex h-12 items-center gap-2.5 px-4 select-none shrink-0">
+      {!isMac && (
+        <>
+          <div className="group cursor-pointer">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="none"
+              className="group-hover:animate-bounce"
+            >
+              <circle cx="16" cy="16" r="14" fill="hsl(var(--primary))" />
+              <circle cx="16" cy="16" r="7" fill="hsl(var(--primary-foreground))" opacity="0.9" />
+              <circle cx="16" cy="9" r="2.3" fill="hsl(var(--primary-foreground))" />
+            </svg>
+          </div>
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            lemontea
+          </span>
+        </>
+      )}
+      <button
+        type="button"
+        aria-label="折叠侧边栏"
+        onClick={onCollapse}
+        className="ml-auto rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <PanelLeftClose size={16} />
+      </button>
+    </div>
+  )
+}

@@ -1,189 +1,128 @@
-// 通用类型定义
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data: T;
-  message: string;
-  code: number;
+export type Theme = 'auto' | 'light' | 'dark'
+export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type Language = 'zh-CN' | 'en'
+export type ConversationTab = 'chats' | 'favorites'
+export type ConversationStatus =
+  | 'idle'
+  | 'loading'
+  | 'done-unread'
+  | 'error-unread'
+  | 'waiting-unread'
+
+export type MessageContentType =
+  | 'text'
+  | 'tool_call'
+  | 'tool_result'
+  | 'thinking'
+  | 'confirm_request'
+  | 'confirm_response'
+  | 'error'
+
+export type MessageRole = 'user' | 'assistant' | 'tool' | 'system'
+
+export type AttachmentKind = 'image' | 'file'
+
+export type Attachment = {
+  path: string
+  name: string
+  mime: string
+  kind: AttachmentKind
 }
 
-export interface PaginationParams {
-  page: number;
-  pageSize: number;
-  total?: number;
+export type Conversation = {
+  id: number
+  title: string
+  kind: 'user' | 'task'
+  tags?: string[]
+  createdAt: string
+  updatedAt: string
+  starred: boolean
+  status: ConversationStatus
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    current: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+export type Message = {
+  id: number
+  sessionId: number
+  parentId: number | null
+  role: MessageRole
+  contentType: MessageContentType
+  content: string
+  modelName: string
+  agentName: string
+  tokensIn: number
+  tokensOut: number
+  extra: string
+  attachments?: Attachment[]
+  createdAt: string
 }
 
-// 用户相关类型
-export interface UserProfile {
-  id: string;
-  username: string;
-  email: string;
-  avatar?: string;
-  bio?: string;
-  phone?: string;
-  createdAt: string;
-  updatedAt: string;
+export type DisplayMessage = Message & {
+  toolResult?: string
+  toolConfirmAction?: 'approve' | 'reject' | 'comment'
+  toolConfirmComment?: string
+  isToolGroup?: boolean
+  groupedTools?: DisplayMessage[]
 }
 
-// 路由相关类型
-export interface RouteConfig {
-  path: string;
-  element: React.ComponentType;
-  title?: string;
-  requireAuth?: boolean;
-  children?: RouteConfig[];
+export type StreamChunkEvent = {
+  sessionId: number
+  seq?: number
+  delta: string
+  content?: string
+  contentType: 'text' | 'thinking'
 }
 
-// 表单相关类型
-export interface FormFieldError {
-  field: string;
-  message: string;
+export type ToolCallEvent = {
+  sessionId: number
+  toolName: string
+  args: string
+  purpose: string
 }
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: FormFieldError[];
+export type ToolResultEvent = {
+  sessionId: number
+  toolName: string
+  result: string
 }
 
-// Socket.IO 相关类型
-export interface SocketEvent {
-  type: string;
-  payload: any;
-  timestamp: number;
+export type ConfirmRequestEvent = {
+  sessionId: number
+  requestId: string
+  toolName: string
+  args: string
+  purpose: string
 }
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  senderId: string;
-  senderName: string;
-  timestamp: number;
-  type: 'text' | 'image' | 'file';
+export type StreamDoneEvent = {
+  sessionId: number
+  usage: { input: number; output: number }
 }
 
-// 主题相关类型
-export type ThemeMode = 'light' | 'dark';
-
-export interface ThemeConfig {
-  mode: ThemeMode;
-  primaryColor: string;
-  borderRadius: number;
+export type StreamErrorEvent = {
+  sessionId: number
+  error: string
 }
 
-// 通知相关类型
-export type NotificationType = 'success' | 'error' | 'warning' | 'info';
-
-export interface NotificationConfig {
-  type: NotificationType;
-  title: string;
-  message: string;
-  duration?: number;
-  placement?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+export type SessionStatusEvent = {
+  sessionId: number
+  status: ConversationStatus
 }
 
-// 菜单相关类型
-export interface MenuItem {
-  key: string;
-  label: string;
-  icon?: React.ReactNode;
-  path?: string;
-  children?: MenuItem[];
-  disabled?: boolean;
+export type Tool = {
+  id: string
+  name: string
+  description: string
+  enabled: boolean
 }
 
-// 文件上传相关类型
-export interface UploadFile {
-  uid: string;
-  name: string;
-  status: 'uploading' | 'done' | 'error' | 'removed';
-  url?: string;
-  thumbUrl?: string;
-  size?: number;
-  type?: string;
+export type ModelProvider = {
+  id: string
+  name: string
+  models: Model[]
 }
 
-export interface UploadResponse {
-  url: string;
-  filename: string;
-  size: number;
-  type: string;
-}
-
-// 环境变量类型
-export interface ImportMetaEnv {
-  readonly VITE_API_BASE_URL: string;
-  readonly VITE_APP_TITLE: string;
-  readonly VITE_SOCKET_URL: string;
-  readonly VITE_UPLOAD_MAX_SIZE: string;
-}
-
-export interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-
-// 工具类型
-export type Nullable<T> = T | null;
-export type Optional<T> = T | undefined;
-export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
-
-// 状态管理相关类型
-export interface StoreState {
-  loading: boolean;
-  error: string | null;
-}
-
-export interface AsyncAction<T = any> {
-  pending: () => void;
-  fulfilled: (payload: T) => void;
-  rejected: (error: string) => void;
-}
-
-// 聊天信息接口
-export interface ChatInfo {
-  chatUuid: string;
-  title: string;
-  model: string;
-  createdAt: string;
-  updatedAt: string;
-  messageCount: number;
-  lastMessagePreview?: string;
-  metadata?: Record<string, string>;
-}
-
-// 聊天状态接口
-export interface ChatState {
-  // 当前激活的聊天
-  currentChatUuid: string | null;
-  currentMessages: any[]; // 使用 any[] 替代 schema.message[]
-  
-  // 聊天列表
-  chatList: ChatInfo[];
-  isLoadingChats: boolean;
-  
-  // 消息相关
-  isLoadingMessages: boolean;
-  isSendingMessage: boolean;
-  
-  // 搜索相关
-  searchQuery: string;
-  filteredChats: ChatInfo[];
-  
-  // 模型选择
-  selectedModel: string;
-  availableModels: string[];
-  
-  // UI状态
-  isSidebarCollapsed: boolean;
-  isTyping: boolean;
+export type Model = {
+  id: string
+  name: string
+  providerId: string
 }

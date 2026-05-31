@@ -1,159 +1,49 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import Layout from '@/components/layout';
-import { initializeStores } from '@/stores';
-import { useViewportHeight } from '@/hooks/useViewportHeight';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import PluginViewPage from '@/pages/plugin_view';
-
-const Chat = React.lazy(() => import('@/pages/home'));
-const NotFound = React.lazy(() => import('@/pages/common/NotFound.tsx'));
-const Settings = React.lazy(() => import('@/pages/settings'));
-const Onboarding = React.lazy(() => import('@/pages/onboarding'));
-const AddProviderPage = React.lazy(
-  () => import('@/pages/forms/AddProviderPage')
-);
-const AddAgentPage = React.lazy(() => import('@/pages/forms/AddAgentPage'));
-const AddSkillPage = React.lazy(() => import('@/pages/forms/AddSkillPage'));
-const EditMemoryPage = React.lazy(() => import('@/pages/forms/EditMemoryPage'));
-
-function EntryRedirect() {
-  const [searchParams] = useSearchParams();
-  const entry = searchParams.get('entry');
-
-  const tab = searchParams.get('tab');
-  const id = searchParams.get('id');
-
-  switch (entry) {
-    case 'settings':
-      return (
-        <Navigate to={tab ? `/settings?tab=${tab}` : '/settings'} replace />
-      );
-    case 'onboarding':
-      return <Navigate to="/onboarding" replace />;
-    case 'form_provider':
-      return <Navigate to="/forms/provider" replace />;
-    case 'form_agent':
-      return <Navigate to="/forms/agent" replace />;
-    case 'form_skill':
-      return <Navigate to="/forms/skill" replace />;
-    case 'form_memory':
-      return (
-        <Navigate
-          to={id ? `/forms/memory?id=${id}` : '/forms/memory'}
-          replace
-        />
-      );
-    case 'plugin_view':
-    case 'form_plugin_email':
-      return (
-        <Navigate
-          to={
-            id
-              ? `/plugin-view?id=${id}${tab ? `&view=${tab}` : '&view=settings'}`
-              : '/plugin-view?view=settings'
-          }
-          replace
-        />
-      );
-    case 'home':
-    case null:
-      return <Navigate to="/home" replace />;
-    default:
-      return <Navigate to="/home" replace />;
-  }
-}
+import { AppSettingsSyncProvider } from '@/components/providers/AppSettingsSyncProvider'
+import { AlertEventProvider } from '@/components/providers/AlertEventProvider'
+import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { FontSizeProvider } from '@/components/providers/FontSizeProvider'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { SettingsApp } from '@/components/settings/SettingsApp'
+import { AddMemoryApp } from '@/components/settings/memory/AddMemoryApp'
+import { AddProviderApp } from '@/components/settings/providers/AddProviderApp'
+import { AddSkillApp } from '@/components/settings/skills/AddSkillApp'
+import { OnboardingApp } from '@/components/onboarding/OnboardingApp'
+import { AlertViewport } from '@/components/alert/AlertViewport'
+import { useNotificationsSubscription } from '@/hooks/useNotificationsSubscription'
+import { useCliInstallSubscription } from '@/hooks/useCliInstallSubscription'
+import { useDisableInputAssistance } from '@/hooks/useDisableInputAssistance'
 
 function App() {
-  const { t } = useTranslation();
+  useNotificationsSubscription()
+  useCliInstallSubscription()
+  useDisableInputAssistance()
+  const params = new URLSearchParams(window.location.search)
+  const entry = params.get('entry')
 
-  // 初始化视口高度检测
-  useViewportHeight();
-
-  // 初始化所有stores
-  useEffect(() => {
-    void initializeStores();
-  }, []);
+  if (entry === 'onboarding') {
+    return <OnboardingApp />
+  }
 
   return (
-    <ErrorBoundary>
-      <React.Suspense
-        fallback={
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              gap: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: '4px',
-                    height: '30px',
-                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                    borderRadius: '2px',
-                    animation: `loading-wave 1.2s ease-in-out infinite ${i * 0.1}s`,
-                  }}
-                />
-              ))}
-            </div>
-            <span
-              style={{ fontSize: '14px', color: '#666', whiteSpace: 'nowrap' }}
-            >
-              {t('common.loading')}
-            </span>
-            <style>{`
-            @keyframes loading-wave {
-              0%, 40%, 100% {
-                transform: scaleY(0.4);
-                opacity: 0.6;
-              }
-              20% {
-                transform: scaleY(1);
-                opacity: 1;
-              }
-            }
-          `}</style>
-          </div>
-        }
-      >
-        <Routes>
-          {/* 应用入口页 - 根据窗口入口参数分发到对应页面 */}
-          <Route path="/" element={<EntryRedirect />} />
-
-          {/* 聊天页面 */}
-          <Route path="/home" element={<Chat />} />
-          <Route path="/home/:chatUuid" element={<Chat />} />
-
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-
-          {/* 独立表单窗口 */}
-          <Route path="/forms/provider" element={<AddProviderPage />} />
-          <Route path="/forms/agent" element={<AddAgentPage />} />
-          <Route path="/forms/skill" element={<AddSkillPage />} />
-          <Route path="/forms/memory" element={<EditMemoryPage />} />
-          <Route path="/plugin-view" element={<PluginViewPage />} />
-
-          {/* 其他路由 - 使用Layout */}
-          <Route path="/app" element={<Layout />}></Route>
-
-          {/* 兼容旧链接 */}
-          <Route path="/:chatUuid" element={<Chat />} />
-
-          {/* 404页面 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </React.Suspense>
-    </ErrorBoundary>
-  );
+    <AppSettingsSyncProvider>
+      <AlertEventProvider>
+        <ThemeProvider>
+          <FontSizeProvider>
+            {entry === 'settings'
+              ? <SettingsApp />
+              : entry === 'add_provider'
+                ? <AddProviderApp />
+                : entry === 'add_skill'
+                  ? <AddSkillApp />
+                  : entry === 'add_memory'
+                    ? <AddMemoryApp />
+                    : <MainLayout />}
+            <AlertViewport />
+          </FontSizeProvider>
+        </ThemeProvider>
+      </AlertEventProvider>
+    </AppSettingsSyncProvider>
+  )
 }
 
-export default App;
+export default App

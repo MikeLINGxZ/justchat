@@ -7,995 +7,187 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as schema$0 from "../../../../../../../github.com/cloudwego/eino/schema/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as gorm$0 from "../../../../../../../gorm.io/gorm/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../../../time/models.js";
 
-export enum AppLanguage {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    AppLanguageZhCN = "zh-CN",
-    AppLanguageEnUS = "en-US",
-};
-
-export enum AppRegion {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    AppRegionAsia = "asia",
-    AppRegionEurope = "europe",
-    AppRegionNorthAmerica = "north-america",
-    AppRegionSouthAmerica = "south-america",
-    AppRegionAfrica = "africa",
-    AppRegionOceania = "oceania",
-    AppRegionAntarctica = "antarctica",
-};
-
-export class AssistantMessageExtra {
-    "tool_uses": ToolUse[];
-    "execution_trace": ExecutionTrace;
-    "pending_approvals": ToolApprovalSummary[];
-    "sub_agent_tasks": SubAgentTask[];
-    "route_type": RouteType;
-    "retry_count": number;
-    "current_stage": string;
-    "current_agent": string;
-    "preface_content": string;
-    "preface_reasoning_content": string;
-    "finish_reason": string;
-    "finish_error": string;
-
-    /** Creates a new AssistantMessageExtra instance. */
-    constructor($$source: Partial<AssistantMessageExtra> = {}) {
-        if (!("tool_uses" in $$source)) {
-            this["tool_uses"] = [];
-        }
-        if (!("execution_trace" in $$source)) {
-            this["execution_trace"] = (new ExecutionTrace());
-        }
-        if (!("pending_approvals" in $$source)) {
-            this["pending_approvals"] = [];
-        }
-        if (!("sub_agent_tasks" in $$source)) {
-            this["sub_agent_tasks"] = [];
-        }
-        if (!("route_type" in $$source)) {
-            this["route_type"] = RouteType.$zero;
-        }
-        if (!("retry_count" in $$source)) {
-            this["retry_count"] = 0;
-        }
-        if (!("current_stage" in $$source)) {
-            this["current_stage"] = "";
-        }
-        if (!("current_agent" in $$source)) {
-            this["current_agent"] = "";
-        }
-        if (!("preface_content" in $$source)) {
-            this["preface_content"] = "";
-        }
-        if (!("preface_reasoning_content" in $$source)) {
-            this["preface_reasoning_content"] = "";
-        }
-        if (!("finish_reason" in $$source)) {
-            this["finish_reason"] = "";
-        }
-        if (!("finish_error" in $$source)) {
-            this["finish_error"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new AssistantMessageExtra instance from a string or object.
-     */
-    static createFrom($$source: any = {}): AssistantMessageExtra {
-        const $$createField0_0 = $$createType1;
-        const $$createField1_0 = $$createType2;
-        const $$createField2_0 = $$createType4;
-        const $$createField3_0 = $$createType6;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("tool_uses" in $$parsedSource) {
-            $$parsedSource["tool_uses"] = $$createField0_0($$parsedSource["tool_uses"]);
-        }
-        if ("execution_trace" in $$parsedSource) {
-            $$parsedSource["execution_trace"] = $$createField1_0($$parsedSource["execution_trace"]);
-        }
-        if ("pending_approvals" in $$parsedSource) {
-            $$parsedSource["pending_approvals"] = $$createField2_0($$parsedSource["pending_approvals"]);
-        }
-        if ("sub_agent_tasks" in $$parsedSource) {
-            $$parsedSource["sub_agent_tasks"] = $$createField3_0($$parsedSource["sub_agent_tasks"]);
-        }
-        return new AssistantMessageExtra($$parsedSource as Partial<AssistantMessageExtra>);
-    }
-}
-
-export class Chat {
-    "id": number;
-    "created_at": time$0.Time;
-    "updated_at": time$0.Time;
-    "deleted_at": gorm$0.DeletedAt;
-    "uuid": string;
-    "title": string;
-    "prompt": string;
-    "is_collection": boolean;
-    "chat_type": string;
-
-    /** Creates a new Chat instance. */
-    constructor($$source: Partial<Chat> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = 0;
-        }
-        if (!("created_at" in $$source)) {
-            this["created_at"] = null;
-        }
-        if (!("updated_at" in $$source)) {
-            this["updated_at"] = null;
-        }
-        if (!("deleted_at" in $$source)) {
-            this["deleted_at"] = null;
-        }
-        if (!("uuid" in $$source)) {
-            this["uuid"] = "";
-        }
-        if (!("title" in $$source)) {
-            this["title"] = "";
-        }
-        if (!("prompt" in $$source)) {
-            this["prompt"] = "";
-        }
-        if (!("is_collection" in $$source)) {
-            this["is_collection"] = false;
-        }
-        if (!("chat_type" in $$source)) {
-            this["chat_type"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Chat instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Chat {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new Chat($$parsedSource as Partial<Chat>);
-    }
-}
-
-export class ExecutionTrace {
-    "steps": TraceStep[];
-
-    /** Creates a new ExecutionTrace instance. */
-    constructor($$source: Partial<ExecutionTrace> = {}) {
-        if (!("steps" in $$source)) {
-            this["steps"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ExecutionTrace instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ExecutionTrace {
-        const $$createField0_0 = $$createType8;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("steps" in $$parsedSource) {
-            $$parsedSource["steps"] = $$createField0_0($$parsedSource["steps"]);
-        }
-        return new ExecutionTrace($$parsedSource as Partial<ExecutionTrace>);
-    }
-}
-
-export class File {
+/**
+ * ExtensionItem stores one imported MCP tool or plugin entry.
+ */
+export class ExtensionItem {
+    "id": string;
     "name": string;
-    "path": string;
+    "description": string;
+    "author": string;
+    "version": string;
+    "kind": string;
+    "enabled": boolean;
+    "runtime_status": string;
+    "runtime_message": string;
+    "root_dir": string;
+    "source_dir": string;
+    "config_file_path": string;
+    "tools": ExtensionTool[];
 
-    /**
-     * 如果是图像的话，生成60x60的预览图
-     */
-    "preview": string | null;
-    "mine_type": string;
-    "size": number;
-
-    /** Creates a new File instance. */
-    constructor($$source: Partial<File> = {}) {
+    /** Creates a new ExtensionItem instance. */
+    constructor($$source: Partial<ExtensionItem> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
         if (!("name" in $$source)) {
             this["name"] = "";
         }
-        if (!("path" in $$source)) {
-            this["path"] = "";
+        if (!("description" in $$source)) {
+            this["description"] = "";
         }
-        if (!("preview" in $$source)) {
-            this["preview"] = null;
+        if (!("author" in $$source)) {
+            this["author"] = "";
         }
-        if (!("mine_type" in $$source)) {
-            this["mine_type"] = "";
+        if (!("version" in $$source)) {
+            this["version"] = "";
         }
-        if (!("size" in $$source)) {
-            this["size"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new File instance from a string or object.
-     */
-    static createFrom($$source: any = {}): File {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new File($$parsedSource as Partial<File>);
-    }
-}
-
-export class Message {
-    "id": number;
-    "created_at": time$0.Time;
-    "updated_at": time$0.Time;
-    "deleted_at": gorm$0.DeletedAt;
-    "chat_uuid": string;
-    "message_uuid": string;
-    "role": schema$0.RoleType;
-    "content": string;
-    "reasoning_content": string;
-    "user_message_extra_content": string;
-    "assistant_message_extra_content": string;
-    "user_message_extra": UserMessageExtra | null;
-    "assistant_message_extra": AssistantMessageExtra | null;
-    "sender_person_uuid": string;
-
-    /** Creates a new Message instance. */
-    constructor($$source: Partial<Message> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = 0;
-        }
-        if (!("created_at" in $$source)) {
-            this["created_at"] = null;
-        }
-        if (!("updated_at" in $$source)) {
-            this["updated_at"] = null;
-        }
-        if (!("deleted_at" in $$source)) {
-            this["deleted_at"] = null;
-        }
-        if (!("chat_uuid" in $$source)) {
-            this["chat_uuid"] = "";
-        }
-        if (!("message_uuid" in $$source)) {
-            this["message_uuid"] = "";
-        }
-        if (!("role" in $$source)) {
-            this["role"] = schema$0.RoleType.$zero;
-        }
-        if (!("content" in $$source)) {
-            this["content"] = "";
-        }
-        if (!("reasoning_content" in $$source)) {
-            this["reasoning_content"] = "";
-        }
-        if (!("user_message_extra_content" in $$source)) {
-            this["user_message_extra_content"] = "";
-        }
-        if (!("assistant_message_extra_content" in $$source)) {
-            this["assistant_message_extra_content"] = "";
-        }
-        if (!("user_message_extra" in $$source)) {
-            this["user_message_extra"] = null;
-        }
-        if (!("assistant_message_extra" in $$source)) {
-            this["assistant_message_extra"] = null;
-        }
-        if (!("sender_person_uuid" in $$source)) {
-            this["sender_person_uuid"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Message instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Message {
-        const $$createField11_0 = $$createType10;
-        const $$createField12_0 = $$createType12;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("user_message_extra" in $$parsedSource) {
-            $$parsedSource["user_message_extra"] = $$createField11_0($$parsedSource["user_message_extra"]);
-        }
-        if ("assistant_message_extra" in $$parsedSource) {
-            $$parsedSource["assistant_message_extra"] = $$createField12_0($$parsedSource["assistant_message_extra"]);
-        }
-        return new Message($$parsedSource as Partial<Message>);
-    }
-}
-
-export class Model {
-    "id": number;
-    "created_at": time$0.Time;
-    "updated_at": time$0.Time;
-    "deleted_at": gorm$0.DeletedAt;
-
-    /**
-     * 提供方id
-     */
-    "provider_id": number;
-    "model": string;
-    "owned_by": string;
-    "object": string;
-    "enable": boolean;
-    "alias": string | null;
-    "is_custom": boolean;
-
-    /** Creates a new Model instance. */
-    constructor($$source: Partial<Model> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = 0;
-        }
-        if (!("created_at" in $$source)) {
-            this["created_at"] = null;
-        }
-        if (!("updated_at" in $$source)) {
-            this["updated_at"] = null;
-        }
-        if (!("deleted_at" in $$source)) {
-            this["deleted_at"] = null;
-        }
-        if (!("provider_id" in $$source)) {
-            this["provider_id"] = 0;
-        }
-        if (!("model" in $$source)) {
-            this["model"] = "";
-        }
-        if (!("owned_by" in $$source)) {
-            this["owned_by"] = "";
-        }
-        if (!("object" in $$source)) {
-            this["object"] = "";
-        }
-        if (!("enable" in $$source)) {
-            this["enable"] = false;
-        }
-        if (!("alias" in $$source)) {
-            this["alias"] = null;
-        }
-        if (!("is_custom" in $$source)) {
-            this["is_custom"] = false;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Model instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Model {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new Model($$parsedSource as Partial<Model>);
-    }
-}
-
-export enum ProviderType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    ProviderTypeDeepseek = "deepseek",
-    ProviderTypeAliyuns = "aliyuns",
-    ProviderTypeOpenrouter = "openrouter",
-    ProviderTypeOllama = "ollama",
-    ProviderTypeOther = "other",
-};
-
-export enum RouteType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    RouteTypeDirectAnswer = "direct_answer",
-    RouteTypeWorkflow = "workflow",
-    RouteTypeClarify = "clarify",
-};
-
-export class SubAgentTask {
-    "task_id": string;
-    "agent_id": string;
-    "agent_name": string;
-    "status": ToolUseStatus;
-    "input": string;
-    "output": string;
-    "tool_calls": ToolUse[];
-    "creator_agent": string;
-    "started_at": time$0.Time | null;
-    "finished_at": time$0.Time | null;
-    "elapsed_ms": number;
-
-    /** Creates a new SubAgentTask instance. */
-    constructor($$source: Partial<SubAgentTask> = {}) {
-        if (!("task_id" in $$source)) {
-            this["task_id"] = "";
-        }
-        if (!("agent_id" in $$source)) {
-            this["agent_id"] = "";
-        }
-        if (!("agent_name" in $$source)) {
-            this["agent_name"] = "";
-        }
-        if (!("status" in $$source)) {
-            this["status"] = ToolUseStatus.$zero;
-        }
-        if (!("input" in $$source)) {
-            this["input"] = "";
-        }
-        if (!("output" in $$source)) {
-            this["output"] = "";
-        }
-        if (!("tool_calls" in $$source)) {
-            this["tool_calls"] = [];
-        }
-        if (!("creator_agent" in $$source)) {
-            this["creator_agent"] = "";
-        }
-        if (!("started_at" in $$source)) {
-            this["started_at"] = null;
-        }
-        if (!("finished_at" in $$source)) {
-            this["finished_at"] = null;
-        }
-        if (!("elapsed_ms" in $$source)) {
-            this["elapsed_ms"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new SubAgentTask instance from a string or object.
-     */
-    static createFrom($$source: any = {}): SubAgentTask {
-        const $$createField6_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("tool_calls" in $$parsedSource) {
-            $$parsedSource["tool_calls"] = $$createField6_0($$parsedSource["tool_calls"]);
-        }
-        return new SubAgentTask($$parsedSource as Partial<SubAgentTask>);
-    }
-}
-
-export class Task {
-    "id": number;
-    "created_at": time$0.Time;
-    "updated_at": time$0.Time;
-    "deleted_at": gorm$0.DeletedAt;
-    "task_uuid": string;
-    "chat_uuid": string;
-    "assistant_message_uuid": string;
-    "status": TaskStatus;
-    "event_key": string;
-    "finish_reason": string;
-    "finish_error": string;
-    "started_at": time$0.Time | null;
-    "finished_at": time$0.Time | null;
-    "last_output_at": time$0.Time | null;
-
-    /** Creates a new Task instance. */
-    constructor($$source: Partial<Task> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = 0;
-        }
-        if (!("created_at" in $$source)) {
-            this["created_at"] = null;
-        }
-        if (!("updated_at" in $$source)) {
-            this["updated_at"] = null;
-        }
-        if (!("deleted_at" in $$source)) {
-            this["deleted_at"] = null;
-        }
-        if (!("task_uuid" in $$source)) {
-            this["task_uuid"] = "";
-        }
-        if (!("chat_uuid" in $$source)) {
-            this["chat_uuid"] = "";
-        }
-        if (!("assistant_message_uuid" in $$source)) {
-            this["assistant_message_uuid"] = "";
-        }
-        if (!("status" in $$source)) {
-            this["status"] = TaskStatus.$zero;
-        }
-        if (!("event_key" in $$source)) {
-            this["event_key"] = "";
-        }
-        if (!("finish_reason" in $$source)) {
-            this["finish_reason"] = "";
-        }
-        if (!("finish_error" in $$source)) {
-            this["finish_error"] = "";
-        }
-        if (!("started_at" in $$source)) {
-            this["started_at"] = null;
-        }
-        if (!("finished_at" in $$source)) {
-            this["finished_at"] = null;
-        }
-        if (!("last_output_at" in $$source)) {
-            this["last_output_at"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Task instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Task {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new Task($$parsedSource as Partial<Task>);
-    }
-}
-
-export enum TaskStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    TaskStatusPending = "pending",
-    TaskStatusRunning = "running",
-    TaskStatusWaitingApproval = "waiting_approval",
-    TaskStatusCompleted = "completed",
-    TaskStatusFailed = "failed",
-    TaskStatusStopped = "stopped",
-};
-
-export enum ToolApprovalDecision {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    ToolApprovalDecisionAllow = "allow",
-    ToolApprovalDecisionReject = "reject",
-    ToolApprovalDecisionCustom = "custom",
-};
-
-export class ToolApprovalResponse {
-    "approval_id": string;
-    "decision": ToolApprovalDecision;
-    "comment": string;
-
-    /** Creates a new ToolApprovalResponse instance. */
-    constructor($$source: Partial<ToolApprovalResponse> = {}) {
-        if (!("approval_id" in $$source)) {
-            this["approval_id"] = "";
-        }
-        if (!("decision" in $$source)) {
-            this["decision"] = ToolApprovalDecision.$zero;
-        }
-        if (!("comment" in $$source)) {
-            this["comment"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ToolApprovalResponse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ToolApprovalResponse {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new ToolApprovalResponse($$parsedSource as Partial<ToolApprovalResponse>);
-    }
-}
-
-export enum ToolApprovalStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    ToolApprovalStatusPending = "pending",
-    ToolApprovalStatusResolved = "resolved",
-    ToolApprovalStatusExpired = "expired",
-};
-
-export class ToolApprovalSummary {
-    "approval_id": string;
-    "tool_call_id": string;
-    "tool_id": string;
-    "tool_name": string;
-    "status": ToolApprovalStatus;
-    "decision": ToolApprovalDecision;
-    "title": string;
-    "message": string;
-    "scope": string;
-    "requested_at": time$0.Time | null;
-    "responded_at": time$0.Time | null;
-
-    /** Creates a new ToolApprovalSummary instance. */
-    constructor($$source: Partial<ToolApprovalSummary> = {}) {
-        if (!("approval_id" in $$source)) {
-            this["approval_id"] = "";
-        }
-        if (!("tool_call_id" in $$source)) {
-            this["tool_call_id"] = "";
-        }
-        if (!("tool_id" in $$source)) {
-            this["tool_id"] = "";
-        }
-        if (!("tool_name" in $$source)) {
-            this["tool_name"] = "";
-        }
-        if (!("status" in $$source)) {
-            this["status"] = ToolApprovalStatus.$zero;
-        }
-        if (!("decision" in $$source)) {
-            this["decision"] = ToolApprovalDecision.$zero;
-        }
-        if (!("title" in $$source)) {
-            this["title"] = "";
-        }
-        if (!("message" in $$source)) {
-            this["message"] = "";
-        }
-        if (!("scope" in $$source)) {
-            this["scope"] = "";
-        }
-        if (!("requested_at" in $$source)) {
-            this["requested_at"] = null;
-        }
-        if (!("responded_at" in $$source)) {
-            this["responded_at"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ToolApprovalSummary instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ToolApprovalSummary {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new ToolApprovalSummary($$parsedSource as Partial<ToolApprovalSummary>);
-    }
-}
-
-export class ToolUse {
-    "index": number;
-    "call_id": string;
-    "content_pos": number;
-    "tool_id": string;
-    "tool_name": string;
-    "tool_description": string;
-    "tool_result": string;
-    "status": ToolUseStatus;
-    "started_at": time$0.Time | null;
-    "finished_at": time$0.Time | null;
-    "elapsed_ms": number;
-
-    /** Creates a new ToolUse instance. */
-    constructor($$source: Partial<ToolUse> = {}) {
-        if (!("index" in $$source)) {
-            this["index"] = 0;
-        }
-        if (!("call_id" in $$source)) {
-            this["call_id"] = "";
-        }
-        if (!("content_pos" in $$source)) {
-            this["content_pos"] = 0;
-        }
-        if (!("tool_id" in $$source)) {
-            this["tool_id"] = "";
-        }
-        if (!("tool_name" in $$source)) {
-            this["tool_name"] = "";
-        }
-        if (!("tool_description" in $$source)) {
-            this["tool_description"] = "";
-        }
-        if (!("tool_result" in $$source)) {
-            this["tool_result"] = "";
-        }
-        if (!("status" in $$source)) {
-            this["status"] = ToolUseStatus.$zero;
-        }
-        if (!("started_at" in $$source)) {
-            this["started_at"] = null;
-        }
-        if (!("finished_at" in $$source)) {
-            this["finished_at"] = null;
-        }
-        if (!("elapsed_ms" in $$source)) {
-            this["elapsed_ms"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ToolUse instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ToolUse {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new ToolUse($$parsedSource as Partial<ToolUse>);
-    }
-}
-
-export enum ToolUseStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    ToolUseStatusPending = "pending",
-    ToolUseStatusRunning = "running",
-    ToolUseStatusAwaitingApproval = "awaiting_approval",
-    ToolUseStatusDone = "done",
-    ToolUseStatusRejected = "rejected",
-    ToolUseStatusError = "error",
-};
-
-export class TraceDetailBlock {
-    "kind": string;
-    "title": string;
-    "content": string;
-    "format": TraceDetailFormat;
-    "collapsed"?: boolean;
-
-    /** Creates a new TraceDetailBlock instance. */
-    constructor($$source: Partial<TraceDetailBlock> = {}) {
         if (!("kind" in $$source)) {
             this["kind"] = "";
         }
-        if (!("title" in $$source)) {
-            this["title"] = "";
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
         }
-        if (!("content" in $$source)) {
-            this["content"] = "";
+        if (!("runtime_status" in $$source)) {
+            this["runtime_status"] = "";
         }
-        if (!("format" in $$source)) {
-            this["format"] = TraceDetailFormat.$zero;
+        if (!("runtime_message" in $$source)) {
+            this["runtime_message"] = "";
         }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new TraceDetailBlock instance from a string or object.
-     */
-    static createFrom($$source: any = {}): TraceDetailBlock {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new TraceDetailBlock($$parsedSource as Partial<TraceDetailBlock>);
-    }
-}
-
-export enum TraceDetailFormat {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    TraceDetailFormatText = "text",
-    TraceDetailFormatMarkdown = "markdown",
-    TraceDetailFormatJSON = "json",
-};
-
-export class TraceStep {
-    "step_id": string;
-    "parent_step_id": string;
-    "type": TraceStepType;
-    "title": string;
-    "summary": string;
-    "status": TraceStepStatus;
-    "agent_name": string;
-    "tool_name": string;
-    "input_preview": string;
-    "output_preview": string;
-    "started_at": time$0.Time | null;
-    "finished_at": time$0.Time | null;
-    "elapsed_ms": number;
-    "detail_blocks": TraceDetailBlock[];
-    "metadata": { [_ in string]?: any };
-
-    /** Creates a new TraceStep instance. */
-    constructor($$source: Partial<TraceStep> = {}) {
-        if (!("step_id" in $$source)) {
-            this["step_id"] = "";
+        if (!("root_dir" in $$source)) {
+            this["root_dir"] = "";
         }
-        if (!("parent_step_id" in $$source)) {
-            this["parent_step_id"] = "";
+        if (!("source_dir" in $$source)) {
+            this["source_dir"] = "";
         }
-        if (!("type" in $$source)) {
-            this["type"] = TraceStepType.$zero;
-        }
-        if (!("title" in $$source)) {
-            this["title"] = "";
-        }
-        if (!("summary" in $$source)) {
-            this["summary"] = "";
-        }
-        if (!("status" in $$source)) {
-            this["status"] = TraceStepStatus.$zero;
-        }
-        if (!("agent_name" in $$source)) {
-            this["agent_name"] = "";
-        }
-        if (!("tool_name" in $$source)) {
-            this["tool_name"] = "";
-        }
-        if (!("input_preview" in $$source)) {
-            this["input_preview"] = "";
-        }
-        if (!("output_preview" in $$source)) {
-            this["output_preview"] = "";
-        }
-        if (!("started_at" in $$source)) {
-            this["started_at"] = null;
-        }
-        if (!("finished_at" in $$source)) {
-            this["finished_at"] = null;
-        }
-        if (!("elapsed_ms" in $$source)) {
-            this["elapsed_ms"] = 0;
-        }
-        if (!("detail_blocks" in $$source)) {
-            this["detail_blocks"] = [];
-        }
-        if (!("metadata" in $$source)) {
-            this["metadata"] = {};
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new TraceStep instance from a string or object.
-     */
-    static createFrom($$source: any = {}): TraceStep {
-        const $$createField13_0 = $$createType14;
-        const $$createField14_0 = $$createType15;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("detail_blocks" in $$parsedSource) {
-            $$parsedSource["detail_blocks"] = $$createField13_0($$parsedSource["detail_blocks"]);
-        }
-        if ("metadata" in $$parsedSource) {
-            $$parsedSource["metadata"] = $$createField14_0($$parsedSource["metadata"]);
-        }
-        return new TraceStep($$parsedSource as Partial<TraceStep>);
-    }
-}
-
-export enum TraceStepStatus {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    TraceStepStatusPending = "pending",
-    TraceStepStatusRunning = "running",
-    TraceStepStatusAwaitingApproval = "awaiting_approval",
-    TraceStepStatusDone = "done",
-    TraceStepStatusRejected = "rejected",
-    TraceStepStatusError = "error",
-    TraceStepStatusSkipped = "skipped",
-};
-
-export enum TraceStepType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    TraceStepTypeClassify = "classify",
-    TraceStepTypePlan = "plan",
-    TraceStepTypeDispatch = "dispatch",
-    TraceStepTypeAgentRun = "agent_run",
-    TraceStepTypeToolCall = "tool_call",
-    TraceStepTypeSynthesize = "synthesize",
-    TraceStepTypeReview = "review",
-    TraceStepTypeRetry = "retry",
-    TraceStepTypeFinalize = "finalize",
-};
-
-export class UserMessageExtra {
-    /**
-     * 模型id
-     */
-    "model_id": number;
-
-    /**
-     * 模型名称
-     */
-    "model_name": string;
-
-    /**
-     * 文件路径
-     */
-    "files": File[];
-
-    /**
-     * 工具id
-     */
-    "tools": string[];
-
-    /**
-     * agent id
-     */
-    "agents": string[];
-
-    /** Creates a new UserMessageExtra instance. */
-    constructor($$source: Partial<UserMessageExtra> = {}) {
-        if (!("model_id" in $$source)) {
-            this["model_id"] = 0;
-        }
-        if (!("model_name" in $$source)) {
-            this["model_name"] = "";
-        }
-        if (!("files" in $$source)) {
-            this["files"] = [];
+        if (!("config_file_path" in $$source)) {
+            this["config_file_path"] = "";
         }
         if (!("tools" in $$source)) {
             this["tools"] = [];
         }
-        if (!("agents" in $$source)) {
-            this["agents"] = [];
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ExtensionItem instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ExtensionItem {
+        const $$createField12_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("tools" in $$parsedSource) {
+            $$parsedSource["tools"] = $$createField12_0($$parsedSource["tools"]);
+        }
+        return new ExtensionItem($$parsedSource as Partial<ExtensionItem>);
+    }
+}
+
+/**
+ * ExtensionTool stores discovered tool metadata for an imported extension.
+ */
+export class ExtensionTool {
+    "tool_id": string;
+    "server_id": string;
+    "name": string;
+    "description": string;
+    "enabled": boolean;
+    "requires_confirm": boolean;
+
+    /** Creates a new ExtensionTool instance. */
+    constructor($$source: Partial<ExtensionTool> = {}) {
+        if (!("tool_id" in $$source)) {
+            this["tool_id"] = "";
+        }
+        if (!("server_id" in $$source)) {
+            this["server_id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+        if (!("requires_confirm" in $$source)) {
+            this["requires_confirm"] = false;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new UserMessageExtra instance from a string or object.
+     * Creates a new ExtensionTool instance from a string or object.
      */
-    static createFrom($$source: any = {}): UserMessageExtra {
-        const $$createField2_0 = $$createType17;
-        const $$createField3_0 = $$createType18;
-        const $$createField4_0 = $$createType18;
+    static createFrom($$source: any = {}): ExtensionTool {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("files" in $$parsedSource) {
-            $$parsedSource["files"] = $$createField2_0($$parsedSource["files"]);
+        return new ExtensionTool($$parsedSource as Partial<ExtensionTool>);
+    }
+}
+
+/**
+ * TerminalOutputChunk stores an append-only slice of terminal output.
+ */
+export class TerminalOutputChunk {
+    "id": number;
+    "created_at": time$0.Time;
+    "updated_at": time$0.Time;
+    "deleted_at": gorm$0.DeletedAt;
+    "terminal_id": string;
+    "seq": number;
+    "cursor_start": number;
+    "cursor_end": number;
+    "data": string;
+
+    /** Creates a new TerminalOutputChunk instance. */
+    constructor($$source: Partial<TerminalOutputChunk> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
         }
-        if ("tools" in $$parsedSource) {
-            $$parsedSource["tools"] = $$createField3_0($$parsedSource["tools"]);
+        if (!("created_at" in $$source)) {
+            this["created_at"] = null;
         }
-        if ("agents" in $$parsedSource) {
-            $$parsedSource["agents"] = $$createField4_0($$parsedSource["agents"]);
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = null;
         }
-        return new UserMessageExtra($$parsedSource as Partial<UserMessageExtra>);
+        if (!("deleted_at" in $$source)) {
+            this["deleted_at"] = null;
+        }
+        if (!("terminal_id" in $$source)) {
+            this["terminal_id"] = "";
+        }
+        if (!("seq" in $$source)) {
+            this["seq"] = 0;
+        }
+        if (!("cursor_start" in $$source)) {
+            this["cursor_start"] = 0;
+        }
+        if (!("cursor_end" in $$source)) {
+            this["cursor_end"] = 0;
+        }
+        if (!("data" in $$source)) {
+            this["data"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TerminalOutputChunk instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TerminalOutputChunk {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new TerminalOutputChunk($$parsedSource as Partial<TerminalOutputChunk>);
     }
 }
 
 // Private type creation functions
-const $$createType0 = ToolUse.createFrom;
+const $$createType0 = ExtensionTool.createFrom;
 const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = ExecutionTrace.createFrom;
-const $$createType3 = ToolApprovalSummary.createFrom;
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = SubAgentTask.createFrom;
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = TraceStep.createFrom;
-const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = UserMessageExtra.createFrom;
-const $$createType10 = $Create.Nullable($$createType9);
-const $$createType11 = AssistantMessageExtra.createFrom;
-const $$createType12 = $Create.Nullable($$createType11);
-const $$createType13 = TraceDetailBlock.createFrom;
-const $$createType14 = $Create.Array($$createType13);
-const $$createType15 = $Create.Map($Create.Any, $Create.Any);
-const $$createType16 = File.createFrom;
-const $$createType17 = $Create.Array($$createType16);
-const $$createType18 = $Create.Array($Create.Any);
