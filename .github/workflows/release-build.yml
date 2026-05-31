@@ -69,8 +69,7 @@ jobs:
 
       - name: Build Windows installer
         shell: pwsh
-        working-directory: ${{ github.workspace }}
-        run: wails3 task -taskfile Taskfile.yml windows:package
+        run: wails3 package GOOS=windows
 
       - name: Prepare Windows release asset
         shell: pwsh
@@ -119,8 +118,7 @@ jobs:
         run: npm install
 
       - name: Build universal macOS app
-        working-directory: ${{ github.workspace }}
-        run: wails3 task -taskfile Taskfile.yml darwin:package:universal
+        run: wails3 task darwin:package:universal
 
       - name: Prepare macOS release asset
         run: |
@@ -168,8 +166,7 @@ jobs:
         run: npm install
 
       - name: Build Linux AppImage
-        working-directory: ${{ github.workspace }}
-        run: wails3 task -taskfile Taskfile.yml linux:create:appimage
+        run: wails3 task linux:create:appimage
 
       - name: Prepare Linux release asset
         run: |
