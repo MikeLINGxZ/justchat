@@ -10,6 +10,7 @@ permissions:
 
 env:
   APP_NAME: lemontea
+  WAILS_VERSION: v3.0.0-alpha.74
 
 jobs:
   create_release:
@@ -59,7 +60,7 @@ jobs:
       - name: Install Wails CLI
         shell: pwsh
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+          go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
           "$((go env GOPATH))\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install frontend dependencies
@@ -110,8 +111,13 @@ jobs:
 
       - name: Install Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+          go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Wails tasks
+        run: |
+          wails3 version
+          wails3 task -list-all | grep 'darwin:package:universal'
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -158,7 +164,7 @@ jobs:
 
       - name: Install Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+          go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install frontend dependencies
