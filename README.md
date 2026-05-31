@@ -1,143 +1,108 @@
-# Lemon Tea Desktop
+# Lemontea Desktop
 
-English | [简体中文](./README_CN.md)
+English | [简体中文](README_CN.md)
 
-Lemon Tea Desktop is a cross-platform AI desktop client built with Wails v3, Go, React, and TypeScript. It focuses on chat, tool calling, multi-agent workflow execution, and local desktop integration.
+Lemontea Desktop is a cross-platform AI desktop client for people who want a capable assistant on their own machine. It brings chat, model configuration, tool execution, plugins, skills, and long-term memory into one local workspace, so daily AI work can move beyond a single prompt box.
 
-<p align="center"><img src="docs/imgs/app_home.png" alt="Lemon Tea Desktop Home" width="80%" height="auto" /></p>
+## Product Vision
 
-## Features
+Lemontea is designed to be a personal AI workbench for desktop workflows. It helps users connect different model providers, keep conversations and context organized, run tasks with local tools, and extend the assistant with reusable capabilities.
 
-### Chat
+The product focuses on three ideas:
 
-- Multi-turn conversations with streaming output and manual stop.
-- Conversation management: create, rename, delete, and favorite chats.
-- Automatic chat title generation.
-- File attachments in chat input with local image preview.
-- Markdown rendering with syntax highlighting.
-- Reasoning message display.
+- **Configurable**: users can choose providers, models, language, display preferences, plugins, skills, and memory behavior.
+- **Observable**: conversations, tool calls, approvals, errors, and background tasks should be visible and understandable.
+- **Extensible**: the assistant can grow through CLI tools, plugins, MCP integrations, and Markdown-based skills.
 
-### Model Providers
+## Who It Is For
 
-- DeepSeek
-- Alibaba Cloud Bailian / Qwen compatible endpoint
-- OpenRouter
-- Ollama
-- Any OpenAI-compatible API
+- Individual users who want a desktop AI assistant for writing, translation, summarization, coding help, and research.
+- Developers who need local tools, terminal access, file attachments, custom model endpoints, and inspectable execution traces.
+- AI power users who want reusable skills, plugin integrations, long-term memory, and more structured workflows.
+- Users who prefer local-first control over their AI client configuration and conversation data.
 
-### Model Management
+## Core Experience
 
-- Load model lists from provider endpoints.
-- Set provider default model.
-- Add and remove custom models per provider.
-- Remember a local default chat model.
+### Chat Workspace
 
-### Agent System
+Lemontea provides a focused chat interface with streaming responses, Markdown rendering, code highlighting, reasoning message display, file attachments, image preview, and conversation management.
 
-- **Multi-agent architecture** with 7 system agents: Main, Workflow, Planner, Worker, Synthesizer, Reviewer, and custom user-defined agents.
-- **Dual-path execution**: direct answer for simple queries, workflow orchestration for complex tasks, with smart routing and user override.
-- **Sub-agent delegation**: main agent can delegate to custom agents with their own tools and skills.
-- **Custom agents**: create agents with custom prompts, tool bindings, and skill bindings.
+Users can create, rename, favorite, delete, and revisit sessions. The app can also generate titles automatically, keeping long-running work easier to scan later.
 
-### Workflow Orchestration
+### Model Provider Setup
 
-- 7-stage pipeline: Classify → Plan → Dispatch → Synthesize → Review → Retry → Finalize.
-- Task dependency graph with topological sorting and parallel batch execution.
-- Review feedback-driven retry logic (max 2 retries).
-- Task recovery for interrupted running tasks after restart.
+The first-run onboarding flow guides users through connecting their first model provider. Built-in provider presets include DeepSeek, Alibaba Cloud Bailian / Qwen-compatible endpoints, Ollama, and any OpenAI-compatible API.
 
-### Execution Tracing
+After setup, users can manage providers in Settings: edit API keys and base URLs, fetch model lists, add custom models, enable or disable providers, and choose defaults.
 
-- Real-time trace visualization for plan steps, tool calls, stage transitions, and elapsed time.
-- Nested step tracking with status indicators (pending, running, awaiting approval, done, error, skipped).
-- Collapsible detail blocks for inputs, outputs, and approval decisions.
+### Tools With Human Control
 
-### Tool System
+The assistant can call built-in tools such as date, time, file handling, command execution, QR code generation, web search, and web fetch. Riskier actions go through a confirmation flow, so users can allow, reject, or respond with custom guidance before execution continues.
 
-- Tool calling based on CloudWeGo Eino / ADK.
-- Built-in tools: current date, current time, block/wait, file operations, shell command execution, workflow escalation.
-- **Tool approval system**: real-time approval UI with Allow / Reject / Custom decisions, timeout handling, and approval history.
+### Plugins, CLI Tools, MCP, and Skills
 
-### MCP Tool Integration
+Lemontea is built to be extended:
 
-- Import MCP servers from a local folder.
-- Enable/disable MCP tools.
-- Remove imported MCP tools.
-- MCP server process management.
+- Plugins and CLI tools add external capabilities.
+- MCP integrations connect compatible tool servers.
+- Skills package reusable instructions as Markdown files with YAML frontmatter.
+- Built-in and user-created skills can guide the assistant through repeated workflows.
 
-### Memory System
+This makes the app suitable for both everyday assistant use and specialized work processes.
 
-- Automatic memory encoding from conversations, driven by LLM decisions.
-- Multi-phase lifecycle: encoding → consolidation → forgetting → contradiction detection.
-- Hybrid search combining keyword and semantic retrieval.
-- Configurable embedding model engine.
+### Long-Term Memory
 
-### Skill System
+The memory system helps Lemontea preserve high-value information across conversations. Users can create, update, forget, restore, and inspect memories, while settings allow memory behavior to be managed explicitly.
 
-- Create, edit, and delete custom skills (Markdown with YAML frontmatter).
-- Skill tagging for organization.
-- Bind skills to custom agents.
-- Import skills from a local folder.
+The goal is not to store every message, but to retain durable context that improves future interactions.
 
-### Prompt Management
+### Settings Center
 
-- View built-in and user prompt files.
-- Edit and save prompt files.
-- Reset prompt files to defaults.
+Settings are organized around real product surfaces: general preferences, model providers, plugins and tools, skills, memory, and about information. Language and font size can be changed at runtime.
 
-### Internationalization
+## Typical Use Cases
 
-- Full-stack i18n with Chinese (zh_CN) and English (en_US).
-- Language-specific model prompts.
-- Dynamic language switching.
+- Configure a local or remote model provider and start a desktop AI conversation.
+- Attach files or images to a chat and ask for analysis, rewriting, or implementation help.
+- Let the assistant run approved local commands while keeping the execution visible.
+- Install or configure plugin tools for specific workflows.
+- Create reusable skills for team conventions, writing styles, reports, or operational playbooks.
+- Save stable preferences and project context into memory for future conversations.
 
-### Settings
-
-- Provider configuration: API keys, base URLs, enable/disable.
-- Agent management: view system agents, create/edit custom agents.
-- Skill management: browse, create, edit, delete.
-- Prompt management: view, edit, reset.
-- Memory settings: toggle memory, configure embedding engine.
-- General: font size, language.
-- Experimental features lab.
-- First-launch onboarding wizard.
-
-### Cross-Platform
+## Platform Support
 
 - macOS
 - Windows
 - Linux
-- Server mode with Docker support
-- Experimental iOS / Android build scaffolding
+- Experimental iOS and Android build scaffolding
 
 ## Tech Stack
 
-- Backend: Go
-- Desktop shell: Wails v3
-- Frontend: React 19 + TypeScript + Vite
-- UI: Ant Design + Ant Design X
-- Rich editor: TipTap
+- Desktop framework: Wails 3
+- Backend: Go 1.25
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS
 - State management: Zustand
-- Agent / tool orchestration: CloudWeGo Eino
-- Local storage: SQLite via GORM
+- Storage: SQLite / GORM
+- Testing: Go test, Vitest, Testing Library
+- Build tooling: Wails 3 CLI
+
+## Requirements
+
+Install the following tools first:
+
+- Go 1.25 or a compatible version
+- Node.js and npm
+- Wails 3 CLI
+
+Check your environment:
+
+```bash
+go version
+npm --version
+wails3 version
+```
 
 ## Quick Start
-
-### 1. Clone
-
-```bash
-git clone <repo>
-cd lemon_tea_desktop
-```
-
-### 2. Install dependencies
-
-Install Wails v3:
-
-```bash
-go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-wails3 doctor
-```
 
 Install frontend dependencies:
 
@@ -147,36 +112,68 @@ npm install
 cd ..
 ```
 
-### 3. Run development mode
-
-Using Wails directly:
+Start development mode:
 
 ```bash
 wails3 dev -config ./build/config.yml
 ```
 
-Or with dev:
+To choose a specific frontend dev server port:
 
 ```bash
-wails3 dev
+wails3 dev -config ./build/config.yml -port 9246
+```
+
+## Common Commands
+
+```bash
+# Development mode
+wails3 dev -config ./build/config.yml
+
+# Build the desktop app for the current platform
+wails3 build -config ./build/config.yml
+
+# Package production artifacts for the current platform
+wails3 package -config ./build/config.yml
+
+# Generate frontend Wails bindings
+wails3 generate bindings -clean=true -ts
+```
+
+## Testing
+
+Backend tests:
+
+```bash
+go test ./...
+```
+
+Frontend tests:
+
+```bash
+cd frontend
+npx vitest run
 ```
 
 ## Project Structure
 
 ```text
 .
-├── backend/          Go services, storage, provider adapters, agent workflow logic
-│   ├── agents/       Memory system (encoding, search, lifecycle)
-│   ├── models/       Data models, view models, wrapper models
-│   ├── pkg/          LLM providers, agents, tools, skills, i18n, task execution
-│   ├── service/      Core service layer (chat, orchestration, MCP, memory)
-│   ├── storage/      GORM/SQLite persistence
-│   └── utils/        Event system, error handling
-├── frontend/         React UI, chat pages, settings pages, components
-├── build/            Wails build and packaging configuration
-├── docs/             README assets
-└── main.go           Desktop app entry
+├── backend/                 # Go backend services, packages, storage, and models
+├── frontend/                # React + Vite frontend
+├── build/                   # Wails build config and platform assets
+├── docs/                    # Product notes, technical designs, and plans
+├── main.go                  # App entry point and service registration
+└── go.mod                   # Go module config
 ```
+
+## Documentation
+
+- Product background: [docs/dev/00.background.md](docs/dev/00.background.md)
+- Development rules: [docs/dev/00.rules.md](docs/dev/00.rules.md)
+- Onboarding: [docs/dev/11.welcome.md](docs/dev/11.welcome.md)
+- Plugins and CLI: [docs/dev/13.plugin_cli.md](docs/dev/13.plugin_cli.md)
+- Memory system: [docs/dev/17.memory_core.md](docs/dev/17.memory_core.md)
 
 ## License
 
