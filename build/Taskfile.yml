@@ -12,13 +12,14 @@ tasks:
     dir: frontend
     sources:
       - package.json
+      - package-lock.json
     generates:
       - node_modules
     preconditions:
       - sh: npm --version
         msg: "Looks like npm isn't installed. Install it first so frontend dependencies use the project's expected package manager."
     cmds:
-      - npm install
+      - npm ci
 
   build:frontend:
     label: build:frontend (DEV={{.DEV}})
