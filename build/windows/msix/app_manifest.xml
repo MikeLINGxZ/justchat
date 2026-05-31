@@ -8,15 +8,15 @@
   IgnorableNamespaces="uap3">
   
   <Identity 
-    Name="com.example.rxintelligencecli"
+    Name="com.example.init"
     Publisher="CN=My Company"
     Version="0.1.0.0" 
     ProcessorArchitecture="x64" />
   
   <Properties>
-    <DisplayName>Lemontea Desktop</DisplayName>
-    <PublisherDisplayName>MikeLinGxZ</PublisherDisplayName>
-    <Description>A lemontea-desktop application</Description>
+    <DisplayName>My Product</DisplayName>
+    <PublisherDisplayName>My Company</PublisherDisplayName>
+    <Description>A init application</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   
@@ -29,10 +29,10 @@
   </Resources>
   
   <Applications>
-    <Application Id="com.example.rxintelligencecli" Executable="lemontea-desktop" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="com.example.init" Executable="init" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Lemontea Desktop"
-        Description="A lemontea-desktop application"
+        DisplayName="My Product"
+        Description="A init application"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
@@ -41,7 +41,7 @@
       </uap:VisualElements>
       
       <Extensions>
-        <desktop:Extension Category="windows.fullTrustProcess" Executable="lemontea-desktop" />
+        <desktop:Extension Category="windows.fullTrustProcess" Executable="init" />
         
         
       </Extensions>

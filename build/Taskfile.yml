@@ -12,14 +12,13 @@ tasks:
     dir: frontend
     sources:
       - package.json
-      - package-lock.json
     generates:
       - node_modules
     preconditions:
-      - sh: cnpm version
-        msg: "Looks like npm isn't installed. Cnpm is part of the Node installer: https://nodejs.org/en/download/"
+      - sh: npm --version
+        msg: "Looks like npm isn't installed. Install it first so frontend dependencies use the project's expected package manager."
     cmds:
-      - cnpm install
+      - npm install
 
   build:frontend:
     label: build:frontend (DEV={{.DEV}})
@@ -37,7 +36,7 @@ tasks:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
     cmds:
-      - cnpm run {{.BUILD_COMMAND}} -q
+      - npm run {{.BUILD_COMMAND}} -q
     env:
       PRODUCTION: '{{if eq .DEV "true"}}false{{else}}true{{end}}'
     vars:
@@ -103,19 +102,22 @@ tasks:
     sources:
       - "appicon.png"
       - "appicon.icon"
+      - "appicon.dev.icon"
     generates:
       - "darwin/icons.icns"
       - "windows/icon.ico"
+      - "darwin/icons.dev.icns"
+      - "windows/icon.dev.ico"
     cmds:
       - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput appicon.icon -macassetdir darwin
-
+      - wails3 generate icons -input appicon_dev.png -macfilename darwin/icons_dev.icns -windowsfilename windows/icon_dev.ico -iconcomposerinput appicon_dev.icon -macassetdir darwin
   dev:frontend:
     summary: Runs the frontend in development mode
     dir: frontend
     deps:
       - task: install:frontend:deps
     cmds:
-      - cnpm run dev -- --port {{.VITE_PORT}} --strictPort
+      - npm run dev -- --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
     summary: Updates the build assets
@@ -135,7 +137,7 @@ tasks:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
     cmds:
-      - go build -tags server,sqlite_fts5 {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
+      - go build -tags server {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
     vars:
       BUILD_FLAGS: "{{.BUILD_FLAGS}}"
 

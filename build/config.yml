@@ -6,12 +6,12 @@ version: '3'
 # This information is used to generate the build assets.
 info:
   companyName: "MikeLinGxZ" # The name of the company
-  productName: "Lemontea Desktop" # The name of the application
-  productIdentifier: "com.mycompany.myproduct" # The unique product identifier
-  description: "A program that does X" # The application description
-  copyright: "(c) 2025, My Company" # Copyright text
-  comments: "Some Product Comments" # Comments
-  version: "0.0.1" # The application version
+  productName: "Lemontea" # The name of the application
+  productIdentifier: "cn.linhf" # The unique product identifier
+  description: "A simple and easy-to-use ai assistant" # The application description
+  copyright: "(c) 2026, MikeLinGxZ" # Copyright text
+  comments: "Developed by MikeLinGxZ" # Comments
+  version: "0.3.0" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension
   #                               # If not set and Assets.car exists, defaults to "appicon"
