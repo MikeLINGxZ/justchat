@@ -9,8 +9,7 @@ permissions:
   contents: write
 
 env:
-  APP_NAME: LemonTeaDesktop
-  APP_NAME: lemontea-desktop
+  APP_NAME: lemontea
 
 jobs:
   create_release:
