@@ -43,10 +43,6 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install cnpm
-        shell: pwsh
-        run: npm install -g cnpm --registry=https://registry.npmmirror.com
-
       - name: Install NSIS
         shell: pwsh
         run: |
@@ -69,7 +65,7 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         shell: pwsh
-        run: cnpm install
+        run: npm ci
 
       - name: Build Windows installer
         shell: pwsh
@@ -112,9 +108,6 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install cnpm
-        run: npm install -g cnpm --registry=https://registry.npmmirror.com
-
       - name: Install Wails CLI
         run: |
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
@@ -122,7 +115,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: cnpm install
+        run: npm ci
 
       - name: Build universal macOS app
         run: wails3 task darwin:package:universal
@@ -158,13 +151,10 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install cnpm
-        run: npm install -g cnpm --registry=https://registry.npmmirror.com
-
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev rpm fakeroot patchelf file
+          sudo apt-get install -y build-essential libgtk-4-dev libwebkitgtk-6.0-dev libayatana-appindicator3-dev rpm fakeroot patchelf file
 
       - name: Install Wails CLI
         run: |
@@ -173,7 +163,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: cnpm install
+        run: npm ci
 
       - name: Build Linux AppImage
         run: wails3 task linux:create:appimage
