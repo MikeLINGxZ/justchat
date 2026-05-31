@@ -117,14 +117,19 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Build universal macOS app
-        run: wails3 task darwin:package:universal
+      - name: Package macOS app
+        run: wails3 package GOOS=darwin
 
       - name: Prepare macOS release asset
         run: |
           mkdir -p release
           TAG="${GITHUB_REF_NAME}"
-          ditto -c -k --keepParent "bin/${APP_NAME}.app" "release/${APP_NAME}-macos-universal-${TAG}.zip"
+          APP_BUNDLE="$(find bin -maxdepth 1 -name '*.app' | head -n 1)"
+          if [ -z "${APP_BUNDLE}" ]; then
+            echo "macOS app bundle not found" >&2
+            exit 1
+          fi
+          ditto -c -k --keepParent "${APP_BUNDLE}" "release/${APP_NAME}-macos-${TAG}.zip"
 
       - name: Upload macOS asset to release
         uses: softprops/action-gh-release@v2
@@ -165,24 +170,32 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Build Linux AppImage
-        run: wails3 task linux:create:appimage
+      - name: Package Linux app
+        run: wails3 package GOOS=linux
 
-      - name: Prepare Linux release asset
+      - name: Prepare Linux release assets
         run: |
           mkdir -p release
           TAG="${GITHUB_REF_NAME}"
           APPIMAGE="$(find bin -maxdepth 1 -name '*.AppImage' | head -n 1)"
-          if [ -z "${APPIMAGE}" ]; then
-            echo "Linux AppImage not found" >&2
+          DEB="$(find bin -maxdepth 1 -name '*.deb' | head -n 1)"
+          RPM="$(find bin -maxdepth 1 -name '*.rpm' | head -n 1)"
+
+          if [ -z "${APPIMAGE}" ] || [ -z "${DEB}" ] || [ -z "${RPM}" ]; then
+            echo "Expected Linux package outputs (.AppImage, .deb, .rpm) were not all generated" >&2
             exit 1
           fi
+
           cp "${APPIMAGE}" "release/${APP_NAME}-linux-amd64-${TAG}.AppImage"
+          cp "${DEB}" "release/${APP_NAME}-linux-amd64-${TAG}.deb"
+          cp "${RPM}" "release/${APP_NAME}-linux-amd64-${TAG}.rpm"
 
       - name: Upload Linux asset to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: release/*.AppImage
+          files: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
           fail_on_unmatched_files: true
-
