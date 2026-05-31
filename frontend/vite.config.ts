@@ -6,6 +6,12 @@ import wails from '@wailsio/runtime/plugins/vite'
 
 export default defineConfig({
   plugins: [react(), wails('./bindings')],
+  server: {
+    host: '127.0.0.1',
+  },
+  preview: {
+    host: '127.0.0.1',
+  },
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {

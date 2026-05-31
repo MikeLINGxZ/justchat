@@ -19,7 +19,7 @@ tasks:
       - sh: npm --version
         msg: "Looks like npm isn't installed. Install it first so frontend dependencies use the project's expected package manager."
     cmds:
-      - npm ci
+      - npm install
 
   build:frontend:
     label: build:frontend (DEV={{.DEV}})
@@ -118,7 +118,13 @@ tasks:
     deps:
       - task: install:frontend:deps
     cmds:
-      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+      - npm run dev -- --host 127.0.0.1 --port {{.VITE_PORT}} --strictPort
+
+  dev:frontend:wails:
+    summary: Runs the frontend dev server for wails3 dev without a redundant install step
+    dir: frontend
+    cmds:
+      - npm run dev -- --host 127.0.0.1 --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
     summary: Updates the build assets
