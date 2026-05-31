@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=Lemontea Desktop
-Comment=A lemontea-desktop application
+Name=My Product
+Comment=A init application
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/lemontea-desktop %u
+Exec=/usr/local/bin/init %u
 Terminal=false
 Type=Application
-Icon=lemontea-desktop
+Icon=init
 Categories=Utility;
-StartupWMClass=lemontea-desktop
+StartupWMClass=init
 
  
