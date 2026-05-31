@@ -10,7 +10,7 @@ permissions:
 
 env:
   APP_NAME: lemontea-desktop
-  WAILS_VERSION: v3.0.0-alpha.74
+  WAILS_VERSION: "v3.0.0-alpha.74"
 
 jobs:
   create_release:
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${env:WAILS_VERSION}
+          go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install frontend dependencies
@@ -159,7 +159,7 @@ jobs:
 
       - name: Install Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${env:WAILS_VERSION}
+          go install github.com/wailsapp/wails/v3/cmd/wails3@$WAILS_VERSION
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install frontend dependencies
@@ -186,4 +186,3 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: release/*.AppImage
           fail_on_unmatched_files: true
-
