@@ -6,6 +6,25 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+func (p *Window) childWindowOptions(options application.WebviewWindowOptions) application.WebviewWindowOptions {
+	options.InitialPosition = application.WindowCentered
+	options.Screen = p.homeWindowScreen()
+	if options.Screen == nil && p.wailsApp != nil {
+		options.Screen = p.wailsApp.Screen.GetPrimary()
+	}
+	return options
+}
+
+func (p *Window) showCenteredOnHomeScreen(window application.Window) {
+	if window == nil {
+		return
+	}
+	p.centerWindowOnHomeScreen(window)
+	window.Show()
+	p.centerWindowOnHomeScreen(window)
+	window.Focus()
+}
+
 // centerWindowOnHomeScreen create a window at the main window screen
 func (p *Window) centerWindowOnHomeScreen(window application.Window) {
 	if window == nil {
@@ -26,9 +45,7 @@ func (p *Window) centerWindowOnHomeScreen(window application.Window) {
 		return
 	}
 
-	if !centerWindowOnScreen(window, screen) {
-		window.Center()
-	}
+	window.SetScreen(screen)
 }
 
 // homeWindowScreen get main window screen

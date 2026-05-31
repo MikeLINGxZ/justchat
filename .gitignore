@@ -13,3 +13,4 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 /.qoder/
 /skills-lock.json
 /node_modules/
+/build/linux/lemontea.desktop

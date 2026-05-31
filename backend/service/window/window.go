@@ -28,12 +28,10 @@ func (p *Window) OpenSettings(ctx context.Context, input window_dto.OpenSettings
 	settingsWindow, ok := p.wailsApp.Window.GetByName(window_id.Settings)
 	if ok {
 		settingsWindow.SetURL(pageUrl)
-		settingsWindow.Focus()
-		p.centerWindowOnHomeScreen(settingsWindow)
-		settingsWindow.Show()
+		p.showCenteredOnHomeScreen(settingsWindow)
 		return &window_dto.OpenSettingsOutput{}, nil
 	}
-	settingsWindow = p.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	settingsWindow = p.wailsApp.Window.NewWithOptions(p.childWindowOptions(application.WebviewWindowOptions{
 		Name:  window_id.Settings,
 		Title: i18n.TCurrent("app.window.settings_title", nil),
 		Mac: application.MacWindow{
@@ -47,10 +45,8 @@ func (p *Window) OpenSettings(ctx context.Context, input window_dto.OpenSettings
 		Height:           800,
 		MinWidth:         550,
 		MinHeight:        550,
-	})
-	settingsWindow.Focus()
-	p.centerWindowOnHomeScreen(settingsWindow)
-	settingsWindow.Show()
+	}))
+	p.showCenteredOnHomeScreen(settingsWindow)
 	return &window_dto.OpenSettingsOutput{}, nil
 }
 
@@ -59,12 +55,10 @@ func (p *Window) OpenAddProvider(ctx context.Context, input window_dto.OpenAddPr
 
 	addProviderWindow, ok := p.wailsApp.Window.GetByName(window_id.AddProvider)
 	if ok {
-		addProviderWindow.Focus()
-		p.centerWindowOnHomeScreen(addProviderWindow)
-		addProviderWindow.Show()
+		p.showCenteredOnHomeScreen(addProviderWindow)
 		return &window_dto.OpenAddProviderOutput{}, nil
 	}
-	addProviderWindow = p.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	addProviderWindow = p.wailsApp.Window.NewWithOptions(p.childWindowOptions(application.WebviewWindowOptions{
 		Name:  window_id.AddProvider,
 		Title: i18n.TCurrent("app.window.add_provider_title", nil),
 		Mac: application.MacWindow{
@@ -78,10 +72,8 @@ func (p *Window) OpenAddProvider(ctx context.Context, input window_dto.OpenAddPr
 		Height:           800,
 		MinWidth:         550,
 		MinHeight:        550,
-	})
-	addProviderWindow.Focus()
-	p.centerWindowOnHomeScreen(addProviderWindow)
-	addProviderWindow.Show()
+	}))
+	p.showCenteredOnHomeScreen(addProviderWindow)
 	return &window_dto.OpenAddProviderOutput{}, nil
 }
 
@@ -99,13 +91,11 @@ func (p *Window) CloseAddProvider(ctx context.Context, input window_dto.CloseAdd
 func (p *Window) OpenAddSkill(ctx context.Context, input window_dto.OpenAddSkillInput) (*window_dto.OpenAddSkillOutput, error) {
 	addSkillWindow, ok := p.wailsApp.Window.GetByName(window_id.AddSkill)
 	if ok {
-		addSkillWindow.Focus()
-		p.centerWindowOnHomeScreen(addSkillWindow)
-		addSkillWindow.Show()
+		p.showCenteredOnHomeScreen(addSkillWindow)
 		return &window_dto.OpenAddSkillOutput{}, nil
 	}
 
-	addSkillWindow = p.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	addSkillWindow = p.wailsApp.Window.NewWithOptions(p.childWindowOptions(application.WebviewWindowOptions{
 		Name:  window_id.AddSkill,
 		Title: i18n.TCurrent("app.window.add_skill_title", nil),
 		Mac: application.MacWindow{
@@ -119,10 +109,8 @@ func (p *Window) OpenAddSkill(ctx context.Context, input window_dto.OpenAddSkill
 		Height:           820,
 		MinWidth:         700,
 		MinHeight:        620,
-	})
-	addSkillWindow.Focus()
-	p.centerWindowOnHomeScreen(addSkillWindow)
-	addSkillWindow.Show()
+	}))
+	p.showCenteredOnHomeScreen(addSkillWindow)
 	return &window_dto.OpenAddSkillOutput{}, nil
 }
 
@@ -140,13 +128,11 @@ func (p *Window) CloseAddSkill(ctx context.Context, input window_dto.CloseAddSki
 func (p *Window) OpenAddMemory(ctx context.Context, input window_dto.OpenAddMemoryInput) (*window_dto.OpenAddMemoryOutput, error) {
 	addMemoryWindow, ok := p.wailsApp.Window.GetByName(window_id.AddMemory)
 	if ok {
-		addMemoryWindow.Focus()
-		p.centerWindowOnHomeScreen(addMemoryWindow)
-		addMemoryWindow.Show()
+		p.showCenteredOnHomeScreen(addMemoryWindow)
 		return &window_dto.OpenAddMemoryOutput{}, nil
 	}
 
-	addMemoryWindow = p.wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	addMemoryWindow = p.wailsApp.Window.NewWithOptions(p.childWindowOptions(application.WebviewWindowOptions{
 		Name:  window_id.AddMemory,
 		Title: i18n.TCurrent("app.window.add_memory_title", nil),
 		Mac: application.MacWindow{
@@ -160,10 +146,8 @@ func (p *Window) OpenAddMemory(ctx context.Context, input window_dto.OpenAddMemo
 		Height:           820,
 		MinWidth:         550,
 		MinHeight:        620,
-	})
-	addMemoryWindow.Focus()
-	p.centerWindowOnHomeScreen(addMemoryWindow)
-	addMemoryWindow.Show()
+	}))
+	p.showCenteredOnHomeScreen(addMemoryWindow)
 	return &window_dto.OpenAddMemoryOutput{}, nil
 }
 
@@ -180,15 +164,11 @@ func (p *Window) CloseAddMemory(ctx context.Context, input window_dto.CloseAddMe
 // OpenOnboarding opens or focuses the first-launch onboarding window.
 func (p *Window) OpenOnboarding(ctx context.Context, input window_dto.OpenOnboardingInput) (*window_dto.OpenOnboardingOutput, error) {
 	if onboardingWindow, ok := p.wailsApp.Window.GetByName(window_id.Onboarding); ok {
-		onboardingWindow.Focus()
-		p.centerWindowOnHomeScreen(onboardingWindow)
-		onboardingWindow.Show()
+		p.showCenteredOnHomeScreen(onboardingWindow)
 		return &window_dto.OpenOnboardingOutput{}, nil
 	}
 
 	onboardingWindow := p.wailsApp.Window.NewWithOptions(window_options.DefaultOnboarding())
-	onboardingWindow.Focus()
-	p.centerWindowOnHomeScreen(onboardingWindow)
-	onboardingWindow.Show()
+	p.showCenteredOnHomeScreen(onboardingWindow)
 	return &window_dto.OpenOnboardingOutput{}, nil
 }
